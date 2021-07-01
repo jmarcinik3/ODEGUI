@@ -1,0 +1,27 @@
+pT0: # Channel open probability at steady state with no external force
+  value: 0.5
+  unit:
+N: # Number of transduction elements
+  value: 50
+  unit:
+dE0: # Intrinsic energy difference between open and closed states of the channels
+  value: 40
+  unit: zeptojoule
+tauT0:
+  value: 500
+  unit: microsecond
+lambdahb: # Hydrodynamic drag coefficient of the hair bundle
+  value: 0.1
+  unit: micronewton*second/meter
+kgstot: # Combined stiffness of the gating springs
+  value: 0.8
+  unit: millinewton/meter
+ksptot: # Combined stiffness of the stereociliary pivots
+  value: 0.2
+  unit: millinewton/meter
+lambdaa: # Slope of the force-velocity relation of the adaptation motor
+  value: 10
+  unit: micronewton*second/meter
+kestot: # Combined stiffness of extent springs
+  value: 1.6
+  unit: millinewton/meter
