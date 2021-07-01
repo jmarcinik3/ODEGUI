@@ -8,6 +8,7 @@ from typing import Any, List, Union
 import PySimpleGUI as sg
 from pint import Quantity
 
+
 def unique(nonunique: list) -> list:
     """
     Get collection containing only unique elements.
@@ -17,7 +18,10 @@ def unique(nonunique: list) -> list:
     seen = set()
     unique_list = [element for element in nonunique if not (element in seen or seen.add(element))]
     return unique_list
-def getIndicies(elements: Union[Any, List[Any]], element_list: list, element_class: type = None) -> Union[int, List[int]]:
+
+
+def getIndicies(elements: Union[Any, List[Any]], element_list: list, element_class: type = None) -> Union[
+    int, List[int]]:
     """
     Get indicies of specified element(s) in list.
     
@@ -31,9 +35,14 @@ def getIndicies(elements: Union[Any, List[Any]], element_list: list, element_cla
     :returns: int if elements is a list.
         list of int if elements is not a list.
     """
-    if isinstance(elements, list): return [getIndicies(element, element_list) for element in elements]
-    elif element_class is None or isinstance(elements, element_class): return element_list.index(elements)
-    else: raise TypeError("element input must be {element_class:s} or list")
+    if isinstance(elements, list):
+        return [getIndicies(element, element_list) for element in elements]
+    elif element_class is None or isinstance(elements, element_class):
+        return element_list.index(elements)
+    else:
+        raise TypeError("element input must be {element_class:s} or list")
+
+
 def getElements(indicies: Union[int, List[int]], element_list: list) -> Union[Any, List[Any]]:
     """
     Get element(s) at index(es) in list.
@@ -46,8 +55,12 @@ def getElements(indicies: Union[int, List[int]], element_list: list) -> Union[An
     :returns: object if indicies is int.
         list of objects if indicies is list of int.
     """
-    if isinstance(indicies, list): return [getElements(index, element_list) for index in indicies]
-    elif isinstance(indicies, int): return element_list[indicies]
+    if isinstance(indicies, list):
+        return [getElements(index, element_list) for index in indicies]
+    elif isinstance(indicies, int):
+        return element_list[indicies]
+
+
 def commonElement(set1: set, set2: set, n: int = 1) -> bool:
     """
     Determine whether list1 and list2 have at least n common elements.
@@ -59,6 +72,8 @@ def commonElement(set1: set, set2: set, n: int = 1) -> bool:
         False otherwise.
     """
     return len(set1.intersection(set2)) >= n
+
+
 def toList(obj: Any, object_class: type = None) -> list:
     """
     Convert input to list.
@@ -68,9 +83,13 @@ def toList(obj: Any, object_class: type = None) -> list:
     :returns: object itself if object is a list.
         list containing only the object if object is not a list.
     """
-    if object_class is None or isinstance(obj, object_class): return [obj]
-    elif isinstance(obj, list): return obj
-    else: raise TypeError(f"object input must be {object_class:s} or list")
+    if object_class is None or isinstance(obj, object_class):
+        return [obj]
+    elif isinstance(obj, list):
+        return obj
+    else:
+        raise TypeError(f"object input must be {object_class:s} or list")
+
 
 def formatValue(quantity: Union[Quantity, float]) -> str:
     """
@@ -83,19 +102,27 @@ def formatValue(quantity: Union[Quantity, float]) -> str:
     __Return__
         str
     """
-    if isinstance(quantity, Quantity): magnitude = quantity.magnitude
-    elif isinstance(quantity, float): magnitude = quantity
-    else: raise TypeError("quantity must be Quantity or float")
-    
+    if isinstance(quantity, Quantity):
+        magnitude = quantity.magnitude
+    elif isinstance(quantity, float):
+        magnitude = quantity
+    else:
+        raise TypeError("quantity must be Quantity or float")
+
     decimal = f"{magnitude:f}".rstrip('0').rstrip('.')
-    
+
     scientific_splits = f"{magnitude:e}".split('e')
     scientific_float, scientific_exp = scientific_splits[0].rstrip('0').rstrip('.'), scientific_splits[1]
     scientific_full = scientific_float + 'e' + scientific_exp
-    
-    if float(decimal) != magnitude: return scientific_full
-    elif len(decimal) <= len(scientific_full): return decimal
-    elif len(decimal) > len(scientific_full): return scientific_full
+
+    if float(decimal) != magnitude:
+        return scientific_full
+    elif len(decimal) <= len(scientific_full):
+        return decimal
+    elif len(decimal) > len(scientific_full):
+        return scientific_full
+
+
 def formatUnit(quantity: Quantity) -> str:
     """
     __Purpose__
@@ -108,6 +135,8 @@ def formatUnit(quantity: Quantity) -> str:
         str
     """
     return f"{quantity.units:~}".replace(' ', '')
+
+
 def formatQuantity(quantity: Quantity) -> str:
     """
     __Purpose__
@@ -121,6 +150,7 @@ def formatQuantity(quantity: Quantity) -> str:
     formatted_quantity = f"{value:s} {unit:s}"
     return formatted_quantity
 
+
 def getTexImage(name: str, tex_folder: str = "tex", **kwargs) -> Union[sg.Image, sg.Text]:
     """
     __Purpose__
@@ -132,5 +162,7 @@ def getTexImage(name: str, tex_folder: str = "tex", **kwargs) -> Union[sg.Image,
         PySimpleGUI.Image
     """
     filename = join(tex_folder, name) + ".png"
-    if isfile(filename): return sg.Image(filename=filename, **kwargs)
-    else: return sg.Text(name, **kwargs)
+    if isfile(filename):
+        return sg.Image(filename=filename, **kwargs)
+    else:
+        return sg.Text(name, **kwargs)

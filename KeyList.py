@@ -9,6 +9,7 @@ from typing import List, Union
 
 import YML
 
+
 class KeyList:
     """
     Stores list of keys for future access.
@@ -18,6 +19,7 @@ class KeyList:
     :ivar separator: string separating prefix and tag
     :ivar keys: dictionary from prefix codename to all keys stored under that prefix codename
     """
+
     def __init__(self, separator: str = ' ') -> None:
         """
         Constructor for :class:`~KeyList.KeyList`
@@ -27,7 +29,7 @@ class KeyList:
         self.prefixes = YML.readPrefixes("prefix.yml")
         self.separator = separator
         self.keys = {}
-    
+
     def getSeparator(self) -> str:
         """
         Get string that separates prefix and tag.
@@ -35,6 +37,7 @@ class KeyList:
         :param self: :class:`~KeyList.KeyList` to retrieve separator from
         """
         return self.separator
+
     def getPrefix(self, prefix: str, with_separator: bool = False) -> str:
         """
         Get prefix from prefix codename.
@@ -47,6 +50,7 @@ class KeyList:
         prefix = self.prefixes[prefix]
         if with_separator: prefix += self.getSeparator()
         return prefix
+
     def getPrefixes(self):
         """
         Get all prefixes stored in key list.
@@ -54,6 +58,7 @@ class KeyList:
         :param self: :class:`~KeyList.KeyList` to retrieve prefix codenames from
         """
         return self.keys.keys()
+
     def addKey(self, prefix: str, tag: str) -> None:
         """
         Add new key to key list.
@@ -65,8 +70,11 @@ class KeyList:
         :param prefix: prefix codename for new key
         :param tag: suffix tag for new key
         """
-        if prefix not in self.getPrefixes(): self.keys[prefix] = [tag]
-        else: self.keys[prefix].append(tag)
+        if prefix not in self.getPrefixes():
+            self.keys[prefix] = [tag]
+        else:
+            self.keys[prefix].append(tag)
+
     def generateKey(self, prefix: str, tag: str = None) -> str:
         """
         Generate name of new key from prefix and tag
@@ -75,9 +83,13 @@ class KeyList:
         :param prefix: prefix codename for new key
         :param tag: suffix tag for new key
         """
-        if isinstance(tag, str): return self.getPrefix(prefix) + self.getSeparator() + tag
-        elif tag is None: return self.getPrefix(prefix)
-        else: raise TypeError("tag must be str")
+        if isinstance(tag, str):
+            return self.getPrefix(prefix) + self.getSeparator() + tag
+        elif tag is None:
+            return self.getPrefix(prefix)
+        else:
+            raise TypeError("tag must be str")
+
     def getKeyList(self, prefixes: Union[str, List[str]] = None) -> List[str]:
         """
         Get keys stored in key list.
@@ -86,12 +98,14 @@ class KeyList:
         :param prefixes: only retrieve keys with this prefix codename.
             Acts as a filter.
         """
-        if isinstance(prefixes, str): prefixes = [prefixes]
-        elif prefixes is None: prefixes = self.keys.keys()
-        
+        if isinstance(prefixes, str):
+            prefixes = [prefixes]
+        elif prefixes is None:
+            prefixes = self.keys.keys()
+
         keys = [self.generateKey(prefix, tag) for prefix in prefixes for tag in self.keys[prefix]]
         return keys
-    
+
     def getKey(self, prefix: str, tag: str = None, add_key: bool = True) -> str:
         """
         Get name of key in key list.

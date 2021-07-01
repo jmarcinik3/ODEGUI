@@ -10,12 +10,13 @@ from CustomErrors import RecursiveTypeError
 from Layout.Layout import Layout, Row, Window, WindowRunner
 from macros import formatQuantity, getTexImage
 
+
 class SetParameterRow(Row):
     def __init__(self, name: str, window: SetFreeParametersWindow, quantity: Quantity) -> None:
         super().__init__(name=name, window=window)
-        
+
         self.quantity = quantity
-        
+
         elements = [
             self.getNameLabel(),
             self.getQuantityLabel(),
@@ -24,12 +25,13 @@ class SetParameterRow(Row):
             self.getStepCountInputElement()
         ]
         self.addElements(elements)
-    
+
     def getQuantity(self) -> Quantity:
         return self.quantity
-    
+
     def getNameLabel(self) -> Union[sg.Image, sg.Text]:
         return getTexImage(self.getName())
+
     def getQuantityLabel(self) -> sg.Text:
         kwargs = {
             "text": formatQuantity(self.getQuantity()),
@@ -38,6 +40,7 @@ class SetParameterRow(Row):
             "key": self.getKey("quantity_label", self.getName())
         }
         return sg.Text(**kwargs)
+
     def getMinimumInputElement(self) -> sg.InputText:
         name = self.getName()
         kwargs = {
@@ -47,6 +50,7 @@ class SetParameterRow(Row):
             "key": self.getKey("free_parameter_minimum", name)
         }
         return sg.InputText(**kwargs)
+
     def getMaximumInputElement(self) -> sg.InputText:
         name = self.getName()
         kwargs = {
@@ -56,6 +60,7 @@ class SetParameterRow(Row):
             "key": self.getKey("free_parameter_maximum", name)
         }
         return sg.InputText(**kwargs)
+
     def getStepCountInputElement(self) -> sg.InputText:
         name = self.getName()
         kwargs = {
@@ -65,16 +70,18 @@ class SetParameterRow(Row):
             "key": self.getKey("free_parameter_stepcount", name)
         }
         return sg.InputText(**kwargs)
-    
+
+
 class SetFreeParametersWindow(Window):
-    def __init__(self, name: str, runner: SetFreeParametersWindowRunner, free_parameter_quantities: Dict[str, Quantity]) -> None:
+    def __init__(self, name: str, runner: SetFreeParametersWindowRunner,
+                 free_parameter_quantities: Dict[str, Quantity]) -> None:
         dimensions = {
             "window": (600, 700),
         }
         super().__init__(name, runner, dimensions=dimensions)
-        
+
         self.free_parameter_quantities = free_parameter_quantities
-    
+
     def getFreeParameterQuantity(self, name: str):
         """
         Get stored name(s) for free parameter(s).
@@ -84,6 +91,7 @@ class SetFreeParametersWindow(Window):
         :param name: name of parameter to retrieve quantity of
         """
         return self.free_parameter_quantities[name]
+
     def getFreeParameterNames(self, indicies: Union[int, List[str]] = None) -> Union[str, List[str]]:
         """
         Get stored name(s) for free parameter(s).
@@ -95,10 +103,13 @@ class SetFreeParametersWindow(Window):
         if isinstance(indicies, int):
             free_parameter_names = self.getFreeParameterNames()
             return free_parameter_names[indicies]
-        elif isinstance(indicies, list): return [self.getFreeParameterNames(indicies=index) for index in indicies]
-        elif indicies is None: return list(self.free_parameter_quantities.keys())
-        else: raise TypeError("index must be int")
-    
+        elif isinstance(indicies, list):
+            return [self.getFreeParameterNames(indicies=index) for index in indicies]
+        elif indicies is None:
+            return list(self.free_parameter_quantities.keys())
+        else:
+            raise TypeError("index must be int")
+
     def getHeaderRow(self) -> Row:
         texts = []
         for text in ["Name", "Default Value", "Minimum", "Maximum", "Stepcount"]:
@@ -108,30 +119,34 @@ class SetFreeParametersWindow(Window):
             }
             texts.append(sg.Text(**kwargs))
         return Row(window=self, elements=texts)
+
     def getFreeParameterRows(self) -> List[Row]:
         free_parameter_rows = []
         for free_parameter_name in self.getFreeParameterNames():
             new_row = SetParameterRow(free_parameter_name, self, self.getFreeParameterQuantity(free_parameter_name))
             free_parameter_rows.append(new_row)
         return free_parameter_rows
+
     def getLayout(self) -> List[List[sg.Element]]:
         submit_button = sg.Submit()
         cancel_button = sg.Cancel()
-        
+
         header_row = self.getHeaderRow()
         free_parameter_rows = self.getFreeParameterRows()
-        
+
         layout = Layout(rows=header_row)
         layout.addRows(free_parameter_rows)
         layout.addRows(Row(elements=[submit_button, cancel_button]))
         return layout.getLayout()
+
+
 class SetFreeParametersWindowRunner(WindowRunner):
     def __init__(self, name: str, **kwargs):
         window = SetFreeParametersWindow(name, self, **kwargs)
         super().__init__(name, window)
-        
+
         self.values = None
-        
+
     def getFreeParameterNames(self, **kwargs) -> List[str]:
         """
         Get stored name(s) for free parameter(s).
@@ -143,7 +158,7 @@ class SetFreeParametersWindowRunner(WindowRunner):
         # noinspection PyTypeChecker
         window_object: SetFreeParametersWindow = self.getWindowObject()
         return window_object.getFreeParameterNames(**kwargs)
-    
+
     def getFreeParameterValues(self, names: Union[str, List[str]] = None) -> Union[List[float], Dict[str, List[float]]]:
         """
         Get information about free parameter values for simulation.
@@ -172,12 +187,16 @@ class SetFreeParametersWindowRunner(WindowRunner):
             values = {}
             for name in names:
                 value = self.getFreeParameterValues(names=name)
-                if value: values[name] = value
-                else: break
+                if value:
+                    values[name] = value
+                else:
+                    break
             return values
-        elif names is None: return self.getFreeParameterValues(names=self.getFreeParameterNames())
-        else: raise RecursiveTypeError(names)
-    
+        elif names is None:
+            return self.getFreeParameterValues(names=self.getFreeParameterNames())
+        else:
+            raise RecursiveTypeError(names)
+
     def runWindow(self) -> Tuple[str, Dict[str, List[float, float, int]]]:
         free_parameter_names = self.getFreeParameterNames()
         free_parameter_count = len(free_parameter_names)
@@ -192,4 +211,5 @@ class SetFreeParametersWindowRunner(WindowRunner):
                     if len(free_parameter_values) == len(free_parameter_names): return event, free_parameter_values
             window.close()
             return event, {}
-        elif free_parameter_count == 0: return "Submit", {}
+        elif free_parameter_count == 0:
+            return "Submit", {}

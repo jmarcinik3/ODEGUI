@@ -14,15 +14,16 @@ from sympy.printing.preview import preview
 import YML
 from Layout.MainWindow import MainWindowRunner
 
+
 def main():
     """
     Main function to run GUI
     """
-    # tex2png()
-    
+    tex2png()
+
     sg.ChangeLookAndFeel("DarkGrey13")
-    sg.SetOptions(element_padding=(1, 1), suppress_error_popups = True, suppress_raise_key_errors=False)
-    
+    sg.SetOptions(element_padding=(1, 1), suppress_error_popups=True, suppress_raise_key_errors=False)
+
     parameter_filenames = [
         os.path.join("parameters", filestem + ".yml")
         for filestem in ["parameters", "Martin2003_parameters", "Roongthumskull2011-7B_parameters", "func_params"]
@@ -44,7 +45,8 @@ def main():
     }
     gui = MainWindowRunner(**kwargs)
     gui.runWindow()
-    
+
+
 def tex2png(output_folder: str = "tex", tex_filename: str = "var2tex.yml", overwrite: bool = False) -> None:
     """
     Create PNG for quantity(s) in TeX form.
@@ -58,17 +60,18 @@ def tex2png(output_folder: str = "tex", tex_filename: str = "var2tex.yml", overw
         Set False to skip quantities previously saved as TeX image.
     """
     tex_yml = YML.readVar2Tex(tex_filename)
-    
+
     kwargs = {
         "packages": ("amsmath", "amsfonts", "amssymb", "mathtools"),
         "viewer": "file",
         "euler": False
     }
     create_png = partial(preview, **kwargs)
-    
+
     if not isdir(output_folder): mkdir(output_folder)
     for key in YML.readVar2Tex(tex_filename):
         filepath = f"{output_folder:s}/{key:s}.png"
         if not isfile(filepath) or overwrite: create_png(tex_yml[key], filename=filepath)
+
 
 if __name__ == "__main__": main()
