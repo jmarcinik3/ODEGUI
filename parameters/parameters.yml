@@ -469,7 +469,7 @@ Ksomaex:  # extracellular K+ concentration at soma
 N:  # number of transduction channels
   value: 60
   unit:
-d:  # gating swing distance
+d:  # gating swing distance [in direction of gating spring]
   value: 8.2
   unit: nanometer
 dE0:  # intrinsic energy change upon opening transduction channel
