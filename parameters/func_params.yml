@@ -1,0 +1,6 @@
+Vmin:
+  value: -55
+  unit: millivolt
+Vmout:
+  value: -55
+  unit: millivolt

@@ -1,0 +1,9 @@
+Vm0:
+  value: -50
+  unit: millivolt
+Cahbex:
+  value: 0.1
+  unit: millimolar
+Ksomaex:
+  value: 2
+  unit: millimolar

@@ -1,0 +1,9 @@
+Vm0:
+  value: -75
+  unit: millivolt
+Cahbex: # NMDG-endolymph solution given in Table 1
+  value: 0.25
+  unit: millimolar
+Ksomaex: # NMDG-endolymph solution given in Table 1
+  value: 3
+  unit: millimolar

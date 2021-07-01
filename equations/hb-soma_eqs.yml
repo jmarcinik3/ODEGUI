@@ -1,0 +1,41 @@
+I: # Ohm's law
+  properties: [Dependent]
+  variables: Vm
+  arguments:
+    parameters: E
+    functions: g
+  form: g * (Vm-E)
+BoltzX: # Boltzmann factor for valence ion flow through electric potential
+  properties: [Dependent]
+  variables: Vm
+  parameters: [qe,kB,T]
+  arguments:
+    parameters: z
+  form: exp(-z*qe*Vm/(kB*T))
+gGHK: # Goldman-Hodgkin-Katz conductance
+  properties: [Dependent]
+  variables: Vm
+  parameters: [qe,F,kB,T]
+  arguments:
+    parameters: [P,z,Xin,Xex]
+  children:
+    BoltzX:
+      parameters: z
+  form: (P*z**2*qe*F)/(kB*T) * (Xin-Xex*BoltzX)/(1-BoltzX)
+gT: # conductance for transduction channel
+  properties: [Independent]
+  variables: pT
+  parameters: [PT,zCa,Cahbin,Cahbex]
+  children:
+    gGHK:
+      parameters: [PT,zCa,Cahbin,Cahbex]
+  form: pT * gGHK
+IT: # current for transduction channel
+  properties: [ Independent ]
+  parameters: ET
+  children:
+    gT:
+    I:
+      parameters: ET
+      functions: gT
+  form: I

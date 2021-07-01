@@ -1,0 +1,60 @@
+rm: # distance from adaptation motor to transduction channel
+  value: 20
+  unit: nanometer
+N: # number of transductions channels
+  value: 45
+  unit:
+gamma: # geometric factor for hair bundle position
+  value: 0.14
+  unit:
+d: # gating swing distance
+  value: 7
+  unit: nanometer
+pT0: # resting open-channel probability for transduction channels
+  value: 0.5
+  unit:
+kam: # association constant for adaptation motor
+  value: 30e6
+  unit: 1/(second*molar)
+kdm: # dissociation constant for adaptation motor
+  value: 15e3
+  unit: 1/second
+S1: # maximum rate constant for slipping adaptation
+  value: 640e3
+  unit: meter/(second*newton)
+S0: # minimum rate constant for slipping adaptation
+  value: 0
+  unit: meter/(second*newton)
+C0: # maximum rate constant for climbing adaptation
+  value: 0.058e-6
+  unit: meter/second
+C1: # minimum rate constant for climbing adaptation
+  value: 0
+  unit: meter/second
+xsp: # reference position for stereociliary pivot
+  value: 236
+  unit: nanometer
+xes: # reference position for extent spring
+  value: 0
+  unit: nanometer
+xc: # reference position for adaptation motor
+  value: 17
+  unit: nanometer
+kes: # stiffness for extent spring
+  value: 140
+  unit: micronewton/meter
+ksp: # stiffness for stereociliary pivot
+  value: 310
+  unit: micronewton/meter
+kgs0: # y-intercept of gating-spring stiffness
+  value: 2550
+  unit: micronewton/meter
+kgs1: # gating-spring stiffness at pr=1
+  value: 550
+  unit: micronewton/meter
+kar: # association constant for gating spring
+  value: 30e6
+  unit: 1/(second*molar)
+kdr: # dissociation constant for gating spring
+  value: 30
+  unit: 1/second

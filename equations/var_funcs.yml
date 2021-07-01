@@ -1,0 +1,26 @@
+
+
+Vm_out:
+  properties: [Independent]
+  parameters: Vmout
+  form: Vmout
+Vm_in:
+  properties: [Independent]
+  parameters: Vmin
+  form: Vmin
+
+Vm_step:
+  properties: [Independent]
+  parameters: [Vmin, Vmout]
+  form: Vmin - Vmout
+
+#Vm:
+#  properties: [Piecewise, Independent]
+#  variables: t
+#  pieces: [Vm_out, Vm_in, Vm_out]
+#  conditions: [t<1, t<=2, t>2]
+
+Vm:
+ properties: [Independent]
+ parameters: Vm0
+ form: Vm0

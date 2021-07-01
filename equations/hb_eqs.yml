@@ -1,0 +1,148 @@
+kgsinf: # gating spring stiffness
+  properties: [Independent]
+  variables: pr
+  parameters: [kgs0,kgs1]
+  form: kgs0 + (kgs1-kgs0)*pr
+dxgs: # gating spring displacement
+  properties: [Independent]
+  variables: [Xhb,xa,pT]
+  parameters: [gamma,xc,d]
+  form: gamma*Xhb-xa+xc-pT*d
+Fgs: # gating spring force
+  properties: [Independent]
+  children:
+    kgsinf:
+    dxgs:
+  form: kgsinf * dxgs
+Fsp: # stereociliary pivot force
+  properties: [Independent]
+  variables: Xhb
+  parameters: [ksp,xsp]
+  form: ksp * (Xhb-xsp)
+Fes: # extent spring force
+  properties: [Independent]
+  variables: xa
+  parameters: [kes,xes]
+  form: kes * (xa-xes)
+S: # adaptation motor slippage
+  properties: [Independent]
+  variables: pm
+  parameters: [S0,S1]
+  form: pm*(S1-S0) + S0
+C: # adaptation motor climbage
+  properties: [Independent]
+  variables: pm
+  parameters: [C0,C1]
+  form: (1-pm)*(C0-C1) + C1
+
+tauT: # MET-channel time constant
+  properties: [Independent]
+  parameters: tauT0
+  form: tauT0
+lambdaC: # MET-channel coefficient of friction
+  properties: [Independent]
+  variables: pT
+  parameters: [N,gamma,d,kB,T]
+  children:
+    kgsinf:
+    tauT:
+  form: N * (gamma*kgsinf*d)**2 * pT*(1-pT) * tauT / (kB*T)
+lambdahb: # hair bundle coefficient of friction
+  properties: [Independent]
+  parameters: lambdaH
+  children:
+    lambdaC:
+  form: lambdaH # + lambdaC
+CpT: # basis Boltzmann factor for transduction channel
+  properties: [Independent]
+  parameters: [dE0,kB,T]
+  form: exp(dE0/(kB*T))
+dxpT: # characteristic length scale for transduction channel
+  properties: [Independent]
+  variables: pr
+  parameters: [kB,T,d]
+  children:
+    kgsinf:
+  form: kB*T / (kgsinf*d)
+xpT: # characteristic length for transduction channel
+  properties: [Independent]
+  variables: [Xhb,xa]
+  parameters: [gamma,xc,d]
+  form: gamma*Xhb-xa+xc-d/2
+pTinf: # pT equilibrium
+  properties: [Independent]
+  children:
+    CpT:
+    xpT:
+    dxpT:
+  form: 1 / (1+CpT*exp(-xpT/dxpT))
+
+cX: # equilibrium concentration for diffusion from point source
+  properties: [Dependent]
+  parameters: F
+  arguments:
+    parameters: [z,D,r] # z: ion valence, D: diffusion constant, r: distance outside source
+    functions: I # inward current from source
+  form: -I / (2*pi*z*F*D*r)
+cCar: # Ca2+ concentration at reclosure element
+  properties: [Independent]
+  parameters: [zCa,DCa,rr]
+  children:
+    IT:
+    cX:
+      parameters: [zCa,DCa,rr]
+      functions: IT
+  form: cX
+cCam: # Ca2+ concentration at reclosure element
+  properties: [Independent]
+  parameters: [zCa,DCa,rm]
+  children:
+    IT:
+    cX:
+      parameters: [zCa,DCa,rm]
+      functions: IT
+  form: cX
+
+
+dXhb: # hair bundle position
+  properties: [Derivative, Independent]
+  variable: Xhb
+  parameters: [N,gamma]
+  children:
+    lambdahb:
+    Fgs:
+    Fsp:
+  form: -1/lambdahb * (N*gamma*Fgs+Fsp)
+dxa: # adaptation motor position
+  properties: [Derivative, Independent]
+  variable: xa
+  children:
+    C:
+    S:
+    Fgs:
+    Fes:
+  form: -C + S*( Fgs - Fes )
+dpr: # reclosure-element open-channel probability
+  properties: [Derivative, Independent]
+  variable: pr
+  variables: pr
+  parameters: [kdr,kar]
+  children:
+    cCar:
+  form: kar*cCar*(1-pr) - kdr*pr
+dpm: # adaptation-motor Ca2+-binding probability
+  properties: [Derivative, Independent]
+  variable: pm
+  variables: pm
+  parameters: [kdm,kam]
+  children:
+    cCam:
+  form: kam*cCam*(1-pm) - kdm*pm
+dpT: # MET open-channel probability
+  properties: [Derivative, Independent]
+  variable: pT
+  variables: pT
+  children:
+    pTinf:
+    tauT:
+  form: (pTinf-pT) / tauT

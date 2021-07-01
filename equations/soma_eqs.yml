@@ -1,0 +1,469 @@
+mhsinf: # (in)activation parameter equilibrium
+  properties: [Dependent]
+  variables: Vm
+  arguments:
+    parameters: [Vhalf,dV,mhsmin,mhsmax,mhsorder]
+  form: mhsmin + (mhsmax-mhsmin) / (1+exp(-(Vm-Vhalf)/dV))**mhsorder
+mhstau: # (in)activation parameter time constant
+  properties: [Dependent]
+  variables: Vm
+  arguments:
+    parameters: [Vtau,dVtau,tauVtau,tauinf,tauorder]
+  form: tauinf + (tauVtau-tauinf)*exp(-((Vm-Vtau)/dVtau)**tauorder)
+dmhs: # (in)activation parameter derivative
+  properties: [Dependent]
+  arguments:
+    variables: mhs
+    parameters: [Vhalf,dV,mhsmin,mhsmax,mhsorder,Vtau,dVtau,tauVtau,tauinf,tauorder]
+  children:
+    mhsinf:
+      parameters: [Vhalf,dV,mhsmin,mhsmax,mhsorder]
+    mhstau:
+      parameters: [Vtau,dVtau,tauVtau,tauinf,tauorder]
+  form: (mhsinf-mhs) / mhstau
+alphaDRK: # basis mDRK characteristic frequency scale
+  properties: [Independent]
+  variables: Vm
+  parameters: [alphainf,alpha0,dValpha]
+  form: 1 / (1/alphainf + (1/alpha0-1/alphainf)*exp(-Vm/dValpha))
+betaDRK: # basis mDRK characteristic frequency scale
+  properties: [Independent]
+  variables: Vm
+  parameters: [betainf,beta0,dVbeta]
+  form: 1 / (1/betainf + (1/beta0-1/betainf)*exp(-Vm/dVbeta))
+tauDRK: # mDRK time constant
+  properties: [Independent]
+  children:
+    alphaDRK:
+    betaDRK:
+  form: 1 / (alphaDRK+betaDRK)
+
+KpC1: # characteristic concentration for C1 state
+  properties: [Independent]
+  parameters: [KC10,deltaC1,zK]
+  children:
+    BoltzX:
+      parameters: zK
+  form: KC10 * BoltzX**deltaC1
+KpC2: # characteristic concentration for C2 state
+  properties: [Independent]
+  parameters: [KC20,deltaC2,zK]
+  children:
+    BoltzX:
+      parameters: zK
+  form: KC20 * BoltzX**deltaC2
+KpO3: # characteristic concentration for O3 state
+  properties: [Independent]
+  parameters: [KO20,deltaO2,zK]
+  children:
+    BoltzX:
+      parameters: zK
+  form: KO20 * BoltzX**deltaO2
+kaC1: # association constant into C1 state from C0 state
+  properties: [Independent]
+  variables: Ca
+  parameters: kdC1
+  children:
+    KpC1:
+  form: kdC1*Ca / KpC1
+kaC2: # association constant into C2 state from C1 state
+  properties: [Independent]
+  variables: Ca
+  parameters: kdC2
+  children:
+    KpC2:
+  form: kdC2*Ca / KpC2
+kdO2: # dissociation constant from O2 state into C2 state
+  properties: [Independent]
+  variables: Vm
+  parameters: [kdO20,zCa,dK]
+  children:
+    BoltzX:
+      parameters: zCa
+  form: kdO20 * BoltzX**(dK-1)
+kaO3: # association constant into O3 state from O2 state
+  properties: [Independent]
+  variables: Ca
+  parameters: kdO3
+  children:
+    KpO3:
+  form: kdO3*Ca / KpO3
+
+gCa: # conductance for Ca2+ channel
+  properties: [Independent]
+  variables: mCa
+  parameters: gCa1
+  form: gCa1 * mCa**3
+gh: # conductance for h channel
+  properties: [Independent]
+  variables: mh
+  parameters: gh1
+  form: gh1 * (3*mh**3*(1-mh)+mh**3)
+gBKS: # conductance for BKS channel
+  properties: [Independent]
+  variables: [pO2,pO3]
+  parameters: [PBKS,zK,Ksomain,Ksomaex]
+  children:
+    gGHK:
+      parameters: [PBKS,zK,Ksomain,Ksomaex]
+  form: (pO2+pO3) * gGHK
+gBKT: # conductance for BKT channel
+  properties: [Independent]
+  variables: [pO2,pO3]
+  parameters: [PBKT,zK,Ksomain,Ksomaex]
+  children:
+    gGHK:
+      parameters: [PBKT,zK,Ksomain,Ksomaex]
+  form: (pO2+pO3) * gGHK
+gDRK: # conductance for DRK channel
+  properties: [Independent]
+  variables: [mDRK]
+  parameters: [PDRK,zK,Ksomain,Ksomaex]
+  children:
+    gGHK:
+      parameters: [PDRK,zK,Ksomain,Ksomaex]
+  form: mDRK**2 * gGHK
+gK1f: # conductance for K1f channel
+  properties: [Independent]
+  variables: mK1f
+  parameters: gK1f1
+  form: gK1f1 * mK1f
+gK1s: # conductance for K1s channel
+  properties: [Independent]
+  variables: mK1s
+  parameters: gK1s1
+  form: gK1s1 * mK1s
+gA1: # conductance for A1 channel
+  properties: [Independent]
+  variables: [mA,hA1]
+  parameters: [PA1,zK,Ksomain,Ksomaex]
+  children:
+    gGHK:
+      parameters: [PA1,zK,Ksomain,Ksomaex]
+  form: mA**3*hA1 * gGHK
+gA2: # conductance for A2 channel
+  properties: [Independent]
+  variables: [mA,hA2]
+  parameters: [PA2,zK,Ksomain,Ksomaex]
+  children:
+    gGHK:
+      parameters: [PA2,zK,Ksomain,Ksomaex]
+  form: mA**3*hA2 * gGHK
+aA1: # proportion of A1-channel current in A-channel current
+  properties: [Independent]
+  variables: Vm
+  parameters: [aA1inf,VhalfaA1,dVaA1]
+  form: aA1inf - (1-aA1inf) / (1+exp(-(Vm-VhalfaA1)/dVaA1))
+
+IL:
+  properties: [Independent]
+  variables: Vm
+  parameters: [gL,EL]
+  form: gL * (Vm-EL)
+ICa: # current for Ca2+ channel
+  properties: [Independent]
+  parameters: ECa
+  children:
+    gCa:
+    I:
+      parameters: ECa
+      functions: gCa
+  form: I
+Ih: # current for h channel
+  properties: [Independent]
+  parameters: Eh
+  children:
+    gh:
+    I:
+      parameters: Eh
+      functions: gh
+  form: I
+IBKS: # current for BKS channel
+  properties: [Independent]
+  parameters: EBKS
+  children:
+    gBKS:
+    I:
+      parameters: EBKS
+      functions: gBKS
+  form: I
+IBKT: # current for BKT channel
+  properties: [Independent]
+  parameters: EBKT
+  children:
+    gBKT:
+    I:
+      parameters: EBKT
+      functions: gBKT
+  form: I
+IBK: # current for BK channel
+  properties: [Independent]
+  children:
+    IBKS:
+    IBKT:
+  form: IBKS + IBKT
+IDRK: # current for DRK channel
+  properties: [Independent]
+  parameters: EDRK
+  children:
+    gDRK:
+    I:
+      parameters: EDRK
+      functions: gDRK
+  form: I
+IK1f: # current for K1f channel
+  properties: [Independent]
+  parameters: EK1f
+  children:
+    gK1f:
+    I:
+      parameters: EK1f
+      functions: gK1f
+  form: I
+IK1s: # current for K1s channel
+  properties: [Independent]
+  parameters: EK1s
+  children:
+    gK1s:
+    I:
+      parameters: EK1s
+      functions: gK1s
+  form: I
+IK1: # current for K1 channel
+  properties: [Independent]
+  parameters: aK1f
+  children:
+    IK1f:
+    IK1s:
+  form: aK1f*IK1f + (1-aK1f)*IK1s
+IA1: # current for A1 channel
+  properties: [Independent]
+  parameters: EA1
+  children:
+    gA1:
+    I:
+      parameters: EA1
+      functions: gA1
+  form: I
+IA2: # current for A2 channel
+  properties: [Independent]
+  parameters: EA2
+  children:
+    gA2:
+    I:
+      parameters: EA2
+      functions: gA2
+  form: I
+IA: # current for A channel
+  properties: [Independent]
+  children:
+    aA1:
+    IA1:
+    IA2:
+  form: aA1*IA1 + (1-aA1)*IA2
+
+dVm: # soma membrane potential
+  properties: [Derivative, Independent]
+  variable: Vm
+  parameters: Cm
+  children:
+    IL:
+    ICa:
+    IT:
+    IK1:
+    Ih:
+    IBK:
+    IDRK:
+    IA:
+  form: -(IL+ICa+IT+IK1+Ih+IBK+IDRK) / Cm
+
+dCa: # soma Ca2+ concentration
+  properties: [Derivative, Independent]
+  variable: Ca
+  variables: Ca
+  parameters: [U,zCa,F,Cvol,xiCa,KS]
+  children:
+    ICa:
+  form: -ICa*U/(zCa*F*Cvol*xiCa) - KS*Ca
+dmCa: # Ca channel activation
+  properties: [Derivative, Independent]
+  variable: mCa
+  variables: mCa
+  parameters: [VhalfCa,dVCa,mhminCa,mhmaxCa,deltaCa,VtauCa,dVtauCa,tauVtauCa,tauinfCa,deltatauCa]
+  children:
+    dmhs:
+      variables: mCa
+      parameters: [VhalfCa,dVCa,mhminCa,mhmaxCa,deltaCa,VtauCa,dVtauCa,tauVtauCa,tauinfCa,deltatauCa]
+  form: dmhs
+dmh: # h channel activation
+  properties: [Derivative, Independent]
+  variable: mh
+  variables: mh
+  parameters: [Vhalfh,dVh,mhminh,mhmaxh,deltah,Vtauh,dVtauh,tauVtauh,tauinfh,deltatauh]
+  children:
+    dmhs:
+      variables: mh
+      parameters: [Vhalfh,dVh,mhminh,mhmaxh,deltah,Vtauh,dVtauh,tauVtauh,tauinfh,deltatauh]
+  form: dmhs
+dhBKT: # BKT channel inactivation
+  properties: [Derivative, Independent]
+  variable: hBKT
+  variables: hBKT
+  parameters: [VhalfBKT,dVBKT,mhminBKT,mhmaxBKT,deltaBKT,VtauBKT,dVtauBKT,tauVtauBKT,tauinfBKT,deltatauBKT]
+  children:
+    dmhs:
+      variables: hBKT
+      parameters: [VhalfBKT,dVBKT,mhminBKT,mhmaxBKT,deltaBKT,VtauBKT,dVtauBKT,tauVtauBKT,tauinfBKT,deltatauBKT]
+  form: dmhs
+dhA1: # A1 channel inactivation
+  properties: [Derivative, Independent]
+  variable: hA1
+  variables: hA1
+  parameters: [VhalfA1,dVA1,mhminA1,mhmaxA1,deltaA1,VtauA1,dVtauA1,tauVtauA1,tauinfA1,deltatauA1]
+  children:
+    dmhs:
+      variables: hA1
+      parameters: [VhalfA1,dVA1,mhminA1,mhmaxA1,deltaA1,VtauA1,dVtauA1,tauVtauA1,tauinfA1,deltatauA1]
+  form: dmhs
+dhA2: # A1 channel inactivation
+  properties: [Derivative, Independent]
+  variable: hA2
+  variables: hA2
+  parameters: [VhalfA2,dVA2,mhminA2,mhmaxA2,deltaA2,VtauA2,dVtauA2,tauVtauA2,tauinfA2,deltatauA2]
+  children:
+    dmhs:
+      variables: hA2
+      parameters: [VhalfA2,dVA2,mhminA2,mhmaxA2,deltaA2,VtauA2,dVtauA2,tauVtauA2,tauinfA2,deltatauA2]
+  form: dmhs
+dmDRK: # DRK channel activation
+  properties: [Derivative, Independent]
+  variable: mDRK
+  variables: mDRK
+  parameters: [VhalfDRK,dVDRK,mhminDRK,mhmaxDRK,deltaDRK]
+  children:
+    mhsinf:
+      parameters: [VhalfDRK,dVDRK,mhminDRK,mhmaxDRK,deltaDRK]
+    tauDRK:
+  form: (mhsinf-mDRK) / tauDRK
+
+dmK1flt: # K1f channel activation for small soma potential
+  properties: [Independent]
+  parameters: [VhalfK1f,dVK1f,mhminK1f,mhmaxK1f,deltaK1f,VtauK1flt,dVtauK1flt,tauVtauK1flt,tauinfK1flt,deltatauK1f]
+  children:
+    dmhs:
+      variables: mK1f
+      parameters: [VhalfK1f,dVK1f,mhminK1f,mhmaxK1f,deltaK1f,VtauK1flt,dVtauK1flt,tauVtauK1flt,tauinfK1flt,deltatauK1f]
+  form: dmhs
+dmK1fgt: # K1f channel activation for large soma potential
+  properties: [Independent]
+  parameters: [VhalfK1f,dVK1f,mhminK1f,mhmaxK1f,deltaK1f,VtauK1fgt,dVtauK1fgt,tauVtauK1fgt,tauinfK1fgt,deltatauK1f]
+  children:
+    dmhs:
+      variables: mK1f
+      parameters: [VhalfK1f,dVK1f,mhminK1f,mhmaxK1f,deltaK1f,VtauK1fgt,dVtauK1fgt,tauVtauK1fgt,tauinfK1fgt,deltatauK1f]
+  form: dmhs
+dmK1f: # K1f channel activation
+  properties: [Piecewise, Derivative, Independent]
+  variable: mK1f
+  variables: Vm
+  parameters: EK1f
+  pieces: [dmK1flt, dmK1fgt]
+  conditions: [Vm<EK1f, Vm>=EK1f]
+
+dmK1slt: # K1s channel activation for small soma potential
+  properties: [Independent]
+  variable: mK1s
+  parameters: [VhalfK1s,dVK1s,mhminK1s,mhmaxK1s,deltaK1s,VtauK1slt,dVtauK1slt,tauVtauK1slt,tauinfK1slt,deltatauK1s]
+  children:
+    dmhs:
+      variables: mK1s
+      parameters: [VhalfK1s,dVK1s,mhminK1s,mhmaxK1s,deltaK1s,VtauK1slt,dVtauK1slt,tauVtauK1slt,tauinfK1slt,deltatauK1s]
+  form: dmhs
+dmK1sgt: # K1s channel activation for large soma potential
+  properties: [Independent]
+  variable: mK1s
+  parameters: [VhalfK1s,dVK1s,mhminK1s,mhmaxK1s,deltaK1s,VtauK1sgt,dVtauK1sgt,tauVtauK1sgt,tauinfK1sgt,deltatauK1s]
+  children:
+    dmhs:
+      variables: mK1s
+      parameters: [VhalfK1s,dVK1s,mhminK1s,mhmaxK1s,deltaK1s,VtauK1sgt,dVtauK1sgt,tauVtauK1sgt,tauinfK1sgt,deltatauK1s]
+  form: dmhs
+dmK1s: # K1s channel activation
+  properties: [Piecewise, Derivative, Independent]
+  variable: mK1s
+  variables: Vm
+  parameters: EK1s
+  pieces: [dmK1slt, dmK1sgt]
+  conditions: [Vm<EK1s, Vm>=EK1s]
+
+dmAlt: # A channel activation for small soma potential
+  properties: [Independent]
+  variable: mA
+  parameters: [VhalfA,dVA,mhminA,mhmaxA,deltaA,VtauAlt,dVtauAlt,tauVtauAlt,tauinfAlt,deltatauA]
+  children:
+    dmhs:
+      variables: mA
+      parameters: [VhalfA,dVA,mhminA,mhmaxA,deltaA,VtauAlt,dVtauAlt,tauVtauAlt,tauinfAlt,deltatauA]
+  form: dmhs
+dmAgt: # A channel activation for large soma potential
+  properties: [Independent]
+  variable: mA
+  parameters: [VhalfA,dVA,mhminA,mhmaxA,deltaA,VtauAgt,dVtauAgt,tauVtauAgt,tauinfAgt,deltatauA]
+  children:
+    dmhs:
+      variables: mA
+      parameters: [VhalfA,dVA,mhminA,mhmaxA,deltaA,VtauAgt,dVtauAgt,tauVtauAgt,tauinfAgt,deltatauA]
+  form: dmhs
+dmA: # A channel activation
+  properties: [Piecewise, Derivative, Independent]
+  variable: mA
+  variables: Vm
+  parameters: VmhA
+  pieces: [dmAlt, dmAgt]
+  conditions: [Vm<VmhA, Vm>=VmhA]
+
+dpC0: # proportion of BK channels in C0 state
+  properties: [Derivative, Independent]
+  variable: pC0
+  variables: [pC0,pC1]
+  parameters: kdC1
+  children:
+    kaC1:
+  form: kdC1*pC1 - kaC1*pC0
+dpC1: # proportion of BK channels in C1 state
+  properties: [Derivative, Independent]
+  variable: pC1
+  variables: [pC0,pC1,pC2]
+  parameters: [kdC1,kdC2]
+  children:
+    kaC1:
+    kaC2:
+  form: kdC2*pC2 + kaC1*pC0 - (kdC1+kaC2)*pC1
+dpC2: # proportion of BK channels in C2 state
+  properties: [Derivative, Independent]
+  variable: pC2
+  variables: [pC1,pC2,pO2]
+  parameters: [kdC2,kaO2]
+  children:
+    kdO2:
+    kaC2:
+  form: kdO2*pO2 + kaC2*pC1 - (kdC2+kaO2)*pC2
+dpO2: # proportion of BK channels in O2 state
+  properties: [Derivative, Independent]
+  variable: pO2
+  variables: [pC2,pO2,pO3]
+  parameters: [kdO3,kaO2]
+  children:
+    kdO2:
+    kaO3:
+  form: kdO3*pO3 + kaO2*pC2 - (kdO2+kaO3)*pO2
+dpO3: # proportion of BK channels in O3 state
+  properties: [Derivative, Independent]
+  variable: pO3
+  variables: [pO2,pO3]
+  parameters: kdO3
+  children:
+    kaO3:
+  form: kaO3*pO2 - kdO3*pO3
+
+
