@@ -1,0 +1,32 @@
+time_evolution_info: TIME EVOLUTION INFO
+time_evolution_type: TIME EVOLUTION TYPE
+initial_condition_value: INITIAL CONDITION VALUE
+initial_condition_equilibrium: INITIAL CONDITION EQUILIBRIUM
+quantity_label: PARAMETER LABEL
+parameter_field: PARAMETER FIELD
+parameter_type: PARAMETER TYPE
+parameter_group_label: PARAMETER GROUP LABEL
+parameter_subgroup_label: PARAMETER SUBGROUP LABEL
+parameter_subgroup_section: PARAMETER SUBGROUP SECTION
+canvas: CANVAS
+canvas_choice: CANVAS CHOICE
+load_file: LOAD FILE
+save_file: SAVE FILE
+input_filename: FILE INPUT FIELD
+initial_time: INITIAL TIME
+final_time: FINAL TIME
+timestep_count: TIME STEP COUNT
+run_simulation: RUN SIMULATION
+save_simulation: SAVE SIMULATION
+free_parameter_minimum: FREE PARAMETER MINIMUM
+free_parameter_maximum: FREE PARAMETER MAXIMUM
+free_parameter_stepcount: FREE PARAMETER STEPCOUNT
+free_parameter_slider: FREE PARAMETER SLIDER
+toolbar_menu: TOOLBAR MENU
+open_simulation: OPEN SIMULATION
+plot_aesthetics: PLOT AESTHETICS
+analysis: ANALYSIS
+
+
+
+extraneous_key:

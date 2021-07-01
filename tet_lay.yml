@@ -1,0 +1,13 @@
+# each key is tab name under time-evolution tab
+# each list gives variables within tab
+
+
+Hair Bundle: [Xhb, xa, pm, pr, pT]
+Soma: [Vm, Ca, mCa, mK1f, mK1s, mh, mA, hA1, hA2, mDRK, hBKT]
+BK Scheme: [pC0, pC1, pC2, pO2, pO3]
+
+
+
+
+
+

@@ -1,0 +1,38 @@
+# each key gives tab name under parameter tab
+# each subkey gives section within tab
+# each list gives variables displayed within section
+
+Function:
+  Vm: [Vm0, Vmout, Vmin]
+
+
+Hair Bundle:
+  Xhb: [lambdaH, xsp, ksp]
+  xa: [S0, S1, C0, C1, lambdaa, xes, kes]
+  pm: [rm, kam, kdm]
+  pr: [rr, kar, kdr]
+  pT: [dE0, tauT0]
+  kgs: [kgs0, kgs1]
+  IT: [Cahbin, Cahbex, ET, PT]
+  mutual: [gamma, N, d, xc]
+Soma:
+  Temporal: [Cm, Ksomain, Ksomaex, U, xiCa, Cvol, KS]
+Current:
+  IL: [EL, gL]
+  ICa: [ECa, gCa1, tauinfCa, tauVtauCa, VtauCa, dVtauCa, dVCa, VhalfCa, mhmaxCa,  mhminCa, deltaCa, deltatauCa]
+  IBKS: [EBKS, PBKS]
+  IBKT: [EBKT, PBKT, tauinfBKT, tauVtauBKT, VtauBKT, dVtauBKT, dVBKT, VhalfBKT, mhmaxBKT,  mhminBKT, deltaBKT, deltatauBKT]
+  Ih: [Eh, gh1, tauinfh, tauVtauh, Vtauh, dVtauh, dVh, Vhalfh, mhmaxh,  mhminh, deltah, deltatauh]
+  IDRK: [EDRK, PDRK, alphainf, alpha0, dValpha, betainf, beta0, dVbeta, dVDRK, VhalfDRK, mhmaxDRK, mhminDRK, deltaDRK]
+  IA: [VmhA, aA1inf, dVaA1, VhalfaA1,
+    tauinfAlt, tauVtauAlt, VtauAlt, dVtauAlt, tauinfAgt, tauVtauAgt, VtauAgt, dVtauAgt,
+    dVA, VhalfA, mhmaxA, mhminA, deltaA, deltatauA]
+  IA1: [EA1, PA1, tauinfA1, tauVtauA1, VtauA1, dVtauA1, dVA1, VhalfA1, mhmaxA1, mhminA1, deltaA1, deltatauA1]
+  IA2: [EA2, PA2, tauinfA2, tauVtauA2, VtauA2, dVtauA2, dVA2, VhalfA2, mhmaxA2, mhminA2, deltaA2, deltatauA2]
+  IK1: [aK1f]
+  IK1f: [tauinfK1fgt, tauVtauK1fgt, VtauK1fgt, dVtauK1fgt, tauinfK1flt, tauVtauK1flt, VtauK1flt, dVtauK1flt,
+    EK1f, gK1f1, dVK1f, VhalfK1f, mhmaxK1f, mhminK1f, deltaK1f, deltatauK1f]
+  IK1s: [tauinfK1sgt, tauVtauK1sgt, VtauK1sgt, dVtauK1sgt, tauinfK1slt, tauVtauK1slt, VtauK1slt, dVtauK1slt,
+    EK1s, gK1s1, dVK1s, VhalfK1s, mhmaxK1s, mhminK1s, deltaK1s, deltatauK1s]
+BK Scheme: [KC10, KC20, KO20, deltaC1, deltaC2, deltaO2, kdC1, kdC2, kdO3, kaO2, kdO20, dK]
+Physical Constant: [F, qe, R, kB, T, zCa, zK, DCa]
