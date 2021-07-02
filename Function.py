@@ -11,7 +11,7 @@ from scipy import optimize
 from sympy import Expr
 from sympy import Piecewise as spPiecewise
 # noinspection PyUnresolvedReferences
-from sympy import Symbol, exp, pi, solve, symbols, var
+from sympy import Symbol, exp, pi, solve, symbols, var, cosh, ln
 from sympy.core import function
 from sympy.utilities.lambdify import lambdify
 
@@ -109,22 +109,24 @@ class Model:
         else:
             raise RecursiveTypeError(functions, Function)
 
-    def addFunctions(self, functions: Union[Function, List[Function]]) -> None:
+    def addFunctions(self, functions: Union[Function, List[Function]], overwrite: bool = True) -> None:
         """
-        __Purpose__
-            Add Function object(s) to self
-            Set self for Function object(s)
-        __Attributes__
-            include_children: adds children of Function object(s) if set to True
+        Add Function object(s) to model.
+        Set self as model for Function object(s).
 
         :param self: model to add function to
         :param functions: function(s) to add to model
+        :param overwrite: set True to overwrite function if already in model.
+            Set False to raise error for duplicate function name.
         """
         if isinstance(functions, Function):
             if functions not in self.getFunctions():
                 name = functions.getName()
                 if name in self.getFunctionNames():
-                    raise ValueError(f"Function name {name:s} already used in Model instance")
+                    if overwrite:
+                        print(f"Overwriting {name:s}={functions.getForm():} in model")
+                    else:
+                        raise ValueError(f"Function name {name:s} already used in Model instance")
                 if functions.getModel() is not self:
                     functions.setModel(self)
                 self.functions.append(functions)
@@ -1569,8 +1571,6 @@ def FunctionMaster(
             __Inputs__
                 cf. FunctionMaster
             """
-            Function.__init__(self, name, **kwargs)
-
             if Derivative in inheritance:
                 Derivative.__init__(self, **kwargs["Derivative"])
 
@@ -1587,6 +1587,8 @@ def FunctionMaster(
                 NonPiecewise.__init__(self, function)
             else:
                 raise ValueError("Function must inherit either Piecewise of NonPiecewise")
+
+            Function.__init__(self, name, **kwargs)
 
     return FunctionCore(name, function, inheritance, **kwargs)
 
@@ -1755,7 +1757,7 @@ def createFunction(name: str, function: Union[str, List[str]], properties: Tuple
     elif "Independent" in properties:
         inheritance.append(Independent)
     else:
-        raise ValueError("Function must have either 'Dependent' or 'Independent' as property")
+        raise ValueError(f"Function {name:s} must have either 'Dependent' or 'Independent' as property")
 
     if "Piecewise" in properties:
         inheritance.append(Piecewise)
