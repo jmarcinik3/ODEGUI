@@ -1,0 +1,8 @@
+lambdaC: # MET-channel coefficient of friction
+  properties: [Independent]
+  variables: pT
+  parameters: [N,gamma,d,kB,T]
+  children:
+    kgsinf:
+    tauT:
+  form: N * (gamma*kgsinf*d)**2 * pT*(1-pT) * tauT / (kB*T)

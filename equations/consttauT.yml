@@ -1,0 +1,4 @@
+tauT: # MET-channel time constant
+  properties: [Independent]
+  parameters: tauT0
+  form: tauT0

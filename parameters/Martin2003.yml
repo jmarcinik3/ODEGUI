@@ -93,13 +93,16 @@ kar: # association constant for reclosure element
 kdr: # dissociation cosntant for reclosure element
   value: 35e3
   unit: 1/second
-
 Cahbin: # intracellular Ca2+ concentration at hair bundle
   value: 0
   unit: micromolar
 Cahbex: # extracellular Ca2+ concentration at hair bundle
   value: 250
   unit: micromolar
+
+lambdaC:
+  value: 0
+  unit: nanonewton*second/meter
 
 
 

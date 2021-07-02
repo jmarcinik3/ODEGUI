@@ -1,0 +1,41 @@
+CpT: # basis Boltzmann factor for transduction channel
+  properties: [Independent]
+  parameters: [dE0,kB,T]
+  form: exp(dE0/(kB*T))
+dxpT: # characteristic length scale for transduction channel
+  properties: [Independent]
+  variables: pr
+  parameters: [kB,T,d]
+  children:
+    kgsinf:
+  form: kB*T / (kgsinf*d)
+xpT: # characteristic length for transduction channel
+  properties: [Independent]
+  variables: [Xhb,xa]
+  parameters: [gamma,xc,d]
+  form: gamma*Xhb-xa+xc-d/2
+pTinf: # pT equilibrium
+  properties: [Independent]
+  children:
+    CpT:
+    xpT:
+    dxpT:
+  form: 1 / (1+CpT*exp(-xpT/dxpT))
+
+tauT: # MET-channel time constant
+  properties: [Independent]
+  parameters: tauT0
+  children:
+    xpT:
+    dxpT:
+    CpT:
+  form: tauT0 / cosh(xpT/(2*dxpT) - ln(CpT)/2 )
+
+dpT: # MET open-channel probability
+  properties: [Derivative, Independent]
+  variable: pT
+  variables: pT
+  children:
+    pTinf:
+    tauT:
+  form: (pTinf-pT) / tauT

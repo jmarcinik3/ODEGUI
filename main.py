@@ -30,7 +30,7 @@ def main():
     ]
     equation_filenames = [
         os.path.join("equations", filestem + ".yml")
-        for filestem in ["hb-soma_eqs", "hb_eqs", "soma_eqs", "var_funcs"]
+        for filestem in ["Ohms_law", "Martin2003", "Roongthumskul2011", "Barral2018", "soma_eqs", "var_funcs"]
     ]
     time_evolution_layout = "tet_lay.yml"
     parameter_input_layout = "param_lay.yml"

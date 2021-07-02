@@ -676,7 +676,7 @@ class FunctionRow(TabRow):
 
         :param self: :class:`~Layout.MainWindow.FunctionRow` to retrieve label from
         """
-        for filename_temp in ["equations/hb_eqs.yml", "equations/soma_eqs.yml", "equations/hb-soma_eqs.yml"]:
+        for filename_temp in ["equations/Bormuth2014.yml", "equations/soma_eqs.yml", "equations/hb-soma_eqs.yml"]:
             function_info = yaml.load(open(filename_temp, 'r'), Loader=yaml.Loader)
             try:
                 form = function_info[self.getName()]["form"]
