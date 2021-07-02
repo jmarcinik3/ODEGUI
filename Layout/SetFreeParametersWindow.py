@@ -211,8 +211,10 @@ class SetFreeParametersWindowRunner(WindowRunner):
                 if event == "Submit":
                     free_parameter_values = self.getFreeParameterValues(names=free_parameter_names)
                     if len(free_parameter_values) == len(free_parameter_names):
+                        window.close()
                         return event, free_parameter_values
-            window.close()
-            return event, {}
+                else:
+                    window.close()
+                    return event, {}
         elif free_parameter_count == 0:
             return "Submit", {}
