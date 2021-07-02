@@ -11,7 +11,7 @@ from scipy import optimize
 from sympy import Expr
 from sympy import Piecewise as spPiecewise
 # noinspection PyUnresolvedReferences
-from sympy import Symbol, exp, pi, solve, symbols, var, cosh, ln
+from sympy import Symbol, cosh, exp, ln, pi, solve, symbols, var
 from sympy.core import function
 from sympy.utilities.lambdify import lambdify
 
@@ -29,20 +29,15 @@ class Model:
         parameters [dict of metpy.Quantity]: stored parameter values and units
             key [str] is parameter name
             value [metpy.Quantity] contains value and unit
-        include_children [bool]: whether or not to include children of Function objects
-            set True to include function and its children
-            set False to include only given function, not children
     """
 
     def __init__(
             self,
             functions: List[Function] = None,
             parameters: Dict[str, Quantity] = None,
-            include_children: bool = True
     ) -> None:
         self.functions = []
         self.parameters = {}
-        self.include_children = include_children
         if parameters is not None:
             self.addParameters(parameters)
         if functions is not None:
@@ -125,13 +120,13 @@ class Model:
                 if name in self.getFunctionNames():
                     if overwrite:
                         print(f"Overwriting {name:s}={functions.getForm():} in model")
+                        old_index = self.getIndex(names=name)
+                        del self.functions[old_index]
                     else:
                         raise ValueError(f"Function name {name:s} already used in Model instance")
                 if functions.getModel() is not self:
                     functions.setModel(self)
                 self.functions.append(functions)
-            if self.include_children:
-                self.addFunctions(functions.getChildren())
         elif isinstance(functions, list):
             for function in functions:
                 self.addFunctions(function)
@@ -152,19 +147,7 @@ class Model:
         for function_yml in function_ymls:
             file = yaml.load(open(function_yml), Loader=yaml.Loader)
 
-            for name in file.keys():
-                info = file[name]
-                kwargs = getFunctionInfo(info, model=self)
-
-                info_keys = info.keys()
-                if "form" in info_keys:
-                    function = eval(info["form"])
-                elif "pieces" in info_keys:
-                    function = [self.getFunctions(names=piece_name) for piece_name in info["pieces"]]
-                else:
-                    raise ValueError("info from functions_yml file must contain either form or pieces")
-
-                createFunction(name, function, **kwargs)
+            generateFunctionsFromFile(function_yml, model=self)
 
     def loadParametersFromFile(self, parameters_yml: str) -> None:
         """
@@ -749,56 +732,50 @@ class Parent:
             second list index is index of individual argument sent to child function
     """
 
-    def __init__(self, children: Union[Dict[str, Union[Dict[Function], Dict[Symbol, List[Symbol]]]]]) -> None:
-        self.children = []
+    def __init__(self, children: Dict[str, Dict[str, Union[Symbol, List[Symbol]]]]) -> None:
         self.instance_arguments = {}
 
         if children is not None:
             if isinstance(children, Child):
                 children = [children]
-            for name, arguments in children.items():
-                self.addChild(name, arguments)
-        self.setAsParent(self.getChildren())
+            self.addChildren(children)
 
-    def addChild(self, name: str, arguments: Dict[str, Union[Function, List[Symbol]]]) -> None:
-        self.children.append(arguments["function"])
-        self.instance_arguments[name] = {}
-        for specie in arguments.keys():
-            if specie != "function":
-                instance_argument = arguments[specie]
-                if isinstance(instance_argument, Symbol):
-                    instance_argument = [instance_argument]
-                self.instance_arguments[name][specie] = instance_argument
-
-    def setAsParent(self, children: Union[Function, List[Function]]) -> None:
+    def addChildren(self, children: Dict[str, Dict[str, Union[Symbol, List[Symbol]]]]) -> \
+            Dict[str, Dict[str, List[Symbol]]]:
         """
-        __Purpose__
-            Set self as parent to children
-            Set children as children to self
+        Add information to reference children functions of parent.
 
-        :param self: parent to set as parent for child(s)
-        :param children: children to set new parent for
+        :param self: :class:`~Function.Parent` to add info into
+        :param children: dictionary of information to reference children.
+            Key is name of child.
+            Value is dictionary to pass into :paramref:`~Function.Parent.addChild.arguments`
+        :returns: Dictionary of information to reference children.
+            Key is name of child.
+            Value is dictionary of information output from :meth:`~Function.Parent.addChild`
         """
-        if isinstance(children, Function):
-            children.addParent(self)
-        elif isinstance(children, list):
-            for child in children:
-                self.setAsParent(child)
-        else:
-            raise RecursiveTypeError(children, Function)
+        return {name: self.addChild(name, arguments) for name, arguments in children.items()}
 
-    def getChildIndex(self, names: Union[str, List[str]]) -> Union[int, List[int]]:
+    def addChild(self, name: str, arguments: Dict[str, List[Symbol]]) -> Dict[str, List[Symbol]]:
         """
-        __Purpose__
-            Get indicies of children functions
+        Add information to reference child function of parent.
 
-        :param self: parent to retrieve child index(es) from
-        :param names: name(s) of child(s) to retrieve from parent
+        :param self: :class:`~Function.Parent` to add info into
+        :param name: name of child to add into parent
+        :param arguments: dictionary of information to reference child.
+            Key is species of instance argument.
+            Value is symbol(s) for this species of argument.
+        :returns: Dictionary of information to reference child.
+            Key is species of instance argument from parent.
+            Value is symbol(s) for this species of argument.
         """
-        if isinstance(names, (str, list)):
-            return getIndicies(names, self.getChildrenNames(), str)
-        else:
-            raise RecursiveTypeError(names)
+        new_child = {
+            specie: [instance_argument]
+            if isinstance((instance_argument := arguments[specie]), Symbol)
+            else instance_argument
+            for specie in arguments.keys()
+        }
+        self.instance_arguments[name] = new_child
+        return new_child
 
     def getChildren(self, names: Union[str, List[str]] = None) -> Union[Function, List[Function]]:
         """
@@ -811,7 +788,8 @@ class Parent:
         :param names: name(s) of child(s) to retrieve from parent
         """
         if isinstance(names, str):
-            return self.children[self.getChildIndex(names)]
+            children = self.getModel().getFunctions(names=names)
+            return children
         elif isinstance(names, list):
             return [self.getChildren(names=name) for name in names]
         elif names is None:
@@ -819,7 +797,7 @@ class Parent:
         else:
             raise RecursiveTypeError(names)
 
-    def getChildrenNames(self, functions: Union[Function, List[Function]] = None) -> Union[str, List[str]]:
+    def getChildrenNames(self) -> Union[str, List[str]]:
         """
         __Purpose__
             Get names of stored parents in order added
@@ -830,14 +808,7 @@ class Parent:
         :param self: parent to retrieve child name(s) from
         :param functions: function(s) to retrieve name(s) from parent
         """
-        if isinstance(functions, Function):
-            return functions.getName()
-        elif isinstance(functions, list):
-            return [self.getChildrenNames(functions=function) for function in functions]
-        elif functions is None:
-            return self.getChildrenNames(functions=self.children)
-        else:
-            raise RecursiveTypeError(functions, Function)
+        return list(self.instance_arguments.keys())
 
     def getInstanceArgumentSpecies(self, name: str) -> List[str]:
         """
@@ -877,38 +848,7 @@ class Child:
     """
 
     def __init__(self) -> None:
-        self.parents = []
-
-    def addParent(self, parents: Union[Function, List[Function]]) -> None:
-        """
-        __Purpose__
-            Add function(s) as parent(s) to self
-        __Recursion Base__
-            Add single function as parent to self: parents [type(self)]
-
-        :param self: child to add parent(s) to
-        :param parents: parent(s) to add to child
-        """
-        if isinstance(parents, Function) and parents not in self.getParents():
-            self.parents.append(parents)
-        elif isinstance(parents, list):
-            for parent in parents:
-                self.addParent(parent)
-        else:
-            raise RecursiveTypeError(parents, Function)
-
-    def getParentIndex(self, names: Union[str, List[str]]) -> Union[int, List[int]]:
-        """
-        __Purpose__
-            Get indicies of parents functions
-
-        :param self: child to retrive parent index(es) from
-        :param names: name(s) of parent(s) to retrieve index(es) from child
-        """
-        if isinstance(names, (str, list)):
-            return getIndicies(names, self.getParentNames(), str)
-        else:
-            raise RecursiveTypeError(names)
+        pass
 
     def getParents(self, names: Union[str, List[str]] = None) -> Union[Function, List[Function]]:
         """
@@ -921,7 +861,8 @@ class Child:
         :param names: name(s) of parent(s) to retrieve from child
         """
         if isinstance(names, str):
-            return self.parents[self.getParentIndex(names)]
+            parents = self.getModel().getFunctions(names=names)
+            return parents
         elif isinstance(names, list):
             return [self.getParents(names=name) for name in names]
         elif names is None:
@@ -929,7 +870,7 @@ class Child:
         else:
             raise RecursiveTypeError(names)
 
-    def getParentNames(self, functions: Union[Function, List[Function]] = None) -> Union[str, List[str]]:
+    def getParentNames(self) -> Union[str, List[str]]:
         """
         __Purpose__
             Get names of stored parents in order added
@@ -940,14 +881,13 @@ class Child:
         :param self: child to retrieve parent name(s) from
         :param functions: parent(s) to retrieve name(s) from child
         """
-        if isinstance(functions, Function):
-            return functions.getName()
-        elif isinstance(functions, list):
-            return [self.getParentNames(functions=function) for function in functions]
-        elif functions is None:
-            return self.getParentNames(functions=self.parents)
-        else:
-            raise RecursiveTypeError(functions, Function)
+        name = self.getName()
+        parents = [
+            function.getName()
+            for function in self.getModel().getFunctions()
+            if name in function.getChildrenNames()
+        ]
+        return parents
 
 
 class Function(Child, Parent):
@@ -966,7 +906,7 @@ class Function(Child, Parent):
             name: str,
             variables: Union[Symbol, List[Symbol]] = None,
             parameters: Union[Symbol, List[Symbol]] = None,
-            children: Union[Child, List[Child]] = None,
+            children: Union[str, List[str]] = None,
             model: Model = None,
             **kwargs
     ) -> None:
@@ -980,7 +920,7 @@ class Function(Child, Parent):
         Parent.__init__(self, children)
         Child.__init__(self)
 
-        self.model = Model()
+        self.model = None
         self.setModel(model)
 
     def getName(self) -> str:
@@ -1685,7 +1625,6 @@ def getFunctionInfo(info: Dict[str, Union[str, List[str], Dict[str, Union[str, L
                 keys [str] are name of child function
                 values contain information about child function in relation to parent
                     keys: values
-                        "function": Function object of child function from model
                         argument_type [str]: arguments [sympy.Symbol, list of sympy.Symbol] of given argument_type to input to child function
         """
         children_info = info["children"]
@@ -1702,7 +1641,6 @@ def getFunctionInfo(info: Dict[str, Union[str, List[str], Dict[str, Union[str, L
                 }
             elif child_info is None:
                 children_dict[child_name] = {}
-            children_dict[child_name]["function"] = model.getFunctions(child_name)
         return children_dict
 
     kwargs = {}
@@ -1734,19 +1672,12 @@ def getFunctionInfo(info: Dict[str, Union[str, List[str], Dict[str, Union[str, L
     return kwargs
 
 
-def createFunction(name: str, function: Union[str, List[str]], properties: Tuple[str] = (), **kwargs) -> None:
-    """
-    __Purpose__
-        Create Function object with desired...
-            parent-child associations
-            variable-parameter distinctions
-            properties
+def generateFunctionsFromFile(filename: str, **kwargs) -> List[Function]:
+    file = yaml.load(open(filename), Loader=yaml.Loader)
+    return [generateFunction(name, file, **kwargs) for name in file.keys()]
 
-    :param name: name of new function
-    :param function: expression (non-piecewise) or collection of function-object pieces (piecewise) for new function object
-    :param properties: collection of properties to give new function
-    :param kwargs: see FunctionCore
-    """
+
+def getInheritance(properties: List[str], name: str = '') -> List[Type[Function]]:
     inheritance = []
 
     if "Derivative" in properties:
@@ -1764,7 +1695,36 @@ def createFunction(name: str, function: Union[str, List[str]], properties: Tuple
     elif "Piecewise" not in properties:
         inheritance.append(NonPiecewise)
 
-    FunctionMaster(name, function, inheritance=tuple(inheritance), **kwargs)
+    return inheritance
+
+
+def generateFunction(name: str, file: Dict[str, dict], model: Model = None) -> Function:
+    """
+    __Purpose__
+        Create Function object with desired...
+            parent-child associations
+            variable-parameter distinctions
+            properties
+
+    :param name: name of new function
+    :param function: expression (non-piecewise) or collection of function-object pieces (piecewise) for new function object
+    :param properties: collection of properties to give new function
+    :param kwargs: see FunctionCore
+    """
+    info = file[name]
+    kwargs = getFunctionInfo(info, model=model)
+
+    info_keys = info.keys()
+    if "form" in info_keys:
+        form = eval(info["form"])
+    elif "pieces" in info_keys:
+        form = [model.getFunctions(names=piece_name) for piece_name in info["pieces"]]
+    else:
+        raise ValueError("info from functions_yml file must contain either form or pieces")
+
+    inheritance = getInheritance(kwargs["properties"])
+
+    return FunctionMaster(name, form, inheritance=tuple(inheritance), **kwargs)
 
 
 def createModel(function_ymls: str, parameters_yml: str) -> Model:
