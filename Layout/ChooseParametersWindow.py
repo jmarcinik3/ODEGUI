@@ -50,8 +50,13 @@ class ChooseParameterRow(Row):
 
 
 class ChooseParametersWindow(Window):
-    def __init__(self, name: str, runner: ChooseParametersWindowRunner, quantities: Dict[str, Quantity] = None,
-                 filename: str = ''):
+    def __init__(
+            self,
+            name: str,
+            runner: ChooseParametersWindowRunner,
+            quantities: Dict[str, Quantity] = None,
+            filename: str = ''
+    ):
         dimensions = {
             "window": (None, None)  # dim
         }
@@ -67,7 +72,8 @@ class ChooseParametersWindow(Window):
         self.quantities[name] = quantity
 
     def addQuantities(self, quantities: Dict[str, Quantity]) -> None:
-        for name, quantity in quantities.items(): self.addQuantity(name, quantity)
+        for name, quantity in quantities.items():
+            self.addQuantity(name, quantity)
 
     def getQuantities(self) -> Dict[str, Quantity]:
         return self.quantities
@@ -82,7 +88,8 @@ class ChooseParametersWindow(Window):
     def getHeaderRow(self) -> Row:
         filename = basename(self.getFilename())
         text = "Choose which parameters to overwrite"
-        if filename != '': text += f" ({filename:s})"
+        if filename != '':
+            text += f" ({filename:s})"
         kwargs = {
             "text": text
         }

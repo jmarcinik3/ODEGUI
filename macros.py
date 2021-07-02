@@ -20,8 +20,9 @@ def unique(nonunique: list) -> list:
     return unique_list
 
 
-def getIndicies(elements: Union[Any, List[Any]], element_list: list, element_class: type = None) -> Union[
-    int, List[int]]:
+def getIndicies(
+        elements: Union[Any, List[Any]], element_list: list, element_class: type = None
+) -> Union[int, List[int]]:
     """
     Get indicies of specified element(s) in list.
     

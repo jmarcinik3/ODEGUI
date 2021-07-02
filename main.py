@@ -26,7 +26,7 @@ def main():
 
     parameter_filenames = [
         os.path.join("parameters", filestem + ".yml")
-        for filestem in ["parameters", "Martin2003_parameters", "Roongthumskull2011-7B_parameters", "func_params"]
+        for filestem in ["parameters", "Martin2003", "Roongthumskull2011-7B", "func_params"]
     ]
     equation_filenames = [
         os.path.join("equations", filestem + ".yml")
@@ -68,10 +68,13 @@ def tex2png(output_folder: str = "tex", tex_filename: str = "var2tex.yml", overw
     }
     create_png = partial(preview, **kwargs)
 
-    if not isdir(output_folder): mkdir(output_folder)
+    if not isdir(output_folder):
+        mkdir(output_folder)
     for key in YML.readVar2Tex(tex_filename):
         filepath = f"{output_folder:s}/{key:s}.png"
-        if not isfile(filepath) or overwrite: create_png(tex_yml[key], filename=filepath)
+        if not isfile(filepath) or overwrite:
+            create_png(tex_yml[key], filename=filepath)
 
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()

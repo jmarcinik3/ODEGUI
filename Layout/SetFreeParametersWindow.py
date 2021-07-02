@@ -73,8 +73,9 @@ class SetParameterRow(Row):
 
 
 class SetFreeParametersWindow(Window):
-    def __init__(self, name: str, runner: SetFreeParametersWindowRunner,
-                 free_parameter_quantities: Dict[str, Quantity]) -> None:
+    def __init__(
+            self, name: str, runner: SetFreeParametersWindowRunner, free_parameter_quantities: Dict[str, Quantity]
+    ) -> None:
         dimensions = {
             "window": (600, 700),
         }
@@ -182,7 +183,8 @@ class SetFreeParametersWindowRunner(WindowRunner):
                 except ValueError:
                     sg.PopupError(f"Input {info:s} for {names:s}")
                     break
-            if len(values) == len(infos): return values
+            if len(values) == len(infos):
+                return values
         elif isinstance(names, list):
             values = {}
             for name in names:
@@ -208,7 +210,8 @@ class SetFreeParametersWindowRunner(WindowRunner):
                 event, self.values = window.read()
                 if event == "Submit":
                     free_parameter_values = self.getFreeParameterValues(names=free_parameter_names)
-                    if len(free_parameter_values) == len(free_parameter_names): return event, free_parameter_values
+                    if len(free_parameter_values) == len(free_parameter_names):
+                        return event, free_parameter_values
             window.close()
             return event, {}
         elif free_parameter_count == 0:

@@ -7,15 +7,17 @@ from numpy import ndarray
 from scipy.integrate import odeint
 from sympy.core import function
 
+
 def RK4step(derivative, y0, t0, dt):
     k1 = np.array(derivative(y0, t0))
     k2 = np.array(derivative(y0 + k1 * dt / 2, t0 + dt / 2))
     k3 = np.array(derivative(y0 + k2 * dt / 2, t0 + dt / 2))
     k4 = np.array(derivative(y0 + k3 * dt, t0 + dt))
-    
+
     dy = dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
     # print(k1,k2,k3,k4,dy)
     return y0 + dy
+
 
 def ODEstep(ydot, y0, t):
     """
@@ -30,6 +32,7 @@ def ODEstep(ydot, y0, t):
     """
     ynext = odeint(ydot, y0, t)[1]
     return ynext
+
 
 def solveODE(ydot: function, y0: ndarray, t: ndarray) -> Tuple[ndarray, ndarray]:
     """
@@ -46,6 +49,7 @@ def solveODE(ydot: function, y0: ndarray, t: ndarray) -> Tuple[ndarray, ndarray]
     y: ndarray = odeint(ydot, y0, t, tfirst=True)
     return t, y
 
+
 def formatResultsAsDictionary(t: ndarray, y: ndarray, names: List[str]) -> Dict[str, ndarray]:
     """
     Reformat results array from simulation as dictionary.
@@ -60,7 +64,8 @@ def formatResultsAsDictionary(t: ndarray, y: ndarray, names: List[str]) -> Dict[
         Time steps are stored at key 't'.
     """
     name_count = len(names)
-    if len(y[0]) != name_count: raise ValueError("y and names must have equal length")
+    if len(y[0]) != name_count:
+        raise ValueError("y and names must have equal length")
     results = dict(zip(names, y.T))
     results['t'] = t
     return results

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Optional, TYPE_CHECKING, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
@@ -13,8 +13,7 @@ import YML
 from CustomErrors import RecursiveTypeError
 from Function import Independent, Model
 from Layout.ChooseParametersWindow import ChooseParametersWindowRunner
-from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabRow, TabbedWindow, WindowRunner, \
-    generateCollapsableSection
+from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabRow, TabbedWindow, WindowRunner, generateCollapsableSection
 from Layout.SetFreeParametersWindow import SetFreeParametersWindowRunner
 from Layout.SimulationWindow import SimulationWindowRunner
 from macros import formatQuantity, getTexImage
@@ -159,8 +158,9 @@ class TimeEvolutionTab(Tab):
         self.variable_rows = []
         self.addVariableRows(variable_names)
 
-    def addVariableRows(self, names: Union[str, List[str]]) -> Union[
-        TimeEvolutionVariableRow, List[TimeEvolutionVariableRow]]:
+    def addVariableRows(
+            self, names: Union[str, List[str]]
+    ) -> Union[TimeEvolutionVariableRow, List[TimeEvolutionVariableRow]]:
         """
         Add rows corresponding to variable names.
         
@@ -308,8 +308,9 @@ class ParameterRow(TabRow):
         #. Combobox to choose parameter type
     """
 
-    def __init__(self, name: str, section: ParameterSection,
-                 parameter_types: Tuple[str] = ("Constant", "Free")) -> None:
+    def __init__(
+            self, name: str, section: ParameterSection, parameter_types: Tuple[str] = ("Constant", "Free")
+    ) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.ParameterRow`.
 
@@ -400,9 +401,7 @@ class ParameterRow(TabRow):
         """
         kwargs = {
             "default_text": '',
-            "tooltip": "If 'Constant': enter new parameter value, then click button to update. " +
-                       "If 'Sweep': this input field will be ignored." +
-                       "Displayed units are preserved",
+            "tooltip": "If 'Constant': enter new parameter value, then click button to update. " + "If 'Sweep': this input field will be ignored." + "Displayed units are preserved",
             "size": self.getDimensions(name="parameter_value_input_field"),
             "key": self.getKey("parameter_field", self.getName())
         }
@@ -560,8 +559,12 @@ class ParameterTab(Tab):
         super().__init__(name, window)
 
         self.sections = []
-        if isinstance(blueprint, list): blueprint = {name: blueprint}
-        for section_name, section_parameters in blueprint.items(): self.addSection(section_name, section_parameters)
+        if isinstance(blueprint, list):
+            blueprint = {
+                name: blueprint
+            }
+        for section_name, section_parameters in blueprint.items():
+            self.addSection(section_name, section_parameters)
 
     def addSection(self, name: str, parameter_names: List[str]) -> ParameterSection:
         """
@@ -592,7 +595,8 @@ class ParameterTab(Tab):
         """
         layout = [[]]
         section_layouts = [section.getLayout() for section in self.getSections()]
-        for section_layout in section_layouts: layout += section_layout
+        for section_layout in section_layouts:
+            layout += section_layout
         kwargs = {
             "layout": layout,
             "size": self.getDimensions(name="parameter_tab"),
@@ -650,10 +654,7 @@ class FunctionRow(TabRow):
         window_object: MainWindow = self.getWindowObject()
         window_object.addFunctionNames(name)
 
-        elements = [
-            self.getRowLabel(),
-            self.getFormLabel()
-        ]
+        elements = [self.getRowLabel(), self.getFormLabel()]
         # if "Equilibrium" in self.getTimeEvolutionTypes(): elements.append(self.getCheckbox())
         self.addElements(elements)
 
@@ -739,10 +740,7 @@ class FunctionTab(Tab):
         """
         row = Row(window=self.getWindowObject())
         texts = ["Function", "Form"]
-        dimension_keys = [
-            f"function_header_row_{string:s}"
-            for string in ["function_label", "form_label"]
-        ]
+        dimension_keys = [f"function_header_row_{string:s}" for string in ["function_label", "form_label"]]
         add_element = row.addElements
         for index in range(len(texts)):
             kwargs = {
@@ -819,36 +817,48 @@ class MainWindow(TabbedWindow):
             "window": YML.getDimensions(["main_window", "window"]),
             "time_evolution_tab": YML.getDimensions(["main_window", "time_evolution_tab", "tab"]),
             "evolution_type_text": YML.getDimensions(
-                ["main_window", "time_evolution_tab", "header_row", "evolution_type_text"]),
+                ["main_window", "time_evolution_tab", "header_row", "evolution_type_text"]
+            ),
             "variable_text": YML.getDimensions(["main_window", "time_evolution_tab", "header_row", "variable_text"]),
             "initial_condition_text": YML.getDimensions(
-                ["main_window", "time_evolution_tab", "header_row", "initial_condition_text"]),
+                ["main_window", "time_evolution_tab", "header_row", "initial_condition_text"]
+            ),
             "evolution_type_combobox": YML.getDimensions(
-                ["main_window", "time_evolution_tab", "variable_row", "evolution_type_combobox"]),
+                ["main_window", "time_evolution_tab", "variable_row", "evolution_type_combobox"]
+            ),
             "variable_label": YML.getDimensions(
-                ["main_window", "time_evolution_tab", "variable_row", "variable_label"]),
+                ["main_window", "time_evolution_tab", "variable_row", "variable_label"]
+            ),
             "initial_condition_input_field": YML.getDimensions(
-                ["main_window", "time_evolution_tab", "variable_row", "initial_condition_input_field"]),
+                ["main_window", "time_evolution_tab", "variable_row", "initial_condition_input_field"]
+            ),
             "initial_equilibrium_checkbox": YML.getDimensions(
-                ["main_window", "time_evolution_tab", "variable_row", "initial_equilibrium_checkbox"]),
+                ["main_window", "time_evolution_tab", "variable_row", "initial_equilibrium_checkbox"]
+            ),
             "parameter_tab": YML.getDimensions(["main_window", "parameter_tab", "tab"]),
             "parameter_section": YML.getDimensions(["main_window", "parameter_tab", "parameter_section"]),
             "parameter_header_label": YML.getDimensions(
-                ["main_window", "parameter_tab", "header_row", "section_label"]),
+                ["main_window", "parameter_tab", "header_row", "section_label"]
+            ),
             "parameter_label": YML.getDimensions(["main_window", "parameter_tab", "parameter_row", "parameter_label"]),
             "parameter_value_label": YML.getDimensions(
-                ["main_window", "parameter_tab", "parameter_row", "parameter_value_label"]),
+                ["main_window", "parameter_tab", "parameter_row", "parameter_value_label"]
+            ),
             "parameter_value_input_field": YML.getDimensions(
-                ["main_window", "parameter_tab", "parameter_row", "parameter_value_input_field"]),
+                ["main_window", "parameter_tab", "parameter_row", "parameter_value_input_field"]
+            ),
             "parameter_type_combobox": YML.getDimensions(
-                ["main_window", "parameter_tab", "parameter_row", "parameter_type_combobox"]),
+                ["main_window", "parameter_tab", "parameter_row", "parameter_type_combobox"]
+            ),
             "function_tab": YML.getDimensions(["main_window", "function_tab", "tab"]),
             "function_label": YML.getDimensions(["main_window", "function_tab", "function_row", "function_label"]),
             "form_label": YML.getDimensions(["main_window", "function_tab", "function_row", "form_label"]),
             "function_header_row_function_label": YML.getDimensions(
-                ["main_window", "function_tab", "header_row", "function_label"]),
+                ["main_window", "function_tab", "header_row", "function_label"]
+            ),
             "function_header_row_form_label": YML.getDimensions(
-                ["main_window", "function_tab", "header_row", "form_label"])
+                ["main_window", "function_tab", "header_row", "form_label"]
+            )
         }
         super().__init__(name, runner, dimensions=dimensions)
 
@@ -935,17 +945,29 @@ class MainWindow(TabbedWindow):
         :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve menu from
         """
         menu_definition = [
-            ["Import",
-             ["Parameters::import", "Time-Evolution Types::import"]
-             ],
-            ["Set",
-             ["Parameter Types to...",
-              ["Constant::set_parameter_types_to", "Free::set_parameter_types_to"],
-              "Time-Evolution Types to...",
-              ["Temporal::set_time_evolution_types_to", "Equilibrium::set_time_evolution_types_to",
-               "Constant::set_time_evolution_types_to", "Function::set_time_evolution_types_to"]
-              ]
-             ]
+            [
+                "Import",
+                [
+                    "Parameters::import",
+                    "Time-Evolution Types::import"
+                ]
+            ], [
+                "Set",
+                [
+                    "Parameter Types to...",
+                    [
+                        "Constant::set_parameter_types_to",
+                        "Free::set_parameter_types_to"
+                    ],
+                    "Time-Evolution Types to...",
+                    [
+                        "Temporal::set_time_evolution_types_to",
+                        "Equilibrium::set_time_evolution_types_to",
+                        "Constant::set_time_evolution_types_to",
+                        "Function::set_time_evolution_types_to"
+                    ]
+                ]
+            ]
         ]
         kwargs = {
             "menu_definition": menu_definition,
@@ -1020,12 +1042,15 @@ class MainWindowRunner(WindowRunner):
         Value is quantity containing value and unit for parameter.
     """
 
-    def __init__(self, name: str,
-                 parameter_filenames: Union[str, List[str]],
-                 function_filenames: Union[str, List[str]],
-                 time_evolution_filename: str,
-                 parameter_input_filename: str,
-                 function_filename: str) -> None:
+    def __init__(
+            self,
+            name: str,
+            parameter_filenames: Union[str, List[str]],
+            function_filenames: Union[str, List[str]],
+            time_evolution_filename: str,
+            parameter_input_filename: str,
+            function_filename: str
+    ) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.MainWindowRunner`.
         
@@ -1051,7 +1076,8 @@ class MainWindowRunner(WindowRunner):
         while True:
             event, self.values = window.read()
 
-            if event == sg.WIN_CLOSED or event == 'Exit': break
+            if event == sg.WIN_CLOSED or event == 'Exit':
+                break
             psl_pre = self.getPrefix("parameter_subgroup_label")
             tet_pre = self.getPrefix("time_evolution_type")
             ice_pre = self.getPrefix("initial_condition_equilibrium")
@@ -1101,7 +1127,8 @@ class MainWindowRunner(WindowRunner):
             for parameter_name in self.getParameterNames():
                 combobox_key = self.getKey("parameter_type", parameter_name)
                 parameter_type = self.getValue(combobox_key)
-                if parameter_type == species: filtered_parameter_names.append(parameter_name)
+                if parameter_type == species:
+                    filtered_parameter_names.append(parameter_name)
             return filtered_parameter_names
         elif isinstance(species, list):
             filtered_parameter_names = []
@@ -1157,7 +1184,8 @@ class MainWindowRunner(WindowRunner):
         """
         elements = self.getElements(self.getKeyList(prefix))
         for element in elements:
-            if value in vars(element)["Values"]: element.update(value)
+            if value in vars(element)["Values"]:
+                element.update(value)
 
     def getInitialConditions(self, names: Union[str, List[str]] = None) -> Union[float, ndarray, str]:
         """
@@ -1176,7 +1204,8 @@ class MainWindowRunner(WindowRunner):
             time_evolution_type = self.getValue(self.getKey("time_evolution_type", names))
             is_equilibrium = time_evolution_type == "Equilibrium"
             is_initial_equilibrium = self.getValue(
-                self.getKey("initial_condition_equilibrium", names)) or is_equilibrium
+                self.getKey("initial_condition_equilibrium", names)
+            ) or is_equilibrium
 
             if is_initial_equilibrium:
                 return "Equilibrium"
@@ -1227,7 +1256,8 @@ class MainWindowRunner(WindowRunner):
         """
         for variable_name in self.getVariableNames():
             element_key = self.getKey(prefix, variable_name)
-            if key == element_key: return variable_name
+            if key == element_key:
+                return variable_name
         return None
 
     def changeTimeEvolution(self, name: str) -> None:
@@ -1264,8 +1294,9 @@ class MainWindowRunner(WindowRunner):
         else:
             raise TypeError("function_ymls must be of type str or list")
 
-    def getParameters(self, names: Union[str, List[str]] = None,
-                      form: str = "quantity") -> Optional[Union[Quantity, Dict[str, Quantity]]]:
+    def getParameters(
+            self, names: Union[str, List[str]] = None, form: str = "quantity"
+    ) -> Optional[Union[Quantity, Dict[str, Quantity]]]:
         """
         Get parameter(s), including value and unit
         
@@ -1289,7 +1320,8 @@ class MainWindowRunner(WindowRunner):
             parameters = self.parameters
             if names in parameters.keys():
                 quantity = self.parameters[names]
-                if "base" in form: quantity = quantity.to_base_units()
+                if "base" in form:
+                    quantity = quantity.to_base_units()
                 if "quantity" in form:
                     return quantity
                 elif "value" in form:
@@ -1365,7 +1397,8 @@ class MainWindowRunner(WindowRunner):
                 new_quantity = new_value * old_unit
                 self.setParameters(names, new_quantity)
         elif isinstance(names, list):
-            for name in names: self.updateParameters(names=name)
+            for name in names:
+                self.updateParameters(names=name)
         elif names is None:
             self.updateParameters(names=self.getParameterNames())
         else:
@@ -1387,7 +1420,8 @@ class MainWindowRunner(WindowRunner):
             new_label = formatQuantity(self.getParameters(names=names))
             label_element.update(new_label)
         elif isinstance(names, list):
-            for name in names: self.updateParameterLabels(names=name)
+            for name in names:
+                self.updateParameterLabels(names=name)
         elif names is None:
             self.updateParameterLabels(names=self.getParameterFields())
         else:
@@ -1403,12 +1437,7 @@ class MainWindowRunner(WindowRunner):
             Set False to automatically load all parameters from file(s)
         """
         if filenames is None:
-            file_types = (
-                ("YML", "*.yml"),
-                ("YAML", "*.yaml"),
-                ("Plain Text", "*.txt"),
-                ("ALL Files", "*.*"),
-            )
+            file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
             kwargs = {
                 "message": "Enter Filename to Load",
                 "title": "Load Parameters",
@@ -1436,7 +1465,8 @@ class MainWindowRunner(WindowRunner):
             parameter_names = self.getParameterNames()
 
         for name, quantity in load_quantities.items():
-            if name in parameter_names: self.setParameters(name, quantity)
+            if name in parameter_names:
+                self.setParameters(name, quantity)
 
     def getFreeParameterValues(self) -> Tuple[str, Dict[str, Tuple[float, float, int, Quantity]]]:
         """
@@ -1456,13 +1486,9 @@ class MainWindowRunner(WindowRunner):
         event, free_parameter_values = set_free_parameters_window.runWindow()
         print(event, free_parameter_values)
         if event == "Submit":
-            free_parameter_values = {
-                free_parameter_name: tuple([
-                    *free_parameter_values[free_parameter_name],
-                    free_parameter_quantities[free_parameter_name]
-                ])
-                for free_parameter_name in free_parameter_names
-            }
+            free_parameter_values = {free_parameter_name: tuple(
+                [*free_parameter_values[free_parameter_name], free_parameter_quantities[free_parameter_name]]
+            ) for free_parameter_name in free_parameter_names}
         return event, free_parameter_values
 
     def openSimulationWindow(self) -> None:

@@ -48,7 +48,8 @@ class KeyList:
             Set False to return prefix without separator.
         """
         prefix = self.prefixes[prefix]
-        if with_separator: prefix += self.getSeparator()
+        if with_separator:
+            prefix += self.getSeparator()
         return prefix
 
     def getPrefixes(self):
@@ -118,5 +119,6 @@ class KeyList:
             Set False otherwise.
         """
         key = self.generateKey(prefix, tag)
-        if add_key and key not in self.getKeyList(): self.addKey(prefix, tag)
+        if add_key and key not in self.getKeyList():
+            self.addKey(prefix, tag)
         return key

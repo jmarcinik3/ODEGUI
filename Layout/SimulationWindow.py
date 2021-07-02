@@ -50,15 +50,21 @@ def drawFigure(canvas: tk.Canvas, figure: Figure) -> FigureCanvasTkAgg:
     return figure_canvas
 
 
-def getFigure(x: ndarray, y: ndarray, c: ndarray = None,
-              x_scale_factor: float = 1, y_scale_factor: float = 1, c_scale_factor: float = 1,
-              plot_type: str = "xy",
-              segment_length: int = None,
-              clim: Tuple[Optional[float], Optional[float]] = (None, None),
-              autoscalec_on: bool = True,
-              colorbar_kwargs: Dict[str, Any] = None,
-              axes_kwargs: Dict[str, Any] = None,
-              inset_parameters: Dict[str, float] = None) -> Figure:
+def getFigure(
+        x: ndarray,
+        y: ndarray,
+        c: ndarray = None,
+        x_scale_factor: float = 1,
+        y_scale_factor: float = 1,
+        c_scale_factor: float = 1,
+        plot_type: str = "xy",
+        segment_length: int = None,
+        clim: Tuple[Optional[float], Optional[float]] = (None, None),
+        autoscalec_on: bool = True,
+        colorbar_kwargs: Dict[str, Any] = None,
+        axes_kwargs: Dict[str, Any] = None,
+        inset_parameters: Dict[str, float] = None
+) -> Figure:
     """
     Get matplotlib figure from data.
 
@@ -92,14 +98,10 @@ def getFigure(x: ndarray, y: ndarray, c: ndarray = None,
     figure, axes = plt.subplots()
     axes.set(**axes_kwargs)
     if inset_parameters is not None:
-        free_parameter_ranges = {
-            name: inset_parameters[name]["range"]
-            for name in inset_parameters.keys()
-        }
+        free_parameter_ranges = {name: inset_parameters[name]["range"] for name in inset_parameters.keys()}
         inset_axes, inset_axes_plot = getParameterInsetAxes(axes, free_parameter_ranges)
         free_parameter_values = tuple(
-            inset_parameters[name]["value"]
-            for name in inset_parameters.keys()
+            inset_parameters[name]["value"] for name in inset_parameters.keys()
         )
         inset_axes_plot(*free_parameter_values)
 
@@ -110,7 +112,8 @@ def getFigure(x: ndarray, y: ndarray, c: ndarray = None,
     if plot_type == "xy":
         axes.plot(x_scaled, y_scaled)
     elif plot_type in ["xyc", "xyt"]:
-        if colorbar_kwargs is None: colorbar_kwargs = {}
+        if colorbar_kwargs is None:
+            colorbar_kwargs = {}
         c_scaled = c / c_scale_factor
         kwargs = {
             "vmin": c_scaled.min() if clim[0] is None or autoscalec_on else clim[0] / c_scale_factor,
@@ -121,10 +124,13 @@ def getFigure(x: ndarray, y: ndarray, c: ndarray = None,
         cmap = cm.ScalarMappable(norm=norm, cmap=cm.jet)
         figure.colorbar(cmap, **colorbar_kwargs)
         if plot_type == "xyc":
-            for index in range(x_length): axes.plot(x_scaled[index], y_scaled[index],
-                                                    color=cmap.to_rgba(c_scaled[index]))
+            for index in range(x_length):
+                axes.plot(
+                    x_scaled[index], y_scaled[index], color=cmap.to_rgba(c_scaled[index])
+                )
         elif plot_type == "xyt":
-            if segment_length is None: segment_length = round(x_length / 250)
+            if segment_length is None:
+                segment_length = round(x_length / 250)
             segment_indicies = range(0, x_length - segment_length, segment_length)
             segment_colors = cmap.to_rgba(c_scaled)
             for index in segment_indicies:
@@ -141,18 +147,22 @@ def clearFigure(figure_canvas: FigureCanvasTkAgg) -> None:
 
     :param figure_canvas: figure-canvas aggregate to clear canvas on
     """
-    if isinstance(figure_canvas, FigureCanvasTkAgg): figure_canvas.get_tk_widget().forget()
+    if isinstance(figure_canvas, FigureCanvasTkAgg):
+        figure_canvas.get_tk_widget().forget()
     plt.close("all")
 
 
-def getParameterInsetAxes(axes: Axes, parameter_values: Dict[str, Tuple[float, float]],
-                          color: str = "black",
-                          marker: str = 'o',
-                          markersize: float = 2,
-                          linestyle: str = '',
-                          clip_on: bool = False,
-                          labelpad: int = 2,
-                          fontsize: int = 8) -> Tuple[Axes, partial]:
+def getParameterInsetAxes(
+        axes: Axes,
+        parameter_values: Dict[str, Tuple[float, float]],
+        color: str = "black",
+        marker: str = 'o',
+        markersize: float = 2,
+        linestyle: str = '',
+        clip_on: bool = False,
+        labelpad: int = 2,
+        fontsize: int = 8
+) -> Tuple[Axes, partial]:
     """
     Get inset axes object and partially-completed plot for inset axes.
     This inset plot displays values for up to two free parameters during a parameter sweep.
@@ -403,8 +413,9 @@ class ParameterSlider(Element):
         stepcount_label = self.getStepCountLabel()
         slider = self.getSlider()
 
-        row = Row(window=self.getWindowObject(),
-                  elements=[name_label, minimum_label, slider, maximum_label, stepcount_label])
+        row = Row(
+            window=self.getWindowObject(), elements=[name_label, minimum_label, slider, maximum_label, stepcount_label]
+        )
         layout = Layout(rows=row)
         return layout.getLayout()
 
@@ -532,10 +543,7 @@ class AestheticsTab(Tab):
 
         top_row = Row(window=window_object)
         texts = ["", "Limits", "Scale"]
-        dimension_keys = [
-            f"axis_header_row_{string:s}"
-            for string in ["element", "limits", "scale"]
-        ]
+        dimension_keys = [f"axis_header_row_{string:s}" for string in ["element", "limits", "scale"]]
         add_element = top_row.addElements
         for index in range(len(texts)):
             kwargs = {
@@ -747,7 +755,7 @@ class PlottingTab(Tab):
 
         :param self: :class:`~Layout.SimulationWindow.PlottingTab` to retrieve row for
         """
-        rows = [Row(window=self.getWindowObject()) for i in range(2)]
+        rows = [Row(window=self.getWindowObject()) for _ in range(2)]
         texts = ["Axis", "Species", "Quantity", "Condensor"]
         dimension_keys = [
             f"axis_header_row_{string:s}"
@@ -822,9 +830,12 @@ class PlottingTab(Tab):
             "key": self.getKey("canvas_choice", f"{name:s}_axis_quantity")
         }
 
-        for key, value in kwargs.items(): sg_kwargs[key] = value
-        if "values" not in sg_kwargs: sg_kwargs["values"] = self.getPlotChoices(species="Variable")
-        if "default_value" not in sg_kwargs: sg_kwargs["default_value"] = sg_kwargs["values"][0]
+        for key, value in kwargs.items():
+            sg_kwargs[key] = value
+        if "values" not in sg_kwargs:
+            sg_kwargs["values"] = self.getPlotChoices(species="Variable")
+        if "default_value" not in sg_kwargs:
+            sg_kwargs["default_value"] = sg_kwargs["values"][0]
 
         return sg.InputCombo(**sg_kwargs)
 
@@ -839,9 +850,11 @@ class PlottingTab(Tab):
             Set False otherwise.
         """
         axis_quantity_species = []
-        if include_none: axis_quantity_species.append("None")
+        if include_none:
+            axis_quantity_species.append("None")
         axis_quantity_species.extend(["Variable", "Function"])
-        if len(self.getPlotChoices(species="Parameter")) >= 1: axis_quantity_species.append("Parameter")
+        if len(self.getPlotChoices(species="Parameter")) >= 1:
+            axis_quantity_species.append("Parameter")
         kwargs = {
             "values": axis_quantity_species,
             "default_value": axis_quantity_species[0],
@@ -927,10 +940,7 @@ class AnalysisTabGroup(TabGroup):
         :param name: name of tab group
         :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab group is stored in.
         """
-        tabs = [
-            FrequencyTab("Frequency", window),
-            MeanTab("Holder Mean", window)
-        ]
+        tabs = [FrequencyTab("Frequency", window), MeanTab("Holder Mean", window)]
         super().__init__(tabs, name=name)
 
 
@@ -959,10 +969,7 @@ class FrequencyTab(Tab):
         """
         row = Row(window=self.getWindowObject())
         texts = ["Method", "Condensor"]
-        dimension_keys = [
-            f"frequency_header_row_{string:s}"
-            for string in ["method_name", "condensor_name"]
-        ]
+        dimension_keys = [f"frequency_header_row_{string:s}" for string in ["method_name", "condensor_name"]]
         add_element = row.addElements
         for index in range(len(texts)):
             kwargs = {
@@ -1055,10 +1062,7 @@ class MeanTab(Tab):
         """
         row = Row(window=self.getWindowObject())
         texts = ["Order"]
-        dimension_keys = [
-            f"mean_header_row_{string:s}"
-            for string in ["order"]
-        ]
+        dimension_keys = [f"mean_header_row_{string:s}" for string in ["order"]]
         add_element = row.addElements
         for index in range(len(texts)):
             kwargs = {
@@ -1111,9 +1115,13 @@ class SimulationWindow(TabbedWindow):
     :ivar free_parameters: name(s) of parameter(s) that the user may choose multiple values for in model
     """
 
-    def __init__(self, name: str, runner: SimulationWindowRunner,
-                 free_parameter_values: Dict[str, Tuple[float, float, int, Quantity]],
-                 plot_choices: Dict[str, List[str]]) -> None:
+    def __init__(
+            self,
+            name: str,
+            runner: SimulationWindowRunner,
+            free_parameter_values: Dict[str, Tuple[float, float, int, Quantity]],
+            plot_choices: Dict[str, List[str]]
+    ) -> None:
         """
         Constructor for :class:`~Layout.SimulationWindow.SimulationWindow`.
         
@@ -1129,77 +1137,112 @@ class SimulationWindow(TabbedWindow):
             "window": YML.getDimensions(["simulation_window", "window"]),
             "parameter_slider_name_label": YML.getDimensions(["simulation_window", "parameter_slider", "name_label"]),
             "parameter_slider_minimum_label": YML.getDimensions(
-                ["simulation_window", "parameter_slider", "minimum_label"]),
+                ["simulation_window", "parameter_slider", "minimum_label"]
+            ),
             "parameter_slider_maximum_label": YML.getDimensions(
-                ["simulation_window", "parameter_slider", "maximum_label"]),
+                ["simulation_window", "parameter_slider", "maximum_label"]
+            ),
             "parameter_slider_stepcount_label": YML.getDimensions(
-                ["simulation_window", "parameter_slider", "stepcount_label"]),
+                ["simulation_window", "parameter_slider", "stepcount_label"]
+            ),
             "parameter_slider_slider": YML.getDimensions(["simulation_window", "parameter_slider", "slider"]),
             "initial_time_input_field": YML.getDimensions(
-                ["simulation_window", "simulation_tab", "initial_time_input_field"]),
+                ["simulation_window", "simulation_tab", "initial_time_input_field"]
+            ),
             "timestep_count_input_field": YML.getDimensions(
-                ["simulation_window", "simulation_tab", "final_time_input_field"]),
+                ["simulation_window", "simulation_tab", "final_time_input_field"]
+            ),
             "final_time_input_field": YML.getDimensions(
-                ["simulation_window", "simulation_tab", "time_stepcount_input_field"]),
+                ["simulation_window", "simulation_tab", "time_stepcount_input_field"]
+            ),
             "axis_header_row_element": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "top_header_row", "element"]),
+                ["simulation_window", "aesthetics_tab", "top_header_row", "element"]
+            ),
             "axis_header_row_limits": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "top_header_row", "limits"]),
+                ["simulation_window", "aesthetics_tab", "top_header_row", "limits"]
+            ),
             "axis_header_row_scale": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "top_header_row", "scale"]),
+                ["simulation_window", "aesthetics_tab", "top_header_row", "scale"]
+            ),
             "axis_header_row_element_name": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "bottom_header_row", "element_name"]),
+                ["simulation_window", "aesthetics_tab", "bottom_header_row", "element_name"]
+            ),
             "axis_header_row_element_title": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "bottom_header_row", "element_title"]),
+                ["simulation_window", "aesthetics_tab", "bottom_header_row", "element_title"]
+            ),
             "axis_header_row_lower_limit": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "bottom_header_row", "lower_limit"]),
+                ["simulation_window", "aesthetics_tab", "bottom_header_row", "lower_limit"]
+            ),
             "axis_header_row_upper_limit": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "bottom_header_row", "upper_limit"]),
+                ["simulation_window", "aesthetics_tab", "bottom_header_row", "upper_limit"]
+            ),
             "axis_header_row_autoscale": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "bottom_header_row", "autoscale"]),
+                ["simulation_window", "aesthetics_tab", "bottom_header_row", "autoscale"]
+            ),
             "axis_header_row_scale_factor": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "bottom_header_row", "scale_factor"]),
+                ["simulation_window", "aesthetics_tab", "bottom_header_row", "scale_factor"]
+            ),
             "axis_header_row_scale_type": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "bottom_header_row", "scale_type"]),
+                ["simulation_window", "aesthetics_tab", "bottom_header_row", "scale_type"]
+            ),
             "axis_row_label": YML.getDimensions(["simulation_window", "aesthetics_tab", "axis_row", "name_label"]),
             "axis_lower_limit_input_field": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "axis_row", "lower_limit_input_field"]),
+                ["simulation_window", "aesthetics_tab", "axis_row", "lower_limit_input_field"]
+            ),
             "axis_upper_limit_input_field": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "axis_row", "upper_limit_input_field"]),
+                ["simulation_window", "aesthetics_tab", "axis_row", "upper_limit_input_field"]
+            ),
             "axis_row_title_input_field": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "axis_row", "title_input_field"]),
+                ["simulation_window", "aesthetics_tab", "axis_row", "title_input_field"]
+            ),
             "autoscale_toggle_checkbox": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "axis_row", "autoscale_toggle_checkbox"]),
+                ["simulation_window", "aesthetics_tab", "axis_row", "autoscale_toggle_checkbox"]
+            ),
             "scale_factor_spin": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "axis_row", "scale_factor_spin"]),
+                ["simulation_window", "aesthetics_tab", "axis_row", "scale_factor_spin"]
+            ),
             "scale_type_combobox": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "axis_row", "scale_type_combobox"]),
+                ["simulation_window", "aesthetics_tab", "axis_row", "scale_type_combobox"]
+            ),
             "axis_header_row_quantity_species": YML.getDimensions(
-                ["simulation_window", "plotting_tab", "header_row", "quantity_species"]),
+                ["simulation_window", "plotting_tab", "header_row", "quantity_species"]
+            ),
             "axis_header_row_quantity_name": YML.getDimensions(
-                ["simulation_window", "plotting_tab", "header_row", "quantity_name"]),
+                ["simulation_window", "plotting_tab", "header_row", "quantity_name"]
+            ),
             "axis_header_row_transform_type": YML.getDimensions(
-                ["simulation_window", "plotting_tab", "header_row", "transform_type"]),
+                ["simulation_window", "plotting_tab", "header_row", "transform_type"]
+            ),
             "axis_header_row_condensor_name": YML.getDimensions(
-                ["simulation_window", "plotting_tab", "header_row", "condensor_name"]),
+                ["simulation_window", "plotting_tab", "header_row", "condensor_name"]
+            ),
             "axis_quantity_combobox": YML.getDimensions(
-                ["simulation_window", "plotting_tab", "axis_row", "axis_quantity_combobox"]),
+                ["simulation_window", "plotting_tab", "axis_row", "axis_quantity_combobox"]
+            ),
             "axis_quantity_species_combobox": YML.getDimensions(
-                ["simulation_window", "plotting_tab", "axis_row", "axis_quantity_species_combobox"]),
+                ["simulation_window", "plotting_tab", "axis_row", "axis_quantity_species_combobox"]
+            ),
             "axis_condensor_combobox": YML.getDimensions(
-                ["simulation_window", "plotting_tab", "axis_row", "axis_condensor_combobox"]),
+                ["simulation_window", "plotting_tab", "axis_row", "axis_condensor_combobox"]
+            ),
             "transform_type_combobox": YML.getDimensions(
-                ["simulation_window", "plotting_tab", "transform_type_combobox"]),
+                ["simulation_window", "plotting_tab", "transform_type_combobox"]
+            ),
             "frequency_header_row_method_name": YML.getDimensions(
-                ["simulation_window", "analysis_tab", "frequency_tab", "header_row", "method_name"]),
+                ["simulation_window", "analysis_tab", "frequency_tab", "header_row", "method_name"]
+            ),
             "frequency_header_row_condensor_name": YML.getDimensions(
-                ["simulation_window", "analysis_tab", "frequency_tab", "header_row", "condensor_name"]),
+                ["simulation_window", "analysis_tab", "frequency_tab", "header_row", "condensor_name"]
+            ),
             "frequency_method_combobox": YML.getDimensions(
-                ["simulation_window", "analysis_tab", "frequency_tab", "method_combobox"]),
+                ["simulation_window", "analysis_tab", "frequency_tab", "method_combobox"]
+            ),
             "frequency_condensor_combobox": YML.getDimensions(
-                ["simulation_window", "analysis_tab", "frequency_tab", "condensor_combobox"]),
+                ["simulation_window", "analysis_tab", "frequency_tab", "condensor_combobox"]
+            ),
             "mean_header_row_order": YML.getDimensions(
-                ["simulation_window", "analysis_tab", "mean_tab", "header_row", "order"]),
+                ["simulation_window", "analysis_tab", "mean_tab", "header_row", "order"]
+            ),
             "mean_order_spin": YML.getDimensions(["simulation_window", "analysis_tab", "mean_tab", "order_spin"])
         }
         super().__init__(name, runner, dimensions=dimensions)
@@ -1230,8 +1273,9 @@ class SimulationWindow(TabbedWindow):
         else:
             raise RecursiveTypeError(indicies)
 
-    def getFreeParameterValues(self, name: str = None) \
-            -> Union[Dict[str, Tuple[float, float, int, Quantity]], Tuple[float, float, int, Quantity]]:
+    def getFreeParameterValues(
+            self, name: str = None
+    ) -> Union[Dict[str, Tuple[float, float, int, Quantity]], Tuple[float, float, int, Quantity]]:
         """
         Get stored values for free parameter(s).
         The user may change the values of these parameters during simulation.
@@ -1262,7 +1306,8 @@ class SimulationWindow(TabbedWindow):
         elif isinstance(species, list):
             plot_choices = []
             extend_choices = plot_choices.extend
-            for specie in species: extend_choices(self.getPlotChoices(species=specie))
+            for specie in species:
+                extend_choices(self.getPlotChoices(species=specie))
             return unique(plot_choices)
         elif species is None:
             return self.plot_choices
@@ -1277,13 +1322,19 @@ class SimulationWindow(TabbedWindow):
         """
         free_parameter_name_entries = [name + "::Save Animated Figure" for name in self.getFreeParameterNames()]
         menu_definition = [
-            ["Save",
-             ["Parameters::Save",
-              "Time-Evolution Types::Save",
-              "Figure",
-              ["Static::Save Figure", "Animated", free_parameter_name_entries]
-              ]
-             ]
+            [
+                "Save",
+                [
+                    "Parameters::Save",
+                    "Time-Evolution Types::Save",
+                    "Figure",
+                    [
+                        "Static::Save Figure",
+                        "Animated",
+                        free_parameter_name_entries
+                    ]
+                ]
+            ]
         ]
         kwargs = {
             "menu_definition": menu_definition,
@@ -1573,7 +1624,8 @@ class SimulationWindowRunner(WindowRunner):
             None if value is not within default values for combobox.
         """
         combobox = self.getElements(key)
-        if not isinstance(combobox, sg.InputCombo): raise TypeError("key must correspond to sg.Combobox")
+        if not isinstance(combobox, sg.InputCombo):
+            raise TypeError("key must correspond to sg.Combobox")
         value = self.getValue(key)
         if value in combobox.Values:
             return value
@@ -1591,7 +1643,8 @@ class SimulationWindowRunner(WindowRunner):
         """
         for axis_name in self.getAxisNames():
             combobox_key = self.getKey("canvas_choice", f"{axis_name:s}_axis_quantity_specie")
-            if key == combobox_key: return axis_name
+            if key == combobox_key:
+                return axis_name
         return None
 
     def getFrequencyMethod(self) -> str:
@@ -1704,7 +1757,8 @@ class SimulationWindowRunner(WindowRunner):
             event, self.values = window.read()
             print(event)
 
-            if event == sg.WIN_CLOSED or event == 'Exit': break
+            if event == sg.WIN_CLOSED or event == 'Exit':
+                break
             menu_value = self.getValue(self.getKey("toolbar_menu"))
 
             if menu_value is not None:
@@ -1722,7 +1776,8 @@ class SimulationWindowRunner(WindowRunner):
             elif self.getPrefix("free_parameter_slider") in event:
                 self.updatePlot()
             elif self.getPrefix("canvas_choice") in event:
-                if "axis_quantity_specie" in event: self.updatePlotChoices(self.getAxisNameFromComboboxKey(event))
+                if "axis_quantity_specie" in event:
+                    self.updatePlotChoices(self.getAxisNameFromComboboxKey(event))
                 self.updatePlot()
             elif event == self.getKey("plot_aesthetics", "update"):
                 self.updatePlot()
@@ -1762,13 +1817,16 @@ class SimulationWindowRunner(WindowRunner):
         """
         self.getResultsObject().setResults(**kwargs)
 
-    def runSimulation(self, index: Union[tuple, Tuple[int]],
-                      parameter_values: Dict[str, float] = None,
-                      variable_names: List[str] = None,
-                      general_derivative_vector: List[Expr] = None,
-                      y0: ndarray = None,
-                      times: ndarray = None,
-                      model: Model = None) -> None:
+    def runSimulation(
+            self,
+            index: Union[tuple, Tuple[int]],
+            parameter_values: Dict[str, float] = None,
+            variable_names: List[str] = None,
+            general_derivative_vector: List[Expr] = None,
+            y0: ndarray = None,
+            times: ndarray = None,
+            model: Model = None
+    ) -> None:
         """
         Run simulation for a single set of free-parameter values.
         Save results in :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
@@ -1787,13 +1845,20 @@ class SimulationWindowRunner(WindowRunner):
         :param model: :class:`~Function.Model` to run simulation for.
         """
         if any(element is None for element in [variable_names, general_derivative_vector, y0, times]):
-            if model is None: model = self.getModel()
-            if variable_names is None: variable_names = model.getDerivativeVariables(time_evolution_types="Temporal",
-                                                                                     return_type=str)
-            if general_derivative_vector is None: general_derivative_vector = self.getGeneralDerivativeVector()
-            if y0 is None: y0 = model.getInitialValues(names=variable_names)
-            if times is None: times = np.linspace(*self.getInputTimes())
-        if parameter_values is None: parameter_values = {}
+            if model is None:
+                model = self.getModel()
+            if variable_names is None:
+                variable_names = model.getDerivativeVariables(
+                    time_evolution_types="Temporal", return_type=str
+                )
+            if general_derivative_vector is None:
+                general_derivative_vector = self.getGeneralDerivativeVector()
+            if y0 is None:
+                y0 = model.getInitialValues(names=variable_names)
+            if times is None:
+                times = np.linspace(*self.getInputTimes())
+        if parameter_values is None:
+            parameter_values = {}
 
         derivatives = [derivative.subs(parameter_values) for derivative in general_derivative_vector]
         ydot = lambdify((Symbol('t'), tuple(variable_names)), derivatives, modules=["math"])
@@ -1841,7 +1906,8 @@ class SimulationWindowRunner(WindowRunner):
             free_parameter_index_combos = tuple(product(*free_parameter_indicies))
             total_combo_count = len(free_parameter_index_combos)
             for simulation_number, indicies in enumerate(free_parameter_index_combos):
-                if not self.updateProgessMeter(simulation_number, total_combo_count): break
+                if not self.updateProgessMeter(simulation_number, total_combo_count):
+                    break
                 parameter_simulation_values = {
                     (free_parameter_name := free_parameter_names[free_parameter_index]):
                         free_parameter_values[free_parameter_name][indicies[free_parameter_index]]
@@ -1873,7 +1939,10 @@ class SimulationWindowRunner(WindowRunner):
                         element_value = None
                 aesthetics[input_type][axis_name] = element_value
 
-        scale_type_dict = {"Linear": "linear", "Logarithmic": "log"}
+        scale_type_dict = {
+            "Linear": "linear",
+            "Logarithmic": "log"
+        }
         kwargs = {
             "x_scale_factor": aesthetics["scale_factor"]['x'],
             "y_scale_factor": aesthetics["scale_factor"]['y'],
@@ -1936,7 +2005,8 @@ class SimulationWindowRunner(WindowRunner):
         :returns: New figure-canvas stored in window runner.
         """
         figure_canvas = self.getFigureCanvas()
-        if isinstance(figure_canvas, FigureCanvasTkAgg): clearFigure(figure_canvas)
+        if isinstance(figure_canvas, FigureCanvasTkAgg):
+            clearFigure(figure_canvas)
         # noinspection PyTypeChecker
         canvas: sg.Canvas = self.getElements(self.getKey("canvas"))
         # noinspection PyTypeChecker
@@ -1944,11 +2014,13 @@ class SimulationWindowRunner(WindowRunner):
         self.getWindow().Refresh()
         return self.figure_canvas
 
-    def updatePlot(self,
-                   index: Union[tuple, Tuple[int]] = None,
-                   plot_quantities: Dict[str, Tuple[str, str]] = None,
-                   transform_name: str = None,
-                   **figure_kwargs) -> Optional[Figure]:
+    def updatePlot(
+            self,
+            index: Union[tuple, Tuple[int]] = None,
+            plot_quantities: Dict[str, Tuple[str, str]] = None,
+            transform_name: str = None,
+            **figure_kwargs
+    ) -> Optional[Figure]:
         """
         Update window-embedded plot.
         Do nothing if simulation has never been run.
@@ -1964,8 +2036,10 @@ class SimulationWindowRunner(WindowRunner):
         :param figure_kwargs: additional arguments to pass into :meth:`~SimulationWindow.SimulationWindow.getFigure`
         :returns: New matplotlib Figure displayed on canvas. None if figure has not been displayed yet.
         """
-        if index is None: index = self.getClosestSliderIndex()
-        if plot_quantities is None: plot_quantities = {}
+        if index is None:
+            index = self.getClosestSliderIndex()
+        if plot_quantities is None:
+            plot_quantities = {}
         plot_quantities_keys = plot_quantities.keys()
         for axis_name in self.getAxisNames():
             if axis_name not in plot_quantities_keys:
@@ -1977,7 +2051,8 @@ class SimulationWindowRunner(WindowRunner):
 
         if transform_name is None:
             transform_name = self.getComboboxValue(self.getKey("canvas_choice", "transform"))
-            if transform_name is None: return None
+            if transform_name is None:
+                return None
 
         results_object = self.getResultsObject()
         timelike_species = self.getLikeSpecies("timelike")
@@ -1999,7 +2074,7 @@ class SimulationWindowRunner(WindowRunner):
                     elif c_specie in timelike_species:
                         x_results, y_results, c_results = tuple(
                             results_object.getResultsOverTime(names=name, **results_kwargs)
-                            for name in [x_name, y_name, c_name]
+                                for name in [x_name, y_name, c_name]
                         )
                         figure = self.getFigure(x_results, y_results, c_results, plot_type="xyt", **figure_kwargs)
                     elif c_specie in parameterlike_species:
@@ -2007,8 +2082,9 @@ class SimulationWindowRunner(WindowRunner):
                             "quantity_names": (x_name, y_name),
                             "parameter_name": c_name
                         }
-                        c_results, x_results, y_results = results_object.getResultsOverTimePerParameter(**name_kwargs,
-                                                                                                        **results_kwargs)
+                        c_results, x_results, y_results = results_object.getResultsOverTimePerParameter(
+                            **name_kwargs, **results_kwargs
+                        )
                         figure = self.getFigure(x_results, y_results, c_results, plot_type="xyc", **figure_kwargs)
                     else:
                         raise ValueError(f"invalid value for c-axis species)")
@@ -2030,9 +2106,9 @@ class SimulationWindowRunner(WindowRunner):
                             "parameter_name": y_name,
                             "condensor_name": x_condensor
                         }
-                        y_results, x_results = results_object.getResultsOverTimePerParameter(**name_kwargs,
-                                                                                             **results_kwargs,
-                                                                                             **condensor_kwargs)
+                        y_results, x_results = results_object.getResultsOverTimePerParameter(
+                            **name_kwargs, **results_kwargs, **condensor_kwargs
+                        )
                         figure = self.getFigure(x_results, y_results, plot_type="xy", **figure_kwargs)
             elif x_specie in parameterlike_species:
                 if y_specie in timelike_species and y_condensor != "None":
@@ -2052,9 +2128,9 @@ class SimulationWindowRunner(WindowRunner):
                             "parameter_name": x_name,
                             "condensor_name": y_condensor
                         }
-                        x_results, y_results = results_object.getResultsOverTimePerParameter(**name_kwargs,
-                                                                                             **results_kwargs,
-                                                                                             **condensor_kwargs)
+                        x_results, y_results = results_object.getResultsOverTimePerParameter(
+                            **name_kwargs, **results_kwargs, **condensor_kwargs
+                        )
                         figure = self.getFigure(x_results, y_results, plot_type="xy", **figure_kwargs)
         except KeyError:
             return None
@@ -2110,7 +2186,8 @@ class SimulationWindowRunner(WindowRunner):
             except KeyError:
                 pass
         elif isinstance(names, list):
-            for name in names: self.updatePlotChoices(names=name)
+            for name in names:
+                self.updatePlotChoices(names=name)
         elif names is None:
             self.updatePlotChoices(names=self.getAxisNames())
         else:
@@ -2122,12 +2199,7 @@ class SimulationWindowRunner(WindowRunner):
         
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from
         """
-        file_types = (
-            ("YML", "*.yml"),
-            ("YAML", "*.yaml"),
-            ("Plain Text", "*.txt"),
-            ("ALL Files", "*.*"),
-        )
+        file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
         kwargs = {
             "message": "Enter Filename",
             "title": "Save Parameters",
@@ -2135,7 +2207,8 @@ class SimulationWindowRunner(WindowRunner):
             "file_types": file_types
         }
         filename = sg.PopupGetFile(**kwargs)
-        if isinstance(filename, str): self.getModel().saveParametersToFile(filename)
+        if isinstance(filename, str):
+            self.getModel().saveParametersToFile(filename)
 
     def saveModelTimeEvolutionTypes(self) -> None:
         """
@@ -2143,12 +2216,7 @@ class SimulationWindowRunner(WindowRunner):
 
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from
         """
-        file_types = (
-            ("YML", "*.yml"),
-            ("YAML", "*.yaml"),
-            ("Plain Text", "*.txt"),
-            ("ALL Files", "*.*"),
-        )
+        file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
         kwargs = {
             "message": "Enter Filename",
             "title": "Save Time-Evolution Types",
@@ -2156,7 +2224,8 @@ class SimulationWindowRunner(WindowRunner):
             "file_types": file_types
         }
         filename = sg.PopupGetFile(**kwargs)
-        if isinstance(filename, str): self.getModel().saveTimeEvolutionTypesToFile(filename)
+        if isinstance(filename, str):
+            self.getModel().saveTimeEvolutionTypesToFile(filename)
 
     def saveFigure(self, name: str = None) -> None:
         """
@@ -2181,7 +2250,8 @@ class SimulationWindowRunner(WindowRunner):
                 "file_types": tuple(file_types)
             }
             filename = sg.PopupGetFile(**kwargs)
-            if isinstance(filename, str): figure.savefig(filename)
+            if isinstance(filename, str):
+                figure.savefig(filename)
         elif isinstance(name, str):
             parameter_index = self.getFreeParameterIndex(name)
             default_index = list(self.getClosestSliderIndex())
@@ -2191,17 +2261,18 @@ class SimulationWindowRunner(WindowRunner):
 
             images = []
             images_append = images.append
-            inset_parameters = {name: {"range": parameter_value_range}}
+            inset_parameters = {
+                name: {
+                    "range": parameter_value_range
+                }
+            }
             for i in range(len(parameter_values)):
                 inset_parameters[name]["value"] = parameter_values[i]
                 figure = self.updatePlot(index=new_index(i), inset_parameters=inset_parameters)
                 image = PIL.Image.frombytes("RGB", figure.canvas.get_width_height(), figure.canvas.tostring_rgb())
                 images_append(image)
 
-            file_types = [
-                ("Graphics Interchange Format", "*.gif"),
-                ("ALL Files", "*.*")
-            ]
+            file_types = [("Graphics Interchange Format", "*.gif"), ("ALL Files", "*.*")]
             kwargs = {
                 "message": "Enter Filename",
                 "title": "Save Figure",

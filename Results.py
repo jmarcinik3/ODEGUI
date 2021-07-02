@@ -11,6 +11,7 @@ from sympy.utilities.lambdify import lambdify
 from Function import Model
 from macros import commonElement
 
+
 class Results:
     """
     This class stores results from an ODE simulation.
@@ -31,6 +32,7 @@ class Results:
         This attribute is so that equilibria only need to be calculated once.
         They are reused after their initial calculation.
     """
+
     def __init__(self, model: Model, free_parameter_values: Dict[str, ndarray]):
         """
         Constructor for :class:`~SimulationWindow.SimulationWindowRunner`
@@ -44,7 +46,7 @@ class Results:
         self.model = model
         self.free_parameter_values = free_parameter_values
         self.general_equilibrium_forms = {}
-    
+
     def getModel(self) -> Model:
         """
         Get associated :class:`Function.Model`.
@@ -52,7 +54,7 @@ class Results:
         :param self: :class:`~Results.Results` to retrieve associated :class:`~Function.Model` from
         """
         return self.model
-    
+
     def getFreeParameterIndex(self, name: str):
         """
         Get index of free parameter within collection of free-parameter names.
@@ -63,6 +65,7 @@ class Results:
         free_parameter_names = self.getFreeParameterNames()
         free_parameter_index = free_parameter_names.index(name)
         return free_parameter_index
+
     def getFreeParameterNames(self) -> List[str]:
         """
         Get names of free parameters.
@@ -70,6 +73,7 @@ class Results:
         :param self: :class:`~Results.Results` to retrieve free-parameter names from
         """
         return list(self.free_parameter_values.keys())
+
     def getFreeParameterValues(self, names: Union[str, List[str]] = None) -> Union[ndarray, Dict[str, ndarray]]:
         """
         Get values for a free parameter.
@@ -80,10 +84,13 @@ class Results:
         if isinstance(names, str):
             free_parameter_values = self.getFreeParameterValues()
             return free_parameter_values[names]
-        elif isinstance(names, list): return {name: self.getFreeParameterValues(names=name) for name in names}
-        elif names is None: return self.free_parameter_values
-        else: raise TypeError("names must be str or list")
-    
+        elif isinstance(names, list):
+            return {name: self.getFreeParameterValues(names=name) for name in names}
+        elif names is None:
+            return self.free_parameter_values
+        else:
+            raise TypeError("names must be str or list")
+
     def setEquilibriumForms(self, equilibrium_forms: Dict[Symbol, Expr] = None) -> None:
         """
         Set symbolic expressions for equilibrium variables.
@@ -97,12 +104,11 @@ class Results:
         """
         if equilibrium_forms is None:
             solutions = self.getModel().getEquilibriumSolutions(skip_parameters=self.getFreeParameterNames())
-            solutions = {
-                variable: solution
-                for variable, solution in solutions.items()
-            }
+            solutions = {variable: solution for variable, solution in solutions.items()}
             self.general_equilibrium_forms = solutions
-        else: self.general_equilibrium_forms = equilibrium_forms
+        else:
+            self.general_equilibrium_forms = equilibrium_forms
+
     def getEquilibriumForm(self, name: Union[Symbol, str]) -> Expr:
         """
         Get equilibrium expression for a variable.
@@ -110,16 +116,20 @@ class Results:
         :param self: :class:`~Results.Results` to retrieve equilibrium from
         :param name: name of variable to retrieve equilibrium for
         """
-        if len(self.general_equilibrium_forms.keys()) == 0: self.setEquilibriumForms()
-        
-        if isinstance(name, Symbol): general_form = self.general_equilibrium_forms[name]
-        elif isinstance(name, str): general_form = self.general_equilibrium_forms[Symbol(name)]
-        else: raise TypeError("name must be sp.Symbol or str")
-        
+        if len(self.general_equilibrium_forms.keys()) == 0:
+            self.setEquilibriumForms()
+
+        if isinstance(name, Symbol):
+            general_form = self.general_equilibrium_forms[name]
+        elif isinstance(name, str):
+            general_form = self.general_equilibrium_forms[Symbol(name)]
+        else:
+            raise TypeError("name must be sp.Symbol or str")
+
         parameter_substitutions = self.getModel().getParameterSubstitutions(self.getFreeParameterNames())
         simplified_form = general_form.subs(parameter_substitutions)
         return simplified_form
-    
+
     def resetResults(self) -> None:
         """
         Reset results to store a new set of them.
@@ -127,6 +137,7 @@ class Results:
         :param self: :class:`~SimulationWindow.SimulationWindowRunner` to reset results for
         """
         self.results = {}
+
     def getSubstitutedResults(self, index: Union[tuple, Tuple[int]], function: Expr) -> ndarray:
         """
         Get results from simulation for function, after substituting results from variables.
@@ -142,6 +153,7 @@ class Results:
         times = self.getResultsOverTime(index, names='t')
         results = [function_lambda(times[i], temporal_results[i]) for i in range(len(times))]
         return np.array(results)
+
     def getFunctionResults(self, index: Union[tuple, Tuple[int]], name: str) -> ndarray:
         """
         Get results from simulation for function.
@@ -153,23 +165,27 @@ class Results:
         model = self.getModel()
         function = model.getFunctions(names=name)
         form = function.getForm(generations="all")
-    
+
         substitutions = {}
         function_variables = set(function.getVariables())
         equilibrium_variables = set(model.getDerivativeVariables(time_evolution_types="Equilibrium"))
-        if commonElement(function_variables, equilibrium_variables): substitutions.update(model.getEquilibriumSolutions())
-        
+        if commonElement(function_variables, equilibrium_variables):
+            substitutions.update(model.getEquilibriumSolutions())
+
         constant_variables = set(model.getDerivativeVariables(time_evolution_types="Constant"))
-        if commonElement(function_variables, constant_variables): substitutions.update(model.getConstantSubstitutions())
-        
+        if commonElement(function_variables, constant_variables):
+            substitutions.update(model.getConstantSubstitutions())
+
         derivative_function_variables = set(model.getDerivativeVariables(time_evolution_types="Function"))
-        if commonElement(function_variables, derivative_function_variables): substitutions.update(model.getFunctionSubstitutions())
-        
+        if commonElement(function_variables, derivative_function_variables):
+            substitutions.update(model.getFunctionSubstitutions())
+
         substitutions.update(model.getParameterSubstitutions(function.getParameters(return_type=str)))
         form = form.subs(substitutions)
-    
+
         updated_results = self.getSubstitutedResults(index, form)
         return updated_results
+
     def getEquilibriumVariableResults(self, index: Union[tuple, Tuple[int]], name: str) -> ndarray:
         """
         Get results from simulation for variable in equilibrium.
@@ -180,6 +196,7 @@ class Results:
         """
         results = self.getSubstitutedResults(index, self.getEquilibriumForm(name))
         return np.array(results)
+
     def getConstantVariableResults(self, index: Union[tuple, Tuple[int]], name: str) -> ndarray:
         """
         Get results from simulation for constant variable.
@@ -191,17 +208,18 @@ class Results:
         initial_condition = self.getModel().getDerivativesFromVariableNames(names=name).getInitialCondition()
         results = np.repeat(initial_condition, len(self.getResultsOverTime(index, 't')))
         return results
-    
-    
-    
+
     def getOscillationAmplitude(self, index: Union[tuple, Tuple[int]], name: str, **kwargs) -> float:
         return 0
-    
-    
-    
-    def getOscillationFrequency(self, index: Union[tuple, Tuple[int]], name: str,
+
+    def getOscillationFrequency(
+            self,
+            index: Union[tuple, Tuple[int]],
+            name: str,
             calculation_method: str = "autocorrelation",
-            condensing_method: str = "average", **kwargs) -> float:
+            condensing_method: str = "average",
+            **kwargs
+    ) -> float:
         """
         Get oscillation frequency for quantity.
 
@@ -231,12 +249,15 @@ class Results:
         condensing_method = condensing_method.lower()
         results = self.getResultsOverTime(index=index, names=name, **kwargs)
         times = self.getResultsOverTime(index=index, names='t', **kwargs)
-        
+
         if "separation" in calculation_method:
-            if "max" in calculation_method or "min" in calculation_method: time_to_frequency = lambda initial_time, final_time: 1 / (final_time - initial_time)
-            elif "extrema" in calculation_method: time_to_frequency = lambda initial_time, final_time: 0.5 / (final_time - initial_time)
-            else: raise ValueError("separation method must include maxima, minima, xor extrema")
-            
+            if "max" in calculation_method or "min" in calculation_method:
+                time_to_frequency = lambda initial_time, final_time: 1 / (final_time - initial_time)
+            elif "extrema" in calculation_method:
+                time_to_frequency = lambda initial_time, final_time: 0.5 / (final_time - initial_time)
+            else:
+                raise ValueError("separation method must include maxima, minima, xor extrema")
+
             extrema_indicies = np.array([], dtype=np.int32)
             if "max" in calculation_method or "extrema" in calculation_method:
                 maxima_indicies = signal.find_peaks(results)[0]
@@ -245,54 +266,65 @@ class Results:
                 minima_indicies = signal.find_peaks(-results)[0]
                 extrema_indicies = np.append(extrema_indicies, minima_indicies)
             extrema_times = times[extrema_indicies]
-            frequencies = np.array([
-                time_to_frequency(extrema_times[i], extrema_times[i + 1])
-                    for i in range(len(extrema_times) - 1)
-            ])
+            frequencies = np.array(
+                [time_to_frequency(extrema_times[i], extrema_times[i + 1]) for i in range(len(extrema_times) - 1)]
+            )
         elif "max" in calculation_method and "fourier" in calculation_method:
             harmonic_count = int(calculation_method.split('_')[-1])
             print('1', harmonic_count)
             time_count = len(times)
             time_resolution = (times[-1] - times[0]) / (time_count - 1)
             fourier_results, frequencies = abs(fft.rfft(results)), fft.rfftfreq(time_count, time_resolution)
-            
+
             maxima_indicies = signal.find_peaks(fourier_results)[0]
             if len(maxima_indicies) >= 1:
                 harmonic_frequencies = frequencies[maxima_indicies]
                 harmonic_frequencies = np.insert(harmonic_frequencies, 0, 0)
                 n_harmonic_frequencies = harmonic_frequencies[:harmonic_count]
-                frequencies = np.array([
-                    n_harmonic_frequencies[i + 1] - n_harmonic_frequencies[i]
-                    for i in range(len(n_harmonic_frequencies) - 1)
-                ])
-            else: frequencies = np.array([])
+                frequencies = np.array(
+                    [n_harmonic_frequencies[i + 1] - n_harmonic_frequencies[i] for i in
+                        range(len(n_harmonic_frequencies) - 1)]
+                )
+            else:
+                frequencies = np.array([])
         elif "autocorrelation" in calculation_method:
             results_count = results.size
             correlation = signal.correlate(results, results, mode="same")[results_count // 2:]
             lags = signal.correlation_lags(results_count, results_count, mode="same")[results_count // 2:]
-            
+
             argrelmax_correlation = signal.argrelmax(correlation)[0]
             argrelmax_count = argrelmax_correlation.size
-            
+
             if argrelmax_count >= 1:
                 lag = lags[argrelmax_correlation][0]
                 delta_time = times[1] - times[0]
                 frequencies = np.array([1 / (lag * delta_time)])
-            else: frequencies = np.array([0])
-        else: raise ValueError("invalid calculation method")
-        
+            else:
+                frequencies = np.array([0])
+        else:
+            raise ValueError("invalid calculation method")
+
         frequency_count = frequencies.size
         if frequency_count >= 1:
-            if condensing_method == "average": frequency = np.mean(frequencies)
-            elif condensing_method == "maximum": frequency = np.amax(frequencies)
-            elif condensing_method == "minimum": frequency = np.amin(frequencies)
-            elif condensing_method == "initial": frequency = frequencies[0]
-            elif condensing_method == "final": frequency = frequencies[-1]
-            else: raise ValueError("invalid condensing method")
-        else: frequency = 0
+            if condensing_method == "average":
+                frequency = np.mean(frequencies)
+            elif condensing_method == "maximum":
+                frequency = np.amax(frequencies)
+            elif condensing_method == "minimum":
+                frequency = np.amin(frequencies)
+            elif condensing_method == "initial":
+                frequency = frequencies[0]
+            elif condensing_method == "final":
+                frequency = frequencies[-1]
+            else:
+                raise ValueError("invalid condensing method")
+        else:
+            frequency = 0
         return frequency
-    def getHolderMean(self, index: Union[tuple, Tuple[int]], name: str,
-            order: int = 1, **kwargs) -> float:
+
+    def getHolderMean(
+            self, index: Union[tuple, Tuple[int]], name: str, order: int = 1, **kwargs
+    ) -> float:
         """
         Get Holder mean for results.
         
@@ -306,16 +338,23 @@ class Results:
         :param kwargs: additional arguments to pass into :meth:`~Results.Results.getResultsOverTime`
         """
         results = self.getResultsOverTime(index=index, names=name, **kwargs)
-        
-        if order == 1: mean = np.mean(results)
-        elif order == 2: mean = np.sqrt(np.mean(results)**2)
-        elif order == 0: mean = stats.gmean(results)
+
+        if order == 1:
+            mean = np.mean(results)
+        elif order == 2:
+            mean = np.sqrt(np.mean(results) ** 2)
+        elif order == 0:
+            mean = stats.gmean(results)
         # elif order == -1: mean = stats.hmean(results)
-        elif np.isinf(order) and np.sign(order) == 1: mean = np.amax(results)
-        elif np.isinf(order) and np.sign(order) == -1: mean = np.amin(results)
-        else: mean = np.mean(results**order)**(1/order)
-        
+        elif np.isinf(order) and np.sign(order) == 1:
+            mean = np.amax(results)
+        elif np.isinf(order) and np.sign(order) == -1:
+            mean = np.amin(results)
+        else:
+            mean = np.mean(results ** order) ** (1 / order)
+
         return mean
+
     def getFourierTransform(self, index: Union[tuple, Tuple[int, ...]], name: str):
         """
         Get Fourier transform of results.
@@ -330,7 +369,7 @@ class Results:
         original_results = self.getResultsOverTime(index, names=name)
         # noinspection PyPep8Naming
         N = len(original_results)
-        
+
         if name == 't':
             initial_time, final_time = original_results[0], original_results[-1]
             time_resolution = (final_time - initial_time) / (N - 1)
@@ -339,12 +378,15 @@ class Results:
             fourier_results = fft.rfft(original_results)
             fourier_results = abs(fourier_results)
         return fourier_results
-    
-    def getResultsOverTime(self, index: Union[tuple, Tuple[int, ...]],
+
+    def getResultsOverTime(
+            self,
+            index: Union[tuple, Tuple[int, ...]],
             names: Union[str, List[str]] = None,
             transform_name: str = "None",
             condensor_name: str = "None",
-            **condensor_kwargs) -> Union[float, ndarray]:
+            **condensor_kwargs
+    ) -> Union[float, ndarray]:
         """
         Get results for variable or function over time.
         Results are evaluated from simulation.
@@ -373,19 +415,26 @@ class Results:
                     "name": names,
                     "transform_name": transform_name
                 }
-                if condensor_name == "Frequency": return self.getOscillationFrequency(**kwargs, **condensor_kwargs)
-                elif condensor_name == "Mean": return self.getHolderMean(**kwargs, **condensor_kwargs)
-                else: raise ValueError("invalid condensor name")
-            
+                if condensor_name == "Frequency":
+                    return self.getOscillationFrequency(**kwargs, **condensor_kwargs)
+                elif condensor_name == "Mean":
+                    return self.getHolderMean(**kwargs, **condensor_kwargs)
+                else:
+                    raise ValueError("invalid condensor name")
+
             if transform_name != "None":
-                if transform_name == "Fourier": return self.getFourierTransform(index=index, name=names)
-                else: raise ValueError("invalid transform name")
-            
-            try: return results[names]
-            except KeyError: pass
-            
+                if transform_name == "Fourier":
+                    return self.getFourierTransform(index=index, name=names)
+                else:
+                    raise ValueError("invalid transform name")
+
+            try:
+                return results[names]
+            except KeyError:
+                pass
+
             model = self.getModel()
-            
+
             if names in model.getDerivativeVariables(return_type=str):
                 time_evolution_type = model.getDerivativesFromVariableNames(names=names).getTimeEvolutionType()
                 results_handles = {
@@ -395,9 +444,11 @@ class Results:
                 }
                 # noinspection PyArgumentList
                 updated_results = results_handles[time_evolution_type](index, names)
-            elif names in model.getFunctionNames(): updated_results = self.getFunctionResults(index, names)
-            else: ValueError("names input must correspond to either variable or function when str ")
-            
+            elif names in model.getFunctionNames():
+                updated_results = self.getFunctionResults(index, names)
+            else:
+                ValueError("names input must correspond to either variable or function when str ")
+
             # noinspection PyUnboundLocalVariable
             self.setResults(index, updated_results, names)
             return updated_results
@@ -409,11 +460,14 @@ class Results:
             new_results = np.array([self.getResultsOverTime(names=name, **kwargs) for name in names])
             transpose = new_results.T
             return transpose
-        elif names is None: return self.getResultsOverTime(index, names=list(results.keys()))
-        else: raise TypeError("names input must be str or list")
-    def getResultsOverTimePerParameter(self, index: Union[tuple, Tuple[int]],
-            parameter_name: str, quantity_names: Union[str, List[str]],
-            **kwargs) -> Tuple[ndarray, ...]:
+        elif names is None:
+            return self.getResultsOverTime(index, names=list(results.keys()))
+        else:
+            raise TypeError("names input must be str or list")
+
+    def getResultsOverTimePerParameter(
+            self, index: Union[tuple, Tuple[int]], parameter_name: str, quantity_names: Union[str, List[str]], **kwargs
+    ) -> Tuple[ndarray, ...]:
         """
         Get free-parameter values and "averaged" quantity values.
 
@@ -429,25 +483,27 @@ class Results:
             First index gives parameter values.
             Second-last index gives quantity results; one set of quantity results per index.
         """
-        if isinstance(quantity_names, str): quantity_names = [quantity_names]
-        
+        if isinstance(quantity_names, str):
+            quantity_names = [quantity_names]
+
         parameter_index = self.getFreeParameterIndex(parameter_name)
         parameter_values = self.getFreeParameterValues(names=parameter_name)
         parameter_stepcount = len(parameter_values)
         list_index = list(index)
         new_index = lambda i: tuple(list_index[:parameter_index] + [i] + list_index[parameter_index + 1:])
-    
+
         results = []
         for quantity_name in quantity_names:
-            new_results = np.array([
-                self.getResultsOverTime(index=new_index(i), names=quantity_name, **kwargs)
-                for i in range(parameter_stepcount)
-            ])
+            new_results = np.array(
+                [self.getResultsOverTime(index=new_index(i), names=quantity_name, **kwargs) for i in
+                    range(parameter_stepcount)]
+            )
             results.append(new_results)
         return parameter_values, *tuple(results)
-     
-    def setResults(self, index: Union[tuple, Tuple[int]], results: Union[ndarray, Dict[str, ndarray]],
-            name: str = None) -> None:
+
+    def setResults(
+            self, index: Union[tuple, Tuple[int]], results: Union[ndarray, Dict[str, ndarray]], name: str = None
+    ) -> None:
         """
         Save results from simulation.
 
@@ -460,5 +516,7 @@ class Results:
             Value is list of floats for variable over time.
         :param name: name of quantity to set results for
         """
-        if isinstance(name, str): self.results[index][name] = results
-        elif name is None: self.results[index] = results
+        if isinstance(name, str):
+            self.results[index][name] = results
+        elif name is None:
+            self.results[index] = results
