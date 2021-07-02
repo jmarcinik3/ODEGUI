@@ -7,6 +7,7 @@ from typing import Dict, List, Union
 import PySimpleGUI as sg
 from pint import Quantity
 
+from CustomErrors import RecursiveTypeError
 from Layout.Layout import Layout, Row, Window, WindowRunner
 from macros import formatQuantity, getTexImage
 
@@ -85,6 +86,27 @@ class ChooseParametersWindow(Window):
         ]
         return rows
 
+    def getMenu(self) -> sg.Menu:
+        """
+        Get toolbar menu for window.
+
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve menu from
+        """
+        menu_definition = [
+            [
+                "Set",
+                [
+                    "Check All",
+                    "Uncheck All"
+                ]
+            ]
+        ]
+        kwargs = {
+            "menu_definition": menu_definition,
+            "key": self.getKey("toolbar_menu")
+        }
+        return sg.Menu(**kwargs)
+
     def getHeaderRow(self) -> Row:
         filename = basename(self.getFilename())
         text = "Choose which parameters to overwrite"
@@ -114,10 +136,11 @@ class ChooseParametersWindow(Window):
         return layout
 
     def getLayout(self) -> List[List[sg.Element]]:
+        menu = Layout(rows=Row(elements=self.getMenu()))
         header = self.getHeaderRow()
         footer = self.getFooterRow()
         parameter_rows = self.getParameterRowsLayout()
-        return header.getLayout() + parameter_rows.getLayout() + footer.getLayout()
+        return menu.getLayout() + header.getLayout() + parameter_rows.getLayout() + footer.getLayout()
 
 
 class ChooseParametersWindowRunner(WindowRunner):
@@ -125,9 +148,53 @@ class ChooseParametersWindowRunner(WindowRunner):
         window = ChooseParametersWindow(name, self, **kwargs)
         super().__init__(name, window)
 
+    def getParameterNames(self) -> List[str]:
+        """
+        Get names of parameters stored in window.
+
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindowRunner` to retrieve names from
+        """
+        # noinspection PyTypeChecker
+        window_object: ChooseParametersWindow = self.getWindowObject()
+        quantites = window_object.getQuantities()
+        parameter_names = list(quantites.keys())
+        return parameter_names
+
+    def setChecks(self, names: Union[str, List[str]], overwrite: bool) -> None:
+        """
+        Set all checkbox (determining whether to overwrite parameter) to chosen value.
+
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to set checkboxes in
+        :param names: name(s) of parameter(s) to set checkboxes for
+        :param overwrite: set True to set all checkboxes to True.
+            Set False to set all checkboxes to False.
+        """
+        if isinstance(names, str):
+            checkbox = self.getElements(names)
+            checkbox.update(value=overwrite)
+        elif isinstance(names, list):
+            for name in names:
+                self.setChecks(names=name, overwrite=overwrite)
+        else:
+            raise RecursiveTypeError(names)
+
     def getChosenParameters(self) -> List[str]:
-        event, parameters = self.getWindow().read(close=True)
-        if event in [sg.WIN_CLOSED, "Cancel"]:
-            return []
-        elif event == "Submit":
-            return [name for name in parameters if parameters[name]]
+        window = self.getWindow()
+        event = ''
+        while event not in [sg.WIN_CLOSED, "Cancel"]:
+            event, self.values = window.read()
+            print(self.getKey("toolbar_menu"), self.getElements(self.getKey("toolbar_menu")))
+            menu_value = self.getValue(self.getKey("toolbar_menu"))
+
+            parameter_names = self.getParameterNames()
+            if menu_value is not None:
+                if event == "Check All":
+                    self.setChecks(names=parameter_names, overwrite=True)
+                elif event == "Uncheck All":
+                    self.setChecks(names=parameter_names, overwrite=False)
+            elif event == "Submit":
+                window.close()
+                return [parameter_name for parameter_name in parameter_names if self.getValue(parameter_name)]
+
+        window.close()
+        return []
