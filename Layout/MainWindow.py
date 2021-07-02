@@ -1143,13 +1143,19 @@ class MainWindowRunner(WindowRunner):
         else:
             raise RecursiveTypeError(species)
 
-    def getPlotChoices(self) -> Dict[str, List[str]]:
+    def getPlotChoices(self, model: Model = None) -> Dict[str, List[str]]:
         """
         Get names of variable/functions to analyze for plot.
         
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve choices from
+        :param model: model to retrieve choices from.
+            Default to model associated with window.
+        :returns: Dictionary of plot choices.
+            Key is species of plot choice (e.g. "Variable", "Function", "Parameter").
+            Value is list of names for plot choices.
         """
-        model = self.getModel()
+        if model is None:
+            model = self.getModel()
         plot_choices = {
             "Variable": ['t'] + model.getDerivativeVariables(return_type=str),
             "Function": [function.getName() for function in model.getFunctions(filter_type=Independent)],
@@ -1500,11 +1506,12 @@ class MainWindowRunner(WindowRunner):
         """
         event, free_parameter_values = self.getFreeParameterValues()
         if event == "Submit":
+            model = self.getModel()
             kwargs = {
                 "name": "Run Simulation for Model",
-                "model": self.getModel(),
+                "model": model,
                 "free_parameter_values": free_parameter_values,
-                "plot_choices": self.getPlotChoices()
+                "plot_choices": self.getPlotChoices(model=model)
             }
             simulation_window = SimulationWindowRunner(**kwargs)
             simulation_window.runWindow()
