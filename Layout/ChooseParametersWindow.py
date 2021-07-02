@@ -1,3 +1,6 @@
+"""
+This file contains classes relating to the choose-parameters window.
+"""
 from __future__ import annotations
 
 from os.path import basename
@@ -13,7 +16,23 @@ from macros import formatQuantity, getTexImage
 
 
 class ChooseParameterRow(Row):
+    """
+    This class contains the layout for a parameter row in the choose-parameters window.
+        #. Label to indicate name of parameter.
+        #. Label to indicate value and unit for parameter.
+        #. Checkbox allow user to overwrite (or not) parameter into model.
+
+    :ivar quantity: quantity containing value and unit for parameter
+    """
+
     def __init__(self, name: str, quantity: Quantity, window: ChooseParametersWindow):
+        """
+        Constructor for :class:`~Layout.ChooseParametersWindow.ChooseParameterRow`.
+
+        :param name: name of parameter
+        :param quantity: quantity containing value and unit
+        :param window: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` that row is stored in
+        """
         super().__init__(name, window=window)
         self.quantity = quantity
 
@@ -25,9 +44,19 @@ class ChooseParameterRow(Row):
         self.addElements(elements)
 
     def getQuantity(self) -> Quantity:
+        """
+        Get parameter quantity associated with row.
+
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParameterRow` to retrieve quantity from
+        """
         return self.quantity
 
     def getParameterLabel(self) -> Union[sg.Image, sg.Text]:
+        """
+        Get label for name of parameter.
+
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParameterRow` to retrieve label from
+        """
         kwargs = {
             "name": self.getName(),
             "size": (110, None)  # dim
@@ -35,6 +64,11 @@ class ChooseParameterRow(Row):
         return getTexImage(**kwargs)
 
     def getQuantityLabel(self) -> sg.Text:
+        """
+        Get label for parameter value and unit.
+
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParameterRow` to retrieve label from
+        """
         kwargs = {
             "text": formatQuantity(self.getQuantity()),
             "size": (10, None)  # dim
@@ -42,6 +76,11 @@ class ChooseParameterRow(Row):
         return sg.Text(**kwargs)
 
     def getCheckbox(self) -> sg.Checkbox:
+        """
+        Get checkbox, allowing user to overwrite (or not) parameter value in model.
+
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParameterRow` to retrieve checkbox from
+        """
         kwargs = {
             "text": "Overwrite?",
             "default": True,
@@ -51,6 +90,19 @@ class ChooseParameterRow(Row):
 
 
 class ChooseParametersWindow(Window):
+    """
+    This class contains the layout for the choose-parameters window.
+        #. Menu: This allows user to (un)check all parameters.
+        #. Header to indicate purpose of each column.
+        #. Footer with submit and cancel buttons.
+        #. Row for each parameter, allowing user to choose whether (or not) to overwrite in model.
+
+    :ivar quantites: dictionary of parameter quantities.
+        Key is name of parameter.
+        Value is quantity containing value and unit for parameter.
+    :ivar filename: name of file where parameters were loaded from (optional)
+    """
+
     def __init__(
             self,
             name: str,
@@ -58,31 +110,72 @@ class ChooseParametersWindow(Window):
             quantities: Dict[str, Quantity] = None,
             filename: str = ''
     ):
+        """
+        Constructor for :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow`.
+
+        :param name: name of window
+        :param runner: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindowRunner` that window is stored in
+        :param quantities: dictionary of parameter quantities.
+            Key is name of parameter.
+            Value is quantity containing value and unit for parameter.
+        """
         dimensions = {
             "window": (None, None)  # dim
         }
         super().__init__(name, runner, dimensions=dimensions)
-        self.parameter_rows = []
         self.quantities = quantities
         self.filename = filename
 
     def getFilename(self) -> str:
+        """
+        Get name of file to load parameters from.
+
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve name from
+        """
         return self.filename
 
-    def addQuantity(self, name: str, quantity: Quantity) -> None:
+    def addParameter(self, name: str, quantity: Quantity) -> None:
+        """
+        Add parameter (name, value, unit) to window.
+
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to store quantity in
+        :param name: name of parameter
+        :param quantity: quantity containing value and unit for parameter
+        """
         self.quantities[name] = quantity
 
-    def addQuantities(self, quantities: Dict[str, Quantity]) -> None:
-        for name, quantity in quantities.items():
-            self.addQuantity(name, quantity)
+    def addParameters(self, quantities: Dict[str, Quantity]) -> None:
+        """
+        Add parameters to window.
 
-    def getQuantities(self) -> Dict[str, Quantity]:
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to store quantity in
+        :param quantities: dictoinary of info for parameters:
+            Key is name of parameter:
+            Value is quantity containing value and unit for parameter.
+        """
+        for name, quantity in quantities.items():
+            self.addParameter(name, quantity)
+
+    def getParameters(self) -> Dict[str, Quantity]:
+        """
+        Get parameters stored in window.
+
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve parameters from
+        :returns: Dictionary of parameter information.
+            Key is name of parameter.
+            Value is quantity containing value and unit for parameter.
+        """
         return self.quantities
 
     def getParameterRows(self) -> List[ChooseParameterRow]:
+        """
+        Get rows, each corresponding to a parameter stored in the window.
+
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve rows from
+        """
         rows = [
             ChooseParameterRow(name, quantity, self)
-            for name, quantity in self.getQuantities().items()
+            for name, quantity in self.getParameters().items()
         ]
         return rows
 
@@ -108,6 +201,12 @@ class ChooseParametersWindow(Window):
         return sg.Menu(**kwargs)
 
     def getHeaderRow(self) -> Row:
+        """
+        Get header for window.
+        This includes labels, which indicate the purpose of each column in the window.
+
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve header from
+        """
         filename = basename(self.getFilename())
         text = "Choose which parameters to overwrite"
         if filename != '':
@@ -120,12 +219,21 @@ class ChooseParametersWindow(Window):
 
     @staticmethod
     def getFooterRow() -> Row:
+        """
+        Get footer for window.
+        This includes a submit and cancel button.
+        """
         submit_button = sg.Submit()
         cancel_button = sg.Cancel()
         row = Row(elements=[submit_button, cancel_button])
         return row
 
     def getParameterRowsLayout(self) -> Layout:
+        """
+        Get layout for scrollable section containing row for each parameter.
+
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve section from
+        """
         kwargs = {
             "layout": Layout(rows=self.getParameterRows()).getLayout(),
             "size": (None, 350),  # dim
@@ -136,6 +244,11 @@ class ChooseParametersWindow(Window):
         return layout
 
     def getLayout(self) -> List[List[sg.Element]]:
+        """
+        Get layout for window.
+
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve layout from
+        """
         menu = Layout(rows=Row(elements=self.getMenu()))
         header = self.getHeaderRow()
         footer = self.getFooterRow()
@@ -144,7 +257,19 @@ class ChooseParametersWindow(Window):
 
 
 class ChooseParametersWindowRunner(WindowRunner):
+    """
+    This class runs :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow`.
+    This window allows the user to...
+        #. Choose which parameter(s) to overwrite into model.
+
+    """
+
     def __init__(self, name: str, **kwargs):
+        """
+        Constructor for :class:`~Layout.ChooseParametersWindow.ChooseParametersWindowRunner`.
+
+        :param name: name of window
+        """
         window = ChooseParametersWindow(name, self, **kwargs)
         super().__init__(name, window)
 
@@ -156,13 +281,13 @@ class ChooseParametersWindowRunner(WindowRunner):
         """
         # noinspection PyTypeChecker
         window_object: ChooseParametersWindow = self.getWindowObject()
-        quantites = window_object.getQuantities()
+        quantites = window_object.getParameters()
         parameter_names = list(quantites.keys())
         return parameter_names
 
     def setChecks(self, names: Union[str, List[str]], overwrite: bool) -> None:
         """
-        Set all checkbox (determining whether to overwrite parameter) to chosen value.
+        Set all checkboxes (determining whether to overwrite parameter) to chosen value.
 
         :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to set checkboxes in
         :param names: name(s) of parameter(s) to set checkboxes for
@@ -179,6 +304,12 @@ class ChooseParametersWindowRunner(WindowRunner):
             raise RecursiveTypeError(names)
 
     def getChosenParameters(self) -> List[str]:
+        """
+        Get checked parameters in window.
+
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve checked boxes from
+        :returns: List of parameter names, where corresponding checkbox is checked
+        """
         window = self.getWindow()
         event = ''
         while event not in [sg.WIN_CLOSED, "Cancel"]:
