@@ -1,8 +1,14 @@
-kgsinf: # gating spring stiffness
+kr:
   properties: [Independent]
   variables: pr
-  parameters: [kgs0,kgs1]
-  form: kgs0 + (kgs1-kgs0)*pr
+  parameters: [kr0, kr1]
+  form: kr1 + (1-pr)*(kr0-kr1)
+kgsinf:
+  properties: [Independent]
+  parameters: ktl
+  children:
+    kr:
+  form: 1/ (1/ktl + 1/kr)
 dxgs: # gating spring displacement
   properties: [Independent]
   variables: [Xhb,xa,pT]
@@ -35,24 +41,11 @@ C: # adaptation motor climbage
   parameters: [C0,C1]
   form: (1-pm)*(C0-C1) + C1
 
-tauT: # MET-channel time constant
-  properties: [Independent]
-  parameters: tauT0
-  form: tauT0
-lambdaC: # MET-channel coefficient of friction
-  properties: [Independent]
-  variables: pT
-  parameters: [N,gamma,d,kB,T]
-  children:
-    kgsinf:
-    tauT:
-  form: N * (gamma*kgsinf*d)**2 * pT*(1-pT) * tauT / (kB*T)
 lambdahb: # hair bundle coefficient of friction
   properties: [Independent]
-  parameters: lambdaH
-  children:
-    lambdaC:
-  form: lambdaH # + lambdaC
+  parameters: [lambdaH, lambdaC]
+  form: lambdaH + lambdaC
+
 CpT: # basis Boltzmann factor for transduction channel
   properties: [Independent]
   parameters: [dE0,kB,T]
@@ -76,6 +69,24 @@ pTinf: # pT equilibrium
     xpT:
     dxpT:
   form: 1 / (1+CpT*exp(-xpT/dxpT))
+
+gT: # conductance for transduction channel
+  properties: [Independent]
+  variables: pT
+  parameters: [PT,zCa,Cahbin,Cahbex]
+  children:
+    gGHK:
+      parameters: [PT,zCa,Cahbin,Cahbex]
+  form: pT * gGHK
+IT: # current for transduction channel
+  properties: [ Independent ]
+  parameters: ET
+  children:
+    gT:
+    I:
+      parameters: ET
+      functions: gT
+  form: I
 
 cX: # equilibrium concentration for diffusion from point source
   properties: [Dependent]
@@ -102,7 +113,6 @@ cCam: # Ca2+ concentration at reclosure element
       parameters: [zCa,DCa,rm]
       functions: IT
   form: cX
-
 
 dXhb: # hair bundle position
   properties: [Derivative, Independent]
@@ -138,11 +148,3 @@ dpm: # adaptation-motor Ca2+-binding probability
   children:
     cCam:
   form: kam*cCam*(1-pm) - kdm*pm
-dpT: # MET open-channel probability
-  properties: [Derivative, Independent]
-  variable: pT
-  variables: pT
-  children:
-    pTinf:
-    tauT:
-  form: (pTinf-pT) / tauT
