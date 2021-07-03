@@ -8,8 +8,7 @@ from typing import Any, List, Union
 import PySimpleGUI as sg
 from pint import Quantity
 
-
-def unique(nonunique: list) -> list:
+def unique(nonunique: List[Any]) -> List[Any]:
     """
     Get collection containing only unique elements.
 
@@ -18,7 +17,6 @@ def unique(nonunique: list) -> list:
     seen = set()
     unique_list = [element for element in nonunique if not (element in seen or seen.add(element))]
     return unique_list
-
 
 def getIndicies(
         elements: Union[Any, List[Any]], element_list: list, element_class: type = None
@@ -43,7 +41,6 @@ def getIndicies(
     else:
         raise TypeError("element input must be {element_class:s} or list")
 
-
 def getElements(indicies: Union[int, List[int]], element_list: list) -> Union[Any, List[Any]]:
     """
     Get element(s) at index(es) in list.
@@ -61,7 +58,6 @@ def getElements(indicies: Union[int, List[int]], element_list: list) -> Union[An
     elif isinstance(indicies, int):
         return element_list[indicies]
 
-
 def commonElement(set1: set, set2: set, n: int = 1) -> bool:
     """
     Determine whether list1 and list2 have at least n common elements.
@@ -73,7 +69,6 @@ def commonElement(set1: set, set2: set, n: int = 1) -> bool:
         False otherwise.
     """
     return len(set1.intersection(set2)) >= n
-
 
 def toList(obj: Any, object_class: type = None) -> list:
     """
@@ -91,17 +86,13 @@ def toList(obj: Any, object_class: type = None) -> list:
     else:
         raise TypeError(f"object input must be {object_class:s} or list")
 
-
 def formatValue(quantity: Union[Quantity, float]) -> str:
     """
-    __Purpose__
-        Format value for quantity containing value and unit
-        Display +/- 0.01 precision
-        Remove trailing zeros
-    __Inputs__
-        quantity [metpy.Quantity]: quantity to format value of
-    __Return__
-        str
+    Format value for quantity or float.
+    Display full precision.
+    Remove trailing zeros.
+    
+    :param quantity: quantity or float to format
     """
     if isinstance(quantity, Quantity):
         magnitude = quantity.magnitude
@@ -109,13 +100,13 @@ def formatValue(quantity: Union[Quantity, float]) -> str:
         magnitude = quantity
     else:
         raise TypeError("quantity must be Quantity or float")
-
+    
     decimal = f"{magnitude:f}".rstrip('0').rstrip('.')
-
+    
     scientific_splits = f"{magnitude:e}".split('e')
     scientific_float, scientific_exp = scientific_splits[0].rstrip('0').rstrip('.'), scientific_splits[1]
     scientific_full = scientific_float + 'e' + scientific_exp
-
+    
     if float(decimal) != magnitude:
         return scientific_full
     elif len(decimal) <= len(scientific_full):
@@ -123,46 +114,36 @@ def formatValue(quantity: Union[Quantity, float]) -> str:
     elif len(decimal) > len(scientific_full):
         return scientific_full
 
-
 def formatUnit(quantity: Quantity) -> str:
     """
-    __Purpose__
-        Format unit as string for quantity containing value and unit
-        Display unit abbreviations
-        Remove spaces between units
-    __Inputs__
-        quantity [metpy.Quantity]: quantity to format value of
-    __Return__
-        str
+    Format unit as string from quantity.
+    Display unit as abbreviations.
+    Remove spaces between units.
+    
+    :param quantity: quantity to format
     """
     return f"{quantity.units:~}".replace(' ', '')
 
-
 def formatQuantity(quantity: Quantity) -> str:
     """
-    __Purpose__
-        Format quantity as string for unit containing unit and quantity
-    __Inputs__
-        quantity [metpy.Quantity]: quantity to format value of
-    __Return__
-        str
+    Format quantity as string with value and unit.
+    
+    :param quantity: quantity to format
     """
     value, unit = formatValue(quantity), formatUnit(quantity)
     formatted_quantity = f"{value:s} {unit:s}"
     return formatted_quantity
 
-
 def getTexImage(name: str, tex_folder: str = "tex", **kwargs) -> Union[sg.Image, sg.Text]:
     """
-    __Purpose__
-        Get tex image associated with variable name
-    __Inputs__
-        name [str]: name of variable to retrieve tex image of
-        **kwargs [**dict]: extra argument for PySimpleGUI.Image
-    __Return__
-        PySimpleGUI.Image
+    Get tex image associated with variable name.
+    
+    :param name: name of variable to retrieve image of
+    :param tex_folder: folder to retrieve image from
+    :returns: Image if image found in folder.
+        Text if image not found in folder.
     """
-    filename = join(tex_folder, name) + ".png"
+    filename = join(tex_folder, name + ".png")
     if isfile(filename):
         return sg.Image(filename=filename, **kwargs)
     else:
