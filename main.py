@@ -26,7 +26,7 @@ def main():
 
     parameter_filenames = [
         os.path.join("parameters", filestem + ".yml")
-        for filestem in ["parameters", "Martin2003", "Roongthumskull2011-7B", "func_params"]
+        for filestem in ["parameters", "Martin2003", "Roongthumskul2011-7B", "Barral2018-5Aorange", "func_params"]
     ]
     equation_filenames = [
         os.path.join("equations", filestem + ".yml")
@@ -39,9 +39,9 @@ def main():
         "name": "Hair Bundle/Soma Model",
         "parameter_filenames": parameter_filenames,
         "function_filenames": equation_filenames,
-        "time_evolution_filename": time_evolution_layout,
-        "parameter_input_filename": parameter_input_layout,
-        "function_filename": function_layout
+        "time_evolution_layout": time_evolution_layout,
+        "parameter_layout": parameter_input_layout,
+        "function_layout": function_layout
     }
     gui = MainWindowRunner(**kwargs)
     gui.runWindow()

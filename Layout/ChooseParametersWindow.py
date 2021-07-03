@@ -100,14 +100,14 @@ class ChooseParametersWindow(Window):
     :ivar quantites: dictionary of parameter quantities.
         Key is name of parameter.
         Value is quantity containing value and unit for parameter.
-    :ivar filename: name of file where parameters were loaded from (optional)
+    :ivar filename: name of file that parameters were loaded from (optional)
     """
 
     def __init__(
             self,
             name: str,
             runner: ChooseParametersWindowRunner,
-            quantities: Dict[str, Quantity] = None,
+            quantities: Dict[str, Quantity],
             filename: str = ''
     ):
         """
@@ -118,6 +118,7 @@ class ChooseParametersWindow(Window):
         :param quantities: dictionary of parameter quantities.
             Key is name of parameter.
             Value is quantity containing value and unit for parameter.
+        :param filename: name of file that parameters were loaded from
         """
         dimensions = {
             "window": (None, None)  # dim
@@ -133,28 +134,6 @@ class ChooseParametersWindow(Window):
         :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve name from
         """
         return self.filename
-
-    def addParameter(self, name: str, quantity: Quantity) -> None:
-        """
-        Add parameter (name, value, unit) to window.
-
-        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to store quantity in
-        :param name: name of parameter
-        :param quantity: quantity containing value and unit for parameter
-        """
-        self.quantities[name] = quantity
-
-    def addParameters(self, quantities: Dict[str, Quantity]) -> None:
-        """
-        Add parameters to window.
-
-        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to store quantity in
-        :param quantities: dictoinary of info for parameters:
-            Key is name of parameter:
-            Value is quantity containing value and unit for parameter.
-        """
-        for name, quantity in quantities.items():
-            self.addParameter(name, quantity)
 
     def getParameters(self) -> Dict[str, Quantity]:
         """

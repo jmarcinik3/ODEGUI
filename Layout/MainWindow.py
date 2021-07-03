@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from typing import Dict, List, Optional, Tuple, Union
 
 # noinspection PyPep8Naming
@@ -676,7 +677,13 @@ class FunctionRow(TabRow):
 
         :param self: :class:`~Layout.MainWindow.FunctionRow` to retrieve label from
         """
-        for filename_temp in ["equations/Bormuth2014.yml", "equations/soma_eqs.yml", "equations/hb-soma_eqs.yml"]:
+        for filename_temp in [
+            "equations/Ohms_law.yml",
+            "equations/Martin2003.yml",
+            "equations/Roongthumskul2011.yml",
+            "equations/Barral2018.yml",
+            "equations/soma_eqs.yml",
+            "equations/var_funcs.yml"]:
             function_info = yaml.load(open(filename_temp, 'r'), Loader=yaml.Loader)
             try:
                 form = function_info[self.getName()]["form"]
@@ -1047,9 +1054,9 @@ class MainWindowRunner(WindowRunner):
             name: str,
             parameter_filenames: Union[str, List[str]],
             function_filenames: Union[str, List[str]],
-            time_evolution_filename: str,
-            parameter_input_filename: str,
-            function_filename: str
+            time_evolution_layout: str,
+            parameter_layout: str,
+            function_layout: str
     ) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.MainWindowRunner`.
@@ -1057,16 +1064,17 @@ class MainWindowRunner(WindowRunner):
         :param name: name of window
         :param parameter_filenames: name(s) for file(s), containing information about parameters in model
         :param function_filenames: name(s) for file(s), containing information about functions in model
-        :param time_evolution_filename: name of file containing layout for time-evolution tab
-        :param parameter_input_filename: name of file containing layout for parameter-input tab
+        :param time_evolution_layout: name of file containing layout for time-evolution tab
+        :param parameter_layout: name of file containing layout for parameter-input tab
+        :param function_layout: name of file containing layout for function tab
         """
         self.function_ymls = function_filenames
         self.parameters = YML.readParameters(parameter_filenames)
 
         blueprints = {
-            "time_evolution": YML.readLayout(time_evolution_filename),
-            "parameter_input": YML.readLayout(parameter_input_filename),
-            "functions": YML.readLayout(function_filename)
+            "time_evolution": YML.readLayout(time_evolution_layout),
+            "parameter_input": YML.readLayout(parameter_layout),
+            "functions": YML.readLayout(function_layout)
         }
         window = MainWindow("Hair Bundle/Soma Model", self, blueprints)
         super().__init__(name, window)
@@ -1355,7 +1363,10 @@ class MainWindowRunner(WindowRunner):
         old_quantity = self.getParameters(names=name)
         if isinstance(quantity, type(old_quantity)):
             self.parameters[name] = quantity
-            self.updateParameterLabels(name)
+            try:
+                self.updateParameterLabels(name)
+            except KeyError:
+                warnings.warn(f"parameter {name:s} not found in window")
         elif old_quantity is None:
             pass
         else:
