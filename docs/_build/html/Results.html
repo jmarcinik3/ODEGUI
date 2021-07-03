@@ -1,0 +1,643 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Results module &mdash; Model 2021 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+    <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+  
+    <link rel="stylesheet" href="_static/sphinx_paramlinks.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="Model 2021 documentation" href="index.html"/>
+        <link rel="up" title="ODEGUI" href="modules.html"/>
+        <link rel="next" title="Results.Results" href="stubs/Results.Results.html"/>
+        <link rel="prev" title="Layout.SimulationWindow.SimulationWindowRunner" href="stubs/Layout.SimulationWindow.SimulationWindowRunner.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Model
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">ODEGUI</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="CustomErrors.html">CustomErrors module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Function.html">Function module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="KeyList.html">KeyList module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Layout.html">Layout package</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Results module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="stubs/Results.Results.html">Results.Results</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Simulation.html">Simulation module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="YML.html">YML module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="macros.html">macros module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html">main module</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Model</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">ODEGUI</a> &raquo;</li>
+        
+      <li>Results module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/Results.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="results-module">
+<h1>Results module<a class="headerlink" href="#results-module" title="Permalink to this headline">¶</a></h1>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="stubs/Results.Results.html#Results.Results" title="Results.Results"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Results</span></code></a>(model, free_parameter_values)</p></td>
+<td><p>This class stores results from an ODE simulation.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">Results.</span></span><span class="sig-name descname"><span class="pre">Results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">free_parameter_values</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class stores results from an ODE simulation.
+Minimally, results for temporal variables are required to be set.
+Other results may be calculated and saved from <a class="reference internal" href="stubs/Function.Model.html#Function.Model" title="Function.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a> as needed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>results</strong> – 2D dictionary of results.
+First key is indicies of free parameter for current data to present.
+Second key is name of quantity to retrieve results of.
+Value is array of quantitiy values over time.</p></li>
+<li><p><strong>model</strong> – <a class="reference internal" href="stubs/Function.Model.html#Function.Model" title="Function.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a> to calculated results from</p></li>
+<li><p><strong>free_parameter_values</strong> – dictionary of values for free parameters.
+Key is name of free parameter.
+Value is possible values for free parameter.</p></li>
+<li><p><strong>general_equilibrium_forms</strong> – dictionary of symbolic equilibrium expressions.
+Key is name of variable.
+Value is symbolic expression.
+This attribute is so that equilibria only need to be calculated once.
+They are reused after their initial calculation.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getConstantVariableResults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results.getConstantVariableResults"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get results from simulation for constant variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Results.Results.getConstantVariableResults.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getConstantVariableResults.params.self">¶</a> – <code class="xref py py-class docutils literal notranslate"><span class="pre">SimulationWindowRunner</span></code> to retrieve results from</p></li>
+<li><p><span class="target" id="Results.Results.getConstantVariableResults.params.index"></span><strong>index</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getConstantVariableResults.params.index">¶</a> – index of parameter value for free parameter</p></li>
+<li><p><span class="target" id="Results.Results.getConstantVariableResults.params.name"></span><strong>name</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getConstantVariableResults.params.name">¶</a> – name of variable to retrieve results of</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getEquilibriumForm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results.getEquilibriumForm"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get equilibrium expression for a variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Results.Results.getEquilibriumForm.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getEquilibriumForm.params.self">¶</a> – <a class="reference internal" href="stubs/Results.Results.html#Results.Results" title="Results.Results"><code class="xref py py-class docutils literal notranslate"><span class="pre">Results</span></code></a> to retrieve equilibrium from</p></li>
+<li><p><span class="target" id="Results.Results.getEquilibriumForm.params.name"></span><strong>name</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getEquilibriumForm.params.name">¶</a> – name of variable to retrieve equilibrium for</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Expr</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getEquilibriumVariableResults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results.getEquilibriumVariableResults"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get results from simulation for variable in equilibrium.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Results.Results.getEquilibriumVariableResults.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getEquilibriumVariableResults.params.self">¶</a> – <code class="xref py py-class docutils literal notranslate"><span class="pre">SimulationWindowRunner</span></code> to retrieve results from</p></li>
+<li><p><span class="target" id="Results.Results.getEquilibriumVariableResults.params.index"></span><strong>index</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getEquilibriumVariableResults.params.index">¶</a> – index of parameter value for free parameter</p></li>
+<li><p><span class="target" id="Results.Results.getEquilibriumVariableResults.params.name"></span><strong>name</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getEquilibriumVariableResults.params.name">¶</a> – name of variable to retrieve results of</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getFourierTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results.getFourierTransform"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get Fourier transform of results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Results.Results.getFourierTransform.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getFourierTransform.params.self">¶</a> – <a class="reference internal" href="stubs/Results.Results.html#Results.Results" title="Results.Results"><code class="xref py py-class docutils literal notranslate"><span class="pre">Results</span></code></a> to retreive results from</p></li>
+<li><p><span class="target" id="Results.Results.getFourierTransform.params.index"></span><strong>index</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getFourierTransform.params.index">¶</a> – index of results.
+This is a tuple of indicies.
+The index of the tuple corresponds to the parameter in free parameters.
+The index within the tuple corresponds to the value of the parameter in its set of possible values.</p></li>
+<li><p><span class="target" id="Results.Results.getFourierTransform.params.name"></span><strong>name</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getFourierTransform.params.name">¶</a> – name of quantity to retreive Fourier transform of</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getFreeParameterIndex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results.getFreeParameterIndex"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get index of free parameter within collection of free-parameter names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Results.Results.getFreeParameterIndex.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getFreeParameterIndex.params.self">¶</a> – <a class="reference internal" href="stubs/Results.Results.html#Results.Results" title="Results.Results"><code class="xref py py-class docutils literal notranslate"><span class="pre">Results</span></code></a> to retreive free-parameter names from</p></li>
+<li><p><span class="target" id="Results.Results.getFreeParameterIndex.params.name"></span><strong>name</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getFreeParameterIndex.params.name">¶</a> – name of free parameter to retreive index of</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getFreeParameterNames</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results.getFreeParameterNames"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get names of free parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><span class="target" id="Results.Results.getFreeParameterNames.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getFreeParameterNames.params.self">¶</a> – <a class="reference internal" href="stubs/Results.Results.html#Results.Results" title="Results.Results"><code class="xref py py-class docutils literal notranslate"><span class="pre">Results</span></code></a> to retrieve free-parameter names from</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getFreeParameterValues</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results.getFreeParameterValues"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get values for a free parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Results.Results.getFreeParameterValues.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getFreeParameterValues.params.self">¶</a> – <cite>~Results.Results</cite> to retreive value from</p></li>
+<li><p><span class="target" id="Results.Results.getFreeParameterValues.params.names"></span><strong>names</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getFreeParameterValues.params.names">¶</a> – name(s) of parameter to retreive values for</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getFunctionResults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results.getFunctionResults"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get results from simulation for function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Results.Results.getFunctionResults.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getFunctionResults.params.self">¶</a> – <code class="xref py py-class docutils literal notranslate"><span class="pre">SimulationWindowRunner</span></code> to retrieve results from</p></li>
+<li><p><span class="target" id="Results.Results.getFunctionResults.params.index"></span><strong>index</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getFunctionResults.params.index">¶</a> – index of parameter value for free parameter</p></li>
+<li><p><span class="target" id="Results.Results.getFunctionResults.params.name"></span><strong>name</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getFunctionResults.params.name">¶</a> – name of function to retrieve results ofZ</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getHolderMean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results.getHolderMean"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get Holder mean for results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Results.Results.getHolderMean.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getHolderMean.params.self">¶</a> – <a class="reference internal" href="stubs/Results.Results.html#Results.Results" title="Results.Results"><code class="xref py py-class docutils literal notranslate"><span class="pre">Results</span></code></a> to retrieve results from</p></li>
+<li><p><span class="target" id="Results.Results.getHolderMean.params.index"></span><strong>index</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getHolderMean.params.index">¶</a> – index of results.
+This is a tuple of indicies.
+The index of the tuple corresponds to the parameter in free parameters.
+The index within the tuple corresponds to the value of the parameter in its set of possible values.</p></li>
+<li><p><span class="target" id="Results.Results.getHolderMean.params.name"></span><strong>name</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getHolderMean.params.name">¶</a> – name of quantity to retrieve mean for</p></li>
+<li><p><span class="target" id="Results.Results.getHolderMean.params.order"></span><strong>order</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getHolderMean.params.order">¶</a> – order of Holder mean</p></li>
+<li><p><span class="target" id="Results.Results.getHolderMean.params.kwargs"></span><strong>kwargs</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getHolderMean.params.kwargs">¶</a> – additional arguments to pass into <code class="xref py py-meth docutils literal notranslate"><span class="pre">getResultsOverTime()</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getModel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results.getModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get associated <a class="reference internal" href="stubs/Function.Model.html#Function.Model" title="Function.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Function.Model</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><span class="target" id="Results.Results.getModel.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getModel.params.self">¶</a> – <a class="reference internal" href="stubs/Results.Results.html#Results.Results" title="Results.Results"><code class="xref py py-class docutils literal notranslate"><span class="pre">Results</span></code></a> to retrieve associated <a class="reference internal" href="stubs/Function.Model.html#Function.Model" title="Function.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a> from</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="stubs/Function.Model.html#Function.Model" title="Function.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getOscillationAmplitude</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results.getOscillationAmplitude"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getOscillationFrequency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calculation_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'autocorrelation'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">condensing_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'average'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results.getOscillationFrequency"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get oscillation frequency for quantity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Results.Results.getOscillationFrequency.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getOscillationFrequency.params.self">¶</a> – <a class="reference internal" href="stubs/Results.Results.html#Results.Results" title="Results.Results"><code class="xref py py-class docutils literal notranslate"><span class="pre">Results</span></code></a> to retrieve quantity results from</p></li>
+<li><p><span class="target" id="Results.Results.getOscillationFrequency.params.index"></span><strong>index</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getOscillationFrequency.params.index">¶</a> – index of results.
+This is a tuple of indicies.
+The index of the tuple corresponds to the parameter in free parameters.
+The index within the tuple corresponds to the value of the parameter in its set of possible values.</p></li>
+<li><p><span class="target" id="Results.Results.getOscillationFrequency.params.name"></span><strong>name</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getOscillationFrequency.params.name">¶</a> – name of quantity to retrieve frequency for</p></li>
+<li><p><span class="target" id="Results.Results.getOscillationFrequency.params.calculation_method"></span><strong>calculation_method</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getOscillationFrequency.params.calculation_method">¶</a> – method used to calculate frequencies.
+“maxima_separation” uses peak-to-peak separation of waveform.
+“minima_separation” uses trough-to-trough separation of waveform.
+“extrema_separation” uses peaks and troughs separation of waveform.
+“maxima_fourier_[n]” uses peak-to-peak separation of Fourier transform (i.e. separation of harmonics).
+This method uses separations for the first n maxima.
+“autocorrelation” uses autocorrelation of waveform.
+This method uses the argument of the first local maximum, excluding zero.</p></li>
+<li><p><span class="target" id="Results.Results.getOscillationFrequency.params.condensing_method"></span><strong>condensing_method</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getOscillationFrequency.params.condensing_method">¶</a> – method used to “average” frequencies.
+“average” uses arithmetic mean of frequencies.
+“maximum” uses maximum of frequencies.
+“minimum” uses minium of frequencies.
+“initial” uses first frequency in frequencies.
+“final” uses last frequency in frequencies.</p></li>
+<li><p><span class="target" id="Results.Results.getOscillationFrequency.params.kwargs"></span><strong>kwargs</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getOscillationFrequency.params.kwargs">¶</a> – additional arguments to pass into <code class="xref py py-meth docutils literal notranslate"><span class="pre">getResultsOverTime()</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getResultsOverTime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'None'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">condensor_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'None'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">condensor_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results.getResultsOverTime"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get results for variable or function over time.
+Results are evaluated from simulation.
+Optionally perform a transformation on the quantity.
+Optionally condense variable values into one value.</p>
+<dl class="simple">
+<dt>__Recursion <a href="#id1"><span class="problematic" id="id2">Base__</span></a></dt><dd><p>return results for single variable: names [str]</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Results.Results.getResultsOverTime.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getResultsOverTime.params.self">¶</a> – <code class="xref py py-class docutils literal notranslate"><span class="pre">SimulationWindowRunner</span></code> to retrieve results from</p></li>
+<li><p><span class="target" id="Results.Results.getResultsOverTime.params.index"></span><strong>index</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getResultsOverTime.params.index">¶</a> – index of results.
+This is a tuple of indicies.
+The index of the tuple corresponds to the parameter in free parameters.
+The index within the tuple corresponds to the value of the parameter in its set of possible values.</p></li>
+<li><p><span class="target" id="Results.Results.getResultsOverTime.params.names"></span><strong>names</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getResultsOverTime.params.names">¶</a> – name(s) of variable/function(s) to retrieve results for</p></li>
+<li><p><span class="target" id="Results.Results.getResultsOverTime.params.transform_name"></span><strong>transform_name</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getResultsOverTime.params.transform_name">¶</a> – transform to perform on results.
+“Fourier” - Fourier transform.</p></li>
+<li><p><span class="target" id="Results.Results.getResultsOverTime.params.condensor_name"></span><strong>condensor_name</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getResultsOverTime.params.condensor_name">¶</a> – analysis to perform on results to reduce into one (or few) floats.
+“Frequency” - calculate frequency of oscillation</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getResultsOverTimePerParameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantity_names</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results.getResultsOverTimePerParameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get free-parameter values and “averaged” quantity values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Results.Results.getResultsOverTimePerParameter.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getResultsOverTimePerParameter.params.self">¶</a> – <code class="xref py py-class docutils literal notranslate"><span class="pre">SimulationWindowRunner</span></code> to retrieve results from</p></li>
+<li><p><span class="target" id="Results.Results.getResultsOverTimePerParameter.params.index"></span><strong>index</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getResultsOverTimePerParameter.params.index">¶</a> – index of results.
+This is a tuple of indicies.
+The index of the tuple corresponds to the parameter in free parameters.
+The index within the tuple corresponds to the value of the parameter in its set of possible values.</p></li>
+<li><p><span class="target" id="Results.Results.getResultsOverTimePerParameter.params.parameter_name"></span><strong>parameter_name</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getResultsOverTimePerParameter.params.parameter_name">¶</a> – name of free parameter to average quantity results over.</p></li>
+<li><p><span class="target" id="Results.Results.getResultsOverTimePerParameter.params.quantity_names"></span><strong>quantity_names</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getResultsOverTimePerParameter.params.quantity_names">¶</a> – name of quantity to average results over</p></li>
+<li><p><span class="target" id="Results.Results.getResultsOverTimePerParameter.params.kwargs"></span><strong>kwargs</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getResultsOverTimePerParameter.params.kwargs">¶</a> – additional arguments to pass into <code class="xref py py-meth docutils literal notranslate"><span class="pre">getResultsOverTime()</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, …]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>tuple of results.
+First index gives parameter values.
+Second-last index gives quantity results; one set of quantity results per index.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getSubstitutedResults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results.getSubstitutedResults"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get results from simulation for function, after substituting results from variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Results.Results.getSubstitutedResults.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getSubstitutedResults.params.self">¶</a> – <code class="xref py py-class docutils literal notranslate"><span class="pre">SimulationWindowRunner</span></code> to retrieve results from</p></li>
+<li><p><span class="target" id="Results.Results.getSubstitutedResults.params.index"></span><strong>index</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getSubstitutedResults.params.index">¶</a> – index of free parameters to retrieve substitutive results at</p></li>
+<li><p><span class="target" id="Results.Results.getSubstitutedResults.params.function"></span><strong>function</strong><a class="paramlink headerlink reference internal" href="#Results.Results.getSubstitutedResults.params.function">¶</a> – function to substitute results into</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">resetResults</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results.resetResults"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Reset results to store a new set of them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><span class="target" id="Results.Results.resetResults.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Results.Results.resetResults.params.self">¶</a> – <code class="xref py py-class docutils literal notranslate"><span class="pre">SimulationWindowRunner</span></code> to reset results for</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">setEquilibriumForms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">equilibrium_forms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results.setEquilibriumForms"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Set symbolic expressions for equilibrium variables.
+These expressions are simplified, except variables and free parameters are kept symbolic.
+Equilibria may be set manually or calculated automatically from the stored <a class="reference internal" href="stubs/Function.Model.html#Function.Model" title="Function.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Results.Results.setEquilibriumForms.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Results.Results.setEquilibriumForms.params.self">¶</a> – <a class="reference internal" href="stubs/Results.Results.html#Results.Results" title="Results.Results"><code class="xref py py-class docutils literal notranslate"><span class="pre">Results</span></code></a> to set equilibria for</p></li>
+<li><p><span class="target" id="Results.Results.setEquilibriumForms.params.equilibrium_forms"></span><strong>equilibrium_forms</strong><a class="paramlink headerlink reference internal" href="#Results.Results.setEquilibriumForms.params.equilibrium_forms">¶</a> – dictionary of equilibria for variables.
+Key is symbolic variable.
+Value is symbolic equilibrium expression of variable.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">setResults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">results</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Results.html#Results.setResults"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Save results from simulation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Results.Results.setResults.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Results.Results.setResults.params.self">¶</a> – <code class="xref py py-class docutils literal notranslate"><span class="pre">SimulationWindowRunner</span></code> to save results in</p></li>
+<li><p><span class="target" id="Results.Results.setResults.params.index"></span><strong>index</strong><a class="paramlink headerlink reference internal" href="#Results.Results.setResults.params.index">¶</a> – index of parameter value for free parameter</p></li>
+<li><p><span class="target" id="Results.Results.setResults.params.results"></span><strong>results</strong><a class="paramlink headerlink reference internal" href="#Results.Results.setResults.params.results">¶</a> – results to save at <code class="xref py py-paramref docutils literal notranslate"><span class="pre">index</span></code>.
+This must be a list of floats if name is specified.
+This must be a dictionary if name is not specified.
+Key is name of variable.
+Value is list of floats for variable over time.</p></li>
+<li><p><span class="target" id="Results.Results.setResults.params.name"></span><strong>name</strong><a class="paramlink headerlink reference internal" href="#Results.Results.setResults.params.name">¶</a> – name of quantity to set results for</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="stubs/Results.Results.html" class="btn btn-neutral float-right" title="Results.Results" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="stubs/Layout.SimulationWindow.SimulationWindowRunner.html" class="btn btn-neutral" title="Layout.SimulationWindow.SimulationWindowRunner" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2021, Joseph Marcinik.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Stanford-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2021',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/documentation_options.js"></script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/clipboard.min.js"></script>
+      <script type="text/javascript" src="_static/copybutton.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

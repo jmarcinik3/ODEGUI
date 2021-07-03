@@ -1,0 +1,404 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>KeyList module &mdash; Model 2021 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+    <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+  
+    <link rel="stylesheet" href="_static/sphinx_paramlinks.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="Model 2021 documentation" href="index.html"/>
+        <link rel="up" title="ODEGUI" href="modules.html"/>
+        <link rel="next" title="KeyList.KeyList" href="stubs/KeyList.KeyList.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Model
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">ODEGUI</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="CustomErrors.html">CustomErrors module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Function.html">Function module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">KeyList module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="stubs/KeyList.KeyList.html">KeyList.KeyList</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Layout.html">Layout package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Results.html">Results module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Simulation.html">Simulation module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="YML.html">YML module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="macros.html">macros module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html">main module</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Model</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">ODEGUI</a> &raquo;</li>
+        
+      <li>KeyList module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/KeyList.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="keylist-module">
+<h1>KeyList module<a class="headerlink" href="#keylist-module" title="Permalink to this headline">¶</a></h1>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="stubs/KeyList.KeyList.html#KeyList.KeyList" title="KeyList.KeyList"><code class="xref py py-obj docutils literal notranslate"><span class="pre">KeyList</span></code></a>([separator])</p></td>
+<td><p>Stores list of keys for future access.</p></td>
+</tr>
+</tbody>
+</table>
+<p>This file contains the KeyList class.
+This class stores keys for future access.
+Keys are stored in dictionary.
+Dictionary key is the prefix codename for each key.
+Dictionary value is the collection of keys containing that prefix.</p>
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">KeyList.</span></span><span class="sig-name descname"><span class="pre">KeyList</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">separator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'</span> <span class="pre">'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/KeyList.html#KeyList"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Stores list of keys for future access.
+Keys are generated as prefix + separator + tag.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prefixes</strong> – dictionary from prefix codename to prefix</p></li>
+<li><p><strong>separator</strong> – string separating prefix and tag</p></li>
+<li><p><strong>keys</strong> – dictionary from prefix codename to all keys stored under that prefix codename</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">addKey</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tag</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/KeyList.html#KeyList.addKey"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Add new key to key list.</p>
+<dl class="simple">
+<dt>__Recursion <a href="#id1"><span class="problematic" id="id2">Base__</span></a></dt><dd><p>add single key: keys [str]</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="KeyList.KeyList.addKey.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#KeyList.KeyList.addKey.params.self">¶</a> – <a class="reference internal" href="stubs/KeyList.KeyList.html#KeyList.KeyList" title="KeyList.KeyList"><code class="xref py py-class docutils literal notranslate"><span class="pre">KeyList</span></code></a> to retrieve add key to</p></li>
+<li><p><span class="target" id="KeyList.KeyList.addKey.params.prefix"></span><strong>prefix</strong><a class="paramlink headerlink reference internal" href="#KeyList.KeyList.addKey.params.prefix">¶</a> – prefix codename for new key</p></li>
+<li><p><span class="target" id="KeyList.KeyList.addKey.params.tag"></span><strong>tag</strong><a class="paramlink headerlink reference internal" href="#KeyList.KeyList.addKey.params.tag">¶</a> – suffix tag for new key</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">generateKey</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/KeyList.html#KeyList.generateKey"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Generate name of new key from prefix and tag</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="KeyList.KeyList.generateKey.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#KeyList.KeyList.generateKey.params.self">¶</a> – <a class="reference internal" href="stubs/KeyList.KeyList.html#KeyList.KeyList" title="KeyList.KeyList"><code class="xref py py-class docutils literal notranslate"><span class="pre">KeyList</span></code></a> to generate key name from</p></li>
+<li><p><span class="target" id="KeyList.KeyList.generateKey.params.prefix"></span><strong>prefix</strong><a class="paramlink headerlink reference internal" href="#KeyList.KeyList.generateKey.params.prefix">¶</a> – prefix codename for new key</p></li>
+<li><p><span class="target" id="KeyList.KeyList.generateKey.params.tag"></span><strong>tag</strong><a class="paramlink headerlink reference internal" href="#KeyList.KeyList.generateKey.params.tag">¶</a> – suffix tag for new key</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getKey</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/KeyList.html#KeyList.getKey"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get name of key in key list.
+Adds key to key list if not already stored, optional.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="KeyList.KeyList.getKey.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#KeyList.KeyList.getKey.params.self">¶</a> – <a class="reference internal" href="stubs/KeyList.KeyList.html#KeyList.KeyList" title="KeyList.KeyList"><code class="xref py py-class docutils literal notranslate"><span class="pre">KeyList</span></code></a> to get key name from</p></li>
+<li><p><span class="target" id="KeyList.KeyList.getKey.params.prefix"></span><strong>prefix</strong><a class="paramlink headerlink reference internal" href="#KeyList.KeyList.getKey.params.prefix">¶</a> – prefix codename for new key</p></li>
+<li><p><span class="target" id="KeyList.KeyList.getKey.params.tag"></span><strong>tag</strong><a class="paramlink headerlink reference internal" href="#KeyList.KeyList.getKey.params.tag">¶</a> – suffix tag for new key</p></li>
+<li><p><span class="target" id="KeyList.KeyList.getKey.params.add_key"></span><strong>add_key</strong><a class="paramlink headerlink reference internal" href="#KeyList.KeyList.getKey.params.add_key">¶</a> – set True to add new to collection of keys.
+Set False otherwise.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getKeyList</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefixes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/KeyList.html#KeyList.getKeyList"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get keys stored in key list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="KeyList.KeyList.getKeyList.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#KeyList.KeyList.getKeyList.params.self">¶</a> – <a class="reference internal" href="stubs/KeyList.KeyList.html#KeyList.KeyList" title="KeyList.KeyList"><code class="xref py py-class docutils literal notranslate"><span class="pre">KeyList</span></code></a> to retrieve key list from</p></li>
+<li><p><span class="target" id="KeyList.KeyList.getKeyList.params.prefixes"></span><strong>prefixes</strong><a class="paramlink headerlink reference internal" href="#KeyList.KeyList.getKeyList.params.prefixes">¶</a> – only retrieve keys with this prefix codename.
+Acts as a filter.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getPrefix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_separator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/KeyList.html#KeyList.getPrefix"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get prefix from prefix codename.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="KeyList.KeyList.getPrefix.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#KeyList.KeyList.getPrefix.params.self">¶</a> – <a class="reference internal" href="stubs/KeyList.KeyList.html#KeyList.KeyList" title="KeyList.KeyList"><code class="xref py py-class docutils literal notranslate"><span class="pre">KeyList</span></code></a> to retrieve prefix from</p></li>
+<li><p><span class="target" id="KeyList.KeyList.getPrefix.params.prefix"></span><strong>prefix</strong><a class="paramlink headerlink reference internal" href="#KeyList.KeyList.getPrefix.params.prefix">¶</a> – prefix codename to retrieve prefix of</p></li>
+<li><p><span class="target" id="KeyList.KeyList.getPrefix.params.with_separator"></span><strong>with_separator</strong><a class="paramlink headerlink reference internal" href="#KeyList.KeyList.getPrefix.params.with_separator">¶</a> – set True to return prefix with separator.
+Set False to return prefix without separator.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getPrefixes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/KeyList.html#KeyList.getPrefixes"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get all prefixes stored in key list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><span class="target" id="KeyList.KeyList.getPrefixes.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#KeyList.KeyList.getPrefixes.params.self">¶</a> – <a class="reference internal" href="stubs/KeyList.KeyList.html#KeyList.KeyList" title="KeyList.KeyList"><code class="xref py py-class docutils literal notranslate"><span class="pre">KeyList</span></code></a> to retrieve prefix codenames from</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getSeparator</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/KeyList.html#KeyList.getSeparator"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get string that separates prefix and tag.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><span class="target" id="KeyList.KeyList.getSeparator.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#KeyList.KeyList.getSeparator.params.self">¶</a> – <a class="reference internal" href="stubs/KeyList.KeyList.html#KeyList.KeyList" title="KeyList.KeyList"><code class="xref py py-class docutils literal notranslate"><span class="pre">KeyList</span></code></a> to retrieve separator from</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="stubs/KeyList.KeyList.html" class="btn btn-neutral float-right" title="KeyList.KeyList" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2021, Joseph Marcinik.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Stanford-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2021',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/documentation_options.js"></script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/clipboard.min.js"></script>
+      <script type="text/javascript" src="_static/copybutton.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

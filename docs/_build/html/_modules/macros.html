@@ -1,0 +1,369 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>macros &mdash; Model 2021 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/copybutton.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/sphinx_paramlinks.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Model 2021 documentation" href="../index.html"/>
+        <link rel="up" title="Module code" href="index.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Model
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <!-- Local TOC -->
+                <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Model</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>macros</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for macros</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This file contains miscellaneous functions that are used often throughout the project.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">isfile</span><span class="p">,</span> <span class="n">join</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="c1"># noinspection PyPep8Naming</span>
+<span class="kn">import</span> <span class="nn">PySimpleGUI</span> <span class="k">as</span> <span class="nn">sg</span>
+<span class="kn">from</span> <span class="nn">pint</span> <span class="kn">import</span> <span class="n">Quantity</span>
+
+<div class="viewcode-block" id="unique"><a class="viewcode-back" href="../macros.html#macros.unique">[docs]</a><span class="k">def</span> <span class="nf">unique</span><span class="p">(</span><span class="n">nonunique</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get collection containing only unique elements.</span>
+
+<span class="sd">    :param nonunique: collection to retrieve unique elements of</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">seen</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="n">unique_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">element</span> <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">nonunique</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">element</span> <span class="ow">in</span> <span class="n">seen</span> <span class="ow">or</span> <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">element</span><span class="p">))]</span>
+    <span class="k">return</span> <span class="n">unique_list</span></div>
+
+<div class="viewcode-block" id="getIndicies"><a class="viewcode-back" href="../macros.html#macros.getIndicies">[docs]</a><span class="k">def</span> <span class="nf">getIndicies</span><span class="p">(</span>
+        <span class="n">elements</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span> <span class="n">element_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">element_class</span><span class="p">:</span> <span class="nb">type</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get indicies of specified element(s) in list.</span>
+<span class="sd">    </span>
+<span class="sd">    __Recursion Base__</span>
+<span class="sd">        return single index: elements [element_class] or element_class [None]</span>
+<span class="sd">    </span>
+<span class="sd">    :param elements: elements to retreive indicies of</span>
+<span class="sd">    :param element_list: collection to search for indicies in</span>
+<span class="sd">    :param element_class: return only elements of this type.</span>
+<span class="sd">        Acts as a filter.</span>
+<span class="sd">    :returns: int if elements is a list.</span>
+<span class="sd">        list of int if elements is not a list.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">elements</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">getIndicies</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">element_list</span><span class="p">)</span> <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">elements</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">element_class</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">elements</span><span class="p">,</span> <span class="n">element_class</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">element_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">elements</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;element input must be </span><span class="si">{element_class:s}</span><span class="s2"> or list&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="getElements"><a class="viewcode-back" href="../macros.html#macros.getElements">[docs]</a><span class="k">def</span> <span class="nf">getElements</span><span class="p">(</span><span class="n">indicies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="n">element_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get element(s) at index(es) in list.</span>
+<span class="sd">    </span>
+<span class="sd">    __Recursion Base__</span>
+<span class="sd">        return single element: indicies [int]</span>
+<span class="sd">    </span>
+<span class="sd">    :param indicies: index(es) to retrieve element(s) at</span>
+<span class="sd">    :param element_list: list to retrieve element(s) from</span>
+<span class="sd">    :returns: object if indicies is int.</span>
+<span class="sd">        list of objects if indicies is list of int.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">indicies</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">getElements</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">element_list</span><span class="p">)</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">indicies</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">indicies</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">element_list</span><span class="p">[</span><span class="n">indicies</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="commonElement"><a class="viewcode-back" href="../macros.html#macros.commonElement">[docs]</a><span class="k">def</span> <span class="nf">commonElement</span><span class="p">(</span><span class="n">set1</span><span class="p">:</span> <span class="nb">set</span><span class="p">,</span> <span class="n">set2</span><span class="p">:</span> <span class="nb">set</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine whether list1 and list2 have at least n common elements.</span>
+<span class="sd">        </span>
+<span class="sd">    :param set1: first arbitrary set of elements</span>
+<span class="sd">    :param set2: second arbitrary set of elements</span>
+<span class="sd">    :param n: minimum number of common elements</span>
+<span class="sd">    :returns: True if sets have at least minimum number of common elements satisfied.</span>
+<span class="sd">        False otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">set1</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">set2</span><span class="p">))</span> <span class="o">&gt;=</span> <span class="n">n</span></div>
+
+<div class="viewcode-block" id="toList"><a class="viewcode-back" href="../macros.html#macros.toList">[docs]</a><span class="k">def</span> <span class="nf">toList</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">object_class</span><span class="p">:</span> <span class="nb">type</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert input to list.</span>
+<span class="sd">    </span>
+<span class="sd">    :param obj: object to convert to a list</span>
+<span class="sd">    :param object_class: class of object if not list</span>
+<span class="sd">    :returns: object itself if object is a list.</span>
+<span class="sd">        list containing only the object if object is not a list.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">object_class</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">object_class</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">obj</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">obj</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;object input must be </span><span class="si">{</span><span class="n">object_class</span><span class="si">:</span><span class="s2">s</span><span class="si">}</span><span class="s2"> or list&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="formatValue"><a class="viewcode-back" href="../macros.html#macros.formatValue">[docs]</a><span class="k">def</span> <span class="nf">formatValue</span><span class="p">(</span><span class="n">quantity</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Quantity</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Format value for quantity or float.</span>
+<span class="sd">    Display full precision.</span>
+<span class="sd">    Remove trailing zeros.</span>
+<span class="sd">    </span>
+<span class="sd">    :param quantity: quantity or float to format</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">quantity</span><span class="p">,</span> <span class="n">Quantity</span><span class="p">):</span>
+        <span class="n">magnitude</span> <span class="o">=</span> <span class="n">quantity</span><span class="o">.</span><span class="n">magnitude</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">quantity</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="n">magnitude</span> <span class="o">=</span> <span class="n">quantity</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;quantity must be Quantity or float&quot;</span><span class="p">)</span>
+    
+    <span class="n">decimal</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">magnitude</span><span class="si">:</span><span class="s2">f</span><span class="si">}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+    
+    <span class="n">scientific_splits</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">magnitude</span><span class="si">:</span><span class="s2">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;e&#39;</span><span class="p">)</span>
+    <span class="n">scientific_float</span><span class="p">,</span> <span class="n">scientific_exp</span> <span class="o">=</span> <span class="n">scientific_splits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">),</span> <span class="n">scientific_splits</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">scientific_full</span> <span class="o">=</span> <span class="n">scientific_float</span> <span class="o">+</span> <span class="s1">&#39;e&#39;</span> <span class="o">+</span> <span class="n">scientific_exp</span>
+    
+    <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">decimal</span><span class="p">)</span> <span class="o">!=</span> <span class="n">magnitude</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">scientific_full</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">decimal</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">scientific_full</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">decimal</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">decimal</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">scientific_full</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">scientific_full</span></div>
+
+<div class="viewcode-block" id="formatUnit"><a class="viewcode-back" href="../macros.html#macros.formatUnit">[docs]</a><span class="k">def</span> <span class="nf">formatUnit</span><span class="p">(</span><span class="n">quantity</span><span class="p">:</span> <span class="n">Quantity</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Format unit as string from quantity.</span>
+<span class="sd">    Display unit as abbreviations.</span>
+<span class="sd">    Remove spaces between units.</span>
+<span class="sd">    </span>
+<span class="sd">    :param quantity: quantity to format</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">quantity</span><span class="o">.</span><span class="n">units</span><span class="si">:</span><span class="s2">~</span><span class="si">}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="formatQuantity"><a class="viewcode-back" href="../macros.html#macros.formatQuantity">[docs]</a><span class="k">def</span> <span class="nf">formatQuantity</span><span class="p">(</span><span class="n">quantity</span><span class="p">:</span> <span class="n">Quantity</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Format quantity as string with value and unit.</span>
+<span class="sd">    </span>
+<span class="sd">    :param quantity: quantity to format</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">value</span><span class="p">,</span> <span class="n">unit</span> <span class="o">=</span> <span class="n">formatValue</span><span class="p">(</span><span class="n">quantity</span><span class="p">),</span> <span class="n">formatUnit</span><span class="p">(</span><span class="n">quantity</span><span class="p">)</span>
+    <span class="n">formatted_quantity</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">unit</span><span class="si">:</span><span class="s2">s</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">return</span> <span class="n">formatted_quantity</span></div>
+
+<div class="viewcode-block" id="getTexImage"><a class="viewcode-back" href="../macros.html#macros.getTexImage">[docs]</a><span class="k">def</span> <span class="nf">getTexImage</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tex_folder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;tex&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Image</span><span class="p">,</span> <span class="n">sg</span><span class="o">.</span><span class="n">Text</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get tex image associated with variable name.</span>
+<span class="sd">    </span>
+<span class="sd">    :param name: name of variable to retrieve image of</span>
+<span class="sd">    :param tex_folder: folder to retrieve image from</span>
+<span class="sd">    :returns: Image if image found in folder.</span>
+<span class="sd">        Text if image not found in folder.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="n">tex_folder</span><span class="p">,</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;.png&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">isfile</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">sg</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">sg</span><span class="o">.</span><span class="n">Text</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2021, Joseph Marcinik.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Stanford-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'2021',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="../_static/clipboard.min.js"></script>
+      <script type="text/javascript" src="../_static/copybutton.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

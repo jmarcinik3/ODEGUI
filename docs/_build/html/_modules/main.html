@@ -1,0 +1,299 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>main &mdash; Model 2021 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/copybutton.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/sphinx_paramlinks.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Model 2021 documentation" href="../index.html"/>
+        <link rel="up" title="Module code" href="index.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Model
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <!-- Local TOC -->
+                <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Model</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>main</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for main</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This file contains functions necessary to open the main GUI window.</span>
+<span class="sd">This includes the main function that starts the main window.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">mkdir</span>
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">isdir</span><span class="p">,</span> <span class="n">isfile</span>
+
+<span class="c1"># noinspection PyPep8Naming</span>
+<span class="kn">import</span> <span class="nn">PySimpleGUI</span> <span class="k">as</span> <span class="nn">sg</span>
+<span class="kn">from</span> <span class="nn">sympy.printing.preview</span> <span class="kn">import</span> <span class="n">preview</span>
+
+<span class="kn">import</span> <span class="nn">YML</span>
+<span class="kn">from</span> <span class="nn">Layout.MainWindow</span> <span class="kn">import</span> <span class="n">MainWindowRunner</span>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../main.html#main.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main function to run GUI</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tex2png</span><span class="p">()</span>
+
+    <span class="n">sg</span><span class="o">.</span><span class="n">ChangeLookAndFeel</span><span class="p">(</span><span class="s2">&quot;DarkGrey13&quot;</span><span class="p">)</span>
+    <span class="n">sg</span><span class="o">.</span><span class="n">SetOptions</span><span class="p">(</span><span class="n">element_padding</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">suppress_error_popups</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">suppress_raise_key_errors</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">parameter_filenames</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;parameters&quot;</span><span class="p">,</span> <span class="n">filestem</span> <span class="o">+</span> <span class="s2">&quot;.yml&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">filestem</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">,</span> <span class="s2">&quot;Martin2003&quot;</span><span class="p">,</span> <span class="s2">&quot;Roongthumskul2011-7B&quot;</span><span class="p">,</span> <span class="s2">&quot;Barral2018-5Aorange&quot;</span><span class="p">,</span> <span class="s2">&quot;func_params&quot;</span><span class="p">]</span>
+    <span class="p">]</span>
+    <span class="n">equation_filenames</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;equations&quot;</span><span class="p">,</span> <span class="n">filestem</span> <span class="o">+</span> <span class="s2">&quot;.yml&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">filestem</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;Ohms_law&quot;</span><span class="p">,</span> <span class="s2">&quot;Martin2003&quot;</span><span class="p">,</span> <span class="s2">&quot;Roongthumskul2011&quot;</span><span class="p">,</span> <span class="s2">&quot;Barral2018&quot;</span><span class="p">,</span> <span class="s2">&quot;soma_eqs&quot;</span><span class="p">,</span> <span class="s2">&quot;var_funcs&quot;</span><span class="p">]</span>
+    <span class="p">]</span>
+    <span class="n">time_evolution_layout</span> <span class="o">=</span> <span class="s2">&quot;tet_lay.yml&quot;</span>
+    <span class="n">parameter_input_layout</span> <span class="o">=</span> <span class="s2">&quot;param_lay.yml&quot;</span>
+    <span class="n">function_layout</span> <span class="o">=</span> <span class="s2">&quot;func_lay.yml&quot;</span>
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Hair Bundle/Soma Model&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;parameter_filenames&quot;</span><span class="p">:</span> <span class="n">parameter_filenames</span><span class="p">,</span>
+        <span class="s2">&quot;function_filenames&quot;</span><span class="p">:</span> <span class="n">equation_filenames</span><span class="p">,</span>
+        <span class="s2">&quot;time_evolution_layout&quot;</span><span class="p">:</span> <span class="n">time_evolution_layout</span><span class="p">,</span>
+        <span class="s2">&quot;parameter_layout&quot;</span><span class="p">:</span> <span class="n">parameter_input_layout</span><span class="p">,</span>
+        <span class="s2">&quot;function_layout&quot;</span><span class="p">:</span> <span class="n">function_layout</span>
+    <span class="p">}</span>
+    <span class="n">gui</span> <span class="o">=</span> <span class="n">MainWindowRunner</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">gui</span><span class="o">.</span><span class="n">runWindow</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="tex2png"><a class="viewcode-back" href="../main.html#main.tex2png">[docs]</a><span class="k">def</span> <span class="nf">tex2png</span><span class="p">(</span><span class="n">output_folder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;tex&quot;</span><span class="p">,</span> <span class="n">tex_filename</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;var2tex.yml&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create PNG for quantity(s) in TeX form.</span>
+<span class="sd">    File containing quantity name(s) to TeX math format must be made before call.</span>
+<span class="sd">    </span>
+<span class="sd">    :param output_folder: name of folder to save images in</span>
+<span class="sd">    :param tex_filename: name of file containing name-to-TeX conversions.</span>
+<span class="sd">        Keys in file are name of quantity.</span>
+<span class="sd">        Values are corresponding TeX format.</span>
+<span class="sd">    :param overwrite: set True to overwrite existing quantity if name already exists.</span>
+<span class="sd">        Set False to skip quantities previously saved as TeX image.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tex_yml</span> <span class="o">=</span> <span class="n">YML</span><span class="o">.</span><span class="n">readVar2Tex</span><span class="p">(</span><span class="n">tex_filename</span><span class="p">)</span>
+
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;packages&quot;</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;amsmath&quot;</span><span class="p">,</span> <span class="s2">&quot;amsfonts&quot;</span><span class="p">,</span> <span class="s2">&quot;amssymb&quot;</span><span class="p">,</span> <span class="s2">&quot;mathtools&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;viewer&quot;</span><span class="p">:</span> <span class="s2">&quot;file&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;euler&quot;</span><span class="p">:</span> <span class="kc">False</span>
+    <span class="p">}</span>
+    <span class="n">create_png</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">preview</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">isdir</span><span class="p">(</span><span class="n">output_folder</span><span class="p">):</span>
+        <span class="n">mkdir</span><span class="p">(</span><span class="n">output_folder</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">YML</span><span class="o">.</span><span class="n">readVar2Tex</span><span class="p">(</span><span class="n">tex_filename</span><span class="p">):</span>
+        <span class="n">filepath</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">output_folder</span><span class="si">:</span><span class="s2">s</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">key</span><span class="si">:</span><span class="s2">s</span><span class="si">}</span><span class="s2">.png&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">isfile</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span> <span class="ow">or</span> <span class="n">overwrite</span><span class="p">:</span>
+            <span class="n">create_png</span><span class="p">(</span><span class="n">tex_yml</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">filename</span><span class="o">=</span><span class="n">filepath</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2021, Joseph Marcinik.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Stanford-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'2021',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="../_static/clipboard.min.js"></script>
+      <script type="text/javascript" src="../_static/copybutton.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

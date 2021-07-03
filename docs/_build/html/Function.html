@@ -1,0 +1,1652 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Function module &mdash; Model 2021 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+    <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+  
+    <link rel="stylesheet" href="_static/sphinx_paramlinks.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="Model 2021 documentation" href="index.html"/>
+        <link rel="up" title="ODEGUI" href="modules.html"/>
+        <link rel="next" title="Function.Model" href="stubs/Function.Model.html"/>
+        <link rel="prev" title="CustomErrors.RecursiveTypeError" href="stubs/CustomErrors.RecursiveTypeError.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Model
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">ODEGUI</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="CustomErrors.html">CustomErrors module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Function module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="stubs/Function.Model.html">Function.Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stubs/Function.Parent.html">Function.Parent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stubs/Function.Child.html">Function.Child</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stubs/Function.Function.html">Function.Function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stubs/Function.Derivative.html">Function.Derivative</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stubs/Function.Dependent.html">Function.Dependent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stubs/Function.Independent.html">Function.Independent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stubs/Function.Piecewise.html">Function.Piecewise</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stubs/Function.NonPiecewise.html">Function.NonPiecewise</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="KeyList.html">KeyList module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Layout.html">Layout package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Results.html">Results module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Simulation.html">Simulation module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="YML.html">YML module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="macros.html">macros module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html">main module</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Model</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">ODEGUI</a> &raquo;</li>
+        
+      <li>Function module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/Function.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="function-module">
+<h1>Function module<a class="headerlink" href="#function-module" title="Permalink to this headline">¶</a></h1>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="stubs/Function.Model.html#Function.Model" title="Function.Model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Model</span></code></a>([functions, parameters])</p></td>
+<td><p>__Purpose__</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="stubs/Function.Parent.html#Function.Parent" title="Function.Parent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Parent</span></code></a>(children)</p></td>
+<td><p>__Purpose__</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="stubs/Function.Child.html#Function.Child" title="Function.Child"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Child</span></code></a>()</p></td>
+<td><p>__Purpose__</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="stubs/Function.Function.html#Function.Function" title="Function.Function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Function</span></code></a>(name[, variables, parameters, …])</p></td>
+<td><p>__Purpose__</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="stubs/Function.Derivative.html#Function.Derivative" title="Function.Derivative"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Derivative</span></code></a>(variable[, time_evolution_type, …])</p></td>
+<td><p>__Purpose__</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="stubs/Function.Dependent.html#Function.Dependent" title="Function.Dependent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dependent</span></code></a>(arguments)</p></td>
+<td><p>__Purpose__</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="stubs/Function.Independent.html#Function.Independent" title="Function.Independent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Independent</span></code></a>()</p></td>
+<td><p>__Purpose__</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="stubs/Function.Piecewise.html#Function.Piecewise" title="Function.Piecewise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Piecewise</span></code></a>(functions, conditions)</p></td>
+<td><p>__Purpose__</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="stubs/Function.NonPiecewise.html#Function.NonPiecewise" title="Function.NonPiecewise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NonPiecewise</span></code></a>(expression)</p></td>
+<td><p>__Purpose__</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">Function.</span></span><span class="sig-name descname"><span class="pre">Child</span></span><a class="reference internal" href="_modules/Function.html#Child"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="simple">
+<dt>__Purpose__</dt><dd><p>Properties for Function related to being a child function to another function</p>
+</dd>
+<dt>__Attributes__</dt><dd><p>parents [list of Function]: collection of parents associated with function</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getParentNames</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Child.getParentNames"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get names of stored parents in order added</p>
+</dd>
+<dt>__Recursion <a href="#id3"><span class="problematic" id="id4">Base__</span></a></dt><dd><p>retrieve name of single parent: functions [Function]
+retrieve names of all parents: functions [None]</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Child.getParentNames.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Child.getParentNames.params.self">¶</a> – child to retrieve parent name(s) from</p></li>
+<li><p><span class="target" id="Function.Child.getParentNames.params.functions"></span><strong>functions</strong><a class="paramlink headerlink reference internal" href="#Function.Child.getParentNames.params.functions">¶</a> – parent(s) to retrieve name(s) from child</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getParents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Child.getParents"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get parent functions in order added</p>
+</dd>
+<dt>__Recursion <a href="#id3"><span class="problematic" id="id5">Base__</span></a></dt><dd><p>return all parents: names [None]</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Child.getParents.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Child.getParents.params.self">¶</a> – child to retrieve parent(s) from</p></li>
+<li><p><span class="target" id="Function.Child.getParents.params.names"></span><strong>names</strong><a class="paramlink headerlink reference internal" href="#Function.Child.getParents.params.names">¶</a> – name(s) of parent(s) to retrieve from child</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="stubs/Function.Function.html#Function.Function" title="Function.Function"><code class="xref py py-class docutils literal notranslate"><span class="pre">Function</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="stubs/Function.Function.html#Function.Function" title="Function.Function"><code class="xref py py-class docutils literal notranslate"><span class="pre">Function</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">Function.</span></span><span class="sig-name descname"><span class="pre">Dependent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Dependent"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="simple">
+<dt>__Purpose__</dt><dd><p>Store properties for a function that requires input from another function</p>
+</dd>
+<dt>__Attributes__</dt><dd><dl class="simple">
+<dt>arguments [dict of list of sympy.Symbol]: arguments to be substituted into from another function</dt><dd><p>keys [str] are species of argument (e.g. “variables”, “parameters”, “functions”)
+values [sympy.Symbol] are symbolic general arguments</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getArgumentSubstitutions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">specie</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Dependent.getArgumentSubstitutions"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get substitutions for dependent, i.e. which instance argument to substitute into each general argument</p>
+</dd>
+<dt>__Inputs__</dt><dd><p>parent [Parent]: parent function to retrieve instance arguments from
+specie [str]: species of argument to retrieve</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Expr</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getGeneralArguments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">species</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nested</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Dependent.getGeneralArguments"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl>
+<dt>__Purpose__</dt><dd><p>Get general arguments of Dependent Function object</p>
+</dd>
+<dt>__Inputs__</dt><dd><p>species [str, list of str]: species of argument to get
+nested [bool]:</p>
+<blockquote>
+<div><p>True: includes general arguments of children functions
+False: includes general arguments explicitly of self function</p>
+</div></blockquote>
+</dd>
+<dt>__Return__</dt><dd><dl class="simple">
+<dt>dict of list of sympy.Symbol: species [None, list of str]</dt><dd><p>key is argument species
+value is list of sympy.Symbol general arguments</p>
+</dd>
+</dl>
+<p>list of sympy.Symbol: species [str]</p>
+</dd>
+<dt>__Recursion <a href="#id3"><span class="problematic" id="id6">Base__</span></a></dt><dd><p>return arguments of single species: species [str] and nested [False]</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Symbol</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Symbol</span></code>]]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getGeneralSpecies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nested</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Dependent.getGeneralSpecies"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get species of general arguments that the dependent functions requires</p>
+</dd>
+<dt>__Inputs__</dt><dd><p>nested [bool]: set True to include species from children (implicit); set False to only include self species (explicit)</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getInstanceArgumentFunction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Dependent.getInstanceArgumentFunction"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get dependent function with instance arguments substituted into general arguments</p>
+</dd>
+<dt>__Inputs__</dt><dd><p>parent [Parent]: parent function to retrieve instance arguments from</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Expr</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getInstanceArgumentSubstitutions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">specie</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Dependent.getInstanceArgumentSubstitutions"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get which instance arguments to substitute into general arguments</p>
+</dd>
+<dt>__Inputs__</dt><dd><p>parent [Parent]: parent function to retrieve instance arguments from
+specie [str]: species of argument to retrieve</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Expr</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">setGeneralArguments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">species</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Dependent.setGeneralArguments"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl>
+<dt>__Purpose__</dt><dd><p>Set receiver_arguments attribute as list or dict</p>
+</dd>
+<dt>__Inputs__</dt><dd><dl class="simple">
+<dt>arguments [sympy.Symbol, list of sympy.Symbol, dict of list of sympy.Symbol]: contains information on how to set attribute</dt><dd><dl class="simple">
+<dt>sympy.Symbol, list of sympy.Symbol:</dt><dd><p>sets species [str] as key for attribute, single symbol in arguments as value
+species must be given</p>
+</dd>
+<dt>dict of list of sympy.Symbol:</dt><dd><p>key [str] is species type for argument
+values [sympy.Symbol, list of sympy.Symbol] are arguments associated with species</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>species [str]: species to associated with given arguments</p>
+</dd>
+<dt>__Recursion <a href="#id3"><span class="problematic" id="id7">Base__</span></a></dt><dd><p>Set attribute for single species: arguments [sympy.Symbol, list of sympy.Symbol] and species [str]</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">Function.</span></span><span class="sig-name descname"><span class="pre">Derivative</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_evolution_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Temporal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_condition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Derivative"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="simple">
+<dt>__Purpose__</dt><dd><p>Properties relating to function being a time derivative</p>
+</dd>
+<dt>__Attributes__</dt><dd><p>variable [sympy.Symbol]: variable that derivative is derivative of
+time_evolution_type [str]: time-evolution type of derivative (e.g. “Temporal”, “Equilibrium”, “Constant”)
+initial_condition [float]: initial condition value for associated variable</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getInitialCondition</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Derivative.getInitialCondition"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get initial numerical condition for variable associated with derivative.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><span class="target" id="Function.Derivative.getInitialCondition.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Derivative.getInitialCondition.params.self">¶</a> – <a class="reference internal" href="stubs/Function.Derivative.html#Function.Derivative" title="Function.Derivative"><code class="xref py py-class docutils literal notranslate"><span class="pre">Derivative</span></code></a> to retrieve initial condition from</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Initial value float if value is provided.
+“Equilibrium” if variable begins in equilibrium with respect to other variables.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getTimeEvolutionType</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Derivative.getTimeEvolutionType"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get time-evolution type of variable associated with derivative.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><span class="target" id="Function.Derivative.getTimeEvolutionType.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Derivative.getTimeEvolutionType.params.self">¶</a> – <a class="reference internal" href="stubs/Function.Derivative.html#Function.Derivative" title="Function.Derivative"><code class="xref py py-class docutils literal notranslate"><span class="pre">Derivative</span></code></a> to retrieve time-evolution type from</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getVariable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">return_type=&lt;class</span> <span class="pre">'sympy.core.symbol.Symbol'&gt;</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Derivative.getVariable"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get variable that derivative is derivative of.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Derivative.getVariable.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Derivative.getVariable.params.self">¶</a> – <a class="reference internal" href="stubs/Function.Derivative.html#Function.Derivative" title="Function.Derivative"><code class="xref py py-class docutils literal notranslate"><span class="pre">Derivative</span></code></a> to retreive variable from</p></li>
+<li><p><span class="target" id="Function.Derivative.getVariable.params.return_type"></span><strong>return_type</strong><a class="paramlink headerlink reference internal" href="#Function.Derivative.getVariable.params.return_type">¶</a> – class type of output.
+Must be either sympy.Symbol or str.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">setInitialCondition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Derivative.setInitialCondition"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Set initial condition or value for variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Derivative.setInitialCondition.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Derivative.setInitialCondition.params.self">¶</a> – <a class="reference internal" href="stubs/Function.Derivative.html#Function.Derivative" title="Function.Derivative"><code class="xref py py-class docutils literal notranslate"><span class="pre">Derivative</span></code></a> to set initial condition for</p></li>
+<li><p><span class="target" id="Function.Derivative.setInitialCondition.params.value"></span><strong>value</strong><a class="paramlink headerlink reference internal" href="#Function.Derivative.setInitialCondition.params.value">¶</a> – initial condition to set for variable</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">setTimeEvolutionType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_evolution_type</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Derivative.setTimeEvolutionType"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Set time-evolution type for variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Derivative.setTimeEvolutionType.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Derivative.setTimeEvolutionType.params.self">¶</a> – <a class="reference internal" href="stubs/Function.Derivative.html#Function.Derivative" title="Function.Derivative"><code class="xref py py-class docutils literal notranslate"><span class="pre">Derivative</span></code></a> to set time-evolution type for</p></li>
+<li><p><span class="target" id="Function.Derivative.setTimeEvolutionType.params.time_evolution_type"></span><strong>time_evolution_type</strong><a class="paramlink headerlink reference internal" href="#Function.Derivative.setTimeEvolutionType.params.time_evolution_type">¶</a> – time-evolution type to set for variable</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">setVariable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variable</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Derivative.setVariable"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Set variable associated with derivative.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Derivative.setVariable.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Derivative.setVariable.params.self">¶</a> – <a class="reference internal" href="stubs/Function.Derivative.html#Function.Derivative" title="Function.Derivative"><code class="xref py py-class docutils literal notranslate"><span class="pre">Derivative</span></code></a> associated with variable</p></li>
+<li><p><span class="target" id="Function.Derivative.setVariable.params.variable"></span><strong>variable</strong><a class="paramlink headerlink reference internal" href="#Function.Derivative.setVariable.params.variable">¶</a> – variable to associated with derivative</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">Function.</span></span><span class="sig-name descname"><span class="pre">Function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variables</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">children</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Function"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Bases: <a class="reference internal" href="stubs/Function.Child.html#Function.Child" title="Function.Child"><code class="xref py py-class docutils literal notranslate"><span class="pre">Function.Child</span></code></a>, <a class="reference internal" href="stubs/Function.Parent.html#Function.Parent" title="Function.Parent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Function.Parent</span></code></a></p>
+<dl class="simple">
+<dt>__Purpose__</dt><dd><p>Object to store core information about a function</p>
+</dd>
+<dt>__Attributes__</dt><dd><p>name [str]: name of function
+variables [list of sympy.Symbol]: collection of variables explicitly included in function form
+parameters [list of sympy.Symbol]: collection of parameters explicitly included in function form
+model [Model]: model to associated with function</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">addParameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Function.addParameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Set parameters attribute as list</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Function.addParameters.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Function.addParameters.params.self">¶</a> – <a class="reference internal" href="stubs/Function.Function.html#Function.Function" title="Function.Function"><code class="xref py py-class docutils literal notranslate"><span class="pre">Function</span></code></a> to add parameter(s) to</p></li>
+<li><p><span class="target" id="Function.Function.addParameters.params.parameters"></span><strong>parameters</strong><a class="paramlink headerlink reference internal" href="#Function.Function.addParameters.params.parameters">¶</a> – parameter(s) to add to function</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">addVariables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variables</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Function.addVariables"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Add variable to function</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Function.addVariables.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Function.addVariables.params.self">¶</a> – <cite>~Function.Function</cite> to add variable(s) to</p></li>
+<li><p><span class="target" id="Function.Function.addVariables.params.variables"></span><strong>variables</strong><a class="paramlink headerlink reference internal" href="#Function.Function.addVariables.params.variables">¶</a> – variable(s) to add to function</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getModel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Function.getModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get model that function is stored within.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><span class="target" id="Function.Function.getModel.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Function.getModel.params.self">¶</a> – <a class="reference internal" href="stubs/Function.Function.html#Function.Function" title="Function.Function"><code class="xref py py-class docutils literal notranslate"><span class="pre">Function</span></code></a> to retrieve model of</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="stubs/Function.Model.html#Function.Model" title="Function.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getName</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Function.getName"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get name of function</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><span class="target" id="Function.Function.getName.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Function.getName.params.self">¶</a> – <cite>~Function.Function</cite> to retrieve name of</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getSymbol</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Function.getSymbol"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get symbolic variable of function</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><span class="target" id="Function.Function.getSymbol.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Function.getSymbol.params.self">¶</a> – <cite>~Function.Function</cite> to retrieve symbolic variable of</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Symbol</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">setModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Function.setModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Set model for function.
+Add function to model if not already in done.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Function.setModel.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Function.setModel.params.self">¶</a> – <a class="reference internal" href="stubs/Function.Function.html#Function.Function" title="Function.Function"><code class="xref py py-class docutils literal notranslate"><span class="pre">Function</span></code></a> to set model with</p></li>
+<li><p><span class="target" id="Function.Function.setModel.params.model"></span><strong>model</strong><a class="paramlink headerlink reference internal" href="#Function.Function.setModel.params.model">¶</a> – new model to associated with function</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">Function.</span></span><span class="sig-name descname"><span class="pre">FunctionMaster</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inheritance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#FunctionMaster"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl>
+<dt>__Purpose__</dt><dd><p>Get Function object with desired properties</p>
+</dd>
+<dt>__Inputs__</dt><dd><p>name [str]: name associated with function
+function [sympy.Expr, list of Function]:</p>
+<blockquote>
+<div><p>sympy.Expr: form of function (e.g. x**2 in f(x)=x**2) for non-piecewise function
+list of Function: collection of function pieces for piecewise function</p>
+</div></blockquote>
+<dl class="simple">
+<dt>inheritance [tuple of classes]: classes for function to inherit</dt><dd><p>Dependent: inherit if function requires input (e.g. variable or parameter input)
+Derivative: inherit if function should be included in ODE of model
+Piecewise: inherit if function is piecewise
+NonPiecewise: inherit if function is non-piecewise</p>
+</dd>
+<dt><a href="#id1"><span class="problematic" id="id2">**</span></a>kwargs [dict]: arguments to be given to each inherited class’s __init__</dt><dd><p>e.g. kwargs[“Dependent”] holds arguments for Dependent __init__ if function inherits Dependent class</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="stubs/Function.Function.html#Function.Function" title="Function.Function"><code class="xref py py-class docutils literal notranslate"><span class="pre">Function</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">Function.</span></span><span class="sig-name descname"><span class="pre">Independent</span></span><a class="reference internal" href="_modules/Function.html#Independent"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="simple">
+<dt>__Purpose__</dt><dd><p>Store properties for a function that does not require input from another function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">Function.</span></span><span class="sig-name descname"><span class="pre">Model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">functions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl>
+<dt>__Purpose__</dt><dd><p>Store Function objects for given model</p>
+</dd>
+<dt>__Attributes__</dt><dd><p>functions [list of Function]: stored Function objects
+parameters [dict of metpy.Quantity]: stored parameter values and units</p>
+<blockquote>
+<div><p>key [str] is parameter name
+value [metpy.Quantity] contains value and unit</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">addFunctions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">functions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.addFunctions"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Add Function object(s) to model.
+Set self as model for Function object(s).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Model.addFunctions.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.addFunctions.params.self">¶</a> – <cite>~Function.Model</cite> to add function to</p></li>
+<li><p><span class="target" id="Function.Model.addFunctions.params.functions"></span><strong>functions</strong><a class="paramlink headerlink reference internal" href="#Function.Model.addFunctions.params.functions">¶</a> – function(s) to add to model</p></li>
+<li><p><span class="target" id="Function.Model.addFunctions.params.overwrite"></span><strong>overwrite</strong><a class="paramlink headerlink reference internal" href="#Function.Model.addFunctions.params.overwrite">¶</a> – set True to overwrite function if already in model.
+Set False to raise error for duplicate function name.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">addParameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quantities</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.addParameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Set/add parameter(s) value and unit for model as Quantity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Model.addParameters.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.addParameters.params.self">¶</a> – <cite>~Function.Model</cite> to set parameter(s) for</p></li>
+<li><p><span class="target" id="Function.Model.addParameters.params.quantities"></span><strong>quantities</strong><a class="paramlink headerlink reference internal" href="#Function.Model.addParameters.params.quantities">¶</a> – Key is name of parameter.
+Value is quantity containing value and unit for parameter.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getConstantSubstitutions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.getConstantSubstitutions"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get substitutions to substitute constant intitial condition into given variable(s)</p>
+</dd>
+<dt>__Return__</dt><dd><dl class="simple">
+<dt>dict:</dt><dd><p>key [sympy.Symbol] is variable to substitute into
+value [sympy.Expr] is constant to substitute into variable</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Model.getConstantSubstitutions.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getConstantSubstitutions.params.self">¶</a> – <cite>~Function.Model</cite> to retrieve constant derivative(s) from</p></li>
+<li><p><span class="target" id="Function.Model.getConstantSubstitutions.params.names"></span><strong>names</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getConstantSubstitutions.params.names">¶</a> – name(s) of constant derivative(s) to substitute numerical constants in for</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Symbol</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Expr</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getDerivativeVariables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">time_evolution_types=None</span></em>, <em class="sig-param"><span class="pre">return_type=&lt;class</span> <span class="pre">'sympy.core.symbol.Symbol'&gt;</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.getDerivativeVariables"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get variables stored in model in same order as derivatives</p>
+<dl class="simple">
+<dt>__Recursion <a href="#id3"><span class="problematic" id="id8">Base__</span></a></dt><dd><p>get symbolic variable associated with single derivative: names [str]</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Model.getDerivativeVariables.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getDerivativeVariables.params.self">¶</a> – <cite>~Function.Model</cite> to retrieve derivative variable(s) from</p></li>
+<li><p><span class="target" id="Function.Model.getDerivativeVariables.params.time_evolution_types"></span><strong>time_evolution_types</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getDerivativeVariables.params.time_evolution_types">¶</a> – only retrieve derivatives of this type(s), acts as a filter</p></li>
+<li><p><span class="target" id="Function.Model.getDerivativeVariables.params.return_type"></span><strong>return_type</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getDerivativeVariables.params.return_type">¶</a> – class type to return elements in list output as</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getDerivativeVector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expanded</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitute_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitute_equilibria</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitute_constants</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitute_functions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambdified</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.getDerivativeVector"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get derivative vector corresponding to derivatives in <a class="reference internal" href="stubs/Function.Model.html#Function.Model" title="Function.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Model.getDerivativeVector.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getDerivativeVector.params.self">¶</a> – <cite>~Function.Model</cite> to retrieve derivative(s) from</p></li>
+<li><p><span class="target" id="Function.Model.getDerivativeVector.params.names"></span><strong>names</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getDerivativeVector.params.names">¶</a> – name(s) of variable(s) ordered in same order derivatives will be returned</p></li>
+<li><p><span class="target" id="Function.Model.getDerivativeVector.params.expanded"></span><strong>expanded</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getDerivativeVector.params.expanded">¶</a> – set True to get expanded expression for derivative, i.e. substitute all subexpressions into derivative expression.
+Set False to leave subexpressions as symbolic variables.</p></li>
+<li><p><span class="target" id="Function.Model.getDerivativeVector.params.substitute_parameters"></span><strong>substitute_parameters</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getDerivativeVector.params.substitute_parameters">¶</a> – set True to substitute numerical values in for all parameters.
+Set false otherwise</p></li>
+<li><p><span class="target" id="Function.Model.getDerivativeVector.params.skip_parameters"></span><strong>skip_parameters</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getDerivativeVector.params.skip_parameters">¶</a> – name(s) of parameter(s) to skip substitution for.
+Only called if <code class="xref py py-paramref docutils literal notranslate"><span class="pre">substitute_parameters</span></code> is set True.</p></li>
+<li><p><span class="target" id="Function.Model.getDerivativeVector.params.substitute_equilibria"></span><strong>substitute_equilibria</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getDerivativeVector.params.substitute_equilibria">¶</a> – set True to substitute equilibrium expressions in for variables in equilibrium.
+Set False to leave them as symbolic variables.</p></li>
+<li><p><span class="target" id="Function.Model.getDerivativeVector.params.substitute_constants"></span><strong>substitute_constants</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getDerivativeVector.params.substitute_constants">¶</a> – set True to substitute numerical values in for all constant derivative.
+Set False to leave them as symbolic variables.</p></li>
+<li><p><span class="target" id="Function.Model.getDerivativeVector.params.substitute_functions"></span><strong>substitute_functions</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getDerivativeVector.params.substitute_functions">¶</a> – set True to substitute corresponding functions in for all function-type derivatives.
+Set False to leave them as symbolic variables.</p></li>
+<li><p><span class="target" id="Function.Model.getDerivativeVector.params.lambdified"></span><strong>lambdified</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getDerivativeVector.params.lambdified">¶</a> – set True to return derivative vector as lambda function handle.
+Set False to return symbolic derivative vector</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>vector of derivatives.
+Uses derivatives in <a class="reference internal" href="stubs/Function.Model.html#Function.Model" title="Function.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a> to determine derivatives.
+Returned as list of symbolic expressions if <code class="xref py py-paramref docutils literal notranslate"><span class="pre">lambdified</span></code> is set to True.
+Returned as lambda function handle if <code class="xref py py-paramref docutils literal notranslate"><span class="pre">lambdified</span></code> is set to False.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getDerivatives</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_evolution_types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.getDerivatives"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get stored derivatives of given time-evolution type(s)</p>
+</dd>
+<dt>__Recursion <a href="#id3"><span class="problematic" id="id9">Base__</span></a></dt><dd><p>get derivatives of single time-evolution type: time_evolution_types [str]
+get all derivatives: time_evolution_types [None]</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Model.getDerivatives.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getDerivatives.params.self">¶</a> – <cite>~Function.Model</cite> to retrieve derivative(s) from</p></li>
+<li><p><span class="target" id="Function.Model.getDerivatives.params.time_evolution_types"></span><strong>time_evolution_types</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getDerivatives.params.time_evolution_types">¶</a> – only retrieve derivatives of this type(s), acts as a filter</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="stubs/Function.Derivative.html#Function.Derivative" title="Function.Derivative"><code class="xref py py-class docutils literal notranslate"><span class="pre">Derivative</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getDerivativesFromVariableNames</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.getDerivativesFromVariableNames"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get derivative corresponding to variable name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Model.getDerivativesFromVariableNames.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getDerivativesFromVariableNames.params.self">¶</a> – <a class="reference internal" href="stubs/Function.Model.html#Function.Model" title="Function.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a> to retrieve derivative(s) from</p></li>
+<li><p><span class="target" id="Function.Model.getDerivativesFromVariableNames.params.names"></span><strong>names</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getDerivativesFromVariableNames.params.names">¶</a> – name(s) of variable(s) associated with derivative(s)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="stubs/Function.Derivative.html#Function.Derivative" title="Function.Derivative"><code class="xref py py-class docutils literal notranslate"><span class="pre">Derivative</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="stubs/Function.Derivative.html#Function.Derivative" title="Function.Derivative"><code class="xref py py-class docutils literal notranslate"><span class="pre">Derivative</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getEquilibriumFunction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitute_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitute_constants</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitute_functions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.getEquilibriumFunction"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get equilibrium function corresponding to derivative</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Model.getEquilibriumFunction.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getEquilibriumFunction.params.self">¶</a> – <cite>~Function.Model</cite> to solve for equilibrium solution in</p></li>
+<li><p><span class="target" id="Function.Model.getEquilibriumFunction.params.name"></span><strong>name</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getEquilibriumFunction.params.name">¶</a> – name of variable to retrieve equilibrium expression of</p></li>
+<li><p><span class="target" id="Function.Model.getEquilibriumFunction.params.substitute_parameters"></span><strong>substitute_parameters</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getEquilibriumFunction.params.substitute_parameters">¶</a> – set True to substitute numerical values in for all parameters.
+Set false otherwise</p></li>
+<li><p><span class="target" id="Function.Model.getEquilibriumFunction.params.skip_parameters"></span><strong>skip_parameters</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getEquilibriumFunction.params.skip_parameters">¶</a> – name(s) of parameter(s) to skip substitution for.
+Only called if <code class="xref py py-paramref docutils literal notranslate"><span class="pre">substitute_parameters</span></code> is set True.</p></li>
+<li><p><span class="target" id="Function.Model.getEquilibriumFunction.params.substitute_constants"></span><strong>substitute_constants</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getEquilibriumFunction.params.substitute_constants">¶</a> – set True to substitute numerical values in for all constant derivative.
+Set False to leave them as symbolic variables.</p></li>
+<li><p><span class="target" id="Function.Model.getEquilibriumFunction.params.substitute_functions"></span><strong>substitute_functions</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getEquilibriumFunction.params.substitute_functions">¶</a> – set True to substitute corresponding functions in for all function-type derivatives.
+Set False to leave them as symbolic variables.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Expr</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getEquilibriumSolutions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitute_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitute_constants</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitute_functions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.getEquilibriumSolutions"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get substitutions to substitute equilibrium variables into non-equilibrium derivatives</p>
+</dd>
+<dt>__Return__</dt><dd><dl class="simple">
+<dt>dict:</dt><dd><p>key [sympy.Symbol] is variable to substitute into
+value [sympy.Expr] is expression to substitute into variable</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Model.getEquilibriumSolutions.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getEquilibriumSolutions.params.self">¶</a> – <cite>~Function.Model</cite> to solve for equilibrium solution(s) in</p></li>
+<li><p><span class="target" id="Function.Model.getEquilibriumSolutions.params.names"></span><strong>names</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getEquilibriumSolutions.params.names">¶</a> – name(s) of function(s) to solve for simulatenous equilibrium of</p></li>
+<li><p><span class="target" id="Function.Model.getEquilibriumSolutions.params.substitute_parameters"></span><strong>substitute_parameters</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getEquilibriumSolutions.params.substitute_parameters">¶</a> – set True to substitute numerical values in for all parameters.
+Set false otherwise</p></li>
+<li><p><span class="target" id="Function.Model.getEquilibriumSolutions.params.skip_parameters"></span><strong>skip_parameters</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getEquilibriumSolutions.params.skip_parameters">¶</a> – name(s) of parameter(s) to skip substitution for.
+Only called if <code class="xref py py-paramref docutils literal notranslate"><span class="pre">substitute_parameters</span></code> is set True.</p></li>
+<li><p><span class="target" id="Function.Model.getEquilibriumSolutions.params.substitute_constants"></span><strong>substitute_constants</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getEquilibriumSolutions.params.substitute_constants">¶</a> – set True to substitute numerical values in for all constant derivative.
+Set False to leave them as symbolic variables.</p></li>
+<li><p><span class="target" id="Function.Model.getEquilibriumSolutions.params.substitute_functions"></span><strong>substitute_functions</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getEquilibriumSolutions.params.substitute_functions">¶</a> – set True to substitute corresponding functions in for all function-type derivatives.
+Set False to leave them as symbolic variables.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Symbol</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Expr</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getFunctionNames</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.getFunctionNames"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get names of stored functions in order added.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><span class="target" id="Function.Model.getFunctionNames.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getFunctionNames.params.self">¶</a> – <a class="reference internal" href="stubs/Function.Model.html#Function.Model" title="Function.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a> to retrieve names from</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getFunctionSubstitutions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitute_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitute_constants</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.getFunctionSubstitutions"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Model.getFunctionSubstitutions.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getFunctionSubstitutions.params.self">¶</a> – <cite>~Function.Model</cite> to retrieve functions from</p></li>
+<li><p><span class="target" id="Function.Model.getFunctionSubstitutions.params.names"></span><strong>names</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getFunctionSubstitutions.params.names">¶</a> – name(s) of variable(s) to retrieve function for</p></li>
+<li><p><span class="target" id="Function.Model.getFunctionSubstitutions.params.substitute_parameters"></span><strong>substitute_parameters</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getFunctionSubstitutions.params.substitute_parameters">¶</a> – set True to substitute numerical values in for all parameters.
+Set False to leave them as symbolic variables.</p></li>
+<li><p><span class="target" id="Function.Model.getFunctionSubstitutions.params.skip_parameters"></span><strong>skip_parameters</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getFunctionSubstitutions.params.skip_parameters">¶</a> – name(s) of parameter(s) to skip substitution for.
+Only called if <code class="xref py py-paramref docutils literal notranslate"><span class="pre">substitute_parameters</span></code> is set True.</p></li>
+<li><p><span class="target" id="Function.Model.getFunctionSubstitutions.params.substitute_constants"></span><strong>substitute_constants</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getFunctionSubstitutions.params.substitute_constants">¶</a> – set True to substitute numerical values in for all constant derivative.
+Set False to leave them as symbolic variables.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Symbol</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Expr</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getFunctions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.getFunctions"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get functions stored in model.</p>
+<dl class="simple">
+<dt>__Recursion <a href="#id3"><span class="problematic" id="id10">Base__</span></a></dt><dd><p>return single function if compatible with filter type: names [None]</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Model.getFunctions.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getFunctions.params.self">¶</a> – <a class="reference internal" href="stubs/Function.Model.html#Function.Model" title="Function.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a> to retrieve function(s) from</p></li>
+<li><p><span class="target" id="Function.Model.getFunctions.params.names"></span><strong>names</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getFunctions.params.names">¶</a> – name(s) of function(s) to retrieve</p></li>
+<li><p><span class="target" id="Function.Model.getFunctions.params.filter_type"></span><strong>filter_type</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getFunctions.params.filter_type">¶</a> – only retrieve function(s) of this class, acts as a filter</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="stubs/Function.Function.html#Function.Function" title="Function.Function"><code class="xref py py-class docutils literal notranslate"><span class="pre">Function</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="stubs/Function.Function.html#Function.Function" title="Function.Function"><code class="xref py py-class docutils literal notranslate"><span class="pre">Function</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getInitialValues</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">names=None</span></em>, <em class="sig-param"><span class="pre">return_type=&lt;class</span> <span class="pre">'dict'&gt;</span></em>, <em class="sig-param"><span class="pre">initial_values=None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.getInitialValues"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get initial values for variables in model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Model.getInitialValues.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getInitialValues.params.self">¶</a> – <cite>~Function.Model</cite> to retrieve derivatives from</p></li>
+<li><p><span class="target" id="Function.Model.getInitialValues.params.names"></span><strong>names</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getInitialValues.params.names">¶</a> – name(s) of variables to retrieve values for</p></li>
+<li><p><span class="target" id="Function.Model.getInitialValues.params.return_type"></span><strong>return_type</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getInitialValues.params.return_type">¶</a> – class type for output.
+Must be dict, list, or ndarray.
+Only called if names is list.</p></li>
+<li><p><span class="target" id="Function.Model.getInitialValues.params.initial_values"></span><strong>initial_values</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getInitialValues.params.initial_values">¶</a> – dictionary of initial values if already known.
+Key is symbol for variable.
+Value is float for initial value.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Initial values for desired variables.
+Dictionary of initial values if return_type is dict; key is symbol for variable, value if float for initial value.
+List of floats if return_type is list.
+ndarray of float if return_type is ndarray.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getParameterNames</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.getParameterNames"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get names of stored parameters in order added.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><span class="target" id="Function.Model.getParameterNames.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getParameterNames.params.self">¶</a> – <a class="reference internal" href="stubs/Function.Model.html#Function.Model" title="Function.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a> to retrieve names from</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getParameterSubstitutions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.getParameterSubstitutions"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Substitute parameters into function from model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Model.getParameterSubstitutions.params.names"></span><strong>names</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getParameterSubstitutions.params.names">¶</a> – name(s) of parameter to include in substitutions.
+Defaults to all parameters in model.</p></li>
+<li><p><span class="target" id="Function.Model.getParameterSubstitutions.params.skip_parameters"></span><strong>skip_parameters</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getParameterSubstitutions.params.skip_parameters">¶</a> – name(s) of parameter(s) to skip substitution for</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Symbol</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Expr</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getParameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.getParameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get parameter quantities stored in model.</p>
+<dl class="simple">
+<dt>__Recursion <a href="#id3"><span class="problematic" id="id11">Base__</span></a></dt><dd><p>return single parameter: names [str]</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Model.getParameters.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getParameters.params.self">¶</a> – <cite>~Function.Model</cite> to retrieve parameter(s) from</p></li>
+<li><p><span class="target" id="Function.Model.getParameters.params.names"></span><strong>names</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getParameters.params.names">¶</a> – name(s) of parameter(s) to retrieve</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Quantity</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Quantity</span></code>]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Quantity for parameter if :paramref:~Function.Model.getParameters.names` is str.
+List of quantities if :paramref:~Function.Model.getParameters.names` is list.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getVariables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">functions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.getVariables"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get variable(s) associated with function(s) in model</p>
+</dd>
+<dt>__Recursion <a href="#id3"><span class="problematic" id="id12">Base__</span></a></dt><dd><p>return variable associated with single function: functions [Function]</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Model.getVariables.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getVariables.params.self">¶</a> – <cite>~Function.Model</cite> to retrieve function objects from</p></li>
+<li><p><span class="target" id="Function.Model.getVariables.params.functions"></span><strong>functions</strong><a class="paramlink headerlink reference internal" href="#Function.Model.getVariables.params.functions">¶</a> – function to retrieve variables from</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Symbol</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">loadFunctionsFromFiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function_ymls</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.loadFunctionsFromFiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Add functions to model by parsing through YML file</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Model.loadFunctionsFromFiles.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.loadFunctionsFromFiles.params.self">¶</a> – <cite>~Function.Model</cite> to add function(s) to</p></li>
+<li><p><span class="target" id="Function.Model.loadFunctionsFromFiles.params.function_ymls"></span><strong>function_ymls</strong><a class="paramlink headerlink reference internal" href="#Function.Model.loadFunctionsFromFiles.params.function_ymls">¶</a> – name of YML file to retrieve function info from</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">loadParametersFromFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters_yml</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.loadParametersFromFile"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Add parameters to model by parsing through YML file</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Model.loadParametersFromFile.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.loadParametersFromFile.params.self">¶</a> – <cite>~Function.Model</cite> to add function(s) to</p></li>
+<li><p><span class="target" id="Function.Model.loadParametersFromFile.params.parameters_yml"></span><strong>parameters_yml</strong><a class="paramlink headerlink reference internal" href="#Function.Model.loadParametersFromFile.params.parameters_yml">¶</a> – name of YML file to retrieve parameter info from</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">saveParametersToFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.saveParametersToFile"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Save parameters stored in model into YML file for future retrieval.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Model.saveParametersToFile.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Model.saveParametersToFile.params.self">¶</a> – <a class="reference internal" href="stubs/Function.Model.html#Function.Model" title="Function.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a> to retrieve parameters from</p></li>
+<li><p><span class="target" id="Function.Model.saveParametersToFile.params.filename"></span><strong>filename</strong><a class="paramlink headerlink reference internal" href="#Function.Model.saveParametersToFile.params.filename">¶</a> – name of file to save parameters into</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">saveTimeEvolutionTypesToFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Model.saveTimeEvolutionTypesToFile"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">Function.</span></span><span class="sig-name descname"><span class="pre">NonPiecewise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expression</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#NonPiecewise"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="simple">
+<dt>__Purpose__</dt><dd><p>Store information pertaining to nonpiecewise (standard) function</p>
+</dd>
+<dt>__Attributes__</dt><dd><p>functions [list of Function]: function form of object</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getForm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitute_dependents</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#NonPiecewise.getForm"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get functional form of Function object</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Expr</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getParameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">nested=True</span></em>, <em class="sig-param"><span class="pre">return_type=&lt;class</span> <span class="pre">'sympy.core.symbol.Symbol'&gt;</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#NonPiecewise.getParameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get unique list of parameters in function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.NonPiecewise.getParameters.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.NonPiecewise.getParameters.params.self">¶</a> – <a class="reference internal" href="stubs/Function.NonPiecewise.html#Function.NonPiecewise" title="Function.NonPiecewise"><code class="xref py py-class docutils literal notranslate"><span class="pre">NonPiecewise</span></code></a> to retrieve parameters from</p></li>
+<li><p><span class="target" id="Function.NonPiecewise.getParameters.params.nested"></span><strong>nested</strong><a class="paramlink headerlink reference internal" href="#Function.NonPiecewise.getParameters.params.nested">¶</a> – set True to include parameters from children (implicit).
+Set False to only include self parameters (explicit).</p></li>
+<li><p><span class="target" id="Function.NonPiecewise.getParameters.params.return_type"></span><strong>return_type</strong><a class="paramlink headerlink reference internal" href="#Function.NonPiecewise.getParameters.params.return_type">¶</a> – class type to return elements in list output as</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getVariables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nested</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#NonPiecewise.getVariables"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get unique list of variables in function</p>
+</dd>
+<dt>__Inputs__</dt><dd><p>nested [bool]: set True to include variables from children (implicit), False to only include self variables (explicit)</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Symbol</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">Function.</span></span><span class="sig-name descname"><span class="pre">Parent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">children</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Parent"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl>
+<dt>__Purpose__</dt><dd><p>Properties for Function related to being a parent function to another function</p>
+</dd>
+<dt>__Attributes__</dt><dd><p>children [list of Function]: collection of children associated with function
+instance_arguments [list of dict list of sympy.Symbol]: arguments which parent function inputs into child function</p>
+<blockquote>
+<div><p>first list index is index of stored child function
+dictionary key is argument species
+second list index is index of individual argument sent to child function</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">addChild</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Parent.addChild"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Add information to reference child function of parent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Parent.addChild.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Parent.addChild.params.self">¶</a> – <a class="reference internal" href="stubs/Function.Parent.html#Function.Parent" title="Function.Parent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parent</span></code></a> to add info into</p></li>
+<li><p><span class="target" id="Function.Parent.addChild.params.name"></span><strong>name</strong><a class="paramlink headerlink reference internal" href="#Function.Parent.addChild.params.name">¶</a> – name of child to add into parent</p></li>
+<li><p><span class="target" id="Function.Parent.addChild.params.arguments"></span><strong>arguments</strong><a class="paramlink headerlink reference internal" href="#Function.Parent.addChild.params.arguments">¶</a> – dictionary of information to reference child.
+Key is species of instance argument.
+Value is symbol(s) for this species of argument.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Symbol</span></code>]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Dictionary of information to reference child.
+Key is species of instance argument from parent.
+Value is symbol(s) for this species of argument.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">addChildren</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">children</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Parent.addChildren"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Add information to reference children functions of parent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Parent.addChildren.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Parent.addChildren.params.self">¶</a> – <a class="reference internal" href="stubs/Function.Parent.html#Function.Parent" title="Function.Parent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parent</span></code></a> to add info into</p></li>
+<li><p><span class="target" id="Function.Parent.addChildren.params.children"></span><strong>children</strong><a class="paramlink headerlink reference internal" href="#Function.Parent.addChildren.params.children">¶</a> – dictionary of information to reference children.
+Key is name of child.
+Value is dictionary to pass into <code class="xref py py-paramref docutils literal notranslate"><span class="pre">arguments</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Symbol</span></code>]]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Dictionary of information to reference children.
+Key is name of child.
+Value is dictionary of information output from <code class="xref py py-meth docutils literal notranslate"><span class="pre">addChild()</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getChildren</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Parent.getChildren"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get children functions in order added</p>
+</dd>
+<dt>__Recursion <a href="#id3"><span class="problematic" id="id13">Base__</span></a></dt><dd><p>return all children: names [None]</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Parent.getChildren.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Parent.getChildren.params.self">¶</a> – parent to retrieve child(s) from</p></li>
+<li><p><span class="target" id="Function.Parent.getChildren.params.names"></span><strong>names</strong><a class="paramlink headerlink reference internal" href="#Function.Parent.getChildren.params.names">¶</a> – name(s) of child(s) to retrieve from parent</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="stubs/Function.Function.html#Function.Function" title="Function.Function"><code class="xref py py-class docutils literal notranslate"><span class="pre">Function</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="stubs/Function.Function.html#Function.Function" title="Function.Function"><code class="xref py py-class docutils literal notranslate"><span class="pre">Function</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getChildrenNames</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Parent.getChildrenNames"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get names of stored parents in order added</p>
+</dd>
+<dt>__Recursion <a href="#id3"><span class="problematic" id="id14">Base__</span></a></dt><dd><p>retrieve name of single parent: functions [Function]
+retrieve names of all parents: functions [None]</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Parent.getChildrenNames.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Parent.getChildrenNames.params.self">¶</a> – parent to retrieve child name(s) from</p></li>
+<li><p><span class="target" id="Function.Parent.getChildrenNames.params.functions"></span><strong>functions</strong><a class="paramlink headerlink reference internal" href="#Function.Parent.getChildrenNames.params.functions">¶</a> – function(s) to retrieve name(s) from parent</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getInstanceArgumentSpecies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Parent.getInstanceArgumentSpecies"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get all possible species of instance arguments</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Parent.getInstanceArgumentSpecies.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Parent.getInstanceArgumentSpecies.params.self">¶</a> – parent to retrieve instance-argument species from</p></li>
+<li><p><span class="target" id="Function.Parent.getInstanceArgumentSpecies.params.name"></span><strong>name</strong><a class="paramlink headerlink reference internal" href="#Function.Parent.getInstanceArgumentSpecies.params.name">¶</a> – name of child to retrieve instance-argument species for</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getInstanceArguments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">specie</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Parent.getInstanceArguments"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get instance arguments of given species for each function associated with given names</p>
+</dd>
+<dt>__Recursion <a href="#id3"><span class="problematic" id="id15">Base__</span></a></dt><dd><p>return all instance arguments of given specie: specie [None] and names [None]</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Parent.getInstanceArguments.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Parent.getInstanceArguments.params.self">¶</a> – parent to retrieve instance arguments from</p></li>
+<li><p><span class="target" id="Function.Parent.getInstanceArguments.params.specie"></span><strong>specie</strong><a class="paramlink headerlink reference internal" href="#Function.Parent.getInstanceArguments.params.specie">¶</a> – name of instance-argument species to retrieve from parent</p></li>
+<li><p><span class="target" id="Function.Parent.getInstanceArguments.params.name"></span><strong>name</strong><a class="paramlink headerlink reference internal" href="#Function.Parent.getInstanceArguments.params.name">¶</a> – name of child function to retrieve instance arguments for</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Symbol</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Symbol</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">Function.</span></span><span class="sig-name descname"><span class="pre">Piecewise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">functions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conditions</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Piecewise"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="simple">
+<dt>__Purpose__</dt><dd><p>Store information pertaining to piecewise function</p>
+</dd>
+<dt>__Attributes__</dt><dd><p>functions [list of Function]: function pieces making up piecewise function
+conditions [bool]: conditions under which each function piece is used</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getConditions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Piecewise.getConditions"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get conditions that determine which function piece to use</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getForm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">generations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Piecewise.getForm"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get symbolic piecewise expression for self</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Piecewise</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getParameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">nested=True</span></em>, <em class="sig-param"><span class="pre">return_type=&lt;class</span> <span class="pre">'sympy.core.symbol.Symbol'&gt;</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Piecewise.getParameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Get unique list of parameters in function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.Piecewise.getParameters.params.self"></span><strong>self</strong><a class="paramlink headerlink reference internal" href="#Function.Piecewise.getParameters.params.self">¶</a> – <a class="reference internal" href="stubs/Function.NonPiecewise.html#Function.NonPiecewise" title="Function.NonPiecewise"><code class="xref py py-class docutils literal notranslate"><span class="pre">NonPiecewise</span></code></a> to retrieve parameters from</p></li>
+<li><p><span class="target" id="Function.Piecewise.getParameters.params.nested"></span><strong>nested</strong><a class="paramlink headerlink reference internal" href="#Function.Piecewise.getParameters.params.nested">¶</a> – set True to include parameters from children (implicit).
+Set False to only include self parameters (explicit).</p></li>
+<li><p><span class="target" id="Function.Piecewise.getParameters.params.return_type"></span><strong>return_type</strong><a class="paramlink headerlink reference internal" href="#Function.Piecewise.getParameters.params.return_type">¶</a> – class type to return elements in list output as</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getPieceCount</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Piecewise.getPieceCount"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get number of pieces constituting piecewise function</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getPieces</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Piecewise.getPieces"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get Function objects constituting Piecewise object</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="stubs/Function.Function.html#Function.Function" title="Function.Function"><code class="xref py py-class docutils literal notranslate"><span class="pre">Function</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">getVariables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nested</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#Piecewise.getVariables"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get unique list of variables in function, including pieces</p>
+</dd>
+<dt>__Inputs__</dt><dd><p>nested [bool]: set True to include variables from children (implicit), False to only include self variables (explicit)</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Symbol</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">Function.</span></span><span class="sig-name descname"><span class="pre">createModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function_ymls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters_yml</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#createModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Create model from given YML files</p>
+</dd>
+<dt>__Inputs__</dt><dd><p>functions_yml [str]: name of YML file containing function/equation info
+parameters_yml [str]: name of YML file containing parameters info</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.createModel.params.function_ymls"></span><strong>function_ymls</strong><a class="paramlink headerlink reference internal" href="#Function.createModel.params.function_ymls">¶</a> – name of YML file containing information for function</p></li>
+<li><p><span class="target" id="Function.createModel.params.parameters_yml"></span><strong>parameters_yml</strong><a class="paramlink headerlink reference internal" href="#Function.createModel.params.parameters_yml">¶</a> – name of YML file containing information about parameter values/units</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="stubs/Function.Model.html#Function.Model" title="Function.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">Function.</span></span><span class="sig-name descname"><span class="pre">generateFunction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#generateFunction"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><dl class="simple">
+<dt>Create Function object with desired…</dt><dd><p>parent-child associations
+variable-parameter distinctions
+properties</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Function.generateFunction.params.name"></span><strong>name</strong><a class="paramlink headerlink reference internal" href="#Function.generateFunction.params.name">¶</a> – name of new function</p></li>
+<li><p><span class="target" id="Function.generateFunction.params.function"></span><strong>function</strong><a class="paramlink headerlink reference internal" href="#Function.generateFunction.params.function">¶</a> – expression (non-piecewise) or collection of function-object pieces (piecewise) for new function object</p></li>
+<li><p><span class="target" id="Function.generateFunction.params.properties"></span><strong>properties</strong><a class="paramlink headerlink reference internal" href="#Function.generateFunction.params.properties">¶</a> – collection of properties to give new function</p></li>
+<li><p><span class="target" id="Function.generateFunction.params.kwargs"></span><strong>kwargs</strong><a class="paramlink headerlink reference internal" href="#Function.generateFunction.params.kwargs">¶</a> – see FunctionCore</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="stubs/Function.Function.html#Function.Function" title="Function.Function"><code class="xref py py-class docutils literal notranslate"><span class="pre">Function</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">Function.</span></span><span class="sig-name descname"><span class="pre">generateFunctionsFromFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#generateFunctionsFromFile"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="stubs/Function.Function.html#Function.Function" title="Function.Function"><code class="xref py py-class docutils literal notranslate"><span class="pre">Function</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">Function.</span></span><span class="sig-name descname"><span class="pre">getFunctionInfo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">info</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#getFunctionInfo"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl>
+<dt>__Purpose__</dt><dd><p>Get properly formatted dictionary of information to create Function object</p>
+</dd>
+<dt>__Inputs__</dt><dd><dl>
+<dt>info [dict]: collection of information to properly create Function object</dt><dd><p>{“properties”: [list of str],
+“variables”: [str, list of str],
+“parameters”: [str, list of str],
+“form”: [str],
+“children”:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>[{child_name:</dt><dd><p>{“variables”: [str, list of str],
+“parameters”: [str, list of str]}</p>
+</dd>
+</dl>
+<p>}]</p>
+</div></blockquote>
+<dl class="simple">
+<dt>“arguments”:</dt><dd><p>“variables”: [str, list of str]
+“parameters”: [str, list of str]
+“functions”: [str, list of str]</p>
+</dd>
+</dl>
+<p>“variable”: [str]
+}</p>
+</dd>
+</dl>
+<p>model [Model]: model to associated Function object with</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">Function.</span></span><span class="sig-name descname"><span class="pre">getInheritance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">properties</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Function.html#getInheritance"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Type</span></code>[<a class="reference internal" href="stubs/Function.Function.html#Function.Function" title="Function.Function"><code class="xref py py-class docutils literal notranslate"><span class="pre">Function</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="stubs/Function.Model.html" class="btn btn-neutral float-right" title="Function.Model" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="stubs/CustomErrors.RecursiveTypeError.html" class="btn btn-neutral" title="CustomErrors.RecursiveTypeError" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2021, Joseph Marcinik.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Stanford-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2021',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/documentation_options.js"></script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/clipboard.min.js"></script>
+      <script type="text/javascript" src="_static/copybutton.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

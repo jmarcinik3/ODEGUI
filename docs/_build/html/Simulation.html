@@ -1,0 +1,324 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Simulation module &mdash; Model 2021 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+    <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+  
+    <link rel="stylesheet" href="_static/sphinx_paramlinks.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="Model 2021 documentation" href="index.html"/>
+        <link rel="up" title="ODEGUI" href="modules.html"/>
+        <link rel="next" title="YML module" href="YML.html"/>
+        <link rel="prev" title="Results.Results" href="stubs/Results.Results.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Model
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">ODEGUI</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="CustomErrors.html">CustomErrors module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Function.html">Function module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="KeyList.html">KeyList module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Layout.html">Layout package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Results.html">Results module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Simulation module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="YML.html">YML module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="macros.html">macros module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html">main module</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Model</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">ODEGUI</a> &raquo;</li>
+        
+      <li>Simulation module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/Simulation.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="simulation-module">
+<h1>Simulation module<a class="headerlink" href="#simulation-module" title="Permalink to this headline">¶</a></h1>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">Simulation.</span></span><span class="sig-name descname"><span class="pre">ODEstep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ydot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Simulation.html#ODEstep"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>__Purpose__</dt><dd><p>Get collection of values for function(s) after performing one step</p>
+</dd>
+<dt>__Input__</dt><dd><p>ydot [lambda]: ODE to solve, collection of derivatives
+y0 [float]: initial value of variables
+t [list of float]: [initial time, final time] where final_time=initial_time+delta_time</p>
+</dd>
+<dt>__Return__</dt><dd><p>list of float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">Simulation.</span></span><span class="sig-name descname"><span class="pre">RK4step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">derivative</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Simulation.html#RK4step"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">Simulation.</span></span><span class="sig-name descname"><span class="pre">formatResultsAsDictionary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Simulation.html#formatResultsAsDictionary"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Reformat results array from simulation as dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Simulation.formatResultsAsDictionary.params.t"></span><strong>t</strong><a class="paramlink headerlink reference internal" href="#Simulation.formatResultsAsDictionary.params.t">¶</a> – collection of times that simulation was run at</p></li>
+<li><p><span class="target" id="Simulation.formatResultsAsDictionary.params.y"></span><strong>y</strong><a class="paramlink headerlink reference internal" href="#Simulation.formatResultsAsDictionary.params.y">¶</a> – results from simulation. Same format type as output from <code class="xref py py-meth docutils literal notranslate"><span class="pre">solveODE()</span></code></p></li>
+<li><p><span class="target" id="Simulation.formatResultsAsDictionary.params.names"></span><strong>names</strong><a class="paramlink headerlink reference internal" href="#Simulation.formatResultsAsDictionary.params.names">¶</a> – name(s) of variable(s). Index corresponds to those in <code class="xref py py-paramref docutils literal notranslate"><span class="pre">y</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Dictionary of results from simulation.
+Key is name of variable as string.
+Value is array of floats for variable.
+Array is ordered such that each float corresponds to the time step at the same index.
+Time steps are stored at key ‘t’.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">Simulation.</span></span><span class="sig-name descname"><span class="pre">solveODE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ydot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Simulation.html#solveODE"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Solve ODE IVP numerically</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span class="target" id="Simulation.solveODE.params.ydot"></span><strong>ydot</strong><a class="paramlink headerlink reference internal" href="#Simulation.solveODE.params.ydot">¶</a> – derivative vector</p></li>
+<li><p><span class="target" id="Simulation.solveODE.params.y0"></span><strong>y0</strong><a class="paramlink headerlink reference internal" href="#Simulation.solveODE.params.y0">¶</a> – initial condition of derivative vector</p></li>
+<li><p><span class="target" id="Simulation.solveODE.params.t"></span><strong>t</strong><a class="paramlink headerlink reference internal" href="#Simulation.solveODE.params.t">¶</a> – collection of times to solve ODE at</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>2D ndarray of floats.
+First index corresponds to time step.
+Second index corresponds to simulated variable.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="YML.html" class="btn btn-neutral float-right" title="YML module" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="stubs/Results.Results.html" class="btn btn-neutral" title="Results.Results" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2021, Joseph Marcinik.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Stanford-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2021',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/documentation_options.js"></script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/clipboard.min.js"></script>
+      <script type="text/javascript" src="_static/copybutton.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,741 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Results &mdash; Model 2021 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/copybutton.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/sphinx_paramlinks.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Model 2021 documentation" href="../index.html"/>
+        <link rel="up" title="Module code" href="index.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Model
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <!-- Local TOC -->
+                <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Model</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>Results</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for Results</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">ndarray</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">fft</span><span class="p">,</span> <span class="n">signal</span>
+<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">stats</span>
+<span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">Expr</span>
+<span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">Symbol</span>
+<span class="kn">from</span> <span class="nn">sympy.utilities.lambdify</span> <span class="kn">import</span> <span class="n">lambdify</span>
+
+<span class="kn">from</span> <span class="nn">Function</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">macros</span> <span class="kn">import</span> <span class="n">commonElement</span>
+
+
+<div class="viewcode-block" id="Results"><a class="viewcode-back" href="../Results.html#Results.Results">[docs]</a><span class="k">class</span> <span class="nc">Results</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class stores results from an ODE simulation.</span>
+<span class="sd">    Minimally, results for temporal variables are required to be set.</span>
+<span class="sd">    Other results may be calculated and saved from :class:`~Function.Model` as needed.</span>
+<span class="sd">    </span>
+<span class="sd">    :ivar results: 2D dictionary of results.</span>
+<span class="sd">        First key is indicies of free parameter for current data to present.</span>
+<span class="sd">        Second key is name of quantity to retrieve results of.</span>
+<span class="sd">        Value is array of quantitiy values over time.</span>
+<span class="sd">    :ivar model: :class:`~Function.Model` to calculated results from</span>
+<span class="sd">    :ivar free_parameter_values: dictionary of values for free parameters.</span>
+<span class="sd">            Key is name of free parameter.</span>
+<span class="sd">            Value is possible values for free parameter.</span>
+<span class="sd">    :ivar general_equilibrium_forms: dictionary of symbolic equilibrium expressions.</span>
+<span class="sd">        Key is name of variable.</span>
+<span class="sd">        Value is symbolic expression.</span>
+<span class="sd">        This attribute is so that equilibria only need to be calculated once.</span>
+<span class="sd">        They are reused after their initial calculation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span> <span class="n">free_parameter_values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor for :class:`~SimulationWindow.SimulationWindowRunner`</span>
+
+<span class="sd">        :param model: :class:`~Function.Model` to calculate results from</span>
+<span class="sd">        :param free_parameter_values: dictionary of values for free parameters.</span>
+<span class="sd">            Key is name of free parameter.</span>
+<span class="sd">            Value is possible values for free parameter.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">free_parameter_values</span> <span class="o">=</span> <span class="n">free_parameter_values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">general_equilibrium_forms</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="Results.getModel"><a class="viewcode-back" href="../Results.html#Results.Results.getModel">[docs]</a>    <span class="k">def</span> <span class="nf">getModel</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Model</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get associated :class:`Function.Model`.</span>
+<span class="sd">        </span>
+<span class="sd">        :param self: :class:`~Results.Results` to retrieve associated :class:`~Function.Model` from</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span></div>
+
+<div class="viewcode-block" id="Results.getFreeParameterIndex"><a class="viewcode-back" href="../Results.html#Results.Results.getFreeParameterIndex">[docs]</a>    <span class="k">def</span> <span class="nf">getFreeParameterIndex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get index of free parameter within collection of free-parameter names.</span>
+<span class="sd">        </span>
+<span class="sd">        :param self: :class:`~Results.Results` to retreive free-parameter names from</span>
+<span class="sd">        :param name: name of free parameter to retreive index of</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">free_parameter_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFreeParameterNames</span><span class="p">()</span>
+        <span class="n">free_parameter_index</span> <span class="o">=</span> <span class="n">free_parameter_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">free_parameter_index</span></div>
+
+<div class="viewcode-block" id="Results.getFreeParameterNames"><a class="viewcode-back" href="../Results.html#Results.Results.getFreeParameterNames">[docs]</a>    <span class="k">def</span> <span class="nf">getFreeParameterNames</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get names of free parameters.</span>
+
+<span class="sd">        :param self: :class:`~Results.Results` to retrieve free-parameter names from</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">free_parameter_values</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Results.getFreeParameterValues"><a class="viewcode-back" href="../Results.html#Results.Results.getFreeParameterValues">[docs]</a>    <span class="k">def</span> <span class="nf">getFreeParameterValues</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get values for a free parameter.</span>
+<span class="sd">        </span>
+<span class="sd">        :param self: `~Results.Results` to retreive value from</span>
+<span class="sd">        :param names: name(s) of parameter to retreive values for</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">free_parameter_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFreeParameterValues</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">free_parameter_values</span><span class="p">[</span><span class="n">names</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFreeParameterValues</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="n">names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">free_parameter_values</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;names must be str or list&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Results.setEquilibriumForms"><a class="viewcode-back" href="../Results.html#Results.Results.setEquilibriumForms">[docs]</a>    <span class="k">def</span> <span class="nf">setEquilibriumForms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">equilibrium_forms</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Symbol</span><span class="p">,</span> <span class="n">Expr</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set symbolic expressions for equilibrium variables.</span>
+<span class="sd">        These expressions are simplified, except variables and free parameters are kept symbolic.</span>
+<span class="sd">        Equilibria may be set manually or calculated automatically from the stored :class:`~Function.Model`.</span>
+<span class="sd">        </span>
+<span class="sd">        :param self: :class:`~Results.Results` to set equilibria for</span>
+<span class="sd">        :param equilibrium_forms: dictionary of equilibria for variables.</span>
+<span class="sd">            Key is symbolic variable.</span>
+<span class="sd">            Value is symbolic equilibrium expression of variable.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">equilibrium_forms</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">solutions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getModel</span><span class="p">()</span><span class="o">.</span><span class="n">getEquilibriumSolutions</span><span class="p">(</span><span class="n">skip_parameters</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">getFreeParameterNames</span><span class="p">())</span>
+            <span class="n">solutions</span> <span class="o">=</span> <span class="p">{</span><span class="n">variable</span><span class="p">:</span> <span class="n">solution</span> <span class="k">for</span> <span class="n">variable</span><span class="p">,</span> <span class="n">solution</span> <span class="ow">in</span> <span class="n">solutions</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">general_equilibrium_forms</span> <span class="o">=</span> <span class="n">solutions</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">general_equilibrium_forms</span> <span class="o">=</span> <span class="n">equilibrium_forms</span></div>
+
+<div class="viewcode-block" id="Results.getEquilibriumForm"><a class="viewcode-back" href="../Results.html#Results.Results.getEquilibriumForm">[docs]</a>    <span class="k">def</span> <span class="nf">getEquilibriumForm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Symbol</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Expr</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get equilibrium expression for a variable.</span>
+<span class="sd">        </span>
+<span class="sd">        :param self: :class:`~Results.Results` to retrieve equilibrium from</span>
+<span class="sd">        :param name: name of variable to retrieve equilibrium for</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">general_equilibrium_forms</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setEquilibriumForms</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">Symbol</span><span class="p">):</span>
+            <span class="n">general_form</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">general_equilibrium_forms</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">general_form</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">general_equilibrium_forms</span><span class="p">[</span><span class="n">Symbol</span><span class="p">(</span><span class="n">name</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;name must be sp.Symbol or str&quot;</span><span class="p">)</span>
+
+        <span class="n">parameter_substitutions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getModel</span><span class="p">()</span><span class="o">.</span><span class="n">getParameterSubstitutions</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getFreeParameterNames</span><span class="p">())</span>
+        <span class="n">simplified_form</span> <span class="o">=</span> <span class="n">general_form</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">parameter_substitutions</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">simplified_form</span></div>
+
+<div class="viewcode-block" id="Results.resetResults"><a class="viewcode-back" href="../Results.html#Results.Results.resetResults">[docs]</a>    <span class="k">def</span> <span class="nf">resetResults</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reset results to store a new set of them.</span>
+
+<span class="sd">        :param self: :class:`~SimulationWindow.SimulationWindowRunner` to reset results for</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+<div class="viewcode-block" id="Results.getSubstitutedResults"><a class="viewcode-back" href="../Results.html#Results.Results.getSubstitutedResults">[docs]</a>    <span class="k">def</span> <span class="nf">getSubstitutedResults</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="n">function</span><span class="p">:</span> <span class="n">Expr</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get results from simulation for function, after substituting results from variables.</span>
+
+<span class="sd">        :param self: :class:`~SimulationWindow.SimulationWindowRunner` to retrieve results from</span>
+<span class="sd">        :param index: index of free parameters to retrieve substitutive results at</span>
+<span class="sd">        :param function: function to substitute results into</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">variables</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getModel</span><span class="p">()</span><span class="o">.</span><span class="n">getDerivativeVariables</span><span class="p">(</span><span class="n">time_evolution_types</span><span class="o">=</span><span class="s2">&quot;Temporal&quot;</span><span class="p">)</span>
+        <span class="n">function_lambda</span> <span class="o">=</span> <span class="n">lambdify</span><span class="p">((</span><span class="n">Symbol</span><span class="p">(</span><span class="s1">&#39;t&#39;</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">variables</span><span class="p">)),</span> <span class="n">function</span><span class="p">,</span> <span class="s2">&quot;numpy&quot;</span><span class="p">)</span>
+        <span class="n">variable_names</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">variable</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">]</span>
+        <span class="n">temporal_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getResultsOverTime</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">variable_names</span><span class="p">)</span>
+        <span class="n">times</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getResultsOverTime</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="s1">&#39;t&#39;</span><span class="p">)</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">function_lambda</span><span class="p">(</span><span class="n">times</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">temporal_results</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">))]</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">results</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Results.getFunctionResults"><a class="viewcode-back" href="../Results.html#Results.Results.getFunctionResults">[docs]</a>    <span class="k">def</span> <span class="nf">getFunctionResults</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get results from simulation for function.</span>
+
+<span class="sd">        :param self: :class:`~SimulationWindow.SimulationWindowRunner` to retrieve results from</span>
+<span class="sd">        :param index: index of parameter value for free parameter</span>
+<span class="sd">        :param name: name of function to retrieve results ofZ</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getModel</span><span class="p">()</span>
+        <span class="n">function</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">getFunctions</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">form</span> <span class="o">=</span> <span class="n">function</span><span class="o">.</span><span class="n">getForm</span><span class="p">(</span><span class="n">generations</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>
+
+        <span class="n">substitutions</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">function_variables</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">function</span><span class="o">.</span><span class="n">getVariables</span><span class="p">())</span>
+        <span class="n">equilibrium_variables</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">getDerivativeVariables</span><span class="p">(</span><span class="n">time_evolution_types</span><span class="o">=</span><span class="s2">&quot;Equilibrium&quot;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">commonElement</span><span class="p">(</span><span class="n">function_variables</span><span class="p">,</span> <span class="n">equilibrium_variables</span><span class="p">):</span>
+            <span class="n">substitutions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">getEquilibriumSolutions</span><span class="p">())</span>
+
+        <span class="n">constant_variables</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">getDerivativeVariables</span><span class="p">(</span><span class="n">time_evolution_types</span><span class="o">=</span><span class="s2">&quot;Constant&quot;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">commonElement</span><span class="p">(</span><span class="n">function_variables</span><span class="p">,</span> <span class="n">constant_variables</span><span class="p">):</span>
+            <span class="n">substitutions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">getConstantSubstitutions</span><span class="p">())</span>
+
+        <span class="n">derivative_function_variables</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">getDerivativeVariables</span><span class="p">(</span><span class="n">time_evolution_types</span><span class="o">=</span><span class="s2">&quot;Function&quot;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">commonElement</span><span class="p">(</span><span class="n">function_variables</span><span class="p">,</span> <span class="n">derivative_function_variables</span><span class="p">):</span>
+            <span class="n">substitutions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">getFunctionSubstitutions</span><span class="p">())</span>
+
+        <span class="n">substitutions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">getParameterSubstitutions</span><span class="p">(</span><span class="n">function</span><span class="o">.</span><span class="n">getParameters</span><span class="p">(</span><span class="n">return_type</span><span class="o">=</span><span class="nb">str</span><span class="p">)))</span>
+        <span class="n">form</span> <span class="o">=</span> <span class="n">form</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">substitutions</span><span class="p">)</span>
+
+        <span class="n">updated_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSubstitutedResults</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">form</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">updated_results</span></div>
+
+<div class="viewcode-block" id="Results.getEquilibriumVariableResults"><a class="viewcode-back" href="../Results.html#Results.Results.getEquilibriumVariableResults">[docs]</a>    <span class="k">def</span> <span class="nf">getEquilibriumVariableResults</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get results from simulation for variable in equilibrium.</span>
+
+<span class="sd">        :param self: :class:`~SimulationWindow.SimulationWindowRunner` to retrieve results from</span>
+<span class="sd">        :param index: index of parameter value for free parameter</span>
+<span class="sd">        :param name: name of variable to retrieve results of</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSubstitutedResults</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">getEquilibriumForm</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">results</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Results.getConstantVariableResults"><a class="viewcode-back" href="../Results.html#Results.Results.getConstantVariableResults">[docs]</a>    <span class="k">def</span> <span class="nf">getConstantVariableResults</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get results from simulation for constant variable.</span>
+
+<span class="sd">        :param self: :class:`~SimulationWindow.SimulationWindowRunner` to retrieve results from</span>
+<span class="sd">        :param index: index of parameter value for free parameter</span>
+<span class="sd">        :param name: name of variable to retrieve results of</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">initial_condition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getModel</span><span class="p">()</span><span class="o">.</span><span class="n">getDerivativesFromVariableNames</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">getInitialCondition</span><span class="p">()</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">initial_condition</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getResultsOverTime</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="s1">&#39;t&#39;</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="n">results</span></div>
+
+<div class="viewcode-block" id="Results.getOscillationAmplitude"><a class="viewcode-back" href="../Results.html#Results.Results.getOscillationAmplitude">[docs]</a>    <span class="k">def</span> <span class="nf">getOscillationAmplitude</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="Results.getOscillationFrequency"><a class="viewcode-back" href="../Results.html#Results.Results.getOscillationFrequency">[docs]</a>    <span class="k">def</span> <span class="nf">getOscillationFrequency</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+            <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">calculation_method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;autocorrelation&quot;</span><span class="p">,</span>
+            <span class="n">condensing_method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;average&quot;</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get oscillation frequency for quantity.</span>
+
+<span class="sd">        :param self: :class:`~Results.Results` to retrieve quantity results from</span>
+<span class="sd">        :param index: index of results.</span>
+<span class="sd">            This is a tuple of indicies.</span>
+<span class="sd">            The index of the tuple corresponds to the parameter in free parameters.</span>
+<span class="sd">            The index within the tuple corresponds to the value of the parameter in its set of possible values.</span>
+<span class="sd">        :param name: name of quantity to retrieve frequency for</span>
+<span class="sd">        :param calculation_method: method used to calculate frequencies.</span>
+<span class="sd">            &quot;maxima_separation&quot; uses peak-to-peak separation of waveform.</span>
+<span class="sd">            &quot;minima_separation&quot; uses trough-to-trough separation of waveform.</span>
+<span class="sd">            &quot;extrema_separation&quot; uses peaks and troughs separation of waveform.</span>
+<span class="sd">            &quot;maxima_fourier_[n]&quot; uses peak-to-peak separation of Fourier transform (i.e. separation of harmonics).</span>
+<span class="sd">            This method uses separations for the first n maxima.</span>
+<span class="sd">            &quot;autocorrelation&quot; uses autocorrelation of waveform.</span>
+<span class="sd">            This method uses the argument of the first local maximum, excluding zero.</span>
+<span class="sd">        :param condensing_method: method used to &quot;average&quot; frequencies.</span>
+<span class="sd">            &quot;average&quot; uses arithmetic mean of frequencies.</span>
+<span class="sd">            &quot;maximum&quot; uses maximum of frequencies.</span>
+<span class="sd">            &quot;minimum&quot; uses minium of frequencies.</span>
+<span class="sd">            &quot;initial&quot; uses first frequency in frequencies.</span>
+<span class="sd">            &quot;final&quot; uses last frequency in frequencies.</span>
+<span class="sd">        :param kwargs: additional arguments to pass into :meth:`~Results.Results.getResultsOverTime`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">calculation_method</span> <span class="o">=</span> <span class="n">calculation_method</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">condensing_method</span> <span class="o">=</span> <span class="n">condensing_method</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getResultsOverTime</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">times</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getResultsOverTime</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="s1">&#39;t&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;separation&quot;</span> <span class="ow">in</span> <span class="n">calculation_method</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;max&quot;</span> <span class="ow">in</span> <span class="n">calculation_method</span> <span class="ow">or</span> <span class="s2">&quot;min&quot;</span> <span class="ow">in</span> <span class="n">calculation_method</span><span class="p">:</span>
+                <span class="n">time_to_frequency</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">initial_time</span><span class="p">,</span> <span class="n">final_time</span><span class="p">:</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">final_time</span> <span class="o">-</span> <span class="n">initial_time</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="s2">&quot;extrema&quot;</span> <span class="ow">in</span> <span class="n">calculation_method</span><span class="p">:</span>
+                <span class="n">time_to_frequency</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">initial_time</span><span class="p">,</span> <span class="n">final_time</span><span class="p">:</span> <span class="mf">0.5</span> <span class="o">/</span> <span class="p">(</span><span class="n">final_time</span> <span class="o">-</span> <span class="n">initial_time</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;separation method must include maxima, minima, xor extrema&quot;</span><span class="p">)</span>
+
+            <span class="n">extrema_indicies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;max&quot;</span> <span class="ow">in</span> <span class="n">calculation_method</span> <span class="ow">or</span> <span class="s2">&quot;extrema&quot;</span> <span class="ow">in</span> <span class="n">calculation_method</span><span class="p">:</span>
+                <span class="n">maxima_indicies</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">find_peaks</span><span class="p">(</span><span class="n">results</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">extrema_indicies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">extrema_indicies</span><span class="p">,</span> <span class="n">maxima_indicies</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;min&quot;</span> <span class="ow">in</span> <span class="n">calculation_method</span> <span class="ow">or</span> <span class="s2">&quot;extrema&quot;</span> <span class="ow">in</span> <span class="n">calculation_method</span><span class="p">:</span>
+                <span class="n">minima_indicies</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">find_peaks</span><span class="p">(</span><span class="o">-</span><span class="n">results</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">extrema_indicies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">extrema_indicies</span><span class="p">,</span> <span class="n">minima_indicies</span><span class="p">)</span>
+            <span class="n">extrema_times</span> <span class="o">=</span> <span class="n">times</span><span class="p">[</span><span class="n">extrema_indicies</span><span class="p">]</span>
+            <span class="n">frequencies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">time_to_frequency</span><span class="p">(</span><span class="n">extrema_times</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">extrema_times</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">extrema_times</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="s2">&quot;max&quot;</span> <span class="ow">in</span> <span class="n">calculation_method</span> <span class="ow">and</span> <span class="s2">&quot;fourier&quot;</span> <span class="ow">in</span> <span class="n">calculation_method</span><span class="p">:</span>
+            <span class="n">harmonic_count</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">calculation_method</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="n">harmonic_count</span><span class="p">)</span>
+            <span class="n">time_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">)</span>
+            <span class="n">time_resolution</span> <span class="o">=</span> <span class="p">(</span><span class="n">times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">times</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">time_count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">fourier_results</span><span class="p">,</span> <span class="n">frequencies</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">fft</span><span class="o">.</span><span class="n">rfft</span><span class="p">(</span><span class="n">results</span><span class="p">)),</span> <span class="n">fft</span><span class="o">.</span><span class="n">rfftfreq</span><span class="p">(</span><span class="n">time_count</span><span class="p">,</span> <span class="n">time_resolution</span><span class="p">)</span>
+
+            <span class="n">maxima_indicies</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">find_peaks</span><span class="p">(</span><span class="n">fourier_results</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">maxima_indicies</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">harmonic_frequencies</span> <span class="o">=</span> <span class="n">frequencies</span><span class="p">[</span><span class="n">maxima_indicies</span><span class="p">]</span>
+                <span class="n">harmonic_frequencies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">harmonic_frequencies</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">n_harmonic_frequencies</span> <span class="o">=</span> <span class="n">harmonic_frequencies</span><span class="p">[:</span><span class="n">harmonic_count</span><span class="p">]</span>
+                <span class="n">frequencies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                    <span class="p">[</span><span class="n">n_harmonic_frequencies</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">n_harmonic_frequencies</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span>
+                        <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_harmonic_frequencies</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">frequencies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+        <span class="k">elif</span> <span class="s2">&quot;autocorrelation&quot;</span> <span class="ow">in</span> <span class="n">calculation_method</span><span class="p">:</span>
+            <span class="n">results_count</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">size</span>
+            <span class="n">correlation</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">correlate</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;same&quot;</span><span class="p">)[</span><span class="n">results_count</span> <span class="o">//</span> <span class="mi">2</span><span class="p">:]</span>
+            <span class="n">lags</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">correlation_lags</span><span class="p">(</span><span class="n">results_count</span><span class="p">,</span> <span class="n">results_count</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;same&quot;</span><span class="p">)[</span><span class="n">results_count</span> <span class="o">//</span> <span class="mi">2</span><span class="p">:]</span>
+
+            <span class="n">argrelmax_correlation</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">argrelmax</span><span class="p">(</span><span class="n">correlation</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">argrelmax_count</span> <span class="o">=</span> <span class="n">argrelmax_correlation</span><span class="o">.</span><span class="n">size</span>
+
+            <span class="k">if</span> <span class="n">argrelmax_count</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">lag</span> <span class="o">=</span> <span class="n">lags</span><span class="p">[</span><span class="n">argrelmax_correlation</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">delta_time</span> <span class="o">=</span> <span class="n">times</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">times</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">frequencies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">lag</span> <span class="o">*</span> <span class="n">delta_time</span><span class="p">)])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">frequencies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;invalid calculation method&quot;</span><span class="p">)</span>
+
+        <span class="n">frequency_count</span> <span class="o">=</span> <span class="n">frequencies</span><span class="o">.</span><span class="n">size</span>
+        <span class="k">if</span> <span class="n">frequency_count</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">condensing_method</span> <span class="o">==</span> <span class="s2">&quot;average&quot;</span><span class="p">:</span>
+                <span class="n">frequency</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">frequencies</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">condensing_method</span> <span class="o">==</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span>
+                <span class="n">frequency</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">frequencies</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">condensing_method</span> <span class="o">==</span> <span class="s2">&quot;minimum&quot;</span><span class="p">:</span>
+                <span class="n">frequency</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">frequencies</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">condensing_method</span> <span class="o">==</span> <span class="s2">&quot;initial&quot;</span><span class="p">:</span>
+                <span class="n">frequency</span> <span class="o">=</span> <span class="n">frequencies</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">condensing_method</span> <span class="o">==</span> <span class="s2">&quot;final&quot;</span><span class="p">:</span>
+                <span class="n">frequency</span> <span class="o">=</span> <span class="n">frequencies</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;invalid condensing method&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">frequency</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="n">frequency</span></div>
+
+<div class="viewcode-block" id="Results.getHolderMean"><a class="viewcode-back" href="../Results.html#Results.Results.getHolderMean">[docs]</a>    <span class="k">def</span> <span class="nf">getHolderMean</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get Holder mean for results.</span>
+<span class="sd">        </span>
+<span class="sd">        :param self: :class:`~Results.Results` to retrieve results from</span>
+<span class="sd">        :param index: index of results.</span>
+<span class="sd">            This is a tuple of indicies.</span>
+<span class="sd">            The index of the tuple corresponds to the parameter in free parameters.</span>
+<span class="sd">            The index within the tuple corresponds to the value of the parameter in its set of possible values.</span>
+<span class="sd">        :param name: name of quantity to retrieve mean for</span>
+<span class="sd">        :param order: order of Holder mean</span>
+<span class="sd">        :param kwargs: additional arguments to pass into :meth:`~Results.Results.getResultsOverTime`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getResultsOverTime</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">mean</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">gmean</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+        <span class="c1"># elif order == -1: mean = stats.hmean(results)</span>
+        <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">order</span><span class="p">)</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">order</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">order</span><span class="p">)</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">order</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">results</span> <span class="o">**</span> <span class="n">order</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">order</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">mean</span></div>
+
+<div class="viewcode-block" id="Results.getFourierTransform"><a class="viewcode-back" href="../Results.html#Results.Results.getFourierTransform">[docs]</a>    <span class="k">def</span> <span class="nf">getFourierTransform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]],</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get Fourier transform of results.</span>
+<span class="sd">        </span>
+<span class="sd">        :param self: :class:`~Results.Results` to retreive results from</span>
+<span class="sd">        :param index: index of results.</span>
+<span class="sd">            This is a tuple of indicies.</span>
+<span class="sd">            The index of the tuple corresponds to the parameter in free parameters.</span>
+<span class="sd">            The index within the tuple corresponds to the value of the parameter in its set of possible values.</span>
+<span class="sd">        :param name: name of quantity to retreive Fourier transform of</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">original_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getResultsOverTime</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="c1"># noinspection PyPep8Naming</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">original_results</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;t&#39;</span><span class="p">:</span>
+            <span class="n">initial_time</span><span class="p">,</span> <span class="n">final_time</span> <span class="o">=</span> <span class="n">original_results</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">original_results</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">time_resolution</span> <span class="o">=</span> <span class="p">(</span><span class="n">final_time</span> <span class="o">-</span> <span class="n">initial_time</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">N</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">fourier_results</span> <span class="o">=</span> <span class="n">fft</span><span class="o">.</span><span class="n">rfftfreq</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">time_resolution</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fourier_results</span> <span class="o">=</span> <span class="n">fft</span><span class="o">.</span><span class="n">rfft</span><span class="p">(</span><span class="n">original_results</span><span class="p">)</span>
+            <span class="n">fourier_results</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">fourier_results</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">fourier_results</span></div>
+
+<div class="viewcode-block" id="Results.getResultsOverTime"><a class="viewcode-back" href="../Results.html#Results.Results.getResultsOverTime">[docs]</a>    <span class="k">def</span> <span class="nf">getResultsOverTime</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]],</span>
+            <span class="n">names</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">transform_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
+            <span class="n">condensor_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">condensor_kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get results for variable or function over time.</span>
+<span class="sd">        Results are evaluated from simulation.</span>
+<span class="sd">        Optionally perform a transformation on the quantity.</span>
+<span class="sd">        Optionally condense variable values into one value.</span>
+<span class="sd">        </span>
+<span class="sd">        __Recursion Base__</span>
+<span class="sd">            return results for single variable: names [str]</span>
+
+<span class="sd">        :param self: :class:`~SimulationWindow.SimulationWindowRunner` to retrieve results from</span>
+<span class="sd">        :param index: index of results.</span>
+<span class="sd">            This is a tuple of indicies.</span>
+<span class="sd">            The index of the tuple corresponds to the parameter in free parameters.</span>
+<span class="sd">            The index within the tuple corresponds to the value of the parameter in its set of possible values.</span>
+<span class="sd">        :param names: name(s) of variable/function(s) to retrieve results for</span>
+<span class="sd">        :param transform_name: transform to perform on results.</span>
+<span class="sd">            &quot;Fourier&quot; - Fourier transform.</span>
+<span class="sd">        :param condensor_name: analysis to perform on results to reduce into one (or few) floats.</span>
+<span class="sd">            &quot;Frequency&quot; - calculate frequency of oscillation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">condensor_name</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+                <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="n">index</span><span class="p">,</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">names</span><span class="p">,</span>
+                    <span class="s2">&quot;transform_name&quot;</span><span class="p">:</span> <span class="n">transform_name</span>
+                <span class="p">}</span>
+                <span class="k">if</span> <span class="n">condensor_name</span> <span class="o">==</span> <span class="s2">&quot;Frequency&quot;</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getOscillationFrequency</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">,</span> <span class="o">**</span><span class="n">condensor_kwargs</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">condensor_name</span> <span class="o">==</span> <span class="s2">&quot;Mean&quot;</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getHolderMean</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">,</span> <span class="o">**</span><span class="n">condensor_kwargs</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;invalid condensor name&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">transform_name</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">transform_name</span> <span class="o">==</span> <span class="s2">&quot;Fourier&quot;</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFourierTransform</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">names</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;invalid transform name&quot;</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">results</span><span class="p">[</span><span class="n">names</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+            <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getModel</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">names</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">getDerivativeVariables</span><span class="p">(</span><span class="n">return_type</span><span class="o">=</span><span class="nb">str</span><span class="p">):</span>
+                <span class="n">time_evolution_type</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">getDerivativesFromVariableNames</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="n">names</span><span class="p">)</span><span class="o">.</span><span class="n">getTimeEvolutionType</span><span class="p">()</span>
+                <span class="n">results_handles</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;Equilibrium&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getEquilibriumVariableResults</span><span class="p">,</span>
+                    <span class="s2">&quot;Constant&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getConstantVariableResults</span><span class="p">,</span>
+                    <span class="s2">&quot;Function&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFunctionResults</span>
+                <span class="p">}</span>
+                <span class="c1"># noinspection PyArgumentList</span>
+                <span class="n">updated_results</span> <span class="o">=</span> <span class="n">results_handles</span><span class="p">[</span><span class="n">time_evolution_type</span><span class="p">](</span><span class="n">index</span><span class="p">,</span> <span class="n">names</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">names</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">getFunctionNames</span><span class="p">():</span>
+                <span class="n">updated_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFunctionResults</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">names</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;names input must correspond to either variable or function when str &quot;</span><span class="p">)</span>
+
+            <span class="c1"># noinspection PyUnboundLocalVariable</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setResults</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">updated_results</span><span class="p">,</span> <span class="n">names</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">updated_results</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="n">index</span><span class="p">,</span>
+                <span class="s2">&quot;transform_name&quot;</span><span class="p">:</span> <span class="n">transform_name</span>
+            <span class="p">}</span>
+            <span class="n">new_results</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getResultsOverTime</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">])</span>
+            <span class="n">transpose</span> <span class="o">=</span> <span class="n">new_results</span><span class="o">.</span><span class="n">T</span>
+            <span class="k">return</span> <span class="n">transpose</span>
+        <span class="k">elif</span> <span class="n">names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getResultsOverTime</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;names input must be str or list&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Results.getResultsOverTimePerParameter"><a class="viewcode-back" href="../Results.html#Results.Results.getResultsOverTimePerParameter">[docs]</a>    <span class="k">def</span> <span class="nf">getResultsOverTimePerParameter</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="n">parameter_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">quantity_names</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get free-parameter values and &quot;averaged&quot; quantity values.</span>
+
+<span class="sd">        :param self: :class:`~SimulationWindow.SimulationWindowRunner` to retrieve results from</span>
+<span class="sd">        :param index: index of results.</span>
+<span class="sd">            This is a tuple of indicies.</span>
+<span class="sd">            The index of the tuple corresponds to the parameter in free parameters.</span>
+<span class="sd">            The index within the tuple corresponds to the value of the parameter in its set of possible values.</span>
+<span class="sd">        :param parameter_name: name of free parameter to average quantity results over.</span>
+<span class="sd">        :param quantity_names: name of quantity to average results over</span>
+<span class="sd">        :param kwargs: additional arguments to pass into :meth:`~Results.Results.getResultsOverTime`</span>
+<span class="sd">        :returns: tuple of results.</span>
+<span class="sd">            First index gives parameter values.</span>
+<span class="sd">            Second-last index gives quantity results; one set of quantity results per index.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">quantity_names</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">quantity_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">quantity_names</span><span class="p">]</span>
+
+        <span class="n">parameter_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFreeParameterIndex</span><span class="p">(</span><span class="n">parameter_name</span><span class="p">)</span>
+        <span class="n">parameter_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFreeParameterValues</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="n">parameter_name</span><span class="p">)</span>
+        <span class="n">parameter_stepcount</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">parameter_values</span><span class="p">)</span>
+        <span class="n">list_index</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+        <span class="n">new_index</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">list_index</span><span class="p">[:</span><span class="n">parameter_index</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">list_index</span><span class="p">[</span><span class="n">parameter_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:])</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">quantity_name</span> <span class="ow">in</span> <span class="n">quantity_names</span><span class="p">:</span>
+            <span class="n">new_results</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">getResultsOverTime</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">new_index</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">names</span><span class="o">=</span><span class="n">quantity_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span>
+                    <span class="nb">range</span><span class="p">(</span><span class="n">parameter_stepcount</span><span class="p">)]</span>
+            <span class="p">)</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_results</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">parameter_values</span><span class="p">,</span> <span class="o">*</span><span class="nb">tuple</span><span class="p">(</span><span class="n">results</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Results.setResults"><a class="viewcode-back" href="../Results.html#Results.Results.setResults">[docs]</a>    <span class="k">def</span> <span class="nf">setResults</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="n">results</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">]],</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Save results from simulation.</span>
+
+<span class="sd">        :param self: :class:`~SimulationWindow.SimulationWindowRunner` to save results in</span>
+<span class="sd">        :param index: index of parameter value for free parameter</span>
+<span class="sd">        :param results: results to save at :paramref:`~SimulationWindow.SimulationWindowRunner.setResults.index`.</span>
+<span class="sd">            This must be a list of floats if name is specified.</span>
+<span class="sd">            This must be a dictionary if name is not specified.</span>
+<span class="sd">            Key is name of variable.</span>
+<span class="sd">            Value is list of floats for variable over time.</span>
+<span class="sd">        :param name: name of quantity to set results for</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">results</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">results</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2021, Joseph Marcinik.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Stanford-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'2021',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="../_static/clipboard.min.js"></script>
+      <script type="text/javascript" src="../_static/copybutton.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,529 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Layout.ChooseParametersWindow &mdash; Model 2021 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/sphinx_paramlinks.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="Model 2021 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> Model
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <!-- Local TOC -->
+                <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Model</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>Layout.ChooseParametersWindow</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for Layout.ChooseParametersWindow</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This file contains classes relating to the choose-parameters window.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">basename</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="c1"># noinspection PyPep8Naming</span>
+<span class="kn">import</span> <span class="nn">PySimpleGUI</span> <span class="k">as</span> <span class="nn">sg</span>
+<span class="kn">from</span> <span class="nn">pint</span> <span class="kn">import</span> <span class="n">Quantity</span>
+
+<span class="kn">from</span> <span class="nn">CustomErrors</span> <span class="kn">import</span> <span class="n">RecursiveTypeError</span>
+<span class="kn">from</span> <span class="nn">Layout.Layout</span> <span class="kn">import</span> <span class="n">Layout</span><span class="p">,</span> <span class="n">Row</span><span class="p">,</span> <span class="n">Window</span><span class="p">,</span> <span class="n">WindowRunner</span>
+<span class="kn">from</span> <span class="nn">macros</span> <span class="kn">import</span> <span class="n">formatQuantity</span><span class="p">,</span> <span class="n">getTexImage</span>
+
+
+<div class="viewcode-block" id="ChooseParameterRow"><a class="viewcode-back" href="../../Layout.html#Layout.ChooseParametersWindow.ChooseParameterRow">[docs]</a><span class="k">class</span> <span class="nc">ChooseParameterRow</span><span class="p">(</span><span class="n">Row</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class contains the layout for a parameter row in the choose-parameters window.</span>
+<span class="sd">        #. Label to indicate name of parameter.</span>
+<span class="sd">        #. Label to indicate value and unit for parameter.</span>
+<span class="sd">        #. Checkbox allow user to overwrite (or not) parameter into model.</span>
+
+<span class="sd">    :ivar quantity: quantity containing value and unit for parameter</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">quantity</span><span class="p">:</span> <span class="n">Quantity</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="n">ChooseParametersWindow</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor for :class:`~Layout.ChooseParametersWindow.ChooseParameterRow`.</span>
+
+<span class="sd">        :param name: name of parameter</span>
+<span class="sd">        :param quantity: quantity containing value and unit</span>
+<span class="sd">        :param window: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` that row is stored in</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">quantity</span> <span class="o">=</span> <span class="n">quantity</span>
+
+        <span class="n">elements</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">getParameterLabel</span><span class="p">(),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">getQuantityLabel</span><span class="p">(),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">getCheckbox</span><span class="p">()</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addElements</span><span class="p">(</span><span class="n">elements</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ChooseParameterRow.getQuantity"><a class="viewcode-back" href="../../Layout.html#Layout.ChooseParametersWindow.ChooseParameterRow.getQuantity">[docs]</a>    <span class="k">def</span> <span class="nf">getQuantity</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Quantity</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get parameter quantity associated with row.</span>
+
+<span class="sd">        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParameterRow` to retrieve quantity from</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantity</span></div>
+
+<div class="viewcode-block" id="ChooseParameterRow.getParameterLabel"><a class="viewcode-back" href="../../Layout.html#Layout.ChooseParametersWindow.ChooseParameterRow.getParameterLabel">[docs]</a>    <span class="k">def</span> <span class="nf">getParameterLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Image</span><span class="p">,</span> <span class="n">sg</span><span class="o">.</span><span class="n">Text</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get label for name of parameter.</span>
+
+<span class="sd">        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParameterRow` to retrieve label from</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getName</span><span class="p">(),</span>
+            <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">110</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># dim</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">getTexImage</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ChooseParameterRow.getQuantityLabel"><a class="viewcode-back" href="../../Layout.html#Layout.ChooseParametersWindow.ChooseParameterRow.getQuantityLabel">[docs]</a>    <span class="k">def</span> <span class="nf">getQuantityLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sg</span><span class="o">.</span><span class="n">Text</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get label for parameter value and unit.</span>
+
+<span class="sd">        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParameterRow` to retrieve label from</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">formatQuantity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getQuantity</span><span class="p">()),</span>
+            <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># dim</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">sg</span><span class="o">.</span><span class="n">Text</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ChooseParameterRow.getCheckbox"><a class="viewcode-back" href="../../Layout.html#Layout.ChooseParametersWindow.ChooseParameterRow.getCheckbox">[docs]</a>    <span class="k">def</span> <span class="nf">getCheckbox</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sg</span><span class="o">.</span><span class="n">Checkbox</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get checkbox, allowing user to overwrite (or not) parameter value in model.</span>
+
+<span class="sd">        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParameterRow` to retrieve checkbox from</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Overwrite?&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getName</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">sg</span><span class="o">.</span><span class="n">Checkbox</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ChooseParametersWindow"><a class="viewcode-back" href="../../Layout.html#Layout.ChooseParametersWindow.ChooseParametersWindow">[docs]</a><span class="k">class</span> <span class="nc">ChooseParametersWindow</span><span class="p">(</span><span class="n">Window</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class contains the layout for the choose-parameters window.</span>
+<span class="sd">        #. Menu: This allows user to (un)check all parameters.</span>
+<span class="sd">        #. Header to indicate purpose of each column.</span>
+<span class="sd">        #. Footer with submit and cancel buttons.</span>
+<span class="sd">        #. Row for each parameter, allowing user to choose whether (or not) to overwrite in model.</span>
+
+<span class="sd">    :ivar quantites: dictionary of parameter quantities.</span>
+<span class="sd">        Key is name of parameter.</span>
+<span class="sd">        Value is quantity containing value and unit for parameter.</span>
+<span class="sd">    :ivar filename: name of file that parameters were loaded from (optional)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">runner</span><span class="p">:</span> <span class="n">ChooseParametersWindowRunner</span><span class="p">,</span>
+            <span class="n">quantities</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Quantity</span><span class="p">],</span>
+            <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor for :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow`.</span>
+
+<span class="sd">        :param name: name of window</span>
+<span class="sd">        :param runner: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindowRunner` that window is stored in</span>
+<span class="sd">        :param quantities: dictionary of parameter quantities.</span>
+<span class="sd">            Key is name of parameter.</span>
+<span class="sd">            Value is quantity containing value and unit for parameter.</span>
+<span class="sd">        :param filename: name of file that parameters were loaded from</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dimensions</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;window&quot;</span><span class="p">:</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># dim</span>
+        <span class="p">}</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">runner</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="n">dimensions</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">quantities</span> <span class="o">=</span> <span class="n">quantities</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span>
+
+<div class="viewcode-block" id="ChooseParametersWindow.getFilename"><a class="viewcode-back" href="../../Layout.html#Layout.ChooseParametersWindow.ChooseParametersWindow.getFilename">[docs]</a>    <span class="k">def</span> <span class="nf">getFilename</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get name of file to load parameters from.</span>
+
+<span class="sd">        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve name from</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename</span></div>
+
+<div class="viewcode-block" id="ChooseParametersWindow.getParameters"><a class="viewcode-back" href="../../Layout.html#Layout.ChooseParametersWindow.ChooseParametersWindow.getParameters">[docs]</a>    <span class="k">def</span> <span class="nf">getParameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Quantity</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get parameters stored in window.</span>
+
+<span class="sd">        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve parameters from</span>
+<span class="sd">        :returns: Dictionary of parameter information.</span>
+<span class="sd">            Key is name of parameter.</span>
+<span class="sd">            Value is quantity containing value and unit for parameter.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantities</span></div>
+
+<div class="viewcode-block" id="ChooseParametersWindow.getParameterRows"><a class="viewcode-back" href="../../Layout.html#Layout.ChooseParametersWindow.ChooseParametersWindow.getParameterRows">[docs]</a>    <span class="k">def</span> <span class="nf">getParameterRows</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ChooseParameterRow</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get rows, each corresponding to a parameter stored in the window.</span>
+
+<span class="sd">        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve rows from</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">ChooseParameterRow</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">quantity</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">quantity</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getParameters</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">rows</span></div>
+
+<div class="viewcode-block" id="ChooseParametersWindow.getMenu"><a class="viewcode-back" href="../../Layout.html#Layout.ChooseParametersWindow.ChooseParametersWindow.getMenu">[docs]</a>    <span class="k">def</span> <span class="nf">getMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sg</span><span class="o">.</span><span class="n">Menu</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get toolbar menu for window.</span>
+
+<span class="sd">        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve menu from</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">menu_definition</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;Set&quot;</span><span class="p">,</span>
+                <span class="p">[</span>
+                    <span class="s2">&quot;Check All&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Uncheck All&quot;</span>
+                <span class="p">]</span>
+            <span class="p">]</span>
+        <span class="p">]</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;menu_definition&quot;</span><span class="p">:</span> <span class="n">menu_definition</span><span class="p">,</span>
+            <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getKey</span><span class="p">(</span><span class="s2">&quot;toolbar_menu&quot;</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">sg</span><span class="o">.</span><span class="n">Menu</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ChooseParametersWindow.getHeaderRow"><a class="viewcode-back" href="../../Layout.html#Layout.ChooseParametersWindow.ChooseParametersWindow.getHeaderRow">[docs]</a>    <span class="k">def</span> <span class="nf">getHeaderRow</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Row</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get header for window.</span>
+<span class="sd">        This includes labels, which indicate the purpose of each column in the window.</span>
+
+<span class="sd">        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve header from</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getFilename</span><span class="p">())</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;Choose which parameters to overwrite&quot;</span>
+        <span class="k">if</span> <span class="n">filename</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; (</span><span class="si">{</span><span class="n">filename</span><span class="si">:</span><span class="s2">s</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">text</span>
+        <span class="p">}</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">Row</span><span class="p">(</span><span class="n">elements</span><span class="o">=</span><span class="n">sg</span><span class="o">.</span><span class="n">Text</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">row</span></div>
+
+<div class="viewcode-block" id="ChooseParametersWindow.getFooterRow"><a class="viewcode-back" href="../../Layout.html#Layout.ChooseParametersWindow.ChooseParametersWindow.getFooterRow">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">getFooterRow</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Row</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get footer for window.</span>
+<span class="sd">        This includes a submit and cancel button.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">submit_button</span> <span class="o">=</span> <span class="n">sg</span><span class="o">.</span><span class="n">Submit</span><span class="p">()</span>
+        <span class="n">cancel_button</span> <span class="o">=</span> <span class="n">sg</span><span class="o">.</span><span class="n">Cancel</span><span class="p">()</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">Row</span><span class="p">(</span><span class="n">elements</span><span class="o">=</span><span class="p">[</span><span class="n">submit_button</span><span class="p">,</span> <span class="n">cancel_button</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">row</span></div>
+
+<div class="viewcode-block" id="ChooseParametersWindow.getParameterRowsLayout"><a class="viewcode-back" href="../../Layout.html#Layout.ChooseParametersWindow.ChooseParametersWindow.getParameterRowsLayout">[docs]</a>    <span class="k">def</span> <span class="nf">getParameterRowsLayout</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Layout</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get layout for scrollable section containing row for each parameter.</span>
+
+<span class="sd">        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve section from</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;layout&quot;</span><span class="p">:</span> <span class="n">Layout</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">getParameterRows</span><span class="p">())</span><span class="o">.</span><span class="n">getLayout</span><span class="p">(),</span>
+            <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">350</span><span class="p">),</span>  <span class="c1"># dim</span>
+            <span class="s2">&quot;scrollable&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;vertical_scroll_only&quot;</span><span class="p">:</span> <span class="kc">True</span>
+        <span class="p">}</span>
+        <span class="n">layout</span> <span class="o">=</span> <span class="n">Layout</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">Row</span><span class="p">(</span><span class="n">elements</span><span class="o">=</span><span class="n">sg</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="n">layout</span></div>
+
+<div class="viewcode-block" id="ChooseParametersWindow.getLayout"><a class="viewcode-back" href="../../Layout.html#Layout.ChooseParametersWindow.ChooseParametersWindow.getLayout">[docs]</a>    <span class="k">def</span> <span class="nf">getLayout</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Element</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get layout for window.</span>
+
+<span class="sd">        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve layout from</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">menu</span> <span class="o">=</span> <span class="n">Layout</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">Row</span><span class="p">(</span><span class="n">elements</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">getMenu</span><span class="p">()))</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getHeaderRow</span><span class="p">()</span>
+        <span class="n">footer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFooterRow</span><span class="p">()</span>
+        <span class="n">parameter_rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getParameterRowsLayout</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">menu</span><span class="o">.</span><span class="n">getLayout</span><span class="p">()</span> <span class="o">+</span> <span class="n">header</span><span class="o">.</span><span class="n">getLayout</span><span class="p">()</span> <span class="o">+</span> <span class="n">parameter_rows</span><span class="o">.</span><span class="n">getLayout</span><span class="p">()</span> <span class="o">+</span> <span class="n">footer</span><span class="o">.</span><span class="n">getLayout</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="ChooseParametersWindowRunner"><a class="viewcode-back" href="../../Layout.html#Layout.ChooseParametersWindow.ChooseParametersWindowRunner">[docs]</a><span class="k">class</span> <span class="nc">ChooseParametersWindowRunner</span><span class="p">(</span><span class="n">WindowRunner</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class runs :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow`.</span>
+<span class="sd">    This window allows the user to...</span>
+<span class="sd">        #. Choose which parameter(s) to overwrite into model.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor for :class:`~Layout.ChooseParametersWindow.ChooseParametersWindowRunner`.</span>
+
+<span class="sd">        :param name: name of window</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">window</span> <span class="o">=</span> <span class="n">ChooseParametersWindow</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">window</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ChooseParametersWindowRunner.getParameterNames"><a class="viewcode-back" href="../../Layout.html#Layout.ChooseParametersWindow.ChooseParametersWindowRunner.getParameterNames">[docs]</a>    <span class="k">def</span> <span class="nf">getParameterNames</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get names of parameters stored in window.</span>
+
+<span class="sd">        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindowRunner` to retrieve names from</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># noinspection PyTypeChecker</span>
+        <span class="n">window_object</span><span class="p">:</span> <span class="n">ChooseParametersWindow</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWindowObject</span><span class="p">()</span>
+        <span class="n">quantites</span> <span class="o">=</span> <span class="n">window_object</span><span class="o">.</span><span class="n">getParameters</span><span class="p">()</span>
+        <span class="n">parameter_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">quantites</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">parameter_names</span></div>
+
+<div class="viewcode-block" id="ChooseParametersWindowRunner.setChecks"><a class="viewcode-back" href="../../Layout.html#Layout.ChooseParametersWindow.ChooseParametersWindowRunner.setChecks">[docs]</a>    <span class="k">def</span> <span class="nf">setChecks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set all checkboxes (determining whether to overwrite parameter) to chosen value.</span>
+
+<span class="sd">        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to set checkboxes in</span>
+<span class="sd">        :param names: name(s) of parameter(s) to set checkboxes for</span>
+<span class="sd">        :param overwrite: set True to set all checkboxes to True.</span>
+<span class="sd">            Set False to set all checkboxes to False.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">checkbox</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getElements</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+            <span class="n">checkbox</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setChecks</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">RecursiveTypeError</span><span class="p">(</span><span class="n">names</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ChooseParametersWindowRunner.getChosenParameters"><a class="viewcode-back" href="../../Layout.html#Layout.ChooseParametersWindow.ChooseParametersWindowRunner.getChosenParameters">[docs]</a>    <span class="k">def</span> <span class="nf">getChosenParameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get checked parameters in window.</span>
+
+<span class="sd">        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve checked boxes from</span>
+<span class="sd">        :returns: List of parameter names, where corresponding checkbox is checked</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">window</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWindow</span><span class="p">()</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">while</span> <span class="n">event</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">WIN_CLOSED</span><span class="p">,</span> <span class="s2">&quot;Cancel&quot;</span><span class="p">]:</span>
+            <span class="n">event</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getKey</span><span class="p">(</span><span class="s2">&quot;toolbar_menu&quot;</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">getElements</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getKey</span><span class="p">(</span><span class="s2">&quot;toolbar_menu&quot;</span><span class="p">)))</span>
+            <span class="n">menu_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getValue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getKey</span><span class="p">(</span><span class="s2">&quot;toolbar_menu&quot;</span><span class="p">))</span>
+
+            <span class="n">parameter_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getParameterNames</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">menu_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;Check All&quot;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">setChecks</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="n">parameter_names</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;Uncheck All&quot;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">setChecks</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="n">parameter_names</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;Submit&quot;</span><span class="p">:</span>
+                <span class="n">window</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">return</span> <span class="p">[</span><span class="n">parameter_name</span> <span class="k">for</span> <span class="n">parameter_name</span> <span class="ow">in</span> <span class="n">parameter_names</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">getValue</span><span class="p">(</span><span class="n">parameter_name</span><span class="p">)]</span>
+
+        <span class="n">window</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">[]</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2021, Joseph Marcinik.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Stanford-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'2021',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="../../_static/clipboard.min.js"></script>
+      <script type="text/javascript" src="../../_static/copybutton.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

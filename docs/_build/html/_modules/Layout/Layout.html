@@ -1,0 +1,581 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Layout.Layout &mdash; Model 2021 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/sphinx_paramlinks.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="Model 2021 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> Model
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <!-- Local TOC -->
+                <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Model</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>Layout.Layout</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for Layout.Layout</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="c1"># noinspection PyPep8Naming</span>
+<span class="kn">import</span> <span class="nn">PySimpleGUI</span> <span class="k">as</span> <span class="nn">sg</span>
+
+<span class="kn">from</span> <span class="nn">KeyList</span> <span class="kn">import</span> <span class="n">KeyList</span>
+
+
+<div class="viewcode-block" id="generateCollapsableSection"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.generateCollapsableSection">[docs]</a><span class="k">def</span> <span class="nf">generateCollapsableSection</span><span class="p">(</span><span class="n">layout</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Element</span><span class="p">]],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sg</span><span class="o">.</span><span class="n">pin</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create collapsable section of elements.</span>
+<span class="sd">    </span>
+<span class="sd">    :param layout: layout to generate collapsable section of</span>
+<span class="sd">    :param kwargs: arguments to pass into :class:`~PySimpleGUI.PySimpleGUI.Column`</span>
+<span class="sd">    :returns: collapsable section of elements.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">sg</span><span class="o">.</span><span class="n">pin</span><span class="p">(</span><span class="n">sg</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">layout</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="generateEmptySpace"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.generateEmptySpace">[docs]</a><span class="k">def</span> <span class="nf">generateEmptySpace</span><span class="p">(</span><span class="n">layout</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Element</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">sg</span><span class="o">.</span><span class="n">pin</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create empty space corresponding to layout size.</span>
+
+<span class="sd">    :param layout: layout to generate empty space of</span>
+<span class="sd">    :returns: collapsable section of elements.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">sg</span><span class="o">.</span><span class="n">pin</span><span class="p">(</span><span class="n">sg</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">layout</span><span class="p">,</span> <span class="n">visible</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">expand_x</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">expand_x</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Element"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Element">[docs]</a><span class="k">class</span> <span class="nc">Element</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="n">Window</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">=</span> <span class="n">window</span>
+
+<div class="viewcode-block" id="Element.getWindowObject"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Element.getWindowObject">[docs]</a>    <span class="k">def</span> <span class="nf">getWindowObject</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Window</span><span class="p">:</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span></div>
+
+<div class="viewcode-block" id="Element.getWindowRunner"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Element.getWindowRunner">[docs]</a>    <span class="k">def</span> <span class="nf">getWindowRunner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WindowRunner</span><span class="p">:</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWindowObject</span><span class="p">()</span><span class="o">.</span><span class="n">getWindowRunner</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Element.getDimensions"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Element.getDimensions">[docs]</a>    <span class="k">def</span> <span class="nf">getDimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWindowObject</span><span class="p">()</span><span class="o">.</span><span class="n">getDimensions</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Element.getElement"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Element.getElement">[docs]</a>    <span class="k">def</span> <span class="nf">getElement</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sg</span><span class="o">.</span><span class="n">Column</span><span class="p">:</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;layout&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getLayout</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">sg</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Element.getKey"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Element.getKey">[docs]</a>    <span class="k">def</span> <span class="nf">getKey</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tag</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWindowObject</span><span class="p">()</span><span class="o">.</span><span class="n">getKey</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Row"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Row">[docs]</a><span class="k">class</span> <span class="nc">Row</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">elements</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Element</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Element</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">window</span><span class="p">:</span> <span class="n">Window</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">dimensions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">=</span> <span class="n">window</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span> <span class="o">=</span> <span class="n">dimensions</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">elements</span><span class="p">,</span> <span class="n">sg</span><span class="o">.</span><span class="n">Element</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">elements</span> <span class="o">=</span> <span class="p">[</span><span class="n">elements</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">elements</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">elements</span> <span class="o">=</span> <span class="n">elements</span>
+        <span class="k">elif</span> <span class="n">elements</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">elements</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;elements must be sg.Element or list&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Row.getName"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Row.getName">[docs]</a>    <span class="k">def</span> <span class="nf">getName</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span></div>
+
+<div class="viewcode-block" id="Row.addElements"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Row.addElements">[docs]</a>    <span class="k">def</span> <span class="nf">addElements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elements</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Element</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Element</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">elements</span><span class="p">,</span> <span class="n">sg</span><span class="o">.</span><span class="n">Element</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">elements</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">elements</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">elements</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">addElements</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;elements must be sg.Element or list&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Row.getRow"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Row.getRow">[docs]</a>    <span class="k">def</span> <span class="nf">getRow</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Element</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">elements</span></div>
+
+<div class="viewcode-block" id="Row.getLayout"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Row.getLayout">[docs]</a>    <span class="k">def</span> <span class="nf">getLayout</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Element</span><span class="p">]]:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">elements</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Row.getDimensions"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Row.getDimensions">[docs]</a>    <span class="k">def</span> <span class="nf">getDimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWindowObject</span><span class="p">()</span><span class="o">.</span><span class="n">getDimensions</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Row.getWindowObject"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Row.getWindowObject">[docs]</a>    <span class="k">def</span> <span class="nf">getWindowObject</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Window</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span></div>
+
+<div class="viewcode-block" id="Row.getWindowRunner"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Row.getWindowRunner">[docs]</a>    <span class="k">def</span> <span class="nf">getWindowRunner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WindowRunner</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWindowObject</span><span class="p">()</span><span class="o">.</span><span class="n">getWindowRunner</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Row.getKey"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Row.getKey">[docs]</a>    <span class="k">def</span> <span class="nf">getKey</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tag</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWindowObject</span><span class="p">()</span><span class="o">.</span><span class="n">getKey</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Layout"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Layout">[docs]</a><span class="k">class</span> <span class="nc">Layout</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rows</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Row</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Row</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">Row</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="n">rows</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rows</span> <span class="o">=</span> <span class="n">rows</span>
+        <span class="k">elif</span> <span class="n">rows</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;rows must be sg.Element or list&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Layout.addRows"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Layout.addRows">[docs]</a>    <span class="k">def</span> <span class="nf">addRows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rows</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Row</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Row</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">Row</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">addRows</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;rows must be Row or list&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Layout.getRows"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Layout.getRows">[docs]</a>    <span class="k">def</span> <span class="nf">getRows</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Row</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rows</span></div>
+
+<div class="viewcode-block" id="Layout.getLayout"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Layout.getLayout">[docs]</a>    <span class="k">def</span> <span class="nf">getLayout</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Element</span><span class="p">]]:</span>
+        <span class="n">layout</span> <span class="o">=</span> <span class="p">[[]]</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getRows</span><span class="p">():</span>
+            <span class="n">layout</span> <span class="o">+=</span> <span class="n">row</span><span class="o">.</span><span class="n">getLayout</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">layout</span></div></div>
+
+
+<div class="viewcode-block" id="TabRow"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.TabRow">[docs]</a><span class="k">class</span> <span class="nc">TabRow</span><span class="p">(</span><span class="n">Row</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tab</span><span class="p">:</span> <span class="n">Tab</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tab</span> <span class="o">=</span> <span class="n">tab</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">tab</span><span class="o">.</span><span class="n">getWindowObject</span><span class="p">(),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TabRow.getTab"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.TabRow.getTab">[docs]</a>    <span class="k">def</span> <span class="nf">getTab</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tab</span></div></div>
+
+
+<div class="viewcode-block" id="Tab"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Tab">[docs]</a><span class="k">class</span> <span class="nc">Tab</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="n">Window</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">=</span> <span class="n">window</span>
+
+<div class="viewcode-block" id="Tab.getName"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Tab.getName">[docs]</a>    <span class="k">def</span> <span class="nf">getName</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span></div>
+
+<div class="viewcode-block" id="Tab.getWindowObject"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Tab.getWindowObject">[docs]</a>    <span class="k">def</span> <span class="nf">getWindowObject</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Window</span><span class="p">:</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span></div>
+
+<div class="viewcode-block" id="Tab.getKey"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Tab.getKey">[docs]</a>    <span class="k">def</span> <span class="nf">getKey</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tag</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWindowObject</span><span class="p">()</span><span class="o">.</span><span class="n">getKey</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Tab.getDimensions"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Tab.getDimensions">[docs]</a>    <span class="k">def</span> <span class="nf">getDimensions</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]],</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWindowObject</span><span class="p">()</span><span class="o">.</span><span class="n">getDimensions</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Tab.getWindowRunner"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Tab.getWindowRunner">[docs]</a>    <span class="k">def</span> <span class="nf">getWindowRunner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WindowRunner</span><span class="p">:</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWindowObject</span><span class="p">()</span><span class="o">.</span><span class="n">getWindowRunner</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Tab.getTab"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Tab.getTab">[docs]</a>    <span class="k">def</span> <span class="nf">getTab</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sg</span><span class="o">.</span><span class="n">Tab</span><span class="p">:</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getName</span><span class="p">(),</span>
+            <span class="s2">&quot;layout&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getLayout</span><span class="p">(),</span>
+            <span class="s2">&quot;pad&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">sg</span><span class="o">.</span><span class="n">Tab</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="TabGroup"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.TabGroup">[docs]</a><span class="k">class</span> <span class="nc">TabGroup</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tabs</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tab</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Tab</span><span class="p">]],</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">suffix_layout</span><span class="p">:</span> <span class="n">Layout</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">suffix_layout</span> <span class="o">=</span> <span class="n">Layout</span><span class="p">()</span> <span class="k">if</span> <span class="n">suffix_layout</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">suffix_layout</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tabs</span><span class="p">,</span> <span class="p">(</span><span class="n">Tab</span><span class="p">,</span> <span class="n">sg</span><span class="o">.</span><span class="n">Tab</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span> <span class="o">=</span> <span class="p">[</span><span class="n">tabs</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tabs</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span> <span class="o">=</span> <span class="n">tabs</span>
+        <span class="k">elif</span> <span class="n">tabs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;tabs must be Tab or list&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TabGroup.getName"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.TabGroup.getName">[docs]</a>    <span class="k">def</span> <span class="nf">getName</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span></div>
+
+<div class="viewcode-block" id="TabGroup.getTabs"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.TabGroup.getTabs">[docs]</a>    <span class="k">def</span> <span class="nf">getTabs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tab</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span></div>
+
+<div class="viewcode-block" id="TabGroup.getTabGroup"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.TabGroup.getTabGroup">[docs]</a>    <span class="k">def</span> <span class="nf">getTabGroup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sg</span><span class="o">.</span><span class="n">TabGroup</span><span class="p">:</span>
+        <span class="n">tabs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tab</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getTabs</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tab</span><span class="p">,</span> <span class="n">Tab</span><span class="p">):</span>
+                <span class="n">tabs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tab</span><span class="o">.</span><span class="n">getTab</span><span class="p">())</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tab</span><span class="p">,</span> <span class="n">sg</span><span class="o">.</span><span class="n">Tab</span><span class="p">):</span>
+                <span class="n">tabs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tab</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;tab must be Tab or sg.Tab&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sg</span><span class="o">.</span><span class="n">TabGroup</span><span class="p">([</span><span class="n">tabs</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="TabGroup.getSuffixLayout"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.TabGroup.getSuffixLayout">[docs]</a>    <span class="k">def</span> <span class="nf">getSuffixLayout</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Element</span><span class="p">]]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">suffix_layout</span><span class="o">.</span><span class="n">getLayout</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="TabGroup.getLayout"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.TabGroup.getLayout">[docs]</a>    <span class="k">def</span> <span class="nf">getLayout</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Element</span><span class="p">]]]:</span>
+        <span class="c1"># noinspection PyTypeChecker</span>
+        <span class="k">return</span> <span class="p">[[</span><span class="bp">self</span><span class="o">.</span><span class="n">getTabGroup</span><span class="p">()]]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSuffixLayout</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="TabGroup.getAsTab"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.TabGroup.getAsTab">[docs]</a>    <span class="k">def</span> <span class="nf">getAsTab</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sg</span><span class="o">.</span><span class="n">Tab</span><span class="p">:</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;layout&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getLayout</span><span class="p">(),</span>
+            <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getName</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">sg</span><span class="o">.</span><span class="n">Tab</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Window"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Window">[docs]</a><span class="k">class</span> <span class="nc">Window</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">runner</span><span class="p">:</span> <span class="n">WindowRunner</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">runner</span> <span class="o">=</span> <span class="n">runner</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span> <span class="o">=</span> <span class="n">dimensions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">key_list</span> <span class="o">=</span> <span class="n">KeyList</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Window.getName"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Window.getName">[docs]</a>    <span class="k">def</span> <span class="nf">getName</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span></div>
+
+<div class="viewcode-block" id="Window.getWindowRunner"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Window.getWindowRunner">[docs]</a>    <span class="k">def</span> <span class="nf">getWindowRunner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WindowRunner</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">runner</span></div>
+
+<div class="viewcode-block" id="Window.getDimensions"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Window.getDimensions">[docs]</a>    <span class="k">def</span> <span class="nf">getDimensions</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]],</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">dimensions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDimensions</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">dimensions</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;column must be str&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Window.getPrefix"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Window.getPrefix">[docs]</a>    <span class="k">def</span> <span class="nf">getPrefix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get prefix for set of keys.</span>
+<span class="sd">        </span>
+<span class="sd">        :param self: :class:`~Layout.Layout.Window` to retrieve prefix from</span>
+<span class="sd">        :param args: required arguments to pass into :meth:`~KeyList.KeyList`</span>
+<span class="sd">        :param kwargs: additional arguments to pass into :meth:`~KeyList.KeyList`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">key_list</span><span class="o">.</span><span class="n">getPrefix</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Window.getKey"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Window.getKey">[docs]</a>    <span class="k">def</span> <span class="nf">getKey</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tag</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">key_list</span><span class="o">.</span><span class="n">getKey</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Window.getKeyList"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Window.getKeyList">[docs]</a>    <span class="k">def</span> <span class="nf">getKeyList</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefixes</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">key_list</span><span class="o">.</span><span class="n">getKeyList</span><span class="p">(</span><span class="n">prefixes</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Window.getWindow"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.Window.getWindow">[docs]</a>    <span class="k">def</span> <span class="nf">getWindow</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sg</span><span class="o">.</span><span class="n">Window</span><span class="p">:</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getName</span><span class="p">(),</span>
+            <span class="s2">&quot;layout&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getLayout</span><span class="p">(),</span>
+            <span class="s2">&quot;grab_anywhere&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDimensions</span><span class="p">(</span><span class="s2">&quot;window&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;finalize&quot;</span><span class="p">:</span> <span class="kc">True</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">sg</span><span class="o">.</span><span class="n">Window</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="TabbedWindow"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.TabbedWindow">[docs]</a><span class="k">class</span> <span class="nc">TabbedWindow</span><span class="p">(</span><span class="n">Window</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">runner</span><span class="p">:</span> <span class="n">WindowRunner</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">runner</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="n">dimensions</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="TabbedWindow.addTabs"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.TabbedWindow.addTabs">[docs]</a>    <span class="k">def</span> <span class="nf">addTabs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tabs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tabs</span><span class="p">,</span> <span class="p">(</span><span class="n">Tab</span><span class="p">,</span> <span class="n">sg</span><span class="o">.</span><span class="n">Tab</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tabs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tabs</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">tab</span> <span class="ow">in</span> <span class="n">tabs</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">addTabs</span><span class="p">(</span><span class="n">tab</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;tabs must be Tab, sg.Tab, or list&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TabbedWindow.getTabs"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.TabbedWindow.getTabs">[docs]</a>    <span class="k">def</span> <span class="nf">getTabs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Tab</span><span class="p">]:</span>
+        <span class="n">tabs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tab</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tab</span><span class="p">,</span> <span class="n">Tab</span><span class="p">):</span>
+                <span class="n">tabs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tab</span><span class="o">.</span><span class="n">getTab</span><span class="p">())</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tab</span><span class="p">,</span> <span class="n">sg</span><span class="o">.</span><span class="n">Tab</span><span class="p">):</span>
+                <span class="n">tabs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tab</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;tab must be Tab or sg.Tab&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tabs</span></div></div>
+
+
+<div class="viewcode-block" id="WindowRunner"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.WindowRunner">[docs]</a><span class="k">class</span> <span class="nc">WindowRunner</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="n">Window</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window_object</span> <span class="o">=</span> <span class="n">window</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="WindowRunner.getName"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.WindowRunner.getName">[docs]</a>    <span class="k">def</span> <span class="nf">getName</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span></div>
+
+<div class="viewcode-block" id="WindowRunner.getWindow"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.WindowRunner.getWindow">[docs]</a>    <span class="k">def</span> <span class="nf">getWindow</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sg</span><span class="o">.</span><span class="n">Window</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWindowObject</span><span class="p">()</span><span class="o">.</span><span class="n">getWindow</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span></div>
+
+<div class="viewcode-block" id="WindowRunner.getWindowObject"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.WindowRunner.getWindowObject">[docs]</a>    <span class="k">def</span> <span class="nf">getWindowObject</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Window</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_object</span></div>
+
+<div class="viewcode-block" id="WindowRunner.getPrefix"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.WindowRunner.getPrefix">[docs]</a>    <span class="k">def</span> <span class="nf">getPrefix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get prefix for set of keys.</span>
+<span class="sd">        </span>
+<span class="sd">        :param self: :class:`~Layout.Layout.Window` to retrieve prefix from</span>
+<span class="sd">        :param args: required arguments to pass into :meth:`~Layout.Layout.MainWindow`</span>
+<span class="sd">        :param kwargs: additional arguments to pass into :meth:`~Layout.Layout.MainWindow`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWindowObject</span><span class="p">()</span><span class="o">.</span><span class="n">getPrefix</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="WindowRunner.getKey"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.WindowRunner.getKey">[docs]</a>    <span class="k">def</span> <span class="nf">getKey</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tag</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWindowObject</span><span class="p">()</span><span class="o">.</span><span class="n">getKey</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="WindowRunner.getKeyList"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.WindowRunner.getKeyList">[docs]</a>    <span class="k">def</span> <span class="nf">getKeyList</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefixes</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWindowObject</span><span class="p">()</span><span class="o">.</span><span class="n">getKeyList</span><span class="p">(</span><span class="n">prefixes</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="WindowRunner.getValue"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.WindowRunner.getValue">[docs]</a>    <span class="k">def</span> <span class="nf">getValue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        __Purpose__</span>
+<span class="sd">            Get value of element at most recent event</span>
+<span class="sd">        __Inputs__</span>
+<span class="sd">            key [str]: key for element</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">key</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="WindowRunner.getElements"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.WindowRunner.getElements">[docs]</a>    <span class="k">def</span> <span class="nf">getElements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Element</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Element</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get element(s) in window runner from key</span>
+<span class="sd">        </span>
+<span class="sd">        :param self: :class:`~Layout.Layout.WindowRunner` to retrieve element(s) from</span>
+<span class="sd">        :param keys: key(s) of element(s) to retrieve</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWindow</span><span class="p">()[</span><span class="n">keys</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">getElements</span><span class="p">(</span><span class="n">keys</span><span class="o">=</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;keys must be str or list&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="WindowRunner.toggleVisibility"><a class="viewcode-back" href="../../Layout.html#Layout.Layout.WindowRunner.toggleVisibility">[docs]</a>    <span class="k">def</span> <span class="nf">toggleVisibility</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        __Purpose__</span>
+<span class="sd">            Toggle whether GUI section is collapsed or not</span>
+<span class="sd">            Toggles is_visible attribute of GUI for corresponding element-section</span>
+<span class="sd">        __Inputs__</span>
+<span class="sd">            key [str]: key for element-section to toggle visible (collapseness)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">element</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getElements</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="n">element</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">visible</span><span class="o">=</span><span class="ow">not</span> <span class="n">element</span><span class="o">.</span><span class="n">visible</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2021, Joseph Marcinik.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Stanford-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'2021',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="../../_static/clipboard.min.js"></script>
+      <script type="text/javascript" src="../../_static/copybutton.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

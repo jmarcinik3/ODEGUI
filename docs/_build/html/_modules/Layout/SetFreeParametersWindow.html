@@ -1,0 +1,439 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Layout.SetFreeParametersWindow &mdash; Model 2021 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/sphinx_paramlinks.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="Model 2021 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> Model
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <!-- Local TOC -->
+                <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Model</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>Layout.SetFreeParametersWindow</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for Layout.SetFreeParametersWindow</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="c1"># noinspection PyPep8Naming</span>
+<span class="kn">import</span> <span class="nn">PySimpleGUI</span> <span class="k">as</span> <span class="nn">sg</span>
+<span class="kn">from</span> <span class="nn">pint</span> <span class="kn">import</span> <span class="n">Quantity</span>
+
+<span class="kn">from</span> <span class="nn">CustomErrors</span> <span class="kn">import</span> <span class="n">RecursiveTypeError</span>
+<span class="kn">from</span> <span class="nn">Layout.Layout</span> <span class="kn">import</span> <span class="n">Layout</span><span class="p">,</span> <span class="n">Row</span><span class="p">,</span> <span class="n">Window</span><span class="p">,</span> <span class="n">WindowRunner</span>
+<span class="kn">from</span> <span class="nn">macros</span> <span class="kn">import</span> <span class="n">formatQuantity</span><span class="p">,</span> <span class="n">getTexImage</span>
+
+
+<div class="viewcode-block" id="SetParameterRow"><a class="viewcode-back" href="../../Layout.html#Layout.SetFreeParametersWindow.SetParameterRow">[docs]</a><span class="k">class</span> <span class="nc">SetParameterRow</span><span class="p">(</span><span class="n">Row</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="n">SetFreeParametersWindow</span><span class="p">,</span> <span class="n">quantity</span><span class="p">:</span> <span class="n">Quantity</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">quantity</span> <span class="o">=</span> <span class="n">quantity</span>
+
+        <span class="n">elements</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">getNameLabel</span><span class="p">(),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">getQuantityLabel</span><span class="p">(),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">getMinimumInputElement</span><span class="p">(),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">getMaximumInputElement</span><span class="p">(),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">getStepCountInputElement</span><span class="p">()</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addElements</span><span class="p">(</span><span class="n">elements</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SetParameterRow.getQuantity"><a class="viewcode-back" href="../../Layout.html#Layout.SetFreeParametersWindow.SetParameterRow.getQuantity">[docs]</a>    <span class="k">def</span> <span class="nf">getQuantity</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Quantity</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantity</span></div>
+
+<div class="viewcode-block" id="SetParameterRow.getNameLabel"><a class="viewcode-back" href="../../Layout.html#Layout.SetFreeParametersWindow.SetParameterRow.getNameLabel">[docs]</a>    <span class="k">def</span> <span class="nf">getNameLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Image</span><span class="p">,</span> <span class="n">sg</span><span class="o">.</span><span class="n">Text</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">getTexImage</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getName</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="SetParameterRow.getQuantityLabel"><a class="viewcode-back" href="../../Layout.html#Layout.SetFreeParametersWindow.SetParameterRow.getQuantityLabel">[docs]</a>    <span class="k">def</span> <span class="nf">getQuantityLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sg</span><span class="o">.</span><span class="n">Text</span><span class="p">:</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">formatQuantity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getQuantity</span><span class="p">()),</span>
+            <span class="s2">&quot;tooltip&quot;</span><span class="p">:</span> <span class="s2">&quot;Present value of parameter&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>  <span class="c1"># dim</span>
+            <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getKey</span><span class="p">(</span><span class="s2">&quot;quantity_label&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">getName</span><span class="p">())</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">sg</span><span class="o">.</span><span class="n">Text</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SetParameterRow.getMinimumInputElement"><a class="viewcode-back" href="../../Layout.html#Layout.SetFreeParametersWindow.SetParameterRow.getMinimumInputElement">[docs]</a>    <span class="k">def</span> <span class="nf">getMinimumInputElement</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sg</span><span class="o">.</span><span class="n">InputText</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getName</span><span class="p">()</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;default_text&quot;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+            <span class="s2">&quot;tooltip&quot;</span><span class="p">:</span> <span class="s2">&quot;Enter minimum value for parameter&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>  <span class="c1"># dim</span>
+            <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getKey</span><span class="p">(</span><span class="s2">&quot;free_parameter_minimum&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">sg</span><span class="o">.</span><span class="n">InputText</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SetParameterRow.getMaximumInputElement"><a class="viewcode-back" href="../../Layout.html#Layout.SetFreeParametersWindow.SetParameterRow.getMaximumInputElement">[docs]</a>    <span class="k">def</span> <span class="nf">getMaximumInputElement</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sg</span><span class="o">.</span><span class="n">InputText</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getName</span><span class="p">()</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;default_text&quot;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+            <span class="s2">&quot;tooltip&quot;</span><span class="p">:</span> <span class="s2">&quot;Enter maximum value for parameter&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>  <span class="c1"># dim</span>
+            <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getKey</span><span class="p">(</span><span class="s2">&quot;free_parameter_maximum&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">sg</span><span class="o">.</span><span class="n">InputText</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SetParameterRow.getStepCountInputElement"><a class="viewcode-back" href="../../Layout.html#Layout.SetFreeParametersWindow.SetParameterRow.getStepCountInputElement">[docs]</a>    <span class="k">def</span> <span class="nf">getStepCountInputElement</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sg</span><span class="o">.</span><span class="n">InputText</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getName</span><span class="p">()</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;default_text&quot;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+            <span class="s2">&quot;tooltip&quot;</span><span class="p">:</span> <span class="s2">&quot;Enter number of parameter values&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>  <span class="c1"># dim</span>
+            <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">getKey</span><span class="p">(</span><span class="s2">&quot;free_parameter_stepcount&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">sg</span><span class="o">.</span><span class="n">InputText</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SetFreeParametersWindow"><a class="viewcode-back" href="../../Layout.html#Layout.SetFreeParametersWindow.SetFreeParametersWindow">[docs]</a><span class="k">class</span> <span class="nc">SetFreeParametersWindow</span><span class="p">(</span><span class="n">Window</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">runner</span><span class="p">:</span> <span class="n">SetFreeParametersWindowRunner</span><span class="p">,</span> <span class="n">free_parameter_quantities</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Quantity</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dimensions</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;window&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">700</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">runner</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="n">dimensions</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">free_parameter_quantities</span> <span class="o">=</span> <span class="n">free_parameter_quantities</span>
+
+<div class="viewcode-block" id="SetFreeParametersWindow.getFreeParameterQuantity"><a class="viewcode-back" href="../../Layout.html#Layout.SetFreeParametersWindow.SetFreeParametersWindow.getFreeParameterQuantity">[docs]</a>    <span class="k">def</span> <span class="nf">getFreeParameterQuantity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get stored name(s) for free parameter(s).</span>
+<span class="sd">        The user may change the values of these parameters during simulation.</span>
+
+<span class="sd">        :param self: :class:`~Layout.SetFreeParametersWindow.SetFreeParametersWindow` to retrieve names from</span>
+<span class="sd">        :param name: name of parameter to retrieve quantity of</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">free_parameter_quantities</span><span class="p">[</span><span class="n">name</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="SetFreeParametersWindow.getFreeParameterNames"><a class="viewcode-back" href="../../Layout.html#Layout.SetFreeParametersWindow.SetFreeParametersWindow.getFreeParameterNames">[docs]</a>    <span class="k">def</span> <span class="nf">getFreeParameterNames</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indicies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get stored name(s) for free parameter(s).</span>
+<span class="sd">        The user may change the values of these parameters during simulation.</span>
+
+<span class="sd">        :param self: :class:`~Layout.SetFreeParametersWindow.SetFreeParametersWindow` to retrieve names from</span>
+<span class="sd">        :param indicies: location(s) to retrieve parameter name(s) from in collection of names</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">indicies</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">free_parameter_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFreeParameterNames</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">free_parameter_names</span><span class="p">[</span><span class="n">indicies</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">indicies</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">getFreeParameterNames</span><span class="p">(</span><span class="n">indicies</span><span class="o">=</span><span class="n">index</span><span class="p">)</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">indicies</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">indicies</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">free_parameter_quantities</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;index must be int&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SetFreeParametersWindow.getHeaderRow"><a class="viewcode-back" href="../../Layout.html#Layout.SetFreeParametersWindow.SetFreeParametersWindow.getHeaderRow">[docs]</a>    <span class="k">def</span> <span class="nf">getHeaderRow</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Row</span><span class="p">:</span>
+        <span class="n">texts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;Name&quot;</span><span class="p">,</span> <span class="s2">&quot;Default Value&quot;</span><span class="p">,</span> <span class="s2">&quot;Minimum&quot;</span><span class="p">,</span> <span class="s2">&quot;Maximum&quot;</span><span class="p">,</span> <span class="s2">&quot;Stepcount&quot;</span><span class="p">]:</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
+                <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># dim</span>
+            <span class="p">}</span>
+            <span class="n">texts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sg</span><span class="o">.</span><span class="n">Text</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">Row</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">elements</span><span class="o">=</span><span class="n">texts</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SetFreeParametersWindow.getFreeParameterRows"><a class="viewcode-back" href="../../Layout.html#Layout.SetFreeParametersWindow.SetFreeParametersWindow.getFreeParameterRows">[docs]</a>    <span class="k">def</span> <span class="nf">getFreeParameterRows</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Row</span><span class="p">]:</span>
+        <span class="n">free_parameter_rows</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">free_parameter_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFreeParameterNames</span><span class="p">():</span>
+            <span class="n">new_row</span> <span class="o">=</span> <span class="n">SetParameterRow</span><span class="p">(</span><span class="n">free_parameter_name</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFreeParameterQuantity</span><span class="p">(</span><span class="n">free_parameter_name</span><span class="p">))</span>
+            <span class="n">free_parameter_rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_row</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">free_parameter_rows</span></div>
+
+<div class="viewcode-block" id="SetFreeParametersWindow.getLayout"><a class="viewcode-back" href="../../Layout.html#Layout.SetFreeParametersWindow.SetFreeParametersWindow.getLayout">[docs]</a>    <span class="k">def</span> <span class="nf">getLayout</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">Element</span><span class="p">]]:</span>
+        <span class="n">submit_button</span> <span class="o">=</span> <span class="n">sg</span><span class="o">.</span><span class="n">Submit</span><span class="p">()</span>
+        <span class="n">cancel_button</span> <span class="o">=</span> <span class="n">sg</span><span class="o">.</span><span class="n">Cancel</span><span class="p">()</span>
+
+        <span class="n">header_row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getHeaderRow</span><span class="p">()</span>
+        <span class="n">free_parameter_rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFreeParameterRows</span><span class="p">()</span>
+
+        <span class="n">layout</span> <span class="o">=</span> <span class="n">Layout</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">header_row</span><span class="p">)</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">addRows</span><span class="p">(</span><span class="n">free_parameter_rows</span><span class="p">)</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">addRows</span><span class="p">(</span><span class="n">Row</span><span class="p">(</span><span class="n">elements</span><span class="o">=</span><span class="p">[</span><span class="n">submit_button</span><span class="p">,</span> <span class="n">cancel_button</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">layout</span><span class="o">.</span><span class="n">getLayout</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="SetFreeParametersWindowRunner"><a class="viewcode-back" href="../../Layout.html#Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner">[docs]</a><span class="k">class</span> <span class="nc">SetFreeParametersWindowRunner</span><span class="p">(</span><span class="n">WindowRunner</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">window</span> <span class="o">=</span> <span class="n">SetFreeParametersWindow</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">window</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="SetFreeParametersWindowRunner.getFreeParameterNames"><a class="viewcode-back" href="../../Layout.html#Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner.getFreeParameterNames">[docs]</a>    <span class="k">def</span> <span class="nf">getFreeParameterNames</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get stored name(s) for free parameter(s).</span>
+<span class="sd">        The user may change the values of these parameters during simulation.</span>
+<span class="sd">    </span>
+<span class="sd">        :param self: :class:`~Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner` to retrieve names from</span>
+<span class="sd">        :param kwargs: additional arguments to pass into `~Layout.SetFreeParametersWindow.SetFreeParametersWindow.getFreeParameterNames`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># noinspection PyTypeChecker</span>
+        <span class="n">window_object</span><span class="p">:</span> <span class="n">SetFreeParametersWindow</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWindowObject</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">window_object</span><span class="o">.</span><span class="n">getFreeParameterNames</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SetFreeParametersWindowRunner.getFreeParameterValues"><a class="viewcode-back" href="../../Layout.html#Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner.getFreeParameterValues">[docs]</a>    <span class="k">def</span> <span class="nf">getFreeParameterValues</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get information about free parameter values for simulation.</span>
+<span class="sd">        Uses present state of window.</span>
+<span class="sd">        Spawns popup error message if values are (1) of incorrect type or (2) missing.</span>
+<span class="sd">        </span>
+<span class="sd">        :param self: :class:`~Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner` to retrieve values from</span>
+<span class="sd">        :param names: names of parameters to retrieve information for</span>
+<span class="sd">        :returns: Dictionary of information for free parameters if :paramref:`~Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner.getFreeParameterValues.names` is list.</span>
+<span class="sd">            Key is name of parameter.</span>
+<span class="sd">            Value is list of (minimum, maximum, stepcount) for parameter.</span>
+<span class="sd">            Returns only this list if :paramref:`~Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner.getFreeParameterValues.names` is str.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">infos</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;minimum&quot;</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">,</span> <span class="s2">&quot;stepcount&quot;</span><span class="p">)</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">infos</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">info_value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getValue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getKey</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;free_parameter_</span><span class="si">{</span><span class="n">info</span><span class="si">:</span><span class="s2">s</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">names</span><span class="p">)))</span>
+                    <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">info_value</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                    <span class="n">sg</span><span class="o">.</span><span class="n">PopupError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input </span><span class="si">{</span><span class="n">info</span><span class="si">:</span><span class="s2">s</span><span class="si">}</span><span class="s2"> for </span><span class="si">{</span><span class="n">names</span><span class="si">:</span><span class="s2">s</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">infos</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">values</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFreeParameterValues</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">value</span><span class="p">:</span>
+                    <span class="n">values</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">break</span>
+            <span class="k">return</span> <span class="n">values</span>
+        <span class="k">elif</span> <span class="n">names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFreeParameterValues</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">getFreeParameterNames</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">RecursiveTypeError</span><span class="p">(</span><span class="n">names</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SetFreeParametersWindowRunner.runWindow"><a class="viewcode-back" href="../../Layout.html#Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner.runWindow">[docs]</a>    <span class="k">def</span> <span class="nf">runWindow</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]]:</span>
+        <span class="n">free_parameter_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFreeParameterNames</span><span class="p">()</span>
+        <span class="n">free_parameter_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">free_parameter_names</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">free_parameter_count</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">window</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWindow</span><span class="p">()</span>
+            <span class="n">event</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+            <span class="k">while</span> <span class="n">event</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">sg</span><span class="o">.</span><span class="n">WIN_CLOSED</span><span class="p">,</span> <span class="s2">&quot;Cancel&quot;</span><span class="p">]:</span>
+                <span class="n">event</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;Submit&quot;</span><span class="p">:</span>
+                    <span class="n">free_parameter_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFreeParameterValues</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="n">free_parameter_names</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">free_parameter_values</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">free_parameter_names</span><span class="p">):</span>
+                        <span class="n">window</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                        <span class="k">return</span> <span class="n">event</span><span class="p">,</span> <span class="n">free_parameter_values</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">window</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                    <span class="k">return</span> <span class="n">event</span><span class="p">,</span> <span class="p">{}</span>
+        <span class="k">elif</span> <span class="n">free_parameter_count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;Submit&quot;</span><span class="p">,</span> <span class="p">{}</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2021, Joseph Marcinik.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Stanford-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'2021',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="../../_static/clipboard.min.js"></script>
+      <script type="text/javascript" src="../../_static/copybutton.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
