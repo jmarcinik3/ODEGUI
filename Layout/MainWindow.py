@@ -23,6 +23,7 @@ from macros import formatQuantity, getTexImage
 class TimeEvolutionVariableRow(TabRow):
     """
     Row to set time-evolution properties for variable.
+    
     This contains
         #. Label of variable name
         #. Combobox to choose time-evolution type
@@ -130,6 +131,7 @@ class TimeEvolutionVariableRow(TabRow):
 class TimeEvolutionTab(Tab):
     """
     Tab to organize time-evolution rows for variables.
+    
     This contains
         #. Header of labels to indicate purpose of each element in variable row
         #. :class:`~Layout.MainWindow.TimeEvolutionVariableRow` for each variable in tab
@@ -276,6 +278,7 @@ class TimeEvolutionTab(Tab):
 class TimeEvolutionTabGroup(TabGroup):
     """
     Tabgroup for time-evolution tabs.
+    
     This contains
         #. :class:`~Layout.MainWindow.TimeEvolutionTab` for each group of variables
     """
@@ -302,6 +305,7 @@ class TimeEvolutionTabGroup(TabGroup):
 class ParameterRow(TabRow):
     """
     Row to set properties for parameter.
+    
     This contains
         #. Label of parameter name
         #. Label for present parameter value and unit
@@ -427,6 +431,7 @@ class ParameterRow(TabRow):
 class ParameterSection(Element):
     """
     Section to organize parameter rows for parameters.
+    
     This contains
         #. Header to indicate name of parameter section
         #. collapsable section of :class:`~Layout.MainWindow.ParameterRow` for each parameter in section
@@ -541,6 +546,7 @@ class ParameterSection(Element):
 class ParameterTab(Tab):
     """
     Tab to organize parameter sections.
+    
     This contains
         #. :class:`~Layout.MainWindow.ParameterSection` for each section of parameters
         
@@ -618,6 +624,7 @@ class ParameterTab(Tab):
 class ParameterTabGroup(TabGroup):
     """
     Tabgroup for parameter tabs.
+    
     This contains
         #. :class:`~Layout.MainWindow.ParameterTab` for each group of parameters
     """
@@ -642,6 +649,14 @@ class ParameterTabGroup(TabGroup):
 
 
 class FunctionRow(TabRow):
+    """
+    Row to display function information.
+    
+    This contains
+        #. Label for name of function
+        #. Label for form of function
+    """
+    
     def __init__(self, name: str, tab: FunctionTab) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.FunctionRow`.
@@ -700,6 +715,16 @@ class FunctionRow(TabRow):
 
 
 class FunctionTab(Tab):
+    """
+    Tab to organize rows for functions.
+
+    This contains
+        #. Header of labels to indicate purpose of each element in tab columns
+        #. :class:`~Layout.MainWindow.FunctionRow` for each function in tab
+    
+    :ivar function_rows: list of :class:`~Layout.MainWindow.FunctionRow`, one for each function in tab
+    """
+    
     def __init__(self, name: str, window: MainWindow, function_names: List[str]) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.FunctionTab`.
@@ -785,6 +810,13 @@ class FunctionTab(Tab):
 
 
 class FunctionTabGroup(TabGroup):
+    """
+   Tabgroup for function tabs.
+
+   This contains
+       #. :class:`~Layout.MainWindow.FunctionTab` for each group of functions
+   """
+    
     def __init__(self, name: str, window: MainWindow, blueprint: dict) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.FunctionTabGroup`.
@@ -807,6 +839,7 @@ class FunctionTabGroup(TabGroup):
 class MainWindow(TabbedWindow):
     """
     Primary window to run program.
+    
     This contains
         #. :class:`~Layout.MainWindow.TimeEvolutionTabGroup` to allow user to set time-evolution properties for each variable
         #. :class:`~Layout.MainWindow.ParameterTabGroup` to allow user to set properties for each parameter
