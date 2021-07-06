@@ -12,13 +12,12 @@ from pint import Quantity
 
 import YML
 from CustomErrors import RecursiveTypeError
-from Function import Independent, Model
+from Function import Independent, Model, generateFunction
 from Layout.ChooseParametersWindow import ChooseParametersWindowRunner
 from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabRow, TabbedWindow, WindowRunner, generateCollapsableSection
 from Layout.SetFreeParametersWindow import SetFreeParametersWindowRunner
 from Layout.SimulationWindow import SimulationWindowRunner
-from macros import formatQuantity, getTexImage
-
+from macros import form2png, formatQuantity, getTexImage
 
 class TimeEvolutionVariableRow(TabRow):
     """
@@ -670,8 +669,11 @@ class FunctionRow(TabRow):
         window_object: MainWindow = self.getWindowObject()
         window_object.addFunctionNames(name)
 
-        elements = [self.getRowLabel(), self.getFormLabel()]
-        # if "Equilibrium" in self.getTimeEvolutionTypes(): elements.append(self.getCheckbox())
+        elements = [
+            self.getRowLabel(),
+            self.getFormLabel(),
+            self.getChooseFileElement()
+        ]
         self.addElements(elements)
 
     def getRowLabel(self) -> Union[sg.Text, sg.Image]:
@@ -685,31 +687,74 @@ class FunctionRow(TabRow):
             "size": self.getDimensions(name="function_label")
         }
         return getTexImage(**kwargs)
-
+    
+    def getYmlFilenames(self) -> List[str]:
+        """
+        Get names of YML files that function appears in.
+        
+        :param self: :class:`~Layout.MainWindow.FunctionRow` to retrieve function from
+        """
+        # noinspection PyTypeChecker
+        runner: MainWindowRunner = self.getWindowRunner()
+        function_ymls = runner.getFunctionYMLs()
+        
+        name = self.getName()
+        function_filenames = []
+        for function_yml in function_ymls:
+            function_file = open(function_yml, 'r')
+            functions_info = yaml.load(function_file, Loader=yaml.Loader)
+            function_names = functions_info.keys()
+            if name in function_names:
+                function_filenames.append(function_yml)
+        return function_filenames
+        
+    def getChooseFileElement(self) -> sg.Combo:
+        """
+        Get element allowing user to choose which file to load function.
+        
+        :param self: :class:`~Layout.MainWindow.FunctionRow` to retrieve element from
+        """
+        function_filenames = self.getYmlFilenames()
+        filename_count = len(function_filenames)
+        kwargs = {
+            "values": function_filenames,
+            "default_value": function_filenames[-1],
+            "tooltip": f"Choose file to load function {self.getName():s} from",
+            "enable_events": True,
+            "disabled": filename_count == 1,
+            "size": (None, None), # dim
+            "key": self.getKey("function_filename", self.getName())
+        }
+        return sg.Combo(**kwargs)
+        
     def getFormLabel(self) -> Union[sg.Text, sg.Image]:
         """
         Get element to display form of function.
 
         :param self: :class:`~Layout.MainWindow.FunctionRow` to retrieve label from
         """
-        for filename_temp in [
-            "equations/Ohms_law.yml",
-            "equations/Martin2003.yml",
-            "equations/Roongthumskul2011.yml",
-            "equations/Barral2018.yml",
-            "equations/soma_eqs.yml",
-            "equations/var_funcs.yml"]:
-            function_info = yaml.load(open(filename_temp, 'r'), Loader=yaml.Loader)
-            try:
-                form = function_info[self.getName()]["form"]
-            except KeyError:
-                try:
-                    form = function_info[self.getName()]["pieces"]
-                except KeyError:
-                    pass
+        function_filename = self.getYmlFilenames()[-1]
+        function_info = yaml.load(open(function_filename), Loader=yaml.Loader)
+        name = self.getName()
+        function = generateFunction(name, function_info[name])
+        form = str(function.getForm(generations=0))
+
+        try:
+            kwargs = {
+                "name": name,
+                "form": form,
+                "var2tex": "var2tex.yml",
+                "folder": "tex_eq",
+                "filename": f"{name:s}.png"
+            }
+            form2png(**kwargs)
+        except RuntimeError:
+            pass
+        
         kwargs = {
-            "name": form,
-            "size": self.getDimensions(name="form_label")
+            "name": name,
+            "size": self.getDimensions(name="form_label"),
+            "tex_folder": "tex_eq"
         }
         return getTexImage(**kwargs)
 
@@ -796,7 +841,7 @@ class FunctionTab(Tab):
             "layout": layout,
             "size": self.getDimensions(name="function_tab"),
             "scrollable": True,
-            "vertical_scroll_only": True
+            "vertical_scroll_only": False
         }
         return sg.Column(**kwargs)
 
@@ -909,7 +954,7 @@ class MainWindow(TabbedWindow):
         tabs = [
             self.getTimeEvolutionTypeTab(),
             self.getParameterInputTab(),
-            # self.getFunctionTab()
+            self.getFunctionTab()
         ]
         self.addTabs(tabs)
 
@@ -1116,12 +1161,13 @@ class MainWindowRunner(WindowRunner):
         window = self.getWindow()
         while True:
             event, self.values = window.read()
-
-            if event == sg.WIN_CLOSED or event == 'Exit':
+            print(event)
+            if event in [sg.WIN_CLOSED, event == 'Exit']:
                 break
             psl_pre = self.getPrefix("parameter_subgroup_label")
             tet_pre = self.getPrefix("time_evolution_type")
             ice_pre = self.getPrefix("initial_condition_equilibrium")
+            ff_pre = self.getPrefix("function_filename")
             menu_value = self.getValue(self.getKey("toolbar_menu"))
 
             if menu_value is not None:
@@ -1140,6 +1186,8 @@ class MainWindowRunner(WindowRunner):
                 prefix = "time_evolution_type" if tet_pre in event else "initial_condition_equilibrium"
                 variable_name = self.getVariableNameFromElementKey(event, prefix)
                 self.changeTimeEvolution(variable_name)
+            elif ff_pre in event:
+                print(self.getValue(event))
             elif event == "Update Parameters":
                 self.updateParameters()
             elif event == self.getKey("open_simulation"):
@@ -1167,9 +1215,12 @@ class MainWindowRunner(WindowRunner):
             filtered_parameter_names = []
             for parameter_name in self.getParameterNames():
                 combobox_key = self.getKey("parameter_type", parameter_name)
-                parameter_type = self.getValue(combobox_key)
-                if parameter_type == species:
-                    filtered_parameter_names.append(parameter_name)
+                try:
+                    parameter_type = self.getValue(combobox_key)
+                    if parameter_type == species:
+                        filtered_parameter_names.append(parameter_name)
+                except KeyError:
+                    print(f"combobox not found for parameter {parameter_name:s}")
             return filtered_parameter_names
         elif isinstance(species, list):
             filtered_parameter_names = []
@@ -1177,9 +1228,7 @@ class MainWindowRunner(WindowRunner):
                 filtered_parameter_names.extend(self.getParameterNames(species=specie))
             return filtered_parameter_names
         elif species is None:
-            key_list = self.getKeyList(prefixes="parameter_type")
-            key_prefix = self.getPrefix(prefix="parameter_type", with_separator=True)
-            parameter_names = [key.replace(key_prefix, '') for key in key_list]
+            parameter_names = list(self.parameters.keys())
             return parameter_names
         else:
             raise RecursiveTypeError(species)
@@ -1198,7 +1247,7 @@ class MainWindowRunner(WindowRunner):
         if model is None:
             model = self.getModel()
         plot_choices = {
-            "Variable": ['t'] + model.getDerivativeVariables(return_type=str),
+            "Variable": ['t'] + model.getVariables(return_type=str),
             "Function": [function.getName() for function in model.getFunctions(filter_type=Independent)],
             "Parameter": self.getParameterNames(species="Free")
         }
@@ -1213,7 +1262,26 @@ class MainWindowRunner(WindowRunner):
         """
         parameters = {name: self.getParameters(names=name) for name in self.getParameterNames()}
         model = Model(parameters=parameters)
-        model.loadFunctionsFromFiles(self.getFunctionYMLs())
+        
+        function_filenames = self.getFunctionYMLs()
+        files_info = {
+            function_filename: yaml.load(open(function_filename, 'r'), Loader=yaml.Loader)
+            for function_filename in function_filenames
+        }
+        
+        for function_name in self.getFunctionNames():
+            function_filename = self.getFunctionFilename(function_name)
+            generateFunction(function_name, files_info[function_filename][function_name], model=model)
+        
+        for function_filename in function_filenames:
+            file_info = files_info[function_filename]
+            for function_name in file_info.keys():
+                function_info = file_info[function_name]
+                if "Piecewise" in function_info["properties"] or "Dependent" in function_info["properties"]:
+                    generateFunction(function_name, function_info, model=model)
+        
+        # model.loadFunctionsFromFiles(self.getFunctionYMLs())
+        
         for derivative in model.getDerivatives():
             variable_name = derivative.getVariable(return_type=str)
             derivative.setTimeEvolutionType(self.getTimeEvolutionTypes(names=variable_name))
@@ -1327,6 +1395,29 @@ class MainWindowRunner(WindowRunner):
         input_field.update(disabled=is_equilibrium or is_initial_equilibrium)
         checkbox.update(disabled=is_equilibrium)
 
+    def getFunctionNames(self) -> List[str]:
+        """
+        Get names of functions in window.
+        
+        :param self: `~Layout.MainWindow.MainWindowRunner` to retrieve names from
+        """
+        prefix = self.getPrefix("function_filename", with_separator=True)
+        keys = self.getKeyList(prefixes="function_filename")
+        function_names = [key.replace(prefix, '') for key in keys]
+        return function_names
+    
+    def getFunctionFilename(self, name: str) -> str:
+        """
+        Get name of file to load function from.
+        Uses present state of window.
+        
+        :param self: `~Layout.MainWindow.MainWindowRunner` to retrieve filename from
+        :param name: name of function to retrieve filename for
+        """
+        combobox_key = self.getKey("function_filename", name)
+        filename = self.getValue(combobox_key)
+        return filename
+        
     def getFunctionYMLs(self) -> List[str]:
         """
         Get YML filenames to add functions to model.
