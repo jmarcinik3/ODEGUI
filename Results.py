@@ -146,7 +146,7 @@ class Results:
         :param index: index of free parameters to retrieve substitutive results at
         :param function: function to substitute results into
         """
-        variables = self.getModel().getDerivativeVariables(time_evolution_types="Temporal")
+        variables = self.getModel().getVariables(time_evolution_types="Temporal")
         function_lambda = lambdify((Symbol('t'), tuple(variables)), function, "numpy")
         variable_names = [str(variable) for variable in variables]
         temporal_results = self.getResultsOverTime(index, names=variable_names)
@@ -167,20 +167,22 @@ class Results:
         form = function.getForm(generations="all")
 
         substitutions = {}
-        function_variables = set(function.getVariables())
-        equilibrium_variables = set(model.getDerivativeVariables(time_evolution_types="Equilibrium"))
+        function_variables = set(function.getFreeSymbols(species="Variable", generations="all"))
+        equilibrium_variables = set(model.getVariables(time_evolution_types="Equilibrium"))
         if commonElement(function_variables, equilibrium_variables):
             substitutions.update(model.getEquilibriumSolutions())
 
-        constant_variables = set(model.getDerivativeVariables(time_evolution_types="Constant"))
+        constant_variables = set(model.getVariables(time_evolution_types="Constant"))
         if commonElement(function_variables, constant_variables):
             substitutions.update(model.getConstantSubstitutions())
 
-        derivative_function_variables = set(model.getDerivativeVariables(time_evolution_types="Function"))
+        derivative_function_variables = set(model.getVariables(time_evolution_types="Function"))
         if commonElement(function_variables, derivative_function_variables):
             substitutions.update(model.getFunctionSubstitutions())
-
-        substitutions.update(model.getParameterSubstitutions(function.getParameters(return_type=str)))
+        
+        parameter_names = function.getFreeSymbols(species="Parameter", generations="all", return_type=str)
+        parameter_substitutions = model.getParameterSubstitutions(parameter_names)
+        substitutions.update(parameter_substitutions)
         form = form.subs(substitutions)
 
         updated_results = self.getSubstitutedResults(index, form)
@@ -435,7 +437,7 @@ class Results:
 
             model = self.getModel()
 
-            if names in model.getDerivativeVariables(return_type=str):
+            if names in model.getVariables(return_type=str):
                 time_evolution_type = model.getDerivativesFromVariableNames(names=names).getTimeEvolutionType()
                 results_handles = {
                     "Equilibrium": self.getEquilibriumVariableResults,
