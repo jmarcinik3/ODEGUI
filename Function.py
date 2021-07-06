@@ -53,7 +53,38 @@ class Model:
             Value is quantity containing value and unit for parameter.
         """
         for name, quantity in quantities.items():
+            if name in self.getFunctionNames():
+                print(f"Overwriting function {name:s} as parameter {name:s}={formatQuantity(quantity)}")
+                del self.functions[name]
+            elif name in self.getParameterNames():
+                print(f"Overwriting parameter {name:s}={formatQuantity(quantity):s} into model")
             self.parameters[name] = quantity
+    
+    def addFunctions(self, functions: Union[Function, List[Function]]) -> None:
+        """
+        Add Function object(s) to model.
+        Set self as model for Function object(s).
+
+        :param self: `~Function.Model` to add function to
+        :param functions: function(s) to add to model
+        """
+        if isinstance(functions, Function):
+            if functions not in self.getFunctions():
+                name = functions.getName()
+                if name in self.getFunctionNames():
+                    print(f"Overwriting {name:s}={functions.getForm():} into model")
+                elif name in self.getParameterNames():
+                    print(f"Overwriting parameter {name:s} as function {name:s}={functions.getForm()}")
+                    del self.parameters[name]
+                
+                if functions.getModel() is not self:
+                    functions.setModel(self)
+                self.functions[name] = functions
+        elif isinstance(functions, list):
+            for function in functions:
+                self.addFunctions(function)
+        else:
+            raise RecursiveTypeError(functions, Function)
     
     def getParameterNames(self):
         """
@@ -230,6 +261,9 @@ class Model:
             Set False to leave them as symbolic variables.
         :param substitute_functions: set True to substitute corresponding functions in for all function-type derivatives.
             Set False to leave them as symbolic variables.
+        :returns: Dictionary of substitutions.
+            Key is symbolic variable to replace.
+            Value is equilibrium expression to substitute into variable.
         """
         if skip_parameters is None:
             skip_parameters = []
@@ -562,7 +596,6 @@ class Model:
             solutions = {equilibrium_variables[i]: roots.x[i] for i in range(variable_count)}
             
             initial_values = {**initial_constant_substitutions, **solutions}
-            print('1', initial_values)
         
         if isinstance(names, str):
             return initial_values[Symbol(names)]
@@ -834,8 +867,6 @@ class Function(Child, Parent):
     def __init__(
             self,
             name: str,
-            variables: Union[Symbol, List[Symbol]] = None,
-            parameters: Union[Symbol, List[Symbol]] = None,
             children: Union[str, List[str]] = None,
             model: Model = None,
             **kwargs
@@ -843,11 +874,6 @@ class Function(Child, Parent):
         Function.functions.append(self)
         self.form = None
         self.name = name
-        
-        self.variables = []
-        self.addVariables(variables)
-        self.parameters = []
-        self.addParameters(parameters)
         
         Parent.__init__(self, children)
         Child.__init__(self)
@@ -932,11 +958,10 @@ class Function(Child, Parent):
     
     def getForm(self, **kwargs):
         """
-        __Purpose__
-            Add variable to function
-
-        :param self: `~Function.Function` to add variable(s) to
-        :param variables: variable(s) to add to function
+        Get expression for function, dependent on inherited classes.
+        
+        :param self: :class:`~Function.Function` to retrieve form from
+        :param kwargs: additional arguments to pass into :meth:`~Function.Piecewise.getForm` or :meth:`~Function.NonPiecewise.getForm`
         """
         if not self.usingMemory() or self.form is None or isinstance(self, Dependent):
             if isinstance(self, Piecewise):
@@ -1562,7 +1587,7 @@ def getFunctionInfo(info: Dict[str, Union[str, List[str], Dict[str, Union[str, L
 
 def generateFunctionsFromFile(filename: str, **kwargs) -> List[Function]:
     file = yaml.load(open(filename), Loader=yaml.Loader)
-    return [generateFunction(name, file, **kwargs) for name in file.keys()]
+    return [generateFunction(name, file[name], **kwargs) for name in file.keys()]
 
 def getInheritance(properties: List[str], name: str = '') -> List[Type[Function]]:
     inheritance = []
