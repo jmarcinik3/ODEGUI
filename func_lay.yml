@@ -1,9 +1,9 @@
-Hair Bundle: [kgsinf, dxgs, Fgs, Fsp, Fes, S, C, tauT, lambdahb, CpT, dxpT, xpT, pTinf, cCar, cCam]
+Hair Bundle: [kr, kgsinf, dxgs, Fgs, Fsp, Fes, S, C, tauT, lambdahb, CpT, dxpT, xpT, pTinf, cCar, cCam]
 
 Soma: [alphaDRK, betaDRK, tauDRK]
 
-Current: [gCa, gh, gBKS, gBKT, gDRK, gK1f, gK1s, gA1, gA2, aA1,
-  IL, ICa, Ih, IBKS, IBKT, IBK, IDRK, IK1f, IK1s, IK1, IA1, IA2, IA]
+Current: [gT, gCa, gh, gBKS, gBKT, gDRK, gK1f, gK1s, gA1, gA2, aA1,
+  IT, IL, ICa, Ih, IBKS, IBKT, IBK, IDRK, IK1f, IK1s, IK1, IA1, IA2, IA]
 
 BK Scheme: [KpC1, KpC2, KpO3, kaC1, kaC2, kdO2, kaO3]
 

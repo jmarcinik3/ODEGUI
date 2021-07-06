@@ -3,7 +3,7 @@
 # each list gives variables displayed within section
 
 Function:
-  Vm: [Vm0, Vmout, Vmin]
+  Vm: [Vm0, Vmout, Vmin, Dgs]
 
 
 Hair Bundle:
