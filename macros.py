@@ -172,6 +172,7 @@ def form2tex(form: str, var2tex: str) -> str:
             tex = var2tex[var].replace('$', '')
             form_str = form_str.replace(var, tex)
     form_str = '$' + form_str + '$'
+    form_str  = form_str.replace('**', '^')
     form_str = form_str.replace('*', '')
     
     return form_str
