@@ -1,12 +1,16 @@
 """
 This file contains miscellaneous functions that are used often throughout the project.
 """
-from os.path import isfile, join
+import os
 from typing import Any, List, Union
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
+import yaml
 from pint import Quantity
+from sympy.printing.preview import preview
+
+import YML
 
 def unique(nonunique: List[Any]) -> List[Any]:
     """
@@ -137,14 +141,115 @@ def formatQuantity(quantity: Quantity) -> str:
 def getTexImage(name: str, tex_folder: str = "tex", **kwargs) -> Union[sg.Image, sg.Text]:
     """
     Get tex image associated with variable name.
-    
+
     :param name: name of variable to retrieve image of
     :param tex_folder: folder to retrieve image from
     :returns: Image if image found in folder.
         Text if image not found in folder.
     """
-    filename = join(tex_folder, name + ".png")
-    if isfile(filename):
+    filename = os.path.join(tex_folder, name + ".png")
+    if os.path.isfile(filename):
         return sg.Image(filename=filename, **kwargs)
     else:
         return sg.Text(name, **kwargs)
+
+def form2tex(form: str, var2tex: str) -> str:
+    """
+    Get tex expression from equation form.
+    
+    :param form: form of equation to convert to tex
+    :param var2tex: name of YML with variable-to-tex dictionary.
+        Key is name of variable.
+        Value is tex form of variable.
+    """
+    form_str = form
+    var2tex = yaml.load(open(var2tex, 'r'), Loader=yaml.Loader)
+    sorted_tex = sorted(var2tex.keys(), key=len, reverse=True)
+    
+    for var in sorted_tex:
+        reg_expr = f"{var:s}"
+        if reg_expr in form_str:
+            tex = var2tex[var].replace('$', '')
+            form_str = form_str.replace(var, tex)
+    form_str = '$' + form_str + '$'
+    form_str = form_str.replace('*', '')
+    
+    return form_str
+
+def tex2png(tex_text: str, filepath: str, overwrite: bool = False) -> None:
+    """
+    Save tex for given text as PNG.
+    
+    :param tex_text: tex form of text
+    :param filepath: location to save PNG file
+    :param overwrite: set True to overwrite existing quantity if name already exists.
+        Set False to skip quantities previously saved as TeX image.
+    """
+    preview_kwargs = {
+        "expr": tex_text,
+        "filename": filepath,
+        "output": "png",
+        "packages": ("amsmath", "amsfonts", "amssymb"),
+        "viewer": "file",
+        "euler": False
+    }
+    if not os.path.isfile(filepath) or overwrite:
+        preview(**preview_kwargs)
+
+def form2png(name: str, form: str, folder: str, filename: str, var2tex: str) -> None:
+    """
+    Generate PNG image of tex for variable.
+    
+    :param name: name of variable to generate image for
+    :param form: tex expression to generate image for
+    :param folder: output folder for image
+    :param filename: base filename for image
+    :param var2tex: name of YML with variable-to-tex dictionary.
+        Key is name of variable.
+        Value is tex form of variable.
+    """
+    form_str = form2tex(form, var2tex)
+    
+    if not os.path.isdir(folder):
+        os.mkdir(folder)
+        
+    logpath = os.path.join(folder, "log.yml")
+    if os.path.isfile(logpath):
+        old_info = yaml.load(open(logpath, 'r'), Loader=yaml.Loader)
+        if old_info is None:
+            old_info = {}
+    else:
+        old_info = {}
+    
+    kwargs = {
+        "tex_text": form_str,
+        "filepath": os.path.join(folder, filename),
+        "overwrite": name not in old_info.keys() or form_str != old_info[name]["expression"]
+    }
+    tex2png(**kwargs)
+
+    new_info = old_info
+    new_info[name] = {
+        "expression": form_str,
+        "filename": filename
+    }
+    yaml.dump(new_info, open(logpath, 'w'))
+    
+def tex2pngFromFile(output_folder: str, tex_filename: str, **kwargs) -> None:
+    """
+    Create PNG for quantity(s) in TeX form.
+    File containing quantity name(s) to TeX math format must be made before call.
+
+    :param output_folder: name of folder to save images in
+    :param tex_filename: name of file containing name-to-TeX conversions.
+        Keys in file are name of quantity.
+        Values are corresponding TeX format.
+    :param kwargs: additional arguments to pass into :meth:`~macros.tex2png`
+    """
+    tex_yml = YML.readVar2Tex(tex_filename)
+    
+    if not os.path.isdir(output_folder):
+        os.mkdir(output_folder)
+    for key in YML.readVar2Tex(tex_filename):
+        filepath = f"{output_folder:s}/{key:s}.png"
+        tex2png(tex_yml[key], filepath, **kwargs)

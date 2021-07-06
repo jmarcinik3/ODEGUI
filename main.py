@@ -3,23 +3,18 @@ This file contains functions necessary to open the main GUI window.
 This includes the main function that starts the main window.
 """
 import os
-from functools import partial
-from os import mkdir
-from os.path import isdir, isfile
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
-from sympy.printing.preview import preview
 
-import YML
 from Layout.MainWindow import MainWindowRunner
-
+from macros import tex2pngFromFile
 
 def main():
     """
     Main function to run GUI
     """
-    tex2png()
+    tex2pngFromFile("tex", "var2tex.yml")
 
     sg.ChangeLookAndFeel("DarkGrey13")
     sg.SetOptions(element_padding=(1, 1), suppress_error_popups=True, suppress_raise_key_errors=False)
@@ -45,35 +40,6 @@ def main():
     }
     gui = MainWindowRunner(**kwargs)
     gui.runWindow()
-
-
-def tex2png(output_folder: str = "tex", tex_filename: str = "var2tex.yml", overwrite: bool = False) -> None:
-    """
-    Create PNG for quantity(s) in TeX form.
-    File containing quantity name(s) to TeX math format must be made before call.
-    
-    :param output_folder: name of folder to save images in
-    :param tex_filename: name of file containing name-to-TeX conversions.
-        Keys in file are name of quantity.
-        Values are corresponding TeX format.
-    :param overwrite: set True to overwrite existing quantity if name already exists.
-        Set False to skip quantities previously saved as TeX image.
-    """
-    tex_yml = YML.readVar2Tex(tex_filename)
-
-    kwargs = {
-        "packages": ("amsmath", "amsfonts", "amssymb", "mathtools"),
-        "viewer": "file",
-        "euler": False
-    }
-    create_png = partial(preview, **kwargs)
-
-    if not isdir(output_folder):
-        mkdir(output_folder)
-    for key in YML.readVar2Tex(tex_filename):
-        filepath = f"{output_folder:s}/{key:s}.png"
-        if not isfile(filepath) or overwrite:
-            create_png(tex_yml[key], filename=filepath)
 
 
 if __name__ == "__main__":
