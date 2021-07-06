@@ -1475,7 +1475,7 @@ class SimulationWindowRunner(WindowRunner):
         if general_derivative_vector is None:
             model = self.getModel()
             kwargs = {
-                "names": model.getDerivativeVariables(time_evolution_types="Temporal", return_type=str),
+                "names": model.getVariables(time_evolution_types="Temporal", return_type=str),
                 "skip_parameters": self.getFreeParameterNames()
             }
             self.general_derivative_vector, equilibrium_substitutions = model.getDerivativeVector(**kwargs)
@@ -1835,7 +1835,9 @@ class SimulationWindowRunner(WindowRunner):
         :param index: index for free-parameter values.
             Results are saved at this index.
         :param parameter_values: dictionary of free-parameter values.
-            Key is name of each parameter. Value is value of corresponding parameter.
+            Key is name of each parameter.
+            Value is value of corresponding parameter.
+            Defaults to empty dictionary.
         :param variable_names: names of temporal variables in model.
             This gives the order for arguments in the lambdified derivative vector.
         :param general_derivative_vector: partially-simplified, symbolic derivative vector.
@@ -1848,7 +1850,7 @@ class SimulationWindowRunner(WindowRunner):
             if model is None:
                 model = self.getModel()
             if variable_names is None:
-                variable_names = model.getDerivativeVariables(
+                variable_names = model.getVariables(
                     time_evolution_types="Temporal", return_type=str
                 )
             if general_derivative_vector is None:
@@ -1859,15 +1861,9 @@ class SimulationWindowRunner(WindowRunner):
                 times = np.linspace(*self.getInputTimes())
         if parameter_values is None:
             parameter_values = {}
-
+        
         derivatives = [derivative.subs(parameter_values) for derivative in general_derivative_vector]
         ydot = lambdify((Symbol('t'), tuple(variable_names)), derivatives, modules=["math"])
-
-        with open("temp1.txt", 'w') as file:
-            lamb_src = inspect.getsource(ydot)
-            lamb_src = lamb_src.replace("_lambdifygenerated", "_ydot")
-            file.write(lamb_src)
-
         solution = solveODE(ydot, y0, times)
         # noinspection PyTypeChecker
         results = formatResultsAsDictionary(*solution, variable_names)
@@ -1881,18 +1877,17 @@ class SimulationWindowRunner(WindowRunner):
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from and save results in.
         """
         self.resetResults()
-
         free_parameter_names = self.getFreeParameterNames()
         model = self.getModel()
-        variable_names = model.getDerivativeVariables(time_evolution_types="Temporal", return_type=str)
-
+        variable_names = model.getVariables(time_evolution_types="Temporal", return_type=str)
         kwargs = {
+            "model": model,
             "variable_names": variable_names,
             "general_derivative_vector": self.getGeneralDerivativeVector(),
             "y0": model.getInitialValues(names=variable_names, return_type=list),
             "times": np.linspace(*self.getInputTimes())
         }
-
+        
         if (parameter_count := len(free_parameter_names)) == 0:
             self.runSimulation((), **kwargs)
         elif parameter_count >= 1:
@@ -1910,7 +1905,7 @@ class SimulationWindowRunner(WindowRunner):
                     break
                 parameter_simulation_values = {
                     (free_parameter_name := free_parameter_names[free_parameter_index]):
-                        free_parameter_values[free_parameter_name][indicies[free_parameter_index]]
+                    free_parameter_values[free_parameter_name][indicies[free_parameter_index]]
                     for free_parameter_index in range(parameter_count)
                 }
                 self.runSimulation(indicies, parameter_simulation_values, **kwargs)
