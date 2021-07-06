@@ -160,7 +160,9 @@ class SetFreeParametersWindowRunner(WindowRunner):
         window_object: SetFreeParametersWindow = self.getWindowObject()
         return window_object.getFreeParameterNames(**kwargs)
 
-    def getFreeParameterValues(self, names: Union[str, List[str]] = None) -> Union[List[float], Dict[str, List[float]]]:
+    def getFreeParameterValues(
+            self, names: Union[str, List[str]] = None
+    ) -> Union[List[float, float, int], Dict[str, List[float, float, int]]]:
         """
         Get information about free parameter values for simulation.
         Uses present state of window.
@@ -174,16 +176,46 @@ class SetFreeParametersWindowRunner(WindowRunner):
             Returns only this list if :paramref:`~Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner.getFreeParameterValues.names` is str.
         """
         if isinstance(names, str):
-            infos = ("minimum", "maximum", "stepcount")
             values = []
-            for info in infos:
+            valid = True
+            
+            if valid:
                 try:
-                    info_value = float(self.getValue(self.getKey(f"free_parameter_{info:s}", names)))
-                    values.append(info_value)
+                    minimum_key = self.getKey(f"free_parameter_minimum", names)
+                    minimum = float(self.getValue(minimum_key))
+                    values.append(minimum)
                 except ValueError:
-                    sg.PopupError(f"Input {info:s} for {names:s}")
-                    break
-            if len(values) == len(infos):
+                    valid = False
+                    sg.PopupError(f"Input minimum for {names:s}")
+            
+            if valid:
+                try:
+                    maximum_key = self.getKey(f"free_parameter_maximum", names)
+                    maximum = float(self.getValue(maximum_key))
+                    values.append(maximum)
+                except ValueError:
+                    valid = False
+                    sg.PopupError(f"Input maximum for {names:s}")
+            
+            if valid:
+                if maximum <= minimum:
+                    valid = False
+                    sg.PopupError(f"Maximum must be greater than minimum for {names:s}")
+            
+            if valid:
+                try:
+                    stepcount_key = self.getKey(f"free_parameter_stepcount", names)
+                    stepcount = float(self.getValue(stepcount_key))
+                    if stepcount >= 2 and stepcount.is_integer():
+                        values.append(stepcount)
+                    else:
+                        valid = False
+                        sg.PopupError(f"Stepcount for {names:s} must be integer greater than one")
+                except ValueError:
+                    valid = False
+                    sg.PopupError(f"Input stepcount for {names:s}")
+            
+            if valid:
                 return values
         elif isinstance(names, list):
             values = {}
