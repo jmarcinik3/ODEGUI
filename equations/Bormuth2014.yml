@@ -6,3 +6,8 @@ lambdaC: # MET-channel coefficient of friction
     kgsinf:
     tauT:
   form: N * (gamma*kgsinf*d)**2 * pT*(1-pT) * tauT / (kB*T)
+
+tauT: # MET-channel time constant
+  properties: [Independent, Parameter]
+  parameters: tauT
+  form: tauT
