@@ -1,13 +1,13 @@
-Hair Bundle: [kr, kgsinf, dxgs, Fgs, Fsp, Fes, S, C, tauT, lambdahb, CpT, dxpT, xpT, pTinf, cCar, cCam]
+Current: [BoltzX, gGHK, I, gT, gCa, gh, gBKS, gBKT, gDRK, gK1f, gK1s, gA1, gA2, aA1,
+  IT, IL, ICa, Ih, IBKS, IBKT, IBK, IDRK, IK1f, IK1s, IK1, IA1, IA2, IA]
+
+Hair Bundle: [kr, kgsinf, dxgs, Fgs, Fsp, Fes, S, C, lambdaC, lambdahb, CpT, dxpT, xpT, pTinf, tauT, cX, cCar, cCam]
 
 Soma: [alphaDRK, betaDRK, tauDRK]
-
-Current: [gT, gCa, gh, gBKS, gBKT, gDRK, gK1f, gK1s, gA1, gA2, aA1,
-  IT, IL, ICa, Ih, IBKS, IBKT, IBK, IDRK, IK1f, IK1s, IK1, IA1, IA2, IA]
 
 BK Scheme: [KpC1, KpC2, KpO3, kaC1, kaC2, kdO2, kaO3]
 
 Derivatives: [dXhb, dxa, dpr, dpm, dpT,
-  dVm, dCa, dmCa, dmh, dhBKT, dhA1, dhA2, dmDRK,
+  dVm, dCa, mhsinf, mhstau, dmhs, dmCa, dmh, dhBKT, dhA1, dhA2, dmDRK,
   dmK1flt, dmK1fgt, dmK1slt, dmK1sgt, dmAlt, dmAgt,
   dpC0, dpC1, dpC2, dpO2, dpO3]

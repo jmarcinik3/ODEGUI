@@ -8,9 +8,11 @@ from typing import Any, List, Union
 import PySimpleGUI as sg
 import yaml
 from pint import Quantity
+from sympy import Expr, latex
 from sympy.printing.preview import preview
 
 import YML
+
 
 def unique(nonunique: List[Any]) -> List[Any]:
     """
@@ -21,6 +23,7 @@ def unique(nonunique: List[Any]) -> List[Any]:
     seen = set()
     unique_list = [element for element in nonunique if not (element in seen or seen.add(element))]
     return unique_list
+
 
 def getIndicies(
         elements: Union[Any, List[Any]], element_list: list, element_class: type = None
@@ -45,6 +48,7 @@ def getIndicies(
     else:
         raise TypeError("element input must be {element_class:s} or list")
 
+
 def getElements(indicies: Union[int, List[int]], element_list: list) -> Union[Any, List[Any]]:
     """
     Get element(s) at index(es) in list.
@@ -62,6 +66,7 @@ def getElements(indicies: Union[int, List[int]], element_list: list) -> Union[An
     elif isinstance(indicies, int):
         return element_list[indicies]
 
+
 def commonElement(set1: set, set2: set, n: int = 1) -> bool:
     """
     Determine whether list1 and list2 have at least n common elements.
@@ -73,6 +78,7 @@ def commonElement(set1: set, set2: set, n: int = 1) -> bool:
         False otherwise.
     """
     return len(set1.intersection(set2)) >= n
+
 
 def toList(obj: Any, object_class: type = None) -> list:
     """
@@ -90,6 +96,7 @@ def toList(obj: Any, object_class: type = None) -> list:
     else:
         raise TypeError(f"object input must be {object_class:s} or list")
 
+
 def formatValue(quantity: Union[Quantity, float]) -> str:
     """
     Format value for quantity or float.
@@ -104,19 +111,20 @@ def formatValue(quantity: Union[Quantity, float]) -> str:
         magnitude = quantity
     else:
         raise TypeError("quantity must be Quantity or float")
-    
+
     decimal = f"{magnitude:f}".rstrip('0').rstrip('.')
-    
+
     scientific_splits = f"{magnitude:e}".split('e')
     scientific_float, scientific_exp = scientific_splits[0].rstrip('0').rstrip('.'), scientific_splits[1]
     scientific_full = scientific_float + 'e' + scientific_exp
-    
+
     if float(decimal) != magnitude:
         return scientific_full
     elif len(decimal) <= len(scientific_full):
         return decimal
     elif len(decimal) > len(scientific_full):
         return scientific_full
+
 
 def formatUnit(quantity: Quantity) -> str:
     """
@@ -128,6 +136,7 @@ def formatUnit(quantity: Quantity) -> str:
     """
     return f"{quantity.units:~}".replace(' ', '')
 
+
 def formatQuantity(quantity: Quantity) -> str:
     """
     Format quantity as string with value and unit.
@@ -137,6 +146,7 @@ def formatQuantity(quantity: Quantity) -> str:
     value, unit = formatValue(quantity), formatUnit(quantity)
     formatted_quantity = f"{value:s} {unit:s}"
     return formatted_quantity
+
 
 def getTexImage(name: str, tex_folder: str = "tex", **kwargs) -> Union[sg.Image, sg.Text]:
     """
@@ -153,7 +163,8 @@ def getTexImage(name: str, tex_folder: str = "tex", **kwargs) -> Union[sg.Image,
     else:
         return sg.Text(name, **kwargs)
 
-def form2tex(form: str, var2tex: str) -> str:
+
+def form2tex(form: Expr, var2tex: str) -> str:
     """
     Get tex expression from equation form.
     
@@ -162,20 +173,42 @@ def form2tex(form: str, var2tex: str) -> str:
         Key is name of variable.
         Value is tex form of variable.
     """
-    form_str = form
+    form_str = latex(form)
     var2tex = yaml.load(open(var2tex, 'r'), Loader=yaml.Loader)
-    sorted_tex = sorted(var2tex.keys(), key=len, reverse=True)
-    
+    # noinspection PyTypeChecker
+    sorted_tex: List[str] = sorted(var2tex.keys(), key=len, reverse=True)
+    if isinstance(form, Expr):
+        free_symbols = form.free_symbols
+        free_symbol_names = [str(free_symbol) for free_symbol in free_symbols]
+        sorted_tex = [name for name in sorted_tex if name in free_symbol_names]
+
     for var in sorted_tex:
-        reg_expr = f"{var:s}"
-        if reg_expr in form_str:
-            tex = var2tex[var].replace('$', '')
-            form_str = form_str.replace(var, tex)
+        if f"\\{var:s}" in form_str:
+            continue
+
+        if var[-1].isdigit():
+            first_digit_index = 0
+            for index in range(len(var)):
+                if not var[-index].isdigit():
+                    first_digit_index = index + 1
+                    break
+            digits = var[-first_digit_index:]
+            sympy_var = var.replace(digits, f"_{{{digits:s}}}")
+        else:
+            sympy_var = var
+
+        tex = var2tex[var].replace('$', '')
+        var_subscript = f"_{{{var:s}}}"
+        var_in_subscript = var_subscript in form_str
+        if var_in_subscript:
+            form_str = form_str.replace(var_subscript, '***')
+        form_str = form_str.replace(sympy_var, tex)
+        if var_in_subscript:
+            form_str = form_str.replace('***', var_subscript)
     form_str = '$' + form_str + '$'
-    form_str  = form_str.replace('**', '^')
-    form_str = form_str.replace('*', '')
-    
+
     return form_str
+
 
 def tex2png(tex_text: str, filepath: str, overwrite: bool = False) -> None:
     """
@@ -197,7 +230,8 @@ def tex2png(tex_text: str, filepath: str, overwrite: bool = False) -> None:
     if not os.path.isfile(filepath) or overwrite:
         preview(**preview_kwargs)
 
-def form2png(name: str, form: str, folder: str, filename: str, var2tex: str) -> None:
+
+def form2png(name: str, form: Expr, folder: str, filename: str, var2tex: str) -> str:
     """
     Generate PNG image of tex for variable.
     
@@ -208,12 +242,13 @@ def form2png(name: str, form: str, folder: str, filename: str, var2tex: str) -> 
     :param var2tex: name of YML with variable-to-tex dictionary.
         Key is name of variable.
         Value is tex form of variable.
+    :returns: filepath of new image file
     """
     form_str = form2tex(form, var2tex)
-    
+
     if not os.path.isdir(folder):
         os.mkdir(folder)
-        
+
     logpath = os.path.join(folder, "log.yml")
     if os.path.isfile(logpath):
         old_info = yaml.load(open(logpath, 'r'), Loader=yaml.Loader)
@@ -221,12 +256,16 @@ def form2png(name: str, form: str, folder: str, filename: str, var2tex: str) -> 
             old_info = {}
     else:
         old_info = {}
-    
+
+    filepath = os.path.join(folder, filename)
+    overwrite = name not in old_info.keys() or form_str != old_info[name]["expression"]
     kwargs = {
         "tex_text": form_str,
-        "filepath": os.path.join(folder, filename),
-        "overwrite": name not in old_info.keys() or form_str != old_info[name]["expression"]
+        "filepath": filepath,
+        "overwrite": overwrite
     }
+    if overwrite:
+        print(f"Overwriting {filepath:s} as {form_str:s}")
     tex2png(**kwargs)
 
     new_info = old_info
@@ -235,7 +274,10 @@ def form2png(name: str, form: str, folder: str, filename: str, var2tex: str) -> 
         "filename": filename
     }
     yaml.dump(new_info, open(logpath, 'w'))
-    
+
+    return filepath
+
+
 def tex2pngFromFile(output_folder: str, tex_filename: str, **kwargs) -> None:
     """
     Create PNG for quantity(s) in TeX form.
@@ -248,7 +290,7 @@ def tex2pngFromFile(output_folder: str, tex_filename: str, **kwargs) -> None:
     :param kwargs: additional arguments to pass into :meth:`~macros.tex2png`
     """
     tex_yml = YML.readVar2Tex(tex_filename)
-    
+
     if not os.path.isdir(output_folder):
         os.mkdir(output_folder)
     for key in YML.readVar2Tex(tex_filename):

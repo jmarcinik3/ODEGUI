@@ -1,20 +1,26 @@
+BoltzX:
+  expression: $e^{- \frac{V_m q_e z}{T k_B}}$
+  filename: BoltzX.png
 C:
-  expression: $C(1) + (1 - p_m)(C(0) - C(1))$
+  expression: $C(1) + \left(1 - p_m\right) \left(C(0) - C(1)\right)$
   filename: C.png
 CpT:
-  expression: $exp(\Delta{E}^\varnothing/(Tk_B))$
+  expression: $e^{\frac{\Delta{E}^\varnothing}{T k_B}}$
   filename: CpT.png
 Fes:
-  expression: $k_{es}(x_a - x_{es})$
+  expression: $k_{es} \left(x_a - x_{es}\right)$
   filename: Fes.png
 Fgs:
-  expression: $\Delta{x_{gs}}k_{gs}$
+  expression: $\Delta{x_{gs}} k_{gs}$
   filename: Fgs.png
 Fsp:
-  expression: $k_{sp}(X_{hb} - x_{sp})$
+  expression: $k_{sp} \left(X_{hb} - x_{sp}\right)$
   filename: Fsp.png
+I:
+  expression: $g \left(- E + V_m\right)$
+  filename: I.png
 IA:
-  expression: $I_{A1}a_{g_{A1}} + I_{A2}(1 - a_{g_{A1}})$
+  expression: $I_{A1} a_{g_{A1}} + I_{A2} \left(1 - a_{g_{A1}}\right)$
   filename: IA.png
 IA1:
   expression: $I$
@@ -23,7 +29,7 @@ IA2:
   expression: $I$
   filename: IA2.png
 IBK:
-  expression: $I_{BK_S} + I_{BKT}$
+  expression: $I_{BKS} + I_{BKT}$
   filename: IBK.png
 IBKS:
   expression: $I$
@@ -38,7 +44,7 @@ IDRK:
   expression: $I$
   filename: IDRK.png
 IK1:
-  expression: $I_{K1f}a_{K1f} + I_{K1s}(1 - a_{K1f})$
+  expression: $I_{K1f} a_{K1f} + I_{K1s} \left(1 - a_{K1f}\right)$
   filename: IK1.png
 IK1f:
   expression: $I$
@@ -47,7 +53,7 @@ IK1s:
   expression: $I$
   filename: IK1s.png
 IL:
-  expression: $g_L(-E_L + V_m)$
+  expression: $g_L \left(- E_L + V_m\right)$
   filename: IL.png
 IT:
   expression: $I$
@@ -56,167 +62,197 @@ Ih:
   expression: $I$
   filename: Ih.png
 KpC1:
-  expression: $BoltzX^\delta_{C_1}K_{C_1}(0)$
+  expression: $\varepsilon_X^{\delta_{C_1}} KC_{10}$
   filename: KpC1.png
 KpC2:
-  expression: $BoltzX^\delta_{C_2}K_{C_2}(0)$
+  expression: $\varepsilon_X^{\delta_{C_2}} KC_{20}$
   filename: KpC2.png
 KpO3:
-  expression: $BoltzX^\delta_{O_2}K_{O_2}(0)$
+  expression: $\varepsilon_X^{\delta_{O_2}} KO_{20}$
   filename: KpO3.png
 S:
-  expression: $S(0) + p_m(-S(0) + S(1))$
+  expression: $S(0) + p_m \left(- S(0) + S(1)\right)$
   filename: S.png
+aA1:
+  expression: $a_{A1}(\pm\infty) - \frac{1 - a_{A1}(\pm\infty)}{e^{\frac{V_{1/2a_{A1}}
+    - V_m}{\Delta{V_{a_{A1}}}}} + 1}$
+  filename: aA1.png
 alphaDRK:
-  expression: $1/((-1/\alpha(\infty) + 1/\alpha(0))exp(-V_m/\Delta{V_\alpha}) + 1/\alpha(\infty))$
+  expression: $\frac{1}{\left(- \frac{1}{\alpha(\infty)} + \frac{1}{\\alpha(0)}\right)
+    e^{- \frac{V_m}{\Delta{V_\alpha}}} + \frac{1}{\alpha(\infty)}}$
   filename: alphaDRK.png
 betaDRK:
-  expression: $1/((-1/\beta(-\infty) + 1/\beta(0))exp(-V_m/\Delta{V_\beta}) + 1/\beta(-\infty))$
+  expression: $\frac{1}{\left(- \frac{1}{\beta(-\infty)} + \frac{1}{\\beta(0)}\right)
+    e^{- \frac{V_m}{\Delta{V_\beta}}} + \frac{1}{\beta(-\infty)}}$
   filename: betaDRK.png
 cCam:
-  expression: $cX$
+  expression: $[C]_X$
   filename: cCam.png
 cCar:
-  expression: $cX$
+  expression: $[C]_X$
   filename: cCar.png
+cX:
+  expression: $- \frac{I}{2 \pi D F r z}$
+  filename: cX.png
 dCa:
-  expression: $-[Ca^{2+}]K_S - I_{[Ca^{2+}]}U/(C_{vol}F\xi_{[[Ca^{2+}]^{2+}]}z_{[Ca^{2+}]})$
+  expression: $- [Ca^{2+}] K_S - \frac{I_{Ca} U}{C_{vol} F \xi_{[[Ca^{2+}]^{2+}]}
+    z_{Ca}}$
   filename: dCa.png
 dVm:
-  expression: $(-I_{BK} - I_{[Ca^{2+}]} - I_{DRK} - I_{K1} - I_L - I_T - I_h)/C_m$
+  expression: $\frac{- I_{BK} - I_{Ca} - I_{DRK} - I_{K1} - I_L - I_T - I_h}{C_m}$
   filename: dVm.png
 dXhb:
-  expression: $-(F_{gs}N\gamma + F_{sp})/\lambda_{hb}$
+  expression: $- \frac{F_{gs} N \gamma + F_{sp}}{\lambda_{hb}}$
   filename: dXhb.png
 dhA1:
-  expression: $\frac{dm_h}{dt}s$
+  expression: $\frac{dm_s}{dt}$
   filename: dhA1.png
 dhA2:
-  expression: $\frac{dm_h}{dt}s$
+  expression: $\frac{dm_s}{dt}$
   filename: dhA2.png
 dhBKT:
-  expression: $\frac{dm_h}{dt}s$
+  expression: $\frac{dm_s}{dt}$
   filename: dhBKT.png
 dmAgt:
-  expression: $\frac{dm_h}{dt}s$
+  expression: $\frac{dm_s}{dt}$
   filename: dmAgt.png
 dmAlt:
-  expression: $\frac{dm_h}{dt}s$
+  expression: $\frac{dm_s}{dt}$
   filename: dmAlt.png
 dmCa:
-  expression: $\frac{dm_h}{dt}s$
+  expression: $\frac{dm_s}{dt}$
   filename: dmCa.png
 dmDRK:
-  expression: $(-m_{DRK} + m_hsinf)/\tau_{DRK}$
+  expression: $\frac{- m_{DRK} + m_s(\infty)}{\tau_{DRK}}$
   filename: dmDRK.png
 dmK1fgt:
-  expression: $\frac{dm_h}{dt}s$
+  expression: $\frac{dm_s}{dt}$
   filename: dmK1fgt.png
 dmK1flt:
-  expression: $\frac{dm_h}{dt}s$
+  expression: $\frac{dm_s}{dt}$
   filename: dmK1flt.png
 dmK1sgt:
-  expression: $\frac{dm_h}{dt}s$
+  expression: $\frac{dm_s}{dt}$
   filename: dmK1sgt.png
 dmK1slt:
-  expression: $\frac{dm_h}{dt}s$
+  expression: $\frac{dm_s}{dt}$
   filename: dmK1slt.png
 dmh:
-  expression: $\frac{dm_h}{dt}s$
+  expression: $\frac{dm_s}{dt}$
   filename: dmh.png
+dmhs:
+  expression: $\frac{- m_s + m_s(\infty)}{\tau_{m_s}}$
+  filename: dmhs.png
 dpC0:
-  expression: $-k_{C(1)}^+p_{C(0)} + k^-_{C_1}p_{C(1)}$
+  expression: $- k_{C1}^+ p_{C0} + k^-_{C_1} p_{C1}$
   filename: dpC0.png
 dpC1:
-  expression: $k_{C(1)}^+p_{C(0)} + k^-_{C_2}p_{C2} - p_{C(1)}(k_{C2}^+ + k^-_{C_1})$
+  expression: $k_{C1}^+ p_{C0} + k^-_{C_2} p_{C2} - p_{C1} \left(k_{C2}^+ + k^-_{C_1}\right)$
   filename: dpC1.png
 dpC2:
-  expression: $k_{C2}^+p_{C(1)} + k_{O2}^-p_{O2} - p_{C2}(k^+_{O_2} + k^-_{C_2})$
+  expression: $k_{C2}^+ p_{C1} + k_{O2}^- p_{O2} - p_{C2} \left(k^+_{O_2} + k^-_{C_2}\right)$
   filename: dpC2.png
 dpO2:
-  expression: $k^+_{O_2}p_{C2} + k^-_{O_3}p_{O3} - p_{O2}(k_{O3}^+ + k_{O2}^-)$
+  expression: $k^+_{O_2} p_{C2} + k^-_{O_3} p_{O3} - p_{O2} \left(k_{O3}^+ + k_{O2}^-\right)$
   filename: dpO2.png
 dpO3:
-  expression: $k_{O3}^+p_{O2} - k^-_{O_3}p_{O3}$
+  expression: $k_{O3}^+ p_{O2} - k^-_{O_3} p_{O3}$
   filename: dpO3.png
 dpT:
-  expression: $(-p_T + p_T(\infty))/\tau_T$
+  expression: $\frac{- p_T + p_T(\infty)}{\tau_T}$
   filename: dpT.png
 dpm:
-  expression: $[[Ca^{2+}]^{2+}]_mk_m^+(1 - p_m) - k_m^-p_m$
+  expression: $[Ca^{2+}]_m k_m^+ \left(1 - p_m\right) - k_m^- p_m$
   filename: dpm.png
 dpr:
-  expression: $[[Ca^{2+}]^{2+}]_rk_r^+(1 - p_r) - k_r^-p_r$
+  expression: $[Ca^{2+}]_r k_r^+ \left(1 - p_r\right) - k_r^- p_r$
   filename: dpr.png
 dxa:
-  expression: $-C + S(-F_{es} + F_{gs})$
+  expression: $- C + S \left(- F_{es} + F_{gs}\right)$
   filename: dxa.png
 dxgs:
-  expression: $X_{hb}\gamma - dp_T - x_a + x_c$
+  expression: $X_{hb} \gamma - d p_T - x_a + x_c$
   filename: dxgs.png
 dxpT:
-  expression: $Tk_B/(dk_{gs})$
+  expression: $\frac{T k_B}{d k_{gs}}$
   filename: dxpT.png
 gA1:
-  expression: $gGHKh_{A1}m_A^3$
+  expression: $g_{GHK} h_{A1} m_A^{3}$
   filename: gA1.png
 gA2:
-  expression: $gGHKh_{A2}m_A^3$
+  expression: $g_{GHK} h_{A2} m_A^{3}$
   filename: gA2.png
 gBKS:
-  expression: $gGHK(p_{O2} + p_{O3})$
+  expression: $g_{GHK} \left(p_{O2} + p_{O3}\right)$
   filename: gBKS.png
 gBKT:
-  expression: $gGHK(p_{O2} + p_{O3})$
+  expression: $g_{GHK} \left(p_{O2} + p_{O3}\right)$
   filename: gBKT.png
 gCa:
-  expression: $g_{[Ca^{2+}]}(1)m_{[Ca^{2+}]}^3$
+  expression: $g_{Ca}(1) m_{Ca}^{3}$
   filename: gCa.png
 gDRK:
-  expression: $gGHKm_{DRK}^2$
+  expression: $g_{GHK} m_{DRK}^{2}$
   filename: gDRK.png
+gGHK:
+  expression: $\frac{F P q_e z^{2} \left(- \varepsilon_X [X]_{ex} + [X]_{in}\right)}{T
+    k_B \left(1 - \varepsilon_X\right)}$
+  filename: gGHK.png
 gK1f:
-  expression: $g_{K1f}(1)m_{K1f}$
+  expression: $gK1f1 m_{K1f}$
   filename: gK1f.png
 gK1s:
-  expression: $g_{K1s}(1)m_{K1s}$
+  expression: $gK1s1 m_{K1s}$
   filename: gK1s.png
 gT:
-  expression: $gGHKp_T$
+  expression: $g_{GHK} p_T$
   filename: gT.png
 gh:
-  expression: $g_h(1)(3m_h^3(1 - m_h) + m_h^3)$
+  expression: $g_h(1) \left(3 m_h^{3} \left(1 - m_h\right) + m_h^{3}\right)$
   filename: gh.png
 kaC1:
-  expression: $[Ca^{2+}]k^-_{C_1}/K_{p_{C(1)}}$
+  expression: $\frac{[Ca^{2+}] k^-_{C_1}}{K_{p_{C1}}}$
   filename: kaC1.png
 kaC2:
-  expression: $[Ca^{2+}]k^-_{C_2}/K_{p_{C2}}$
+  expression: $\frac{[Ca^{2+}] k^-_{C_2}}{K_{p_{C2}}}$
   filename: kaC2.png
 kaO3:
-  expression: $[Ca^{2+}]k^-_{O_3}/K_{p_{O3}}$
+  expression: $\frac{[Ca^{2+}] k^-_{O_3}}{K_{p_{O3}}}$
   filename: kaO3.png
 kdO2:
-  expression: $BoltzX^(\tilde{d}_K - 1)k^-_{O_2}(0)$
+  expression: $\varepsilon_X^{\tilde{d}_K - 1} kdO_{20}$
   filename: kdO2.png
 kgsinf:
-  expression: $k_{gs}(0) + p_r(-k_{gs}(0) + k_{gs}(1))$
+  expression: $k_{gs}(0) + p_r \left(- k_{gs}(0) + k_{gs}(1)\right)$
   filename: kgsinf.png
 kr:
-  expression: $k_r(1) + (1 - p_r)(k_r(0) - k_r(1))$
+  expression: $k_r(1) + \left(1 - p_r\right) \left(k_r(0) - k_r(1)\right)$
   filename: kr.png
+lambdaC:
+  expression: $\frac{N d^{2} \gamma^{2} k_{gs}^{2} p_T \tau_T \left(1 - p_T\right)}{T
+    k_B}$
+  filename: lambdaC.png
 lambdahb:
   expression: $\lambda_C + \lambda_H$
   filename: lambdahb.png
+mhsinf:
+  expression: $m_{s,min} + \left(m_{s,max} - m_{s,min}\right) \left(e^{\frac{V_{1/2s}
+    - V_m}{\Delta_{V_s}}} + 1\right)^{- \delta_s}$
+  filename: mhsinf.png
+mhstau:
+  expression: $\tau_s(\infty) + \left(\tau_s(V_{\tau_s}) - \tau_s(\infty)\right) e^{-
+    \left(\frac{V_m - V_{\tau_s}}{\Delta{V_{\tau_s}}}\right)^{\delta_{\tau_s}}}$
+  filename: mhstau.png
 pTinf:
-  expression: $1/(C_{p_T}exp(-x_{p_T}/\Delta{x_{p_T}}) + 1)$
+  expression: $\frac{1}{C_{p_T} e^{- \frac{x_{p_T}}{\Delta{x_{p_T}}}} + 1}$
   filename: pTinf.png
 tauDRK:
-  expression: $1/(\alpha_{DRK} + \beta_{DRK})$
+  expression: $\frac{1}{\alpha_{DRK} + \beta_{DRK}}$
   filename: tauDRK.png
 tauT:
-  expression: $\tau_T^\varnothing/cosh(-log(C_{p_T})/2 + x_{p_T}/(2\Delta{x_{p_T}}))$
+  expression: $\frac{\tau_T^\varnothing}{\cosh{\left(- \frac{\log{\left(C_{p_T} \right)}}{2}
+    + \frac{x_{p_T}}{2 \Delta{x_{p_T}}} \right)}}$
   filename: tauT.png
 xpT:
-  expression: $X_{hb}\gamma - d/2 - x_a + x_c$
+  expression: $X_{hb} \gamma - \frac{d}{2} - x_a + x_c$
   filename: xpT.png

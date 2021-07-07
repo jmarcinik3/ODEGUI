@@ -29,6 +29,12 @@ pO3: $p_{O3}$
 
 
 # currents
+BoltzX: $\varepsilon_X$
+Xin: $[X]_{in}$
+Xex: $[X]_{ex}$
+gGHK: $g_{GHK}$
+I: $I$
+
 ICa: $I_{Ca}$
 IL: $I_L$
 IT: $I_T$
@@ -61,6 +67,7 @@ CpT: $C_{p_T}$
 dxpT: $\Delta{x_{p_T}}$
 xpT: $x_{p_T}$
 pTinf: $p_T(\infty)$
+cX: $[C]_X$
 cCar: $[Ca^{2+}]_r$
 cCam: $[Ca^{2+}]_m$
 
@@ -187,6 +194,22 @@ Cvol: $C_{vol}$
 KS: $K_S$
 
 ## current
+### mhs
+dV: $\Delta_{V_s}$
+Vhalf: $V_{1/2s}$
+tauVtau: $\tau_s(V_{\tau_s})$
+tauinf: $\tau_s(\infty)$
+Vtau: $V_{\tau_s}$
+dVtau: $\Delta{V_{\tau_s}}$
+mhsorder: $\delta_s$
+tauorder: $\delta_{\tau_s}$
+mhsmin: $m_{s,min}$
+mhsmax: $m_{s,max}$
+mhsinf: $m_s(\infty)$
+mhstau: $\tau_{m_s}$
+mhs: $m_s$
+dmhs: $\frac{dm_s}{dt}$
+
 ### L
 EL: $E_L$
 gL: $g_L$

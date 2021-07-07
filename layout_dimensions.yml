@@ -62,14 +62,14 @@ main_window:
         width: 110 * 169/1350
         height: 1
       form_label:
-        width: (600 - 110 - 20) * 169/1350
+        width: 385 * 169/1350
         height: 1
     function_row:
       function_label:
         width: 110
         height:
       form_label:
-        width: 600 - 110 - 20
+        width: 385
         height:
 
 simulation_window:

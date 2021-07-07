@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 # noinspection PyPep8Naming
@@ -18,6 +19,7 @@ from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabRow, TabbedWin
 from Layout.SetFreeParametersWindow import SetFreeParametersWindowRunner
 from Layout.SimulationWindow import SimulationWindowRunner
 from macros import form2png, formatQuantity, getTexImage
+
 
 class TimeEvolutionVariableRow(TabRow):
     """
@@ -655,7 +657,7 @@ class FunctionRow(TabRow):
         #. Label for name of function
         #. Label for form of function
     """
-    
+
     def __init__(self, name: str, tab: FunctionTab) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.FunctionRow`.
@@ -664,6 +666,7 @@ class FunctionRow(TabRow):
         :param tab: tab that row is stored in
         """
         super().__init__(name, tab)
+        self.function_filepaths = None
 
         # noinspection PyTypeChecker
         window_object: MainWindow = self.getWindowObject()
@@ -676,6 +679,11 @@ class FunctionRow(TabRow):
         ]
         self.addElements(elements)
 
+    def getModel(self) -> Model:
+        # noinspection PyTypeChecker
+        window_object: MainWindowRunner = self.getWindowObject()
+        return window_object.getModel()
+
     def getRowLabel(self) -> Union[sg.Text, sg.Image]:
         """
         Get element to label function row by function name.
@@ -687,57 +695,66 @@ class FunctionRow(TabRow):
             "size": self.getDimensions(name="function_label")
         }
         return getTexImage(**kwargs)
-    
-    def getYmlFilenames(self) -> List[str]:
+
+    def getFormFilepaths(self) -> Dict[str, str]:
         """
         Get names of YML files that function appears in.
         
         :param self: :class:`~Layout.MainWindow.FunctionRow` to retrieve function from
+        :returns: Dictionary of function-info filepaths.
+            Key is filestem.
+            Value is filepath.
         """
-        # noinspection PyTypeChecker
-        runner: MainWindowRunner = self.getWindowRunner()
-        function_ymls = runner.getFunctionYMLs()
-        
-        name = self.getName()
-        function_filenames = []
-        for function_yml in function_ymls:
-            function_file = open(function_yml, 'r')
-            functions_info = yaml.load(function_file, Loader=yaml.Loader)
-            function_names = functions_info.keys()
-            if name in function_names:
-                function_filenames.append(function_yml)
-        return function_filenames
-        
+        filepaths = self.function_filepaths
+        if filepaths is None:
+            # noinspection PyTypeChecker
+            runner: MainWindowRunner = self.getWindowRunner()
+            function_filepaths = runner.getFormFilepaths()
+            name = self.getName()
+
+            filtered_filepaths = {}
+            for function_filestem, function_filepath in function_filepaths.items():
+                function_file = open(function_filepath, 'r')
+                functions_info = yaml.load(function_file, Loader=yaml.Loader)
+                function_names = functions_info.keys()
+                if name in function_names:
+                    filtered_filepaths[function_filestem] = function_filepath
+
+            self.function_filepaths = filtered_filepaths
+            return filtered_filepaths
+        else:
+            return filepaths
+
     def getChooseFileElement(self) -> sg.Combo:
         """
         Get element allowing user to choose which file to load function.
         
         :param self: :class:`~Layout.MainWindow.FunctionRow` to retrieve element from
         """
-        function_filenames = self.getYmlFilenames()
-        filename_count = len(function_filenames)
+        function_filestems = list(self.getFormFilepaths().keys())
+        filename_count = len(function_filestems)
         kwargs = {
-            "values": function_filenames,
-            "default_value": function_filenames[-1],
+            "values": function_filestems,
+            "default_value": function_filestems[-1],
             "tooltip": f"Choose file to load function {self.getName():s} from",
             "enable_events": True,
             "disabled": filename_count == 1,
-            "size": (None, None), # dim
+            "size": (None, None),  # dim
             "key": self.getKey("function_filename", self.getName())
         }
         return sg.Combo(**kwargs)
-        
+
     def getFormLabel(self) -> Union[sg.Text, sg.Image]:
         """
         Get element to display form of function.
 
         :param self: :class:`~Layout.MainWindow.FunctionRow` to retrieve label from
         """
-        function_filename = self.getYmlFilenames()[-1]
-        function_info = yaml.load(open(function_filename), Loader=yaml.Loader)
+        function_filepath = list(self.getFormFilepaths().values())[-1]
+        function_info = yaml.load(open(function_filepath), Loader=yaml.Loader)
         name = self.getName()
-        function = generateFunction(name, function_info[name])
-        form = str(function.getForm(generations=0))
+        function = generateFunction(name, function_info[name], model=self.getModel())
+        form = function.getForm(generations=0)
 
         try:
             kwargs = {
@@ -750,11 +767,12 @@ class FunctionRow(TabRow):
             form2png(**kwargs)
         except RuntimeError:
             pass
-        
+
         kwargs = {
             "name": name,
             "size": self.getDimensions(name="form_label"),
-            "tex_folder": "tex_eq"
+            "tex_folder": "tex_eq",
+            "key": self.getKey("function_form", name)
         }
         return getTexImage(**kwargs)
 
@@ -769,7 +787,7 @@ class FunctionTab(Tab):
     
     :ivar function_rows: list of :class:`~Layout.MainWindow.FunctionRow`, one for each function in tab
     """
-    
+
     def __init__(self, name: str, window: MainWindow, function_names: List[str]) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.FunctionTab`.
@@ -861,7 +879,7 @@ class FunctionTabGroup(TabGroup):
    This contains
        #. :class:`~Layout.MainWindow.FunctionTab` for each group of functions
    """
-    
+
     def __init__(self, name: str, window: MainWindow, blueprint: dict) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.FunctionTabGroup`.
@@ -872,6 +890,7 @@ class FunctionTabGroup(TabGroup):
             Key is name of tab in tab group.
             Value is names of functions within this tab.
         """
+
         tabs = []
         append_tab = tabs.append
         tab_names = blueprint.keys()
@@ -947,6 +966,7 @@ class MainWindow(TabbedWindow):
         }
         super().__init__(name, runner, dimensions=dimensions)
 
+        self.model = Model()
         self.variable_names = []
         self.function_names = []
         self.blueprint = blueprint
@@ -957,6 +977,9 @@ class MainWindow(TabbedWindow):
             self.getFunctionTab()
         ]
         self.addTabs(tabs)
+
+    def getModel(self) -> Model:
+        return self.model
 
     def getVariableNames(self) -> List[str]:
         """
@@ -1146,7 +1169,10 @@ class MainWindowRunner(WindowRunner):
         :param parameter_layout: name of file containing layout for parameter-input tab
         :param function_layout: name of file containing layout for function tab
         """
-        self.function_ymls = function_filenames
+        self.function_ymls = {
+            Path(function_filename).stem: function_filename
+            for function_filename in function_filenames
+        }
         self.parameters = YML.readParameters(parameter_filenames)
 
         blueprints = {
@@ -1187,7 +1213,10 @@ class MainWindowRunner(WindowRunner):
                 variable_name = self.getVariableNameFromElementKey(event, prefix)
                 self.changeTimeEvolution(variable_name)
             elif ff_pre in event:
-                print(self.getValue(event))
+                ff_pre_sep = self.getPrefix("function_filename", with_separator=True)
+                function_name = event.replace(ff_pre_sep, '')
+                print(self.getValue(event), function_name)
+                self.updateFunctionForm(function_name)
             elif event == "Update Parameters":
                 self.updateParameters()
             elif event == self.getKey("open_simulation"):
@@ -1262,26 +1291,24 @@ class MainWindowRunner(WindowRunner):
         """
         parameters = {name: self.getParameters(names=name) for name in self.getParameterNames()}
         model = Model(parameters=parameters)
-        
-        function_filenames = self.getFunctionYMLs()
+
+        function_filepaths = self.getFormFilepaths()
         files_info = {
-            function_filename: yaml.load(open(function_filename, 'r'), Loader=yaml.Loader)
-            for function_filename in function_filenames
+            function_filestem: yaml.load(open(function_filepath, 'r'), Loader=yaml.Loader)
+            for function_filestem, function_filepath in function_filepaths.items()
         }
-        
+
         for function_name in self.getFunctionNames():
-            function_filename = self.getFunctionFilename(function_name)
-            generateFunction(function_name, files_info[function_filename][function_name], model=model)
-        
-        for function_filename in function_filenames:
-            file_info = files_info[function_filename]
+            function_filestem = self.getFormFilestem(function_name)
+            generateFunction(function_name, files_info[function_filestem][function_name], model=model)
+
+        for function_filepath in function_filepaths:
+            file_info = files_info[function_filepath]
             for function_name in file_info.keys():
                 function_info = file_info[function_name]
                 if "Piecewise" in function_info["properties"] or "Dependent" in function_info["properties"]:
                     generateFunction(function_name, function_info, model=model)
-        
-        # model.loadFunctionsFromFiles(self.getFunctionYMLs())
-        
+
         for derivative in model.getDerivatives():
             variable_name = derivative.getVariable(return_type=str)
             derivative.setTimeEvolutionType(self.getTimeEvolutionTypes(names=variable_name))
@@ -1395,6 +1422,31 @@ class MainWindowRunner(WindowRunner):
         input_field.update(disabled=is_equilibrium or is_initial_equilibrium)
         checkbox.update(disabled=is_equilibrium)
 
+    def updateFunctionForm(self, names: Union[str, List[str]]) -> None:
+        """
+        Update function form from selected file.
+
+        :param self: :class`~Layout.MainWindow.MainWindowRunner` to update form in
+        :param names: name(s) of function(s) to update form for
+        """
+        if isinstance(names, str):
+            function_filestem = self.getValue(self.getKey("function_filename", names))
+            function_filepath = self.getFormFilepaths(names=function_filestem)
+            file_info = yaml.load(open(function_filepath, 'r'), Loader=yaml.Loader)
+            function = generateFunction(names, file_info[names], model=Model())
+            form = function.getForm(generations=0)
+
+            image_filepath = form2png(names, form, "tex_eq", '.'.join((names, "png")), "var2tex.yml")
+            image_data = open(image_filepath, 'rb').read()
+            image_form = self.getElements(self.getKey("function_form", names))
+            image_size = vars(image_form)["Size"]
+            image_form.update(data=image_data, size=image_size)
+        elif isinstance(names, list):
+            for name in names:
+                self.updateFunctionForm(names=name)
+        elif names is None:
+            self.updateFunctionForm(names=self.getFunctionNames())
+
     def getFunctionNames(self) -> List[str]:
         """
         Get names of functions in window.
@@ -1405,8 +1457,8 @@ class MainWindowRunner(WindowRunner):
         keys = self.getKeyList(prefixes="function_filename")
         function_names = [key.replace(prefix, '') for key in keys]
         return function_names
-    
-    def getFunctionFilename(self, name: str) -> str:
+
+    def getFormFilestem(self, name: str) -> str:
         """
         Get name of file to load function from.
         Uses present state of window.
@@ -1417,20 +1469,22 @@ class MainWindowRunner(WindowRunner):
         combobox_key = self.getKey("function_filename", name)
         filename = self.getValue(combobox_key)
         return filename
-        
-    def getFunctionYMLs(self) -> List[str]:
+
+    def getFormFilepaths(self, names: str = None) -> Union[str, List[str], Dict[str, str]]:
         """
-        Get YML filenames to add functions to model.
+        Get YML filenames with function info.
         
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve filenames from
+        :param names: filestem(s) of filepath to retrieve
         """
-        function_ymls = self.function_ymls
-        if isinstance(function_ymls, str):
-            return [function_ymls]
-        elif isinstance(function_ymls, list):
-            return function_ymls
+        if isinstance(names, str):
+            return self.function_ymls[names]
+        elif isinstance(names, list):
+            return {name: self.getFormFilepaths(names=name) for name in names}
+        elif names is None:
+            return self.getFormFilepaths(names=list(self.function_ymls.keys()))
         else:
-            raise TypeError("function_ymls must be of type str or list")
+            raise RecursiveTypeError(names)
 
     def getParameters(
             self, names: Union[str, List[str]] = None, form: str = "quantity"
