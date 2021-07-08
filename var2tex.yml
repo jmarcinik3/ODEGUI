@@ -112,10 +112,13 @@ dhA2: $\frac{dh_{A2}}{dt}$
 dmDRK: $\frac{dm_{DRK}}{dt}$
 dmK1flt: $\frac{dm_{K1f<}}{dt}$
 dmK1fgt: $\frac{dm_{K1f>}}{dt}$
+dmK1f: $\frac{dm_{K1f}}{dt}$
 dmK1slt: $\frac{dm_{K1s<}}{dt}$
 dmK1sgt: $\frac{dm_{K1s>}}{dt}$
+dmK1s: $\frac{dm_{K1s}}{dt}$
 dmAlt: $\frac{dm_{A<}}{dt}$
 dmAgt: $\frac{dm_{A>}}{dt}$
+dmA: $\frac{dm_A}{dt}$
 dpC0: $\frac{dp_{C0}}{dt}$
 dpC1: $\frac{dp_{C1}}{dt}$
 dpC2: $\frac{dp_{C2}}{dt}$

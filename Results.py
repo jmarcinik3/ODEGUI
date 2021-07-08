@@ -35,7 +35,7 @@ class Results:
 
     def __init__(self, model: Model, free_parameter_values: Dict[str, ndarray]):
         """
-        Constructor for :class:`~SimulationWindow.SimulationWindowRunner`
+        Constructor for :class:`~Results.Results`
 
         :param model: :class:`~Function.Model` to calculate results from
         :param free_parameter_values: dictionary of values for free parameters.
@@ -78,7 +78,7 @@ class Results:
         """
         Get values for a free parameter.
         
-        :param self: `~Results.Results` to retreive value from
+        :param self: :class:`~Results.Results` to retreive value from
         :param names: name(s) of parameter to retreive values for
         """
         if isinstance(names, str):
@@ -134,7 +134,7 @@ class Results:
         """
         Reset results to store a new set of them.
 
-        :param self: :class:`~SimulationWindow.SimulationWindowRunner` to reset results for
+        :param self: :class:`~Results.Results` to reset results for
         """
         self.results = {}
 
@@ -142,7 +142,7 @@ class Results:
         """
         Get results from simulation for function, after substituting results from variables.
 
-        :param self: :class:`~SimulationWindow.SimulationWindowRunner` to retrieve results from
+        :param self: :class:`~Results.Results` to retrieve results from
         :param index: index of free parameters to retrieve substitutive results at
         :param function: function to substitute results into
         """
@@ -158,7 +158,7 @@ class Results:
         """
         Get results from simulation for function.
 
-        :param self: :class:`~SimulationWindow.SimulationWindowRunner` to retrieve results from
+        :param self: :class:`~Results.Results` to retrieve results from
         :param index: index of parameter value for free parameter
         :param name: name of function to retrieve results ofZ
         """
@@ -179,7 +179,7 @@ class Results:
         derivative_function_variables = set(model.getVariables(time_evolution_types="Function"))
         if commonElement(function_variables, derivative_function_variables):
             substitutions.update(model.getFunctionSubstitutions())
-        
+
         parameter_names = function.getFreeSymbols(species="Parameter", generations="all", return_type=str)
         parameter_substitutions = model.getParameterSubstitutions(parameter_names)
         substitutions.update(parameter_substitutions)
@@ -192,7 +192,7 @@ class Results:
         """
         Get results from simulation for variable in equilibrium.
 
-        :param self: :class:`~SimulationWindow.SimulationWindowRunner` to retrieve results from
+        :param self: :class:`~Results.Results` to retrieve results from
         :param index: index of parameter value for free parameter
         :param name: name of variable to retrieve results of
         """
@@ -203,7 +203,7 @@ class Results:
         """
         Get results from simulation for constant variable.
 
-        :param self: :class:`~SimulationWindow.SimulationWindowRunner` to retrieve results from
+        :param self: :class:`~Results.Results` to retrieve results from
         :param index: index of parameter value for free parameter
         :param name: name of variable to retrieve results of
         """
@@ -398,7 +398,7 @@ class Results:
         __Recursion Base__
             return results for single variable: names [str]
 
-        :param self: :class:`~SimulationWindow.SimulationWindowRunner` to retrieve results from
+        :param self: :class:`~Results.Results` to retrieve results from
         :param index: index of results.
             This is a tuple of indicies.
             The index of the tuple corresponds to the parameter in free parameters.
@@ -473,7 +473,7 @@ class Results:
         """
         Get free-parameter values and "averaged" quantity values.
 
-        :param self: :class:`~SimulationWindow.SimulationWindowRunner` to retrieve results from
+        :param self: :class:`~Results.Results` to retrieve results from
         :param index: index of results.
             This is a tuple of indicies.
             The index of the tuple corresponds to the parameter in free parameters.
@@ -497,8 +497,10 @@ class Results:
         results = []
         for quantity_name in quantity_names:
             new_results = np.array(
-                [self.getResultsOverTime(index=new_index(i), names=quantity_name, **kwargs) for i in
-                    range(parameter_stepcount)]
+                [
+                    self.getResultsOverTime(index=new_index(i), names=quantity_name, **kwargs)
+                    for i in range(parameter_stepcount)
+                ]
             )
             results.append(new_results)
         return parameter_values, *tuple(results)
@@ -509,9 +511,9 @@ class Results:
         """
         Save results from simulation.
 
-        :param self: :class:`~SimulationWindow.SimulationWindowRunner` to save results in
+        :param self: :class:`~Results.Results` to save results in
         :param index: index of parameter value for free parameter
-        :param results: results to save at :paramref:`~SimulationWindow.SimulationWindowRunner.setResults.index`.
+        :param results: results to save at :paramref:`~Results.Results.setResults.index`.
             This must be a list of floats if name is specified.
             This must be a dictionary if name is not specified.
             Key is name of variable.

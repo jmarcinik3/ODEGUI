@@ -7,6 +7,9 @@ C:
 CpT:
   expression: $e^{\frac{\Delta{E}^\varnothing}{T k_B}}$
   filename: CpT.png
+Dgs:
+  expression: $\frac{d}{\gamma}$
+  filename: Dgs.png
 Fes:
   expression: $k_{es} \left(x_a - x_{es}\right)$
   filename: Fes.png
@@ -113,6 +116,10 @@ dhA2:
 dhBKT:
   expression: $\frac{dm_s}{dt}$
   filename: dhBKT.png
+dmA:
+  expression: '$\begin{cases} \frac{dm_{A<}}{dt} & \text{for}\: V_m < V_{m,h_A} \\\frac{dm_{A>}}{dt}
+    & \text{otherwise} \end{cases}$'
+  filename: dmA.png
 dmAgt:
   expression: $\frac{dm_s}{dt}$
   filename: dmAgt.png
@@ -125,12 +132,20 @@ dmCa:
 dmDRK:
   expression: $\frac{- m_{DRK} + m_s(\infty)}{\tau_{DRK}}$
   filename: dmDRK.png
+dmK1f:
+  expression: '$\begin{cases} \frac{dm_{K1f<}}{dt} & \text{for}\: E_{K1f} > V_m \\\frac{dm_{K1f>}}{dt}
+    & \text{otherwise} \end{cases}$'
+  filename: dmK1f.png
 dmK1fgt:
   expression: $\frac{dm_s}{dt}$
   filename: dmK1fgt.png
 dmK1flt:
   expression: $\frac{dm_s}{dt}$
   filename: dmK1flt.png
+dmK1s:
+  expression: '$\begin{cases} \frac{dm_{K1s<}}{dt} & \text{for}\: E_{K1s} > V_m \\\frac{dm_{K1s>}}{dt}
+    & \text{otherwise} \end{cases}$'
+  filename: dmK1s.png
 dmK1sgt:
   expression: $\frac{dm_s}{dt}$
   filename: dmK1sgt.png
@@ -250,8 +265,7 @@ tauDRK:
   expression: $\frac{1}{\alpha_{DRK} + \beta_{DRK}}$
   filename: tauDRK.png
 tauT:
-  expression: $\frac{\tau_T^\varnothing}{\cosh{\left(- \frac{\log{\left(C_{p_T} \right)}}{2}
-    + \frac{x_{p_T}}{2 \Delta{x_{p_T}}} \right)}}$
+  expression: $\tau_T^\varnothing$
   filename: tauT.png
 xpT:
   expression: $X_{hb} \gamma - \frac{d}{2} - x_a + x_c$

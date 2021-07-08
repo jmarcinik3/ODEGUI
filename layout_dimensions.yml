@@ -1,10 +1,10 @@
 main_window:
   window:
-    width: 600
+    width: 800
     height: 500
   time_evolution_tab:
     tab:
-      width: 600
+      width: 800
       height: 350
     header_row:
       variable_text:
@@ -55,7 +55,7 @@ main_window:
         height: 10
   function_tab:
     tab:
-      width: 600
+      width: 800
       height: 350
     header_row:
       function_label:
