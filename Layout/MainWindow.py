@@ -1180,8 +1180,14 @@ class MainWindowRunner(WindowRunner):
             "parameter_input": YML.readLayout(parameter_layout),
             "functions": YML.readLayout(function_layout)
         }
-        window = MainWindow("Hair Bundle/Soma Model", self, blueprints)
-        super().__init__(name, window)
+        window = MainWindow(name, self, blueprints, function_filepaths)
+        super().__init__(window)
+
+        self.getVariableNames = window.getVariableNames
+        self.getFunctionNames = window.getFunctionNames
+        # self.getParameterNames = window.getParameterNames
+        self.getFunctionFilestems = window.getFunctionFilestems
+        self.getFunctionFilepaths = window.getFunctionFilepaths
 
     def runWindow(self) -> None:
         window = self.getWindow()
@@ -1222,16 +1228,6 @@ class MainWindowRunner(WindowRunner):
             elif event == self.getKey("open_simulation"):
                 self.openSimulationWindow()
         window.close()
-
-    def getVariableNames(self) -> List[str]:
-        """
-        Get names of variables in window.
-        
-        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve names from
-        """
-        # noinspection PyTypeChecker
-        window_object: MainWindow = self.getWindowObject()
-        return window_object.getVariableNames()
 
     def getParameterNames(self, species: Union[str, List[str]] = None) -> List[str]:
         """

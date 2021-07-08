@@ -294,14 +294,15 @@ class TabbedWindow(Window):
 
 
 class WindowRunner:
-    def __init__(self, name: str, window: Window):
-        self.name = name
+    def __init__(self, window: Window):
         self.window_object = window
         self.window = None
         self.values = None
 
-    def getName(self) -> str:
-        return self.name
+        self.getName = window.getName
+        self.getPrefix = window.getPrefix
+        self.getKey = window.getKey
+        self.getKeyList = window.getKeyList
 
     def getWindow(self) -> sg.Window:
         if self.window is None:
@@ -310,22 +311,6 @@ class WindowRunner:
 
     def getWindowObject(self) -> Window:
         return self.window_object
-
-    def getPrefix(self, *args, **kwargs) -> str:
-        """
-        Get prefix for set of keys.
-        
-        :param self: :class:`~Layout.Layout.Window` to retrieve prefix from
-        :param args: required arguments to pass into :meth:`~Layout.Layout.MainWindow`
-        :param kwargs: additional arguments to pass into :meth:`~Layout.Layout.MainWindow`
-        """
-        return self.getWindowObject().getPrefix(*args, **kwargs)
-
-    def getKey(self, prefix: str, tag: str = None) -> str:
-        return self.getWindowObject().getKey(prefix, tag)
-
-    def getKeyList(self, prefixes: str = None) -> List[str]:
-        return self.getWindowObject().getKeyList(prefixes)
 
     def getValue(self, key: str) -> Union[str, float]:
         """

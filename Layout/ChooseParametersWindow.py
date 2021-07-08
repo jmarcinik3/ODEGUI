@@ -250,7 +250,7 @@ class ChooseParametersWindowRunner(WindowRunner):
         :param name: name of window
         """
         window = ChooseParametersWindow(name, self, **kwargs)
-        super().__init__(name, window)
+        super().__init__(window)
 
     def getParameterNames(self) -> List[str]:
         """

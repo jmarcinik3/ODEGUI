@@ -1441,7 +1441,7 @@ class SimulationWindowRunner(WindowRunner):
         :param **kwargs: additional arguments to pass into :class:`~Layout.SimulationWindow.SimulationWindow`
         """
         window = SimulationWindow(name, self, **kwargs)
-        super().__init__(name, window)
+        super().__init__(window)
 
         self.axis_names = ['x', 'y', 'c']
         self.timelike_species = ["Variable", "Function"]

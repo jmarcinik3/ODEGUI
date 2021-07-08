@@ -144,7 +144,7 @@ class SetFreeParametersWindow(Window):
 class SetFreeParametersWindowRunner(WindowRunner):
     def __init__(self, name: str, **kwargs):
         window = SetFreeParametersWindow(name, self, **kwargs)
-        super().__init__(name, window)
+        super().__init__(window)
 
         self.values = None
 
