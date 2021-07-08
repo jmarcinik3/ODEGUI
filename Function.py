@@ -21,7 +21,22 @@ from macros import formatQuantity, unique
 
 
 class Parameter:
+    """
+    Class to get information about parameter.
+
+    :ivar name: name of parameter
+    :ivar quantity: quantity containing value and unit for parameter
+    :ivar model: model that parameter is stored in
+    """
+
     def __init__(self, name: str, quantity: Quantity, model: Model) -> None:
+        """
+        Constructor for :class:`~Function.Parameter`.
+
+        :param name: name of parameter
+        :param quantity: quantity containing value and unit for parameter
+        :param model: model that parameter is stored in
+        """
         self.name = name
         self.quantity = quantity
         self.model = model
@@ -49,6 +64,22 @@ class Parameter:
         :param self: :class:`~Function.Parameter` to retrieve model from
         """
         return self.model
+
+    def getFunctions(self) -> List[Function]:
+        """
+        Get functions that rely on parameter.
+
+        :param self: :class:`~Function.Parameter` that :class:`~Function.Function` rely on
+        """
+        model = self.getModel()
+        model_functions = model.getFunctions()
+        symbol = Symbol(self.getName())
+        functions = [
+            function
+            for function in model_functions
+            if symbol in function.getFreeSymbols(generations="all", species="Parameter")
+        ]
+        return functions
 
 
 class Model:
@@ -137,7 +168,24 @@ class Model:
         """
         return list(self.functions.keys())
 
-    def getParameters(self, names: Union[str, List[str]] = None) -> Union[Quantity, Dict[str, Quantity]]:
+    def getParameters(self, names: Union[str, List[str]] = None) -> Union[Parameter, List[Parameter]]:
+        """
+        Get parameter object stored in model.
+
+        :param self: :class:`~Function.Model` to retrieve parameter(s) from
+        :param names: name(s) of parameter(s) to retrieve.
+            Defaults to all parameters.
+        """
+        if isinstance(names, str):
+            return self.parameters[names]
+        elif isinstance(names, list):
+            return [self.getParameters(names=name) for name in names]
+        elif names is None:
+            return self.getParameters(names=list(self.parameters.keys()))
+        else:
+            raise RecursiveTypeError(names)
+
+    def getParameterQuantites(self, names: Union[str, List[str]] = None) -> Union[Quantity, Dict[str, Quantity]]:
         """
         Get parameter quantities stored in model.
         
@@ -150,15 +198,15 @@ class Model:
             List of quantities if :paramref:~Function.Model.getParameters.names` is list.
         """
         if isinstance(names, str):
-            parameter = self.parameters[names]
+            parameter = self.getParameters(names=names)
             quantity = parameter.getQuantity()
             return quantity
         elif isinstance(names, Symbol):
-            return self.getParameters(names=str(names))
+            return self.getParameterQuantites(names=str(names))
         elif isinstance(names, list):
-            return {str(name): self.getParameters(names=name) for name in names}
+            return {str(name): self.getParameterQuantites(names=name) for name in names}
         elif names is None:
-            return self.getParameters(names=self.getParameterNames())
+            return self.getParameterQuantites(names=self.getParameterNames())
         else:
             raise RecursiveTypeError(names, [str, Symbol])
 
@@ -226,7 +274,7 @@ class Model:
         :param self: :class:`~Function.Model` to retrieve parameters from
         :param filename: name of file to save parameters into
         """
-        parameters = self.getParameters()
+        parameters = self.getParameterQuantites()
         parameters_dict = {
             name: {
                 "value": quantity.magnitude,
@@ -477,7 +525,7 @@ class Model:
         """
         if skip_parameters is None:
             skip_parameters = []
-        quantities = self.getParameters(names=names)
+        quantities = self.getParameterQuantites(names=names)
         if names is None:
             names = quantities.keys()
 
@@ -1407,7 +1455,7 @@ class Piecewise:
             pieces = [function.getForm(generations="all") for function in functions]
         elif generations >= 1:
             functions: List[Function] = self.getPieces(return_type=Function)
-            pieces = [function.getForm(generations=generations-1) for function in functions]
+            pieces = [function.getForm(generations=generations - 1) for function in functions]
         elif generations == 0:
             pieces = self.getPieces(return_type=Symbol)
         else:
@@ -1743,7 +1791,7 @@ def generateFunction(name: str, info: Dict[str, dict], model: Model = None) -> F
     if "form" in info_keys:
         form = eval(info["form"])
     elif "pieces" in info_keys:
-        form = [Symbol(piece) for piece in info["pieces"]] # [model.getFunctions(names=piece_name) for piece_name in
+        form = [Symbol(piece) for piece in info["pieces"]]  # [model.getFunctions(names=piece_name) for piece_name in
         # info[
         # "pieces"]]
     else:
