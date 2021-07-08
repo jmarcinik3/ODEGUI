@@ -325,6 +325,10 @@ class ParameterRow(TabRow):
         :param parameter_types: collection of types that each parameter can take on
         """
         super().__init__(name, section.getTab())
+        # noinspection PyTypeChecker
+        window_object: MainWindow = self.getWindowObject()
+        window_object.addParameterNames(names=name)
+
         self.section = section
         self.parameter_types = parameter_types
 
@@ -658,7 +662,7 @@ class FunctionRow(TabRow):
         #. Label for form of function
     """
 
-    def __init__(self, name: str, tab: FunctionTab) -> None:
+    def __init__(self, name: str, tab: FunctionTab, function_filestems: Dict[str, List[str]]) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.FunctionRow`.
 
@@ -666,8 +670,7 @@ class FunctionRow(TabRow):
         :param tab: tab that row is stored in
         """
         super().__init__(name, tab)
-        self.function_filepaths = None
-
+        self.function_filestems = function_filestems
         # noinspection PyTypeChecker
         window_object: MainWindow = self.getWindowObject()
         window_object.addFunctionNames(name)
@@ -678,11 +681,6 @@ class FunctionRow(TabRow):
             self.getChooseFileElement()
         ]
         self.addElements(elements)
-
-    def getModel(self) -> Model:
-        # noinspection PyTypeChecker
-        window_object: MainWindowRunner = self.getWindowObject()
-        return window_object.getModel()
 
     def getRowLabel(self) -> Union[sg.Text, sg.Image]:
         """
@@ -705,25 +703,7 @@ class FunctionRow(TabRow):
             Key is filestem.
             Value is filepath.
         """
-        filepaths = self.function_filepaths
-        if filepaths is None:
-            # noinspection PyTypeChecker
-            runner: MainWindowRunner = self.getWindowRunner()
-            function_filepaths = runner.getFormFilepaths()
-            name = self.getName()
-
-            filtered_filepaths = {}
-            for function_filestem, function_filepath in function_filepaths.items():
-                function_file = open(function_filepath, 'r')
-                functions_info = yaml.load(function_file, Loader=yaml.Loader)
-                function_names = functions_info.keys()
-                if name in function_names:
-                    filtered_filepaths[function_filestem] = function_filepath
-
-            self.function_filepaths = filtered_filepaths
-            return filtered_filepaths
-        else:
-            return filepaths
+        return self.function_filestems
 
     def getChooseFileElement(self) -> sg.Combo:
         """
@@ -753,7 +733,7 @@ class FunctionRow(TabRow):
         function_filepath = list(self.getFormFilepaths().values())[-1]
         function_info = yaml.load(open(function_filepath), Loader=yaml.Loader)
         name = self.getName()
-        function = generateFunction(name, function_info[name], model=self.getModel())
+        function = generateFunction(name, function_info[name])
         form = function.getForm(generations=0)
 
         try:
@@ -788,40 +768,33 @@ class FunctionTab(Tab):
     :ivar function_rows: list of :class:`~Layout.MainWindow.FunctionRow`, one for each function in tab
     """
 
-    def __init__(self, name: str, window: MainWindow, function_names: List[str]) -> None:
+    def __init__(
+            self,
+            name: str,
+            window: MainWindow,
+            blueprint: Dict[str, Dict[str, List[str]]]
+    ) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.FunctionTab`.
     
         :param name: name of tab
         :param window: window that tab is stored in
-        :param function_names: names of functions included in tab
+        :param blueprint: 2-level dictionary dictating which rows to add into tab.
+            First key is name of function to add.
+            Second key is filestems for files containing function.
+            Value is filepaths for files.
         """
         super().__init__(name, window)
 
-        self.function_rows = []
-        self.addFunctionRows(function_names)
-
-    def addFunctionRows(self, names: Union[str, List[str]]) -> Union[FunctionRow, List[FunctionRow]]:
-        """
-        Add rows corresponding to function names.
-    
-        :param self: :class:`~Layout.MainWindow.FunctionTab` to add rows to
-        :param names: name(s) of function(s) to add rows for
-        :returns: New row added if names is str.
-            List of new rows if names is list.
-        """
-        if isinstance(names, str):
-            new_row = FunctionRow(names, self)
-            self.function_rows.append(new_row)
-            return new_row
-        elif isinstance(names, list):
-            return [self.addFunctionRows(name) for name in names]
-        else:
-            raise RecursiveTypeError(names)
+        function_names = list(blueprint.keys())
+        self.function_rows = [
+            FunctionRow(function_name, self, blueprint[function_name])
+            for function_name in function_names
+        ]
 
     def getFunctionRows(self) -> List[FunctionRow]:
         """
-        Get variable rows added to tab.
+        Get function rows stored in tab.
     
         :param self: :class:`~Layout.MainWindow.FunctionTab` to retrieve rows from
         """
@@ -880,23 +853,32 @@ class FunctionTabGroup(TabGroup):
        #. :class:`~Layout.MainWindow.FunctionTab` for each group of functions
    """
 
-    def __init__(self, name: str, window: MainWindow, blueprint: dict) -> None:
+    def __init__(self, name: str, window: MainWindow, blueprints: Dict[str, List[str]]) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.FunctionTabGroup`.
 
         :param name: name of tab group
         :param window: :class:`~Layout.MainWindow.MainWindow` that tab group is stored in
-        :param blueprint: dictionary dictating how to set up each tab within tab group.
+        :param blueprints: Tuple of blueprints.
+            First element is dictionary dictating how to set up each tab within tab group.
             Key is name of tab in tab group.
             Value is names of functions within this tab.
+            Second element is 2-level dictionary of functions to filepaths.
+            First key is name of function.
+            Second key is filestems for files containing function.
+            Value is filepaths for files.
         """
+        layout_blueprint, function_to_filepaths = blueprints
 
         tabs = []
-        append_tab = tabs.append
-        tab_names = blueprint.keys()
+        tab_names = layout_blueprint.keys()
         for tab_name in tab_names:
-            function_names = blueprint[tab_name]
-            append_tab(FunctionTab(tab_name, window, function_names))
+            function_names = layout_blueprint[tab_name]
+            tab_blueprint = {
+                function_name: function_to_filepaths[function_name]
+                for function_name in function_names
+            }
+            tabs.append(FunctionTab(tab_name, window, tab_blueprint))
         super().__init__(tabs, name=name)
 
 
@@ -909,7 +891,7 @@ class MainWindow(TabbedWindow):
         #. :class:`~Layout.MainWindow.ParameterTabGroup` to allow user to set properties for each parameter
     """
 
-    def __init__(self, name: str, runner: MainWindowRunner, blueprint: dict) -> None:
+    def __init__(self, name: str, runner: MainWindowRunner, blueprint: dict, function_filepaths: List[str]) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.MainWindow`.
         
@@ -966,9 +948,20 @@ class MainWindow(TabbedWindow):
         }
         super().__init__(name, runner, dimensions=dimensions)
 
-        self.model = Model()
+        self.function_filestems = {}
+        self.function_filepaths = {}
+        for function_filepath in function_filepaths:
+            function_filestem = Path(function_filepath).stem
+            self.function_filepaths[function_filestem] = function_filepath
+            function_names = yaml.load(open(function_filepath, 'r'), Loader=yaml.Loader).keys()
+            for function_name in function_names:
+                if function_name not in self.function_filestems.keys():
+                    self.function_filestems[function_name] = []
+                self.function_filestems[function_name].append(function_filestem)
+
         self.variable_names = []
         self.function_names = []
+        self.parameter_names = []
         self.blueprint = blueprint
 
         tabs = [
@@ -978,8 +971,65 @@ class MainWindow(TabbedWindow):
         ]
         self.addTabs(tabs)
 
-    def getModel(self) -> Model:
-        return self.model
+    def getFunctionToFilepaths(self) -> Dict[str, Dict[str, List[str]]]:
+        """
+        Get dictionary from function name to filepaths.
+
+        :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve dictionary from
+        :returns: 2-level dictionary from name to filepath.
+            First key is name of function.
+            Second key is filestems for files containing function.
+            Value is filepaths for files.
+        """
+        function_filestems = self.getFunctionFilestems()
+        function_filepaths = self.getFunctionFilepaths()
+        function_to_filepaths = {
+            function_name:
+                {
+                    function_filestem: function_filepaths[function_filestem]
+                    for function_filestem in function_filestems[function_name]
+                }
+            for function_name in function_filestems.keys()
+        }
+        return function_to_filepaths
+
+    def getFunctionFilestems(self, names: Union[str, List[str]] = None) -> Union[List[str], Dict[str, List[str]]]:
+        """
+        Get names of filestems containing function.
+
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve filestems from
+        :param names: name(s) of function(s) to retrieve filestem(s) for.
+            Defaults to all functions.
+        :returns: Dictionary from function name to filestem if names is list.
+            Filestem if names is str.
+        """
+        if isinstance(names, str):
+            return self.function_filestems[names]
+        elif isinstance(names, list):
+            return {name: self.getFunctionFilestems(names=name) for name in names}
+        elif names is None:
+            return self.getFunctionFilestems(names=list(self.function_filestems.keys()))
+        else:
+            raise RecursiveTypeError(names)
+
+    def getFunctionFilepaths(self, names: Union[str, List[str]] = None) -> Union[str, Dict[str, str]]:
+        """
+        Get names of files containing function info.
+
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve filepaths from
+        :param names: name(s) of filestem(s) to retrieve filepath(s) for.
+            Defaults to all filestems.
+        :returns: Dictionary from filestem into filepath if names is list.
+            Name of filepath from filestem if names is str.
+        """
+        if isinstance(names, str):
+            return self.function_filepaths[names]
+        elif isinstance(names, list):
+            return {name: self.getFunctionFilepaths(names=name) for name in names}
+        elif names is None:
+            return self.getFunctionFilepaths(names=list(self.function_filepaths.keys()))
+        else:
+            raise RecursiveTypeError(names)
 
     def getVariableNames(self) -> List[str]:
         """
@@ -1021,7 +1071,8 @@ class MainWindow(TabbedWindow):
 
         :param self: :class:`~Layout.MainWindow.MainWindow` to add names into
         :param names: name(s) of function(s) to add
-        :returns: Name of new function added if :paramref:`~Layout.MainWindow.MainWindow.addVFunctionNames.names` is str.
+        :returns: Name of new function added
+            if :paramref:`~Layout.MainWindow.MainWindow.addFunctionNames.names` is str.
             List of new functions added if :paramref:`~Layout.MainWindow.MainWindow.addFunctionNames.names` is list.
         """
         if isinstance(names, str):
@@ -1030,6 +1081,33 @@ class MainWindow(TabbedWindow):
             return new_function_name
         elif isinstance(names, list):
             return [self.addFunctionNames(names=name) for name in names]
+        else:
+            raise RecursiveTypeError(names)
+
+    def getParameterNames(self) -> List[str]:
+        """
+        Get names of parameters included in window.
+
+        :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve names from
+        """
+        return self.parameter_names
+
+    def addParameterNames(self, names: Union[str, List[str]]) -> Union[str, List[str]]:
+        """
+        Add names of parameters included in window.
+
+        :param self: :class:`~Layout.MainWindow.MainWindow` to add names into
+        :param names: name(s) of parameter(s) to add
+        :returns: Name of new parameter added if
+            :paramref:`~Layout.MainWindow.MainWindow.addParameterNames.names` is str.
+            List of new parameters added if :paramref:`~Layout.MainWindow.MainWindow.addParameterNames.names` is list.
+        """
+        if isinstance(names, str):
+            new_parameter_name = names
+            self.parameter_names.append(names)
+            return new_parameter_name
+        elif isinstance(names, list):
+            return [self.addParameterNames(names=name) for name in names]
         else:
             raise RecursiveTypeError(names)
 
@@ -1135,7 +1213,8 @@ class MainWindow(TabbedWindow):
 
         :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve tabgroup from
         """
-        tabgroup = FunctionTabGroup("Function", self, self.getBlueprints("functions"))
+        blueprints = (self.getBlueprints("functions"), self.getFunctionToFilepaths())
+        tabgroup = FunctionTabGroup("Function", self, blueprints)
         tab = tabgroup.getAsTab()
         return tab
 
@@ -1153,8 +1232,8 @@ class MainWindowRunner(WindowRunner):
     def __init__(
             self,
             name: str,
-            parameter_filenames: Union[str, List[str]],
-            function_filenames: Union[str, List[str]],
+            parameter_filepaths: Union[str, List[str]],
+            function_filepaths: Union[str, List[str]],
             time_evolution_layout: str,
             parameter_layout: str,
             function_layout: str
@@ -1163,17 +1242,13 @@ class MainWindowRunner(WindowRunner):
         Constructor for :class:`~Layout.MainWindow.MainWindowRunner`.
         
         :param name: name of window
-        :param parameter_filenames: name(s) for file(s), containing information about parameters in model
-        :param function_filenames: name(s) for file(s), containing information about functions in model
+        :param parameter_filepaths: name(s) for file(s), containing information about parameters in model
+        :param function_filepaths: name(s) for file(s), containing information about functions in model
         :param time_evolution_layout: name of file containing layout for time-evolution tab
         :param parameter_layout: name of file containing layout for parameter-input tab
         :param function_layout: name of file containing layout for function tab
         """
-        self.function_ymls = {
-            Path(function_filename).stem: function_filename
-            for function_filename in function_filenames
-        }
-        self.parameters = YML.readParameters(parameter_filenames)
+        self.parameters = YML.readParameters(parameter_filepaths)
 
         blueprints = {
             "time_evolution": YML.readLayout(time_evolution_layout),
@@ -1288,22 +1363,15 @@ class MainWindowRunner(WindowRunner):
         parameters = {name: self.getParameters(names=name) for name in self.getParameterNames()}
         model = Model(parameters=parameters)
 
-        function_filepaths = self.getFormFilepaths()
+        function_filepaths = self.getFunctionFilepaths()
         files_info = {
             function_filestem: yaml.load(open(function_filepath, 'r'), Loader=yaml.Loader)
             for function_filestem, function_filepath in function_filepaths.items()
         }
 
         for function_name in self.getFunctionNames():
-            function_filestem = self.getFormFilestem(function_name)
+            function_filestem = self.getChosenFilestem(function_name)
             generateFunction(function_name, files_info[function_filestem][function_name], model=model)
-
-        for function_filepath in function_filepaths:
-            file_info = files_info[function_filepath]
-            for function_name in file_info.keys():
-                function_info = file_info[function_name]
-                if "Piecewise" in function_info["properties"] or "Dependent" in function_info["properties"]:
-                    generateFunction(function_name, function_info, model=model)
 
         for derivative in model.getDerivatives():
             variable_name = derivative.getVariable(return_type=str)
@@ -1333,7 +1401,7 @@ class MainWindowRunner(WindowRunner):
         __Recursion Base__
             get initial condition value for single variable: names [str]
         
-        :param self: `~Layout.MainWindow.MainWindowRunner` to retrieve conditions from
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve conditions from
         :param names: name(s) of variables to retrieve conditions for
         :returns: Initial value if variable does not begin in equilibrium.
             "Equilibrium" if variable begins in equilibrium.
@@ -1368,7 +1436,7 @@ class MainWindowRunner(WindowRunner):
         __Recursion Base__
             get time-evolution selection for single variable: names [str]
         
-        :param self: `~Layout.MainWindow.MainWindowRunner` to retrieve time-evolution types from
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve time-evolution types from
         :param names: name(s) of variables to retrieve time-evolution types for
         """
         if isinstance(names, str):
@@ -1404,7 +1472,7 @@ class MainWindowRunner(WindowRunner):
         Disable checkbox if time-evolution type is set to "Equilibrium".
         Enable elements otherwise.
         
-        :param self: `~Layout.MainWindow.MainWindowRunner` to retrieve elements from
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve elements from
         :param name: name of variable associated with elements
         """
         time_evolution_type = self.getValue(self.getKey("time_evolution_type", name))
@@ -1427,7 +1495,7 @@ class MainWindowRunner(WindowRunner):
         """
         if isinstance(names, str):
             function_filestem = self.getValue(self.getKey("function_filename", names))
-            function_filepath = self.getFormFilepaths(names=function_filestem)
+            function_filepath = self.getFunctionFilepaths(names=function_filestem)
             file_info = yaml.load(open(function_filepath, 'r'), Loader=yaml.Loader)
             function = generateFunction(names, file_info[names], model=Model())
             form = function.getForm(generations=0)
@@ -1443,44 +1511,17 @@ class MainWindowRunner(WindowRunner):
         elif names is None:
             self.updateFunctionForm(names=self.getFunctionNames())
 
-    def getFunctionNames(self) -> List[str]:
-        """
-        Get names of functions in window.
-        
-        :param self: `~Layout.MainWindow.MainWindowRunner` to retrieve names from
-        """
-        prefix = self.getPrefix("function_filename", with_separator=True)
-        keys = self.getKeyList(prefixes="function_filename")
-        function_names = [key.replace(prefix, '') for key in keys]
-        return function_names
-
-    def getFormFilestem(self, name: str) -> str:
+    def getChosenFilestem(self, name: str) -> str:
         """
         Get name of file to load function from.
         Uses present state of window.
         
-        :param self: `~Layout.MainWindow.MainWindowRunner` to retrieve filename from
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve filename from
         :param name: name of function to retrieve filename for
         """
         combobox_key = self.getKey("function_filename", name)
         filename = self.getValue(combobox_key)
         return filename
-
-    def getFormFilepaths(self, names: str = None) -> Union[str, List[str], Dict[str, str]]:
-        """
-        Get YML filenames with function info.
-        
-        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve filenames from
-        :param names: filestem(s) of filepath to retrieve
-        """
-        if isinstance(names, str):
-            return self.function_ymls[names]
-        elif isinstance(names, list):
-            return {name: self.getFormFilepaths(names=name) for name in names}
-        elif names is None:
-            return self.getFormFilepaths(names=list(self.function_ymls.keys()))
-        else:
-            raise RecursiveTypeError(names)
 
     def getParameters(
             self, names: Union[str, List[str]] = None, form: str = "quantity"

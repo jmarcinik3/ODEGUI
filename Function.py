@@ -30,7 +30,7 @@ class Parameter:
         """
         Get name of parameter.
 
-        :param self: `~Function.Parameter` to retrieve name from
+        :param self: :class:`~Function.Parameter` to retrieve name from
         """
         return self.name
 
@@ -38,7 +38,7 @@ class Parameter:
         """
         Get quantity (value and unit) for parameter.
 
-        :param self: `~Function.Parameter` to retrieve quantity from
+        :param self: :class:`~Function.Parameter` to retrieve quantity from
         """
         return self.quantity
 
@@ -46,7 +46,7 @@ class Parameter:
         """
         Get model that parameter is stored in.
 
-        :param self: `~Function.Parameter` to retrieve model from
+        :param self: :class:`~Function.Parameter` to retrieve model from
         """
         return self.model
 
@@ -78,7 +78,7 @@ class Model:
         """
         Set/add parameter(s) value and unit for model as Quantity.
         
-        :param self: `~Function.Model` to set parameter(s) for
+        :param self: :class:`~Function.Model` to set parameter(s) for
         :param quantities:
             Key is name of parameter.
             Value is quantity containing value and unit for parameter.
@@ -96,7 +96,7 @@ class Model:
         Add Function object(s) to model.
         Set self as model for Function object(s).
 
-        :param self: `~Function.Model` to add function to
+        :param self: :class:`~Function.Model` to add function to
         :param functions: function(s) to add to model
         """
         if isinstance(functions, Function):
@@ -144,7 +144,7 @@ class Model:
         __Recursion Base__
             return single parameter: names [str]
 
-        :param self: `~Function.Model` to retrieve parameter(s) from
+        :param self: :class:`~Function.Model` to retrieve parameter(s) from
         :param names: name(s) of parameter(s) to retrieve
         :returns: Quantity for parameter if :paramref:~Function.Model.getParameters.names` is str.
             List of quantities if :paramref:~Function.Model.getParameters.names` is list.
@@ -196,7 +196,7 @@ class Model:
         """
         Add functions to model by parsing through YML file.
 
-        :param self: `~Function.Model` to add function(s) to
+        :param self: :class:`~Function.Model` to add function(s) to
         :param ymls: name(s) of YML file(s) to retrieve function info from
         """
         if isinstance(ymls, str):
@@ -209,7 +209,7 @@ class Model:
         """
         Add parameters to model by parsing through YML file.
 
-        :param self: `~Function.Model` to add function(s) to
+        :param self: :class:`~Function.Model` to add function(s) to
         :param ymls: name(s) of YML file(s) to retrieve parameter info from
         """
         if isinstance(ymls, str):
@@ -254,7 +254,7 @@ class Model:
             get derivatives of single time-evolution type: time_evolution_types [str]
             get all derivatives: time_evolution_types [None]
 
-        :param self: `~Function.Model` to retrieve derivative(s) from
+        :param self: :class:`~Function.Model` to retrieve derivative(s) from
         :param time_evolution_types: only retrieve derivatives of this type(s), acts as a filter
         """
         if isinstance(time_evolution_types, str):
@@ -289,7 +289,7 @@ class Model:
         """
        Get substitutions to substitute equilibrium variables into non-equilibrium derivatives.
 
-        :param self: `~Function.Model` to solve for equilibrium solution(s) in
+        :param self: :class:`~Function.Model` to solve for equilibrium solution(s) in
         :param names: name(s) of function(s) to solve for simulatenous equilibrium of
         :param substitute_parameters: set True to substitute numerical values in for all parameters.
             Set false otherwise
@@ -367,7 +367,7 @@ class Model:
         __Purpose__
             Get equilibrium function corresponding to derivative
 
-        :param self: `~Function.Model` to solve for equilibrium solution in
+        :param self: :class:`~Function.Model` to solve for equilibrium solution in
         :param name: name of variable to retrieve equilibrium expression of
         :param substitute_parameters: set True to substitute numerical values in for all parameters.
             Set false otherwise
@@ -396,7 +396,7 @@ class Model:
             substitute_constants: bool = True
     ) -> Dict[Symbol, Expr]:
         """
-        :param self: `~Function.Model` to retrieve functions from
+        :param self: :class:`~Function.Model` to retrieve functions from
         :param names: name(s) of variable(s) to retrieve function for
         :param substitute_parameters: set True to substitute numerical values in for all parameters.
             Set False to leave them as symbolic variables.
@@ -446,7 +446,7 @@ class Model:
                 key [sympy.Symbol] is variable to substitute into
                 value [sympy.Expr] is constant to substitute into variable
 
-        :param self: `~Function.Model` to retrieve constant derivative(s) from
+        :param self: :class:`~Function.Model` to retrieve constant derivative(s) from
         :param names: name(s) of constant derivative(s) to substitute numerical constants in for
         """
         if isinstance(names, (str, list)):
@@ -501,7 +501,7 @@ class Model:
         """
         Get derivative vector corresponding to derivatives in :class:`~Function.Model`
 
-        :param self: `~Function.Model` to retrieve derivative(s) from
+        :param self: :class:`~Function.Model` to retrieve derivative(s) from
         :param names: name(s) of variable(s) ordered in same order derivatives will be returned
         :param substitute_parameters: set True to substitute numerical values in for all parameters.
             Set false otherwise
@@ -594,7 +594,7 @@ class Model:
         """
         Get initial values for variables in model.
         
-        :param self: `~Function.Model` to retrieve derivatives from
+        :param self: :class:`~Function.Model` to retrieve derivatives from
         :param names: name(s) of variables to retrieve values for
         :param return_type: class type for output.
             Must be dict, list, or ndarray.
@@ -667,7 +667,7 @@ class Model:
         __Recursion Base__
             get symbolic variable associated with single derivative: names [str]
 
-        :param self: `~Function.Model` to retrieve derivative variable(s) from
+        :param self: :class:`~Function.Model` to retrieve derivative variable(s) from
         :param time_evolution_types: only retrieve derivatives of this type(s), acts as a filter
         :param return_type: class type to return elements in list output as
         """
@@ -953,7 +953,7 @@ class Function(Child, Parent):
         """
         Determine whether function is equal to parameter.
 
-        :param self: `~Function.Function` to determine for
+        :param self: :class:`~Function.Function` to determine for
         """
         return self.is_parameter
 
@@ -962,7 +962,7 @@ class Function(Child, Parent):
         __Purpose__
             Get name of function
 
-        :param self: `~Function.Function` to retrieve name of
+        :param self: :class:`~Function.Function` to retrieve name of
         """
         return self.name
 
@@ -971,7 +971,7 @@ class Function(Child, Parent):
         __Purpose__
             Get symbolic variable of function
 
-        :param self: `~Function.Function` to retrieve symbolic variable of
+        :param self: :class:`~Function.Function` to retrieve symbolic variable of
         """
         return Symbol(self.getName())
 
@@ -1360,12 +1360,32 @@ class Piecewise:
         """
         return self.conditions
 
-    def getPieces(self) -> List[Function]:
+    def getPieces(
+            self, return_type: Type[Union[str, Symbol, Function]]
+    ) -> Union[List[str], List[Symbol], List[Function]]:
         """
-        __Purpose__
-            Get Function objects constituting Piecewise object
+        Get pieces constituting piecewise function.
+
+        :param self: :class:`~Function.Piecewise` to retrieve constitutes from
+        :param return_type: type of output to return list elements as.
+        :returns: Names of pieces if :paramref:`~Function.Piecewise.getPieces.return_type` is str.
+            Symbols for pieces if :paramref:`~Function.Piecewise.getPieces.return_type` is Symbol.
+            Function objects from :class:`~Function.Model`.
+            if :paramref:`~Function.Piecewise.getPieces.return_type` is Function.
         """
-        return self.functions
+        pieces = self.functions
+        if return_type == str:
+            piece_names = [str(piece) for piece in pieces]
+            return piece_names
+        elif return_type == Symbol:
+            return pieces
+        elif return_type == Function:
+            piece_names = self.getPieces(return_type=str)
+            self: Function
+            functions = self.getModel().getFunctions(names=piece_names)
+            return functions
+        else:
+            raise ValueError("invalid return type")
 
     def getPieceCount(self) -> int:
         """
@@ -1374,16 +1394,22 @@ class Piecewise:
         """
         return len(self.functions)
 
-    def getForm(self, generations: Union[int, str] = 0) -> spPiecewise:
+    def getForm(self, generations: Union[int, str] = 0, **kwargs) -> spPiecewise:
         """
-        __Purpose__
-            Get symbolic piecewise expression for self
+        Get symbolic piecewise expression.
+
+        :param self: :class:`~Function.Piecewise` to retrieve expression for
+        :param generations: see :paramref:`~Function.Function.getForm.generations`
+        :param kwargs: additional arguments to substitute into :meth:`~Function.Function.getForm`
         """
-        functions = self.getPieces()
         if generations == "all":
+            functions: List[Function] = self.getPieces(return_type=Function)
             pieces = [function.getForm(generations="all") for function in functions]
-        elif generations >= 0:
-            pieces = [function.getForm(generations=generations) for function in functions]
+        elif generations >= 1:
+            functions: List[Function] = self.getPieces(return_type=Function)
+            pieces = [function.getForm(generations=generations-1) for function in functions]
+        elif generations == 0:
+            pieces = self.getPieces(return_type=Symbol)
         else:
             raise ValueError("generations must be 'all' or some integer greater than or equal to 0")
         conditions = self.getConditions()
@@ -1406,10 +1432,21 @@ class NonPiecewise:
             self, parent: Function = None, substitute_dependents: bool = True, generations: Union[int, str] = 0
     ) -> Expr:
         """
-        __Purpose__
-            Get functional form of Function object
+        Get symbol expression for function.
+
+        :param self: :class:`~Function.Function` to retrieve expression for
+        :param parent: function to retrieve input arguments from.
+            Only called if self is Dependent function.
+        :param substitute_dependents: set True to substitute all dependents into expression.
+            Set false to substitute in accordance with :paramref:`~Function.Function.getForm.generations`.
+            Only called if :paramref:`~Function.Function.getForm.generations`>0.
+        :param generations: number of generations for children to substitute into expression.
+            Set to 0 to retrieve original expression without substitutions.
+            Set to positive integer n to substitute n generations of children.
+            Set to "all" to substitute all generations of children.
         """
         if isinstance(self, Dependent) and isinstance(parent, Independent):
+            parent: Function
             return self.getInstanceArgumentFunction(parent)
 
         expression = self.expression
@@ -1706,7 +1743,9 @@ def generateFunction(name: str, info: Dict[str, dict], model: Model = None) -> F
     if "form" in info_keys:
         form = eval(info["form"])
     elif "pieces" in info_keys:
-        form = [model.getFunctions(names=piece_name) for piece_name in info["pieces"]]
+        form = [Symbol(piece) for piece in info["pieces"]] # [model.getFunctions(names=piece_name) for piece_name in
+        # info[
+        # "pieces"]]
     else:
         raise ValueError("info from functions_yml file must contain either form or pieces")
 

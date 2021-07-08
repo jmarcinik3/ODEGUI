@@ -183,7 +183,7 @@ def form2tex(form: Expr, var2tex: str) -> str:
         sorted_tex = [name for name in sorted_tex if name in free_symbol_names]
 
     for var in sorted_tex:
-        if f"\\{var:s}" in form_str:
+        if f"\\{var:s}" in form_str and f"\\\\{var:s}" not in form_str:
             continue
 
         if var[-1].isdigit():
