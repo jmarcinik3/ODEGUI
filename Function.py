@@ -137,7 +137,7 @@ class Model:
                     print(f"Overwriting {name:s}={functions.getForm():} into model")
                     del self.functions[name]
                 if functions.isParameter():
-                    print(f"Setting model for parameter/function {name:s}={functions.getForm():}")
+                    print(f"Overwriting function {name:s}={functions.getForm():} as parameter")
                 elif name in self.getParameterNames():
                     print(f"Overwriting parameter {name:s} as function {name:s}={functions.getForm():}")
                     del self.parameters[name]
@@ -851,12 +851,16 @@ class Parent:
         :param functions: function(s) to retrieve name(s) from parent
         """
         self: Function
-        free_symbols = self.getFreeSymbols(generations=0, substitute_dependents=False)
-        free_symbol_names = [str(free_symbol) for free_symbol in free_symbols]
-        dependent_children_names = list(self.instance_arguments.keys())
-
+        free_symbol_names = self.getFreeSymbols(generations=0, substitute_dependents=False, return_type=str)
+        dependent_children_names = [
+            child_name
+            for child_name, child_arguments in self.instance_arguments.items()
+            if len(child_arguments) >= 1
+        ]
+        
         children_names = dependent_children_names
         if isinstance(self, Independent):
+            self: Function
             model_function_names = self.getModel().getFunctionNames()
             model_children_names = [
                 name
