@@ -340,9 +340,6 @@ class ParameterRow(TabRow):
         self.section = section
         self.parameter_types = parameter_types
         
-        if len(list(stem2quant.keys()))> 1 and "parameters" in stem2quant.keys():
-            print(name, stem2quant)
-        
         elements = [
             self.getNameLabel(),
             self.getQuantityLabel(),
