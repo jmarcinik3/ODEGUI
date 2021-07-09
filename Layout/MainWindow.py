@@ -1585,7 +1585,8 @@ class MainWindowRunner(WindowRunner):
         if isinstance(names, str):
             if filestem is None:
                 filestem = self.getChosenFunctionStem(names)
-            return self.stem2name2func[filestem][names]
+            function = self.stem2name2func[filestem][names]
+            return function
         elif isinstance(names, list):
             return [self.getFunctions(names=name) for name in names]
         elif names is None:
@@ -1698,6 +1699,9 @@ class MainWindowRunner(WindowRunner):
 
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve names from
         :param parameter_types: type(s) of parameters to retrieve, acts as optional filter
+        :param custom_type: set True to only retrieve custom parameters.
+            Set False to only retrieve noncustom parameters.
+            Defaults to all parameters, acts as optional filter.
         """
         if isinstance(parameter_types, str):
             parameter_names = self.getParameterNames()
@@ -1774,7 +1778,7 @@ class MainWindowRunner(WindowRunner):
         else:
             raise RecursiveTypeError(names)
     
-    def setParameters(self, name: str, quantity: Quantity, custom: bool) -> None:
+    def setParameter(self, name: str, quantity: Quantity, custom: bool) -> None:
         """
         Set or overwrite custom parameter quantity stored in window.
         
@@ -1844,7 +1848,7 @@ class MainWindowRunner(WindowRunner):
         if isinstance(names, str):
             filestem = self.getChosenParameterStem(names)
             quantity = self.getParameterQuantitiesFromStems(names, filestem)
-            self.setParameters(name=names, quantity=quantity, custom=False)
+            self.setParameter(name=names, quantity=quantity, custom=False)
         elif isinstance(names, list):
             for name in names:
                 self.updateParametersFromFields(names=name)
@@ -1870,7 +1874,7 @@ class MainWindowRunner(WindowRunner):
             if field_value != '':
                 old_unit, new_value = self.getParameters(names=names, form="unit"), float(field_value)
                 new_quantity = new_value * old_unit
-                self.setParameters(name=names, quantity=new_quantity, custom=True)
+                self.setParameter(name=names, quantity=new_quantity, custom=True)
         elif isinstance(names, list):
             for name in names:
                 self.updateParametersFromFields(names=name)
@@ -1941,7 +1945,7 @@ class MainWindowRunner(WindowRunner):
         
         for name, quantity in load_quantities.items():
             if name in parameter_names:
-                self.setParameters(name, quantity)
+                self.setParameter(name=name, quantity=quantity, custom=True)
     
     def getFreeParameterValues(self) -> Tuple[str, Dict[str, Tuple[float, float, int, Quantity]]]:
         """
