@@ -5,11 +5,10 @@ The simulation must be run once by hitting the button before the window function
 """
 from __future__ import annotations
 
-import inspect
 import tkinter as tk
 from functools import partial
 from itertools import product
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 # noinspection PyPep8Naming
 import PIL
@@ -36,7 +35,6 @@ from Results import Results
 from Simulation import formatResultsAsDictionary, solveODE
 from macros import formatValue, getTexImage, unique
 
-
 def drawFigure(canvas: tk.Canvas, figure: Figure) -> FigureCanvasTkAgg:
     """
     Draw figure on canvas.
@@ -49,7 +47,6 @@ def drawFigure(canvas: tk.Canvas, figure: Figure) -> FigureCanvasTkAgg:
     figure_canvas.draw()
     return figure_canvas
 
-
 def getFigure(
         x: ndarray,
         y: ndarray,
@@ -58,7 +55,7 @@ def getFigure(
         y_scale_factor: float = 1,
         c_scale_factor: float = 1,
         plot_type: str = "xy",
-        segment_length: int = None,
+        segment_count: int = 100,
         clim: Tuple[Optional[float], Optional[float]] = (None, None),
         autoscalec_on: bool = True,
         colorbar_kwargs: Dict[str, Any] = None,
@@ -84,9 +81,8 @@ def getFigure(
         Overrides :paramref:`~SimulationWindow.getFigure.clim` when set True.
     :param plot_type: type of plot to display.
         This could include a single curve, multiple curves, scatter plot.
-    :param segment_length: length of line segment in points for multicolored line.
-        Defaults to length such that ~100 segments are drawn.
-        Only called when colorbar dimension is given and line is multicolored.
+    :param segment_count: number of segments for colorbar.
+        Only called when a single line is multicolored.
     :param inset_parameters: 2-level dictionary of parameters to show on inset plot.
         Key is name of parameter.
         Subkeys are "range" and "value"
@@ -116,12 +112,12 @@ def getFigure(
             colorbar_kwargs = {}
         c_scaled = c / c_scale_factor
         kwargs = {
-            "vmin": c_scaled.min() if clim[0] is None or autoscalec_on else clim[0] / c_scale_factor,
-            "vmax": c_scaled.max() if clim[1] is None or autoscalec_on else clim[1] / c_scale_factor
+            "vmin": c_scaled.min() if clim[0] is None or autoscalec_on else clim[0],
+            "vmax": c_scaled.max() if clim[1] is None or autoscalec_on else clim[1]
         }
         norm = colors.Normalize(**kwargs)
         # noinspection PyUnresolvedReferences
-        cmap = cm.ScalarMappable(norm=norm, cmap=cm.jet)
+        cmap = cm.ScalarMappable(norm=norm, cmap=colorbar_kwargs["cmap"])
         figure.colorbar(cmap, **colorbar_kwargs)
         if plot_type == "xyc":
             for index in range(x_length):
@@ -129,8 +125,10 @@ def getFigure(
                     x_scaled[index], y_scaled[index], color=cmap.to_rgba(c_scaled[index])
                 )
         elif plot_type == "xyt":
-            if segment_length is None:
-                segment_length = round(x_length / 250)
+            if segment_count is None:
+                segment_count = 250
+            segment_length = round(x_length / segment_count)
+
             segment_indicies = range(0, x_length - segment_length, segment_length)
             segment_colors = cmap.to_rgba(c_scaled)
             for index in segment_indicies:
@@ -139,7 +137,6 @@ def getFigure(
                 segment_color = segment_colors[index]
                 axes.plot(x_segment, y_segment, color=segment_color)
     return figure
-
 
 def clearFigure(figure_canvas: FigureCanvasTkAgg) -> None:
     """
@@ -150,7 +147,6 @@ def clearFigure(figure_canvas: FigureCanvasTkAgg) -> None:
     if isinstance(figure_canvas, FigureCanvasTkAgg):
         figure_canvas.get_tk_widget().forget()
     plt.close("all")
-
 
 def getParameterInsetAxes(
         axes: Axes,
@@ -221,7 +217,6 @@ def getParameterInsetAxes(
 
     return axins, axins_plot
 
-
 def calculateResolution(minimum: float, maximum: float, step_count: int) -> float:
     """
     Calculate resolution from minimum, maximum, and step count.
@@ -239,7 +234,6 @@ def calculateResolution(minimum: float, maximum: float, step_count: int) -> floa
     else:
         raise ValueError("count must be int at least 1")
 
-
 def getUnitConversionFactor(old_units: Union[Unit, Quantity], new_units: Union[Unit, Quantity] = None) -> float:
     """
     Get unit conversion factor.
@@ -253,7 +247,6 @@ def getUnitConversionFactor(old_units: Union[Unit, Quantity], new_units: Union[U
     else:
         conversion_factor = old_quantity.to_reduced_units(new_units)
     return conversion_factor.magnitude
-
 
 class ParameterSlider(Element):
     """
@@ -419,7 +412,6 @@ class ParameterSlider(Element):
         layout = Layout(rows=row)
         return layout.getLayout()
 
-
 class SimulationTab(Tab):
     """
     This class contains the layout for the simulation tab in the simulation window.
@@ -512,21 +504,215 @@ class SimulationTab(Tab):
         layout.addRows(Row(window=window, elements=run_button))
         return layout.getLayout()
 
+class ColorbarTab(Tab):
+    """
+    This class contains the layout for the aesthetics tab in the simulation window.
+        #. Header row to identify purpose for each column
+        #. Input fields to set lower and upper limit for colorbar
+        #. Checkbox to choose whether colorbar is autoscaled or manually scaled
+        #. Combobox to choose colobar scale type (e.g. linear, logarithmic)
+        #. Spin to set scale factor for colorbar
+        #. Combobox to choose colorbar colormap
+        #. Spin to set segment count for colormap
+    """
 
-class AestheticsTab(Tab):
+    def __init__(self, name: str, window: SimulationWindow) -> None:
+        """
+        Constructor for :class:`~Layout.SimulationWindow.ColorbarTab`.
+
+        :param name: name of tab
+        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab is stored in.
+        """
+        super().__init__(name, window)
+
+    def getHeaderRows(self) -> List[Row]:
+        """
+        Get row that labels the purpose of each input column.
+
+        :param self: :class:`~Layout.SimulationWindow.ColorbarTab` to retrieve row for
+        """
+        window_object = self.getWindowObject()
+
+        top_row = Row(window=window_object)
+        texts = ["Limits", "Scale"]
+        dimension_keys = [f"axis_header_row_{string:s}" for string in ["limits", "scale"]]
+        add_element = top_row.addElements
+        for index in range(len(texts)):
+            kwargs = {
+                "text": texts[index],
+                "size": self.getDimensions(name=dimension_keys[index]),
+                "justification": "center"
+            }
+            add_element(sg.Text(**kwargs))
+
+        bottom_row = Row(window=window_object)
+        texts = ["Title", "Lower", "Upper", "Auto", "Factor"]
+        dimension_keys = [
+            f"axis_header_row_{string:s}"
+            for string in
+            ["element_name", "element_title", "lower_limit", "upper_limit", "autoscale", "scale_factor"]
+        ]
+        add_element = bottom_row.addElements
+        for index in range(len(texts)):
+            kwargs = {
+                "text": texts[index],
+                "size": self.getDimensions(name=dimension_keys[index]),
+                "justification": "left"
+            }
+            add_element(sg.Text(**kwargs))
+        return [top_row, bottom_row]
+
+    def getLimitInputElements(self) -> Tuple[sg.InputText, sg.InputText]:
+        """
+        Get elements that allow user to input colorbar limits.
+
+        :param self: :class:`~Layout.SimulationWindow.ColorbarTab` to retrieve elements for
+        """
+        kwargs = {
+            "default_text": '',
+            "tooltip": "Enter lower limit for colorbar.",
+            "size": self.getDimensions(name="axis_lower_limit_input_field"),
+            "key": self.getKey("plot_aesthetics", f"colorbar_lower_limit")
+        }
+        lower_limit = sg.InputText(**kwargs)
+        kwargs = {
+            "default_text": '',
+            "tooltip": "Enter upper limit for colorbar.",
+            "size": self.getDimensions(name="axis_upper_limit_input_field"),
+            "key": self.getKey("plot_aesthetics", f"colorbar_upper_limit")
+        }
+        upper_limit = sg.InputText(**kwargs)
+        return lower_limit, upper_limit
+
+    def getTitleInputElement(self) -> sg.InputText:
+        """
+        Get element that allows user to input colorbar label.
+
+        :param self: :class:`~Layout.SimulationWindow.ColorbarTab` to retrieve element from
+        """
+        kwargs = {
+            "default_text": '',
+            "tooltip": "Enter label for colorbar.",
+            "size": self.getDimensions(name="colorbar_title_input_field"),
+            "key": self.getKey("plot_aesthetics", "colorbar_title_input")
+        }
+        return sg.InputText(**kwargs)
+
+    def getAutoscaleElement(self) -> sg.Checkbox:
+        """
+        Get element that allows user to determine whether colorbar is autoscaled.
+
+        :param self: :class:`~Layout.SimulationWindow.ColorbarTab` to retrieve element from
+        """
+        kwargs = {
+            "text": '',
+            "tooltip": "Choose boolean for colorbar."
+                       "When set True, colorbar will be autoscaled and limit inputs will be ignored."
+                       "When set False, limits inputs will be used if available.",
+            "default": True,
+            "size": self.getDimensions(name="autoscale_toggle_checkbox"),
+            "key": self.getKey("plot_aesthetics", f"colorbar_autoscale")
+        }
+        return sg.Checkbox(**kwargs)
+
+    def getScaleFactorInputElement(self) -> sg.Spin:
+        """
+        Get element that allows user to input colorbar scale factor.
+
+        :param self: :class:`~Layout.SimulationWindow.ColorbarTab` to retrieve element from
+        """
+        values = [f"1e{int(exponent):d}" for exponent in np.linspace(-24, 24, 49)]
+        kwargs = {
+            "values": values,
+            "initial_value": "1e0",
+            "tooltip": "Choose scale factor for colorbar. Data is divided by this factor.",
+            "size": self.getDimensions(name="scale_factor_spin"),
+            "key": self.getKey("plot_aesthetics", f"colorbar_scale_factor")
+        }
+        return sg.Spin(**kwargs)
+
+    def getScaleTypeInputElement(self) -> sg.InputCombo:
+        """
+        Get element that allows user to choose axis scale.
+
+        :param self: :class:`~Layout.SimulationWindow.ColorbarTab` to retrieve element from
+        """
+        kwargs = {
+            "values": ["Linear", "Logarithmic"],
+            "default_value": "Linear",
+            "tooltip": "Choose scale type for colorbar.",
+            "size": self.getDimensions(name="scale_type_combobox"),
+            "key": self.getKey("plot_aesthetics", "colorbar_scale_type")
+        }
+        return sg.InputCombo(**kwargs)
+
+    def getColormapInputElement(self) -> sg.InputCombo:
+        """
+        Get elements that allows user to choose colormap.
+
+        :param self: :class:`~Layout.SimulationWindow.ColorbarTab` to retrieve element from
+        """
+        cmaps = plt.colormaps()
+        default_cmap = "hsv"
+        kwargs = {
+            "values": cmaps,
+            "default_value": default_cmap,
+            "tooltip": "Choose colormap for colorbar.",
+            "size": self.getDimensions(name="colorbar_colormap_combobox"),
+            "key": self.getKey("plot_aesthetics", "colormap")
+        }
+        return sg.InputCombo(**kwargs)
+
+    def getSegmentCountElement(self) -> sg.Spin:
+        """
+        Get element that allows user to input colorbar segment count.
+
+        :param self: :class:`~Layout.SimulationWindow.ColorbarTab` to retrieve element from
+        """
+        values = [f"{int(hundred):d}00" for hundred in np.linspace(1, 9, 9)]
+        kwargs = {
+            "values": values,
+            "initial_value": values[0],
+            "tooltip": "Choose segment count for colorbar segments.",
+            "size": self.getDimensions(name="colorbar_segment_count_spin"),
+            "key": self.getKey("plot_aesthetics", "colorbar_segment_count")
+        }
+        return sg.Spin(**kwargs)
+
+    def getLayout(self) -> List[List[sg.Element]]:
+        """
+        Get layout for tab.
+
+        :param self: :class:`~Layout.SimulationWindow.AestheticsTab` to retrieve layout for
+        """
+        header_rows = self.getHeaderRows()
+        row_elements = [
+            self.getTitleInputElement(),
+            *self.getLimitInputElements(),
+            self.getAutoscaleElement(),
+            self.getScaleFactorInputElement(),
+            self.getColormapInputElement(),
+            self.getSegmentCountElement()
+        ]
+
+        layout = Layout(rows=header_rows)
+        layout.addRows(Row(window=self.getWindowObject(), elements=row_elements))
+        return layout.getLayout()
+
+class AxisTab(Tab):
     """
     This class contains the layout for the aesthetics tab in the simulation window.
         #. Header row to identify functions for input
         #. Axis name label for each axis to identify which axis input affects
         #. Input fields to set lower and upper limit for each axis. Two fields per axis
-        #. Checkbox to input whether each axis is autoscaled or manually determined
-        #. Combobox to input each axis scale type (e.g. linear, logarithmic)
-        #. Update button to allow user to update plot with new aesthetics
+        #. Checkbox to choose whether each axis is autoscaled or manually determined
+        #. Combobox to choose each axis scale type (e.g. linear, logarithmic)
+        #. Spin to set scale factor for each axis
     """
 
     def __init__(self, name: str, window: SimulationWindow) -> None:
         """
-        Constructor for :class:`~Layout.SimulationWindow.AestheticsTab`.
+        Constructor for :class:`~Layout.SimulationWindow.AxisTab`.
 
         :param name: name of tab
         :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab is stored in.
@@ -536,8 +722,8 @@ class AestheticsTab(Tab):
     def getHeaderRows(self) -> List[Row]:
         """
         Get row that labels the function of each input column.
-        
-        :param self: :class:`~Layout.SimulationWindow.AestheticsTab` to retrieve row for
+
+        :param self: :class:`~Layout.SimulationWindow.AxisTab` to retrieve row for
         """
         window_object = self.getWindowObject()
 
@@ -573,8 +759,8 @@ class AestheticsTab(Tab):
     def getLimitInputElements(self, name: str) -> Tuple[sg.InputText, sg.InputText]:
         """
         Get elements that allow user to input axis limits.
-        
-        :param self: :class:`~Layout.SimulationWindow.AestheticsTab` to retrieve elements for
+
+        :param self: :class:`~Layout.SimulationWindow.AxisTab` to retrieve elements for
         :param name: name of axis
         """
         kwargs = {
@@ -596,8 +782,8 @@ class AestheticsTab(Tab):
     def getTitleInputElement(self, name: str) -> sg.InputText:
         """
         Get element that allows user to input axis labels.
-        
-        :param self: :class:`~Layout.SimulationWindow.AestheticsTab` to retrieve element from
+
+        :param self: :class:`~Layout.SimulationWindow.AxisTab` to retrieve element from
         :param name: name of axis
         """
         kwargs = {
@@ -611,8 +797,8 @@ class AestheticsTab(Tab):
     def getAutoscaleElement(self, name: str) -> sg.Checkbox:
         """
         Get element that allows user to determine whether axis is autoscaled.
-        
-        :param self: :class:`~Layout.SimulationWindow.AestheticsTab` to retrieve element from
+
+        :param self: :class:`~Layout.SimulationWindow.AxisTab` to retrieve element from
         :param name: name of axis
         """
         kwargs = {
@@ -630,7 +816,7 @@ class AestheticsTab(Tab):
         """
         Get element that allows user to input scale factor.
 
-        :param self: :class:`~Layout.SimulationWindow.AestheticsTab` to retrieve element from
+        :param self: :class:`~Layout.SimulationWindow.AxisTab` to retrieve element from
         :param name: name of axis
         """
         values = [f"1e{int(exponent):d}" for exponent in np.linspace(-24, 24, 49)]
@@ -647,7 +833,7 @@ class AestheticsTab(Tab):
         """
         Get element that allows user to choose axis scale.
 
-        :param self: :class:`~Layout.SimulationWindow.AestheticsTab` to retrieve element from
+        :param self: :class:`~Layout.SimulationWindow.AxisTab` to retrieve element from
         :param name: name of axis
         """
         kwargs = {
@@ -662,8 +848,8 @@ class AestheticsTab(Tab):
     def getAxisLabelElement(self, name: str) -> sg.Text:
         """
         Get label to indicate which axis the row affects.
-        
-        :param self: :class:`~Layout.SimulationWindow.AestheticsTab` to retrieve element from
+
+        :param self: :class:`~Layout.SimulationWindow.AxisTab` to retrieve element from
         :param name: name of axis
         """
         kwargs = {
@@ -672,15 +858,13 @@ class AestheticsTab(Tab):
         }
         return sg.Text(**kwargs)
 
-    def getInputRow(self, name: str, is_cartesian: bool = False, is_colorbar: bool = False) -> Row:
+    def getInputRow(self, name: str, is_cartesian: bool = False) -> Row:
         """
         Get row that allows user input for a single axis.
-        
-        :param self: :class:`~Layout.SimulationWindow.AestheticsTab` to retrieve row for
+
+        :param self: :class:`~Layout.SimulationWindow.AxisTab` to retrieve row for
         :param name: name of axis
         :param is_cartesian: set True if input is for a Cartesian axis.
-            Set False otherwise.
-        :param is_colorbar: set True if input is for a colorbar.
             Set False otherwise.
         """
         name_label = self.getAxisLabelElement(name)
@@ -693,31 +877,44 @@ class AestheticsTab(Tab):
             scale_factor_input = self.getScaleFactorInputElement(name)
             scale_type_input = self.getScaleTypeInputElement(name)
             row.addElements([lowerlimit_input, upperlimit_input, autoscale_input, scale_factor_input, scale_type_input])
-        elif is_colorbar:
-            lowerlimit_input, upperlimit_input = self.getLimitInputElements(name)
-            autoscale_input = self.getAutoscaleElement(name)
-            scale_factor_input = self.getScaleFactorInputElement(name)
-            row.addElements([lowerlimit_input, upperlimit_input, autoscale_input, scale_factor_input])
         return row
 
     def getLayout(self) -> List[List[sg.Element]]:
         """
         Get layout for tab.
 
-        :param self: :class:`~Layout.SimulationWindow.AestheticsTab` to retrieve layout for
+        :param self: :class:`~Layout.SimulationWindow.AxisTab` to retrieve layout for
         """
         header_rows = self.getHeaderRows()
         axis_input_rows = [
             self.getInputRow("plot"),
             self.getInputRow('x', is_cartesian=True),
             self.getInputRow('y', is_cartesian=True),
-            self.getInputRow('c', is_colorbar=True)
         ]
 
         layout = Layout(rows=header_rows)
         layout.addRows(axis_input_rows)
         return layout.getLayout()
 
+class AestheticsTabGroup(TabGroup):
+    """
+    This class contains
+        #. :class:`~Layout.SimulationWindow.AxisTab`
+        #. :class:`~Layout.SimulationWindow.ColorbarTab`
+    """
+
+    def __init__(self, name: str, window: SimulationWindow):
+        """
+        Constructor for :class:`~Layout.SimulationWindow.AestheticTabGroup`.
+
+        :param name: name of tabgroup
+        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tabgroup is stored in.
+        """
+        tabs = [
+            AxisTab("Axis", window),
+            ColorbarTab("Colorbar", window)
+        ]
+        super().__init__(tabs, name=name)
 
 class PlottingTab(Tab):
     """
@@ -734,7 +931,7 @@ class PlottingTab(Tab):
         Constructor for :class:`~Layout.SimulationWindow.PlottingTab`.
 
         :param name: name of tab
-        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab is stored in.
+        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab is stored in
         """
         super().__init__(name, window)
 
@@ -926,11 +1123,11 @@ class PlottingTab(Tab):
         layout.addRows(Row(window=self.getWindowObject(), elements=transform_combobox))
         return layout.getLayout()
 
-
 class AnalysisTabGroup(TabGroup):
     """
     This class contains the layout for the analysis tabgroup in the simulation window.
-        #. Frequency tab to set methods to calculate frequency
+        #. :class:`~Layout.SimulationWindow.FrequencyTab`
+        #. :class:`~Layout.SimulationWindow.MeanTab`
     """
 
     def __init__(self, name: str, window: SimulationWindow) -> None:
@@ -940,9 +1137,11 @@ class AnalysisTabGroup(TabGroup):
         :param name: name of tab group
         :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab group is stored in.
         """
-        tabs = [FrequencyTab("Frequency", window), MeanTab("Holder Mean", window)]
+        tabs = [
+            FrequencyTab("Frequency", window),
+            MeanTab("Holder Mean", window)
+        ]
         super().__init__(tabs, name=name)
-
 
 class FrequencyTab(Tab):
     """
@@ -1037,7 +1236,6 @@ class FrequencyTab(Tab):
         layout.addRows(Row(window=self.getWindowObject(), elements=[method_combobox, condensor_combobox]))
         return layout.getLayout()
 
-
 class MeanTab(Tab):
     """
     This class contains the layout for the mean tab in the analysis tabgroup.
@@ -1103,7 +1301,6 @@ class MeanTab(Tab):
         layout.addRows(Row(window=self.getWindowObject(), elements=order_spin))
         return layout.getLayout()
 
-
 class SimulationWindow(TabbedWindow):
     """
     This class contains the layout for the simulation window.
@@ -1134,8 +1331,12 @@ class SimulationWindow(TabbedWindow):
         :param plot_choices: collection of quantities that may be plotted along each axis.
         """
         dimensions = {
-            "window": YML.getDimensions(["simulation_window", "window"]),
-            "parameter_slider_name_label": YML.getDimensions(["simulation_window", "parameter_slider", "name_label"]),
+            "window": YML.getDimensions(
+                ["simulation_window", "window"]
+            ),
+            "parameter_slider_name_label": YML.getDimensions(
+                ["simulation_window", "parameter_slider", "name_label"]
+            ),
             "parameter_slider_minimum_label": YML.getDimensions(
                 ["simulation_window", "parameter_slider", "minimum_label"]
             ),
@@ -1145,7 +1346,9 @@ class SimulationWindow(TabbedWindow):
             "parameter_slider_stepcount_label": YML.getDimensions(
                 ["simulation_window", "parameter_slider", "stepcount_label"]
             ),
-            "parameter_slider_slider": YML.getDimensions(["simulation_window", "parameter_slider", "slider"]),
+            "parameter_slider_slider": YML.getDimensions(
+                ["simulation_window", "parameter_slider", "slider"]
+            ),
             "initial_time_input_field": YML.getDimensions(
                 ["simulation_window", "simulation_tab", "initial_time_input_field"]
             ),
@@ -1156,53 +1359,64 @@ class SimulationWindow(TabbedWindow):
                 ["simulation_window", "simulation_tab", "time_stepcount_input_field"]
             ),
             "axis_header_row_element": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "top_header_row", "element"]
+                ["simulation_window", "aesthetics_tab", "axis_tab", "top_header_row", "element"]
             ),
             "axis_header_row_limits": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "top_header_row", "limits"]
+                ["simulation_window", "aesthetics_tab", "axis_tab", "top_header_row", "limits"]
             ),
             "axis_header_row_scale": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "top_header_row", "scale"]
+                ["simulation_window", "aesthetics_tab", "axis_tab", "top_header_row", "scale"]
             ),
             "axis_header_row_element_name": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "bottom_header_row", "element_name"]
+                ["simulation_window", "aesthetics_tab", "axis_tab", "bottom_header_row", "element_name"]
             ),
             "axis_header_row_element_title": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "bottom_header_row", "element_title"]
+                ["simulation_window", "aesthetics_tab", "axis_tab", "bottom_header_row", "element_title"]
             ),
             "axis_header_row_lower_limit": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "bottom_header_row", "lower_limit"]
+                ["simulation_window", "aesthetics_tab", "axis_tab", "bottom_header_row", "lower_limit"]
             ),
             "axis_header_row_upper_limit": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "bottom_header_row", "upper_limit"]
+                ["simulation_window", "aesthetics_tab", "axis_tab", "bottom_header_row", "upper_limit"]
             ),
             "axis_header_row_autoscale": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "bottom_header_row", "autoscale"]
+                ["simulation_window", "aesthetics_tab", "axis_tab", "bottom_header_row", "autoscale"]
             ),
             "axis_header_row_scale_factor": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "bottom_header_row", "scale_factor"]
+                ["simulation_window", "aesthetics_tab", "axis_tab", "bottom_header_row", "scale_factor"]
             ),
             "axis_header_row_scale_type": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "bottom_header_row", "scale_type"]
+                ["simulation_window", "aesthetics_tab", "axis_tab", "bottom_header_row", "scale_type"]
             ),
-            "axis_row_label": YML.getDimensions(["simulation_window", "aesthetics_tab", "axis_row", "name_label"]),
+            "axis_row_label": YML.getDimensions(
+                ["simulation_window", "aesthetics_tab", "axis_tab", "axis_row", "name_label"]
+            ),
             "axis_lower_limit_input_field": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "axis_row", "lower_limit_input_field"]
+                ["simulation_window", "aesthetics_tab", "axis_tab", "axis_row", "lower_limit_input_field"]
             ),
             "axis_upper_limit_input_field": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "axis_row", "upper_limit_input_field"]
+                ["simulation_window", "aesthetics_tab", "axis_tab", "axis_row", "upper_limit_input_field"]
             ),
             "axis_row_title_input_field": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "axis_row", "title_input_field"]
+                ["simulation_window", "aesthetics_tab", "axis_tab", "axis_row", "title_input_field"]
             ),
             "autoscale_toggle_checkbox": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "axis_row", "autoscale_toggle_checkbox"]
+                ["simulation_window", "aesthetics_tab", "axis_tab", "axis_row", "autoscale_toggle_checkbox"]
             ),
             "scale_factor_spin": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "axis_row", "scale_factor_spin"]
+                ["simulation_window", "aesthetics_tab", "axis_tab", "axis_row", "scale_factor_spin"]
             ),
             "scale_type_combobox": YML.getDimensions(
-                ["simulation_window", "aesthetics_tab", "axis_row", "scale_type_combobox"]
+                ["simulation_window", "aesthetics_tab", "axis_tab", "axis_row", "scale_type_combobox"]
+            ),
+            "colorbar_title_input_field": YML.getDimensions(
+                ["simulation_window", "aesthetics_tab", "colorbar_tab", "title_input_field"]
+            ),
+            "colorbar_colormap_combobox": YML.getDimensions(
+                ["simulation_window", "aesthetics_tab", "colorbar_tab", "colormap_combobox"]
+            ),
+            "colorbar_segment_count_spin": YML.getDimensions(
+                ["simulation_window", "aesthetics_tab", "colorbar_tab", "segment_count_spin"]
             ),
             "axis_header_row_quantity_species": YML.getDimensions(
                 ["simulation_window", "plotting_tab", "header_row", "quantity_species"]
@@ -1251,7 +1465,7 @@ class SimulationWindow(TabbedWindow):
         self.free_parameter_values = free_parameter_values
 
         self.addTabs(SimulationTab("Simulation", self))
-        self.addTabs(AestheticsTab("Aesthetics", self))
+        self.addTabs(AestheticsTabGroup("Aesthetics", self).getAsTab())
         self.addTabs(PlottingTab("Plotting", self))
         self.addTabs(AnalysisTabGroup("Analysis", self).getAsTab())
 
@@ -1413,7 +1627,6 @@ class SimulationWindow(TabbedWindow):
 
         # noinspection PyTypeChecker
         return prefix_layout.getLayout() + [[sg.Column(left_layout.getLayout()), sg.Column(right_layout.getLayout())]]
-
 
 class SimulationWindowRunner(WindowRunner):
     """
@@ -1784,16 +1997,16 @@ class SimulationWindowRunner(WindowRunner):
         window.close()
 
     @staticmethod
-    def updateProgessMeter(current_value: int, max_value: int) -> sg.OneLineProgressMeter:
+    def updateProgressMeter(title: str, current_value: int, max_value: int) -> sg.OneLineProgressMeter:
         """
         Update progress meter.
-        This meter keeps track of how many simulations have finished.
-        
+
+        :param title: title to display in progress meter window
         :param current_value: present number of simulation being calculated
         :param max_value: total number of simulations to calculate
         """
         kwargs = {
-            "title": "Simulations in progress..",
+            "title": title,
             "orientation": "horizontal",
             "current_value": current_value,
             "max_value": max_value
@@ -1861,7 +2074,7 @@ class SimulationWindowRunner(WindowRunner):
                 times = np.linspace(*self.getInputTimes())
         if parameter_values is None:
             parameter_values = {}
-        
+
         derivatives = [derivative.subs(parameter_values) for derivative in general_derivative_vector]
         ydot = lambdify((Symbol('t'), tuple(variable_names)), derivatives, modules=["math"])
         solution = solveODE(ydot, y0, times)
@@ -1887,7 +2100,7 @@ class SimulationWindowRunner(WindowRunner):
             "y0": model.getInitialValues(names=variable_names, return_type=list),
             "times": np.linspace(*self.getInputTimes())
         }
-        
+
         if (parameter_count := len(free_parameter_names)) == 0:
             self.runSimulation((), **kwargs)
         elif parameter_count >= 1:
@@ -1901,15 +2114,15 @@ class SimulationWindowRunner(WindowRunner):
             free_parameter_index_combos = tuple(product(*free_parameter_indicies))
             total_combo_count = len(free_parameter_index_combos)
             for simulation_number, indicies in enumerate(free_parameter_index_combos):
-                if not self.updateProgessMeter(simulation_number, total_combo_count):
+                if not self.updateProgressMeter("Running Simulations", simulation_number, total_combo_count):
                     break
                 parameter_simulation_values = {
                     (free_parameter_name := free_parameter_names[free_parameter_index]):
-                    free_parameter_values[free_parameter_name][indicies[free_parameter_index]]
+                        free_parameter_values[free_parameter_name][indicies[free_parameter_index]]
                     for free_parameter_index in range(parameter_count)
                 }
                 self.runSimulation(indicies, parameter_simulation_values, **kwargs)
-            self.updateProgessMeter(total_combo_count, total_combo_count)
+            self.updateProgressMeter("Running Simulations", total_combo_count, total_combo_count)
         self.updatePlot()
 
     def getPlotAesthetics(self) -> Dict[str, Optional[Union[str, float]]]:
@@ -1918,45 +2131,73 @@ class SimulationWindowRunner(WindowRunner):
         
         :param self: :class:`~Layout.SimulationWindow.SimulationTab` to retrieve aesthetic inputs from
         """
-        aesthetics = {}
-        for input_type in ["lower_limit", "upper_limit", "scale_factor", "scale_type", "title_input", "autoscale"]:
-            aesthetics[input_type] = {}
-            for axis_name in self.getAxisNames():
-                element_key = self.getKey("plot_aesthetics", f"{axis_name:s}_{input_type:s}")
+
+        def getValues(tags: Union[str, Tuple[str, ...]]) -> Optional[Union[str, float, bool, tuple]]:
+            """
+            Get value for plot aesthetic from key tag.
+            
+            :param tags: tag(s) for element key(s)
+            """
+            if isinstance(tags, str):
                 try:
-                    element_value = self.getValue(element_key)
+                    value = self.getValue(self.getKey("plot_aesthetics", tags))
+                    if isinstance(value, bool):
+                        return value
+                    elif isinstance(value, str):
+                        try:
+                            return float(value)
+                        except ValueError:
+                            return None if len(value) == 0 else value
+                    return value
                 except KeyError:
-                    break
-                if input_type in ["lower_limit", "upper_limit", "scale_factor"]:
-                    try:
-                        element_value = float(element_value)
-                    except ValueError:
-                        element_value = None
-                aesthetics[input_type][axis_name] = element_value
+                    return None
+            elif isinstance(tags, Iterable):
+                return tuple([getValues(tag) for tag in tags])
+            else:
+                raise RecursiveTypeError(tags)
 
         scale_type_dict = {
             "Linear": "linear",
             "Logarithmic": "log"
         }
+
+        x_autoscale = getValues("x_autoscale")
+        if x_autoscale:
+            xlim = (None, None)
+        else:
+            xlim = getValues(("x_lower_limit", "x_upper_limit"))
+        y_autoscale = getValues("y_autoscale")
+        if y_autoscale:
+            ylim = (None, None)
+        else:
+            ylim = getValues(("y_lower_limit", "y_upper_limit"))
+        colorbar_autoscale = getValues("colorbar_autoscale")
+        if colorbar_autoscale:
+            clim = (None, None)
+        else:
+            clim = getValues(("colorbar_lower_limit", "colorbar_upper_limit"))
+
         kwargs = {
-            "x_scale_factor": aesthetics["scale_factor"]['x'],
-            "y_scale_factor": aesthetics["scale_factor"]['y'],
-            "c_scale_factor": aesthetics["scale_factor"]['c'],
-            "clim": (aesthetics["lower_limit"]['c'], aesthetics["upper_limit"]['c']),
-            "autoscalec_on": aesthetics["autoscale"]['c'],
+            "x_scale_factor": getValues("x_scale_factor"),
+            "y_scale_factor": getValues("y_scale_factor"),
+            "c_scale_factor": getValues("colorbar_scale_factor"),
+            "clim": clim,
+            "autoscalec_on": colorbar_autoscale,
+            "segment_count": getValues("colorbar_segment_count"),
             "axes_kwargs": {
-                "xlim": (aesthetics["lower_limit"]['x'], aesthetics["upper_limit"]['x']),
-                "xlabel": aesthetics["title_input"]['x'],
-                "autoscalex_on": aesthetics["autoscale"]['x'],
-                "xscale": scale_type_dict[aesthetics["scale_type"]['x']],
-                "ylim": (aesthetics["lower_limit"]['y'], aesthetics["upper_limit"]['y']),
-                "ylabel": aesthetics["title_input"]['y'],
-                "autoscaley_on": aesthetics["autoscale"]['y'],
-                "yscale": scale_type_dict[aesthetics["scale_type"]['y']],
-                "title": self.getValue(self.getKey("plot_aesthetics", "plot_title_input"))
+                "xlim": xlim,
+                "xlabel": getValues("x_title_input"),
+                "autoscalex_on": getValues("x_autoscale"),
+                "xscale": scale_type_dict[getValues("x_scale_type")],
+                "ylim": ylim,
+                "ylabel": getValues("y_title_input"),
+                "autoscaley_on": y_autoscale,
+                "yscale": scale_type_dict[getValues("y_scale_type")],
+                "title": getValues("plot_title_input")
             },
             "colorbar_kwargs": {
-                "label": aesthetics["title_input"]['c']
+                "label": getValues("colorbar_title_input"),
+                "cmap": getValues("colormap")
             }
         }
         return kwargs
@@ -2142,7 +2383,7 @@ class SimulationWindowRunner(WindowRunner):
         Update plot choices for desired axis(es).
         This allows user to select new set of quantities to plot.
         
-        :param self: `~Layout.SimulationWindow.SimulationWindowRunner` to change plot choices in
+        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to change plot choices in
         :param names: name(s) of axis(es) to update choices for.
             Updates all axes by default.
         :param choices: names of updated choices for axis.
@@ -2261,11 +2502,15 @@ class SimulationWindowRunner(WindowRunner):
                     "range": parameter_value_range
                 }
             }
-            for i in range(len(parameter_values)):
+            image_count = len(parameter_values)
+            for i in range(image_count):
+                if not self.updateProgressMeter("Saving Animation", i, image_count):
+                    break
                 inset_parameters[name]["value"] = parameter_values[i]
                 figure = self.updatePlot(index=new_index(i), inset_parameters=inset_parameters)
                 image = PIL.Image.frombytes("RGB", figure.canvas.get_width_height(), figure.canvas.tostring_rgb())
                 images_append(image)
+            self.updateProgressMeter("Saving Animation", image_count, image_count)
 
             file_types = [("Graphics Interchange Format", "*.gif"), ("ALL Files", "*.*")]
             kwargs = {
