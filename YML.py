@@ -6,6 +6,7 @@ from pint import Quantity
 
 from Function import Function, generateFunction
 
+
 def readParameters(filenames: Union[str, List[str]]) -> Dict[str, Quantity]:
     """
     Read file containing information about parameters
@@ -27,6 +28,7 @@ def readParameters(filenames: Union[str, List[str]]) -> Dict[str, Quantity]:
             quantities[name] = value * units(unit)
     return quantities
 
+
 def readFunctions(filepath: Union[str, List[str]]) -> Dict[str, Function]:
     """
     Read file containing information about parameters
@@ -38,7 +40,7 @@ def readFunctions(filepath: Union[str, List[str]]) -> Dict[str, Function]:
     """
     if isinstance(filepath, str):
         filepath = [filepath]
-    
+
     functions = {}
     for filepath in filepath:
         function_info = yaml.load(open(filepath, 'r'), Loader=yaml.Loader)

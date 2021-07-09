@@ -178,7 +178,7 @@ class SetFreeParametersWindowRunner(WindowRunner):
         if isinstance(names, str):
             values = []
             valid = True
-            
+
             if valid:
                 try:
                     minimum_key = self.getKey(f"free_parameter_minimum", names)
@@ -187,7 +187,7 @@ class SetFreeParametersWindowRunner(WindowRunner):
                 except ValueError:
                     valid = False
                     sg.PopupError(f"Input minimum for {names:s}")
-            
+
             if valid:
                 try:
                     maximum_key = self.getKey(f"free_parameter_maximum", names)
@@ -196,12 +196,12 @@ class SetFreeParametersWindowRunner(WindowRunner):
                 except ValueError:
                     valid = False
                     sg.PopupError(f"Input maximum for {names:s}")
-            
+
             if valid:
                 if maximum <= minimum:
                     valid = False
                     sg.PopupError(f"Maximum must be greater than minimum for {names:s}")
-            
+
             if valid:
                 try:
                     stepcount_key = self.getKey(f"free_parameter_stepcount", names)
@@ -214,7 +214,7 @@ class SetFreeParametersWindowRunner(WindowRunner):
                 except ValueError:
                     valid = False
                     sg.PopupError(f"Input stepcount for {names:s}")
-            
+
             if valid:
                 return values
         elif isinstance(names, list):

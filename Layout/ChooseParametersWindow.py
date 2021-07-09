@@ -268,7 +268,7 @@ class ChooseParametersWindowRunner(WindowRunner):
         """
         Set all checkboxes (determining whether to overwrite parameter) to chosen value.
 
-        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to set checkboxes in
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindowRunner` to set checkboxes in
         :param names: name(s) of parameter(s) to set checkboxes for
         :param overwrite: set True to set all checkboxes to True.
             Set False to set all checkboxes to False.
@@ -286,7 +286,7 @@ class ChooseParametersWindowRunner(WindowRunner):
         """
         Get checked parameters in window.
 
-        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve checked boxes from
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindowRunner` to retrieve checked boxes from
         :returns: List of parameter names, where corresponding checkbox is checked
         """
         window = self.getWindow()

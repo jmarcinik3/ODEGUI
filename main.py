@@ -7,24 +7,26 @@ This includes the main function that starts the main window.
 from os import listdir
 from os.path import isfile, join
 
+# noinspection PyPep8Naming
 import PySimpleGUI as sg
 
 from Layout.MainWindow import MainWindowRunner
 from macros import tex2pngFromFile
+
 
 def main():
     """
     Main function to run GUI
     """
     tex2pngFromFile("tex", "var2tex.yml")
-    
+
     sg.ChangeLookAndFeel("DarkGrey13")
     sg.SetOptions(
         element_padding=(1, 1),
         suppress_error_popups=True,
         suppress_raise_key_errors=False
     )
-    
+
     param_dir = "parameters"
     parameter_filepaths = [
         join(param_dir, filepath)
@@ -50,6 +52,7 @@ def main():
     }
     gui = MainWindowRunner(**kwargs)
     gui.runWindow()
+
 
 if __name__ == "__main__":
     main()

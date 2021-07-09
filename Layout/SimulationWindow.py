@@ -35,6 +35,7 @@ from Results import Results
 from Simulation import formatResultsAsDictionary, solveODE
 from macros import formatValue, getTexImage, unique
 
+
 def drawFigure(canvas: tk.Canvas, figure: Figure) -> FigureCanvasTkAgg:
     """
     Draw figure on canvas.
@@ -46,6 +47,7 @@ def drawFigure(canvas: tk.Canvas, figure: Figure) -> FigureCanvasTkAgg:
     figure_canvas.get_tk_widget().pack(side='top', fill='both', expand=1)
     figure_canvas.draw()
     return figure_canvas
+
 
 def getFigure(
         x: ndarray,
@@ -138,6 +140,7 @@ def getFigure(
                 axes.plot(x_segment, y_segment, color=segment_color)
     return figure
 
+
 def clearFigure(figure_canvas: FigureCanvasTkAgg) -> None:
     """
     Clear figure on figure-canvas aggregate.
@@ -147,6 +150,7 @@ def clearFigure(figure_canvas: FigureCanvasTkAgg) -> None:
     if isinstance(figure_canvas, FigureCanvasTkAgg):
         figure_canvas.get_tk_widget().forget()
     plt.close("all")
+
 
 def getParameterInsetAxes(
         axes: Axes,
@@ -217,6 +221,7 @@ def getParameterInsetAxes(
 
     return axins, axins_plot
 
+
 def calculateResolution(minimum: float, maximum: float, step_count: int) -> float:
     """
     Calculate resolution from minimum, maximum, and step count.
@@ -234,6 +239,7 @@ def calculateResolution(minimum: float, maximum: float, step_count: int) -> floa
     else:
         raise ValueError("count must be int at least 1")
 
+
 def getUnitConversionFactor(old_units: Union[Unit, Quantity], new_units: Union[Unit, Quantity] = None) -> float:
     """
     Get unit conversion factor.
@@ -247,6 +253,7 @@ def getUnitConversionFactor(old_units: Union[Unit, Quantity], new_units: Union[U
     else:
         conversion_factor = old_quantity.to_reduced_units(new_units)
     return conversion_factor.magnitude
+
 
 class ParameterSlider(Element):
     """
@@ -412,6 +419,7 @@ class ParameterSlider(Element):
         layout = Layout(rows=row)
         return layout.getLayout()
 
+
 class SimulationTab(Tab):
     """
     This class contains the layout for the simulation tab in the simulation window.
@@ -503,6 +511,7 @@ class SimulationTab(Tab):
         layout.addRows(Row(window=window, elements=time_inputs))
         layout.addRows(Row(window=window, elements=run_button))
         return layout.getLayout()
+
 
 class ColorbarTab(Tab):
     """
@@ -698,6 +707,7 @@ class ColorbarTab(Tab):
         layout = Layout(rows=header_rows)
         layout.addRows(Row(window=self.getWindowObject(), elements=row_elements))
         return layout.getLayout()
+
 
 class AxisTab(Tab):
     """
@@ -896,6 +906,7 @@ class AxisTab(Tab):
         layout.addRows(axis_input_rows)
         return layout.getLayout()
 
+
 class AestheticsTabGroup(TabGroup):
     """
     This class contains
@@ -915,6 +926,7 @@ class AestheticsTabGroup(TabGroup):
             ColorbarTab("Colorbar", window)
         ]
         super().__init__(tabs, name=name)
+
 
 class PlottingTab(Tab):
     """
@@ -1123,6 +1135,7 @@ class PlottingTab(Tab):
         layout.addRows(Row(window=self.getWindowObject(), elements=transform_combobox))
         return layout.getLayout()
 
+
 class AnalysisTabGroup(TabGroup):
     """
     This class contains the layout for the analysis tabgroup in the simulation window.
@@ -1142,6 +1155,7 @@ class AnalysisTabGroup(TabGroup):
             MeanTab("Holder Mean", window)
         ]
         super().__init__(tabs, name=name)
+
 
 class FrequencyTab(Tab):
     """
@@ -1236,6 +1250,7 @@ class FrequencyTab(Tab):
         layout.addRows(Row(window=self.getWindowObject(), elements=[method_combobox, condensor_combobox]))
         return layout.getLayout()
 
+
 class MeanTab(Tab):
     """
     This class contains the layout for the mean tab in the analysis tabgroup.
@@ -1300,6 +1315,7 @@ class MeanTab(Tab):
         layout.addRows(header_row)
         layout.addRows(Row(window=self.getWindowObject(), elements=order_spin))
         return layout.getLayout()
+
 
 class SimulationWindow(TabbedWindow):
     """
@@ -1628,6 +1644,7 @@ class SimulationWindow(TabbedWindow):
         # noinspection PyTypeChecker
         return prefix_layout.getLayout() + [[sg.Column(left_layout.getLayout()), sg.Column(right_layout.getLayout())]]
 
+
 class SimulationWindowRunner(WindowRunner):
     """
     This class runs the simulation and displays results.
@@ -1728,7 +1745,7 @@ class SimulationWindowRunner(WindowRunner):
         Get index of free parameter in collection of free-parameter names.
         
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve free parameter names from
-        :param name: name of free parameter to retreive index of
+        :param name: name of free parameter to retrieve index of
         """
         free_parameter_names = self.getFreeParameterNames()
         index = free_parameter_names.index(name)
@@ -1806,7 +1823,7 @@ class SimulationWindowRunner(WindowRunner):
         Get selected quantity name, specie, and condensor for desired axis.
         
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve quantity name from
-        :param name: name axis to retreive quantity name from
+        :param name: name axis to retrieve quantity name from
         :returns: Tuple of quantity info.
             First index gives quantity name.
             Second index gives quantity type.

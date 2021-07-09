@@ -211,9 +211,6 @@ class Results:
         results = np.repeat(initial_condition, len(self.getResultsOverTime(index, 't')))
         return results
 
-    def getOscillationAmplitude(self, index: Union[tuple, Tuple[int]], name: str, **kwargs) -> float:
-        return 0
-
     def getOscillationFrequency(
             self,
             index: Union[tuple, Tuple[int]],

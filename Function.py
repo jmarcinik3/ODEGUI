@@ -1059,8 +1059,7 @@ class Function(Child, Parent):
 
     def getName(self) -> str:
         """
-        __Purpose__
-            Get name of function
+        Get name of function.
 
         :param self: :class:`~Function.Function` to retrieve name of
         """
@@ -1068,8 +1067,7 @@ class Function(Child, Parent):
 
     def getSymbol(self) -> Symbol:
         """
-        __Purpose__
-            Get symbolic variable of function
+        Get symbol representing function.
 
         :param self: :class:`~Function.Function` to retrieve symbolic variable of
         """
