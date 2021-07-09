@@ -54,6 +54,7 @@ IBK: $I_{BK}$
 ## hair bundle
 kgs: $k_{gs}$
 kgsinf: $k_{gs}$
+kgstot: $K_{gs}$
 dxgs: $\Delta{x_{gs}}$
 Fgs: $F_{gs}$
 Fsp: $F_{sp}$
@@ -70,6 +71,8 @@ pTinf: $p_T(\infty)$
 cX: $[C]_X$
 cCar: $[Ca^{2+}]_r$
 cCam: $[Ca^{2+}]_m$
+Fmmax: $F_{m,max}$
+Sm: $S_m$
 
 ## soma
 alphaDRK: $\alpha_{DRK}$
@@ -132,6 +135,7 @@ dpO3: $\frac{dp_{O3}}{dt}$
 lambdaH: $\lambda_H$
 xsp: $x_{sp}$
 ksp: $k_{sp}$
+ksptot: $K_{sp}$
 
 ### xa
 S0: $S(0)$
@@ -141,6 +145,7 @@ C1: $C(1)$
 lambdaa: $\lambda_a$
 xes: $x_{es}$
 kes: $k_{es}$
+kestot: $K_{es}$
 
 ### pm
 rm: $r_m$
@@ -398,3 +403,6 @@ zK: $z_K$
 DCa: $D_{Ca}$
 
 
+# Greek letters
+alpha: $\alpha$
+beta: $\beta$

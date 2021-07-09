@@ -31,9 +31,9 @@ main_window:
         height: 1
   parameter_tab:
     tab:
-      width: 600
+      width: 800
       height: 350
-    parameter_section: # unused
+    parameter_section:
       width:
       height:
     header_row:
@@ -53,6 +53,9 @@ main_window:
       parameter_type_combobox:
         width: 10
         height: 10
+      parameter_stem_combobox:
+        width: 30
+        height: 10
   function_tab:
     tab:
       width: 800
@@ -71,6 +74,9 @@ main_window:
       form_label:
         width: 385
         height:
+      function_stem_combobox:
+        width: 30
+        height: 10
 
 simulation_window:
   window:

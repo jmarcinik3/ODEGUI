@@ -3,7 +3,10 @@
 # each list gives variables displayed within section
 
 Function:
-  Vm: [Vm0, Vmout, Vmin, Dgs]
+  Vm: [Vm0, Vmout, Vmin]
+  Martin: [msf, xisf, ksf, mhb, pT0]
+  Barral: [kgstot, ksptot, Fmmax, Sm, Dgs]
+  Bormuth: [kestot]
 
 
 Hair Bundle:

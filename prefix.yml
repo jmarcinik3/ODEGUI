@@ -8,7 +8,9 @@ parameter_type: PARAMETER TYPE
 parameter_group_label: PARAMETER GROUP LABEL
 parameter_subgroup_label: PARAMETER SUBGROUP LABEL
 parameter_subgroup_section: PARAMETER SUBGROUP SECTION
-function_filename: FUNCTION FILENAME
+function_filestem: FUNCTION FILESTEM
+parameter_filestem: PARAMETER FILESTEM
+custom_parameter: CUSTOM PARAMETER
 function_form: FUNCTION FORM
 canvas: CANVAS
 canvas_choice: CANVAS CHOICE
