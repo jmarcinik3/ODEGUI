@@ -1,0 +1,10 @@
+BoltzX:
+  expression: $e^{- \frac{V_m q_e z}{T k_B}}$
+  filename: BoltzX.png
+I:
+  expression: $g \left(- E + V_m\right)$
+  filename: I.png
+gGHK:
+  expression: $\frac{F P q_e z^{2} \left(- \varepsilon_X [X]_{ex} + [X]_{in}\right)}{T
+    k_B \left(1 - \varepsilon_X\right)}$
+  filename: gGHK.png

@@ -1,0 +1,25 @@
+CpT:
+  expression: $e^{\frac{\Delta{E}^\varnothing}{T k_B}}$
+  filename: CpT.png
+dpT:
+  expression: $\frac{- p_T + p_T(\infty)}{\tau_T}$
+  filename: dpT.png
+dxpT:
+  expression: $\frac{T k_B}{d k_{gs}}$
+  filename: dxpT.png
+lambdaC:
+  expression: $\lambda_C$
+  filename: lambdaC.png
+lambdahb:
+  expression: $\lambda_C + \lambda_H$
+  filename: lambdahb.png
+pTinf:
+  expression: $\frac{1}{C_{p_T} e^{- \frac{x_{p_T}}{\Delta{x_{p_T}}}} + 1}$
+  filename: pTinf.png
+tauT:
+  expression: $\frac{\tau_T^\varnothing}{\cosh{\left(- \frac{\log{\left(C_{p_T} \right)}}{2}
+    + \frac{x_{p_T}}{2 \Delta{x_{p_T}}} \right)}}$
+  filename: tauT.png
+xpT:
+  expression: $X_{hb} \gamma - \frac{d}{2} - x_a + x_c$
+  filename: xpT.png

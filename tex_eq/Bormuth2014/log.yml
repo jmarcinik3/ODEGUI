@@ -1,0 +1,10 @@
+lambdaC:
+  expression: $\frac{N d^{2} \gamma^{2} k_{gs}^{2} p_T \tau_T \left(1 - p_T\right)}{T
+    k_B}$
+  filename: lambdaC.png
+lambdahb:
+  expression: $\lambda_C + \lambda_H$
+  filename: lambdahb.png
+tauT:
+  expression: $\tau_T^\varnothing$
+  filename: tauT.png
