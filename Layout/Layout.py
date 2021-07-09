@@ -69,7 +69,12 @@ class Row:
             self.elements = []
         else:
             raise TypeError("elements must be sg.Element or list")
-
+        
+        if window is not None:
+            self.getDimensions = window.getDimensions
+            self.getWindowRunner = window.getWindowRunner
+            self.getKey = window.getKey
+        
     def getName(self) -> str:
         return self.name
 
@@ -88,17 +93,8 @@ class Row:
     def getLayout(self) -> List[List[sg.Element]]:
         return [self.elements]
 
-    def getDimensions(self, **kwargs) -> Tuple[Optional[float], Optional[float]]:
-        return self.getWindowObject().getDimensions(**kwargs)
-
     def getWindowObject(self) -> Window:
         return self.window
-
-    def getWindowRunner(self) -> WindowRunner:
-        return self.getWindowObject().getWindowRunner()
-
-    def getKey(self, prefix: str, tag: str = None) -> str:
-        return self.getWindowObject().getKey(prefix, tag)
 
 
 class Layout:
@@ -144,18 +140,13 @@ class Tab:
         self.name = name
         self.window = window
 
+        self.getDimensions = window.getDimensions
+        self.getWindowRunner = window.getWindowRunner
+        self.getKey = window.getKey
+
     def getName(self) -> str: return self.name
 
     def getWindowObject(self) -> Window: return self.window
-
-    def getKey(self, prefix: str, tag: str = None) -> str: return self.getWindowObject().getKey(prefix, tag)
-
-    def getDimensions(
-            self, **kwargs
-    ) -> Union[Dict[str, Tuple[Optional[float], Optional[float]]], Tuple[Optional[float], Optional[float]]]:
-        return self.getWindowObject().getDimensions(**kwargs)
-
-    def getWindowRunner(self) -> WindowRunner: return self.getWindowObject().getWindowRunner()
 
     def getTab(self) -> sg.Tab:
         kwargs = {
@@ -294,15 +285,15 @@ class TabbedWindow(Window):
 
 
 class WindowRunner:
-    def __init__(self, window: Window):
-        self.window_object = window
+    def __init__(self, window_object: Window):
+        self.window_object = window_object
         self.window = None
         self.values = None
 
-        self.getName = window.getName
-        self.getPrefix = window.getPrefix
-        self.getKey = window.getKey
-        self.getKeyList = window.getKeyList
+        self.getName = window_object.getName
+        self.getPrefix = window_object.getPrefix
+        self.getKey = window_object.getKey
+        self.getKeyList = window_object.getKeyList
 
     def getWindow(self) -> sg.Window:
         if self.window is None:
