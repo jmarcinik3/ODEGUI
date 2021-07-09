@@ -43,8 +43,8 @@ C: # adaptation motor climbage
 
 lambdahb: # hair bundle coefficient of friction
   properties: [Independent]
-  parameters: [lambdaH, lambdaC]
-  form: lambdaH + lambdaC
+  parameters: [lambdaH]
+  form: lambdaH
 
 CpT: # basis Boltzmann factor for transduction channel
   properties: [Independent]

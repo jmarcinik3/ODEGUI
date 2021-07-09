@@ -1,3 +1,9 @@
+lambdahb:
+  properties: [Independent]
+  parameters: [lambdaH]
+  children:
+    lambdaC:
+  form: lambdaH + lambdaC
 lambdaC: # MET-channel coefficient of friction
   properties: [Independent]
   variables: pT

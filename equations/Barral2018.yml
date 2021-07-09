@@ -40,6 +40,10 @@ dpT: # MET open-channel probability
     tauT:
   form: (pTinf-pT) / tauT
 
+lambdahb:
+  properties: [Independent]
+  parameters: [lambdaH, lambdaC]
+  form: lambdaH + lambdaC
 lambdaC:
   properties: [Independent, Parameter]
   parameters: lambdaC
