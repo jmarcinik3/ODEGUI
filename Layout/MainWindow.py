@@ -17,7 +17,7 @@ from Layout.ChooseParametersWindow import ChooseParametersWindowRunner
 from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabRow, TabbedWindow, WindowRunner, generateCollapsableSection
 from Layout.SetFreeParametersWindow import SetFreeParametersWindowRunner
 from Layout.SimulationWindow import SimulationWindowRunner
-from macros import form2png, formatQuantity, getTexImage, unique
+from macros import expression2png, formatQuantity, getTexImage, unique
 
 tet_types = ("Temporal", "Equilibrium", "Constant", "Function")
 p_types = ("Constant", "Free")
@@ -702,11 +702,11 @@ class ParameterTabGroup(TabGroup):
 
 class FunctionRow(TabRow):
     """
-    Row to display function information.
+    Row to display function info.
     
     This contains
         #. Label for name of function
-        #. Label for form of function
+        #. Label for expression of function
         #. Combobox to choose filestem to load function from
     """
     
@@ -730,7 +730,7 @@ class FunctionRow(TabRow):
         
         elements = [
             self.getRowLabel(),
-            self.getFormLabel(),
+            self.getExpressionLabel(),
             self.getChooseFileElement()
         ]
         self.addElements(elements)
@@ -746,7 +746,7 @@ class FunctionRow(TabRow):
         folderpath = join(top_folder, filestem)
         return folderpath
     
-    def generatePngForms(self) -> List[str]:
+    def generatePngExpressions(self) -> List[str]:
         """
         Generate PNG images for each function corresponding to filestem.
         
@@ -763,12 +763,12 @@ class FunctionRow(TabRow):
             filestem = filestems[index]
             kwargs = {
                 "name": name,
-                "form": function.getForm(generations=0),
+                "expression": function.getExpression(generations=0),
                 "var2tex": "var2tex.yml",
                 "folder": self.getImageFoldername(filestem),
                 "filename": f"{name:s}.png"
             }
-            image_filepaths.append(form2png(**kwargs))
+            image_filepaths.append(expression2png(**kwargs))
         return image_filepaths
         
     def getRowLabel(self) -> Union[sg.Text, sg.Image]:
@@ -818,21 +818,21 @@ class FunctionRow(TabRow):
         }
         return sg.Combo(**kwargs)
     
-    def getFormLabel(self) -> Union[sg.Text, sg.Image]:
+    def getExpressionLabel(self) -> Union[sg.Text, sg.Image]:
         """
-        Get element to display form of function.
+        Get element to display expression of function.
 
         :param self: :class:`~Layout.MainWindow.FunctionRow` to retrieve label from
         """
         name = self.getName()
-        image_filepath = self.generatePngForms()[-1]
+        image_filepath = self.generatePngExpressions()[-1]
         image_folder = dirname(image_filepath)
         
         kwargs = {
             "name": name,
-            "size": self.getDimensions(name="form_label"),
+            "size": self.getDimensions(name="expression_label"),
             "tex_folder": image_folder,
-            "key": self.getKey("function_form", name)
+            "key": self.getKey("function_expression", name)
         }
         return getTexImage(**kwargs)
 
@@ -885,8 +885,8 @@ class FunctionTab(Tab):
         :param self: :class:`~Layout.MainWindow.FunctionTab` to retrieve row from
         """
         row = Row(window=self.getWindowObject())
-        texts = ["Function", "Form"]
-        dimension_keys = [f"function_header_row_{string:s}" for string in ["function_label", "form_label"]]
+        texts = ["Function", "Expression"]
+        dimension_keys = [f"function_header_row_{string:s}" for string in ["function_label", "expression_label"]]
         add_element = row.addElements
         for index in range(len(texts)):
             kwargs = {
@@ -1026,13 +1026,13 @@ class MainWindow(TabbedWindow):
             ),
             "function_tab": YML.getDimensions(["main_window", "function_tab", "tab"]),
             "function_label": YML.getDimensions(["main_window", "function_tab", "function_row", "function_label"]),
-            "form_label": YML.getDimensions(["main_window", "function_tab", "function_row", "form_label"]),
+            "expression_label": YML.getDimensions(["main_window", "function_tab", "function_row", "expression_label"]),
             "function_stem_combobox": YML.getDimensions(["main_window", "function_tab", "function_row", "function_stem_combobox"]),
             "function_header_row_function_label": YML.getDimensions(
                 ["main_window", "function_tab", "header_row", "function_label"]
             ),
-            "function_header_row_form_label": YML.getDimensions(
-                ["main_window", "function_tab", "header_row", "form_label"]
+            "function_header_row_expression_label": YML.getDimensions(
+                ["main_window", "function_tab", "header_row", "expression_label"]
             )
         }
         super().__init__(name, runner, dimensions=dimensions)
@@ -1245,7 +1245,7 @@ class MainWindow(TabbedWindow):
         """
         Get layout for window.
 
-        :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve layout form
+        :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve layout from
         """
         menu = self.getMenu()
         open_simulation_button = self.getOpenSimulationButton()
@@ -1291,7 +1291,7 @@ class MainWindowRunner(WindowRunner):
     """
     Runner for :class:`~Layout.MainWindow.MainWindow`.
     
-    :ivar function_ymls: filename(s) of YML files, containing information about functions for model
+    :ivar function_ymls: filename(s) of YML files, containing info about functions for model
     :ivar parameters: dictionary of parameter quantities.
         Key is name of parameter.
         Value is quantity containing value and unit for parameter.
@@ -1310,8 +1310,8 @@ class MainWindowRunner(WindowRunner):
         Constructor for :class:`~Layout.MainWindow.MainWindowRunner`.
         
         :param name: name of window
-        :param parameter_filepaths: name(s) for file(s), containing information about parameters in model
-        :param function_filepaths: name(s) for file(s), containing information about functions in model
+        :param parameter_filepaths: name(s) for file(s), containing info about parameters in model
+        :param function_filepaths: name(s) for file(s), containing info about functions in model
         :param time_evolution_layout: name of file containing layout for time-evolution tab
         :param parameter_layout: name of file containing layout for parameter-input tab
         :param function_layout: name of file containing layout for function tab
@@ -1381,7 +1381,7 @@ class MainWindowRunner(WindowRunner):
             elif ff_pre in event:
                 ff_pre_sep = self.getPrefix("function_filestem", with_separator=True)
                 function_name = event.replace(ff_pre_sep, '')
-                self.updateFunctionForms(names=function_name)
+                self.updateFunctionExpressions(names=function_name)
             elif pf_pre in event:
                 pf_pre_sep = self.getPrefix("parameter_filestem", with_separator=True)
                 parameter_name = event.replace(pf_pre_sep, '')
@@ -1606,27 +1606,27 @@ class MainWindowRunner(WindowRunner):
         filestem = self.getValue(combobox_key)
         return filestem
     
-    def updateFunctionForms(self, names: Union[str, List[str]]) -> None:
+    def updateFunctionExpressions(self, names: Union[str, List[str]]) -> None:
         """
-        Update function form from selected file.
+        Update function expression from selected file.
 
-        :param self: :class`~Layout.MainWindow.MainWindowRunner` to update form in
-        :param names: name(s) of function(s) to update form for
+        :param self: :class`~Layout.MainWindow.MainWindowRunner` to update expression in
+        :param names: name(s) of function(s) to update expression for
         """
         if isinstance(names, str):
             function_filestem = self.getChosenFunctionStem(names)
             image_folder = join("tex_eq", function_filestem)
             image_filename = '.'.join((names, "png"))
-            image_filepath = join(image_folder, image_filename) # form2png(**kwargs)
+            image_filepath = join(image_folder, image_filename)
             image_data = open(image_filepath, 'rb').read()
-            image_form = self.getElements(self.getKey("function_form", names))
-            image_size = vars(image_form)["Size"]
-            image_form.update(data=image_data, size=image_size)
+            image_expression = self.getElements(self.getKey("function_expression", names))
+            image_size = vars(image_expression)["Size"]
+            image_expression.update(data=image_data, size=image_size)
         elif isinstance(names, list):
             for name in names:
-                self.updateFunctionForms(names=name)
+                self.updateFunctionExpressions(names=name)
         elif names is None:
-            self.updateFunctionForms(names=self.getFunctionNames())
+            self.updateFunctionExpressions(names=self.getFunctionNames())
     
     def getChosenParameterStem(self, name: str) -> str:
         """
@@ -1734,7 +1734,7 @@ class MainWindowRunner(WindowRunner):
             raise RecursiveTypeError(parameter_types)
     
     def getParameters(
-            self, names: Union[str, List[str]] = None, form: str = "quantity"
+            self, names: Union[str, List[str]] = None, expression: str = "quantity"
     ) -> Optional[Union[Quantity, Dict[str, Quantity]]]:
         """
         Get parameter(s), including value and unit
@@ -1745,7 +1745,7 @@ class MainWindowRunner(WindowRunner):
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve parameter(s) from
         :param names: name(s) of parameter(s) to retreive.
             Defaults to all loaded parameters.
-        :param form: form of quantity to retrieve. Each desired option must be a substring of this argument.
+        :param expression: form of quantity to retrieve. Each desired option must be a substring of this argument.
             "quantity": retrieve value and unit
             "unit": retrieve only unit
             "value": retrieve only value
@@ -1762,19 +1762,19 @@ class MainWindowRunner(WindowRunner):
                 filestem = self.getChosenParameterStem(names)
                 quantity = self.getParameterQuantitiesFromStems(names, filestem)
             
-            if "base" in form:
+            if "base" in expression:
                 quantity = quantity.to_base_units()
-            if "quantity" in form:
+            if "quantity" in expression:
                 return quantity
-            elif "value" in form:
+            elif "value" in expression:
                 return quantity.magnitude
-            elif "unit" in form:
+            elif "unit" in expression:
                 return quantity.units
             raise ValueError("Invalid entry for form input")
         elif isinstance(names, list):
-            return {name: self.getParameters(names=name, form=form) for name in names}
+            return {name: self.getParameters(names=name, expression=expression) for name in names}
         elif names is None:
-            return self.getParameters(names=self.getParameterNames(), form=form)
+            return self.getParameters(names=self.getParameterNames(), expression=expression)
         else:
             raise RecursiveTypeError(names)
     
@@ -1872,7 +1872,7 @@ class MainWindowRunner(WindowRunner):
         if isinstance(names, str):
             field_value = self.getInputParameterValue(names=names)
             if field_value != '':
-                old_unit, new_value = self.getParameters(names=names, form="unit"), float(field_value)
+                old_unit, new_value = self.getParameters(names=names, expression="unit"), float(field_value)
                 new_quantity = new_value * old_unit
                 self.setParameter(name=names, quantity=new_quantity, custom=True)
         elif isinstance(names, list):

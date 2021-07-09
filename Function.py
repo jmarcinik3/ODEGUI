@@ -22,7 +22,7 @@ from macros import formatQuantity, unique
 
 class Parameter:
     """
-    Class to get information about parameter.
+    Store info pertinent to generate/simulate parameter.
 
     :ivar name: name of parameter
     :ivar quantity: quantity containing value and unit for parameter
@@ -84,13 +84,14 @@ class Parameter:
 
 class Model:
     """
-    __Purpose__
-        Store Function objects for given model
-    __Attributes__
-        functions [list of Function]: stored Function objects
-        parameters [dict of metpy.Quantity]: stored parameter values and units
-            key [str] is parameter name
-            value [metpy.Quantity] contains value and unit
+    Container for Function and Parameter objects.
+    
+    :ivar functions: dictionary of functions in model.
+        Key is name of function.
+        Value is Function object for function.
+    :ivar parameters: dictionary of parameters in model.
+        Key is name of parameter.
+        Value if Parameter object for parameter.
     """
 
     def __init__(
@@ -98,6 +99,12 @@ class Model:
             functions: List[Function] = None,
             parameters: Dict[str, Quantity] = None,
     ) -> None:
+        """
+        Constructor for :class:`~Function.Model`.
+        
+        :param functions: functions to initially include in model
+        :param parameters: parameters to initially include in model
+        """
         self.functions = {}
         self.parameters = {}
         if parameters is not None:
@@ -134,12 +141,12 @@ class Model:
             if functions not in self.getFunctions():
                 name = functions.getName()
                 if name in self.getFunctionNames():
-                    print(f"Overwriting {name:s}={functions.getForm():} into model")
+                    print(f"Overwriting {name:s}={functions.getExpression():} into model")
                     del self.functions[name]
                 if functions.isParameter():
-                    print(f"Overwriting function {name:s}={functions.getForm():} as parameter")
+                    print(f"Overwriting function {name:s}={functions.getExpression():} as parameter")
                 elif name in self.getParameterNames():
-                    print(f"Overwriting parameter {name:s} as function {name:s}={functions.getForm():}")
+                    print(f"Overwriting parameter {name:s} as function {name:s}={functions.getExpression():}")
                     del self.parameters[name]
 
                 if functions.getModel() is not self:
@@ -211,7 +218,9 @@ class Model:
             raise RecursiveTypeError(names, [str, Symbol])
 
     def getFunctions(
-            self, names: Union[str, List[str]] = None, filter_type: Type[Function] = None
+            self,
+            names: Union[str, List[str]] = None,
+            filter_type: Type[Derivative, Dependent, Independent, Piecewise, NonPiecewise] = None
     ) -> Union[Function, List[Function]]:
         """
         Get functions stored in model.
@@ -286,6 +295,12 @@ class Model:
         yaml.dump(parameters_dict, file)
 
     def saveTimeEvolutionTypesToFile(self, filename: str) -> None:
+        """
+        Save time-evolution types stored in model into YML file for future retrieval.
+
+        :param self: :class:`~Function.Model` to retrieve time-evolution types from
+        :param filename: name of file to save time-evolution types into
+        """
         derivatives = self.getDerivatives()
         time_evolution_types = {
             str(derivative.getVariable()): derivative.getTimeEvolutionType()
@@ -296,14 +311,14 @@ class Model:
 
     def getDerivatives(self, time_evolution_types: Union[str, List[str]] = None) -> List[Derivative]:
         """
-        __Purpose__
-            Get stored derivatives of given time-evolution type(s)
+        Get stored derivatives of given time-evolution type(s).
+        
         __Recursion Base__
             get derivatives of single time-evolution type: time_evolution_types [str]
             get all derivatives: time_evolution_types [None]
 
         :param self: :class:`~Function.Model` to retrieve derivative(s) from
-        :param time_evolution_types: only retrieve derivatives of this type(s), acts as a filter
+        :param time_evolution_types: only retrieve derivatives of this type(s), acts as an optional filter
         """
         if isinstance(time_evolution_types, str):
             filtered_derivatives = [
@@ -335,7 +350,7 @@ class Model:
             substitute_functions: bool = True
     ) -> Dict[Symbol, Expr]:
         """
-       Get substitutions to substitute equilibrium variables into non-equilibrium derivatives.
+        Get equilibria solutions from derivatives, to substitute into variables.
 
         :param self: :class:`~Function.Model` to solve for equilibrium solution(s) in
         :param names: name(s) of function(s) to solve for simulatenous equilibrium of
@@ -368,7 +383,7 @@ class Model:
             return {}
         elif equilibrium_count >= 1:
             equilibrium_variables = [equilibrium.getVariable() for equilibrium in equilibria]
-            equilibrium_derivatives = [equilibrium.getForm(generations="all") for equilibrium in equilibria]
+            equilibrium_derivatives = [equilibrium.getExpression(generations="all") for equilibrium in equilibria]
 
             bk_probs = list(symbols("pC0 pC1 pC2 pO2 pO3"))
             if set(bk_probs).issubset(set(equilibrium_variables)):
@@ -412,8 +427,7 @@ class Model:
             substitute_functions: bool = True
     ) -> Expr:
         """
-        __Purpose__
-            Get equilibrium function corresponding to derivative
+        Get equilibrium function corresponding to derivative, to substitute into variable.
 
         :param self: :class:`~Function.Model` to solve for equilibrium solution in
         :param name: name of variable to retrieve equilibrium expression of
@@ -444,6 +458,8 @@ class Model:
             substitute_constants: bool = True
     ) -> Dict[Symbol, Expr]:
         """
+        Get functions to substitute into variables.
+        
         :param self: :class:`~Function.Model` to retrieve functions from
         :param names: name(s) of variable(s) to retrieve function for
         :param substitute_parameters: set True to substitute numerical values in for all parameters.
@@ -463,7 +479,7 @@ class Model:
             return {}
         elif variable_count >= 1:
             functions = self.getFunctions(names=names)
-            forms = [function.getForm(generations="all") for function in functions]
+            expressions = [function.getExpression(generations="all") for function in functions]
             variables = [Symbol(name) for name in names]
 
             substitutions = {}
@@ -481,18 +497,13 @@ class Model:
             if substitute_constants:
                 substitutions.update(self.getConstantSubstitutions())
 
-            forms = [form.subs(substitutions) for form in forms]
-            function_substitutions = {variables[i]: forms[i] for i in range(variable_count)}
+            expressions = [expression.subs(substitutions) for expression in expressions]
+            function_substitutions = {variables[i]: expressions[i] for i in range(variable_count)}
             return function_substitutions
 
     def getConstantSubstitutions(self, names: Union[str, List[str]] = None) -> Dict[Symbol, Expr]:
         """
-        __Purpose__
-            Get substitutions to substitute constant intitial condition into given variable(s)
-        __Return__
-            dict:
-                key [sympy.Symbol] is variable to substitute into
-                value [sympy.Expr] is constant to substitute into variable
+        Get constants to substitute into variables.
 
         :param self: :class:`~Function.Model` to retrieve constant derivative(s) from
         :param names: name(s) of constant derivative(s) to substitute numerical constants in for
@@ -517,7 +528,7 @@ class Model:
             self, names: Union[str, List[str]] = None, skip_parameters: Union[str, List[str]] = None
     ) -> Dict[Symbol, Expr]:
         """
-        Substitute parameters into function from model.
+        Get parameter values to substitute into parameters.
 
         :param names: name(s) of parameter to include in substitutions.
             Defaults to all parameters in model.
@@ -607,7 +618,8 @@ class Model:
 
         derivative_vector = []
         for derivative in temporal_derivatives:
-            form = derivative.getForm(generations="all")
+            derivative: Union[Derivative, Function]
+            expression = derivative.getExpression(generations="all")
 
             derivative_variables = derivative.getFreeSymbols(species="Variable", generations="all")
             variable_substitution = {
@@ -621,9 +633,9 @@ class Model:
                 for parameter, value in parameter_substitutions.items()
                 if parameter in derivative_parameters
             }
-            form = form.subs({**variable_substitution, **parameter_substitution})
+            expression = expression.subs({**variable_substitution, **parameter_substitution})
 
-            derivative_vector.append(form)
+            derivative_vector.append(expression)
 
         Function.setUseMemory(use_memory)
         if lambdified:
@@ -677,9 +689,10 @@ class Model:
             equilibrium_equations, equilibrium_variables = [], []
             equations_append, variables_append = equilibrium_equations.append, equilibrium_variables.append
             for derivative in derivatives:
+                derivative: Union[Derivative, Function]
                 if derivative.getInitialCondition() == "Equilibrium":
-                    equations_append(derivative.getForm(generations="all").subs(substitutions))
                     variables_append(derivative.getVariable())
+                    equations_append(derivative.getExpression(generations="all").subs(substitutions))
 
             variable_count = len(equilibrium_variables)
             equations_lambda = lambdify((tuple(equilibrium_variables),), equilibrium_equations)
@@ -710,7 +723,7 @@ class Model:
             self, time_evolution_types: Union[str, List[str]] = None, return_type: Type[Symbol, str] = Symbol
     ) -> Union[List[Symbol], List[str]]:
         """
-        Get variables stored in model in same order as derivatives
+        Get variables stored in model.
         
         __Recursion Base__
             get symbolic variable associated with single derivative: names [str]
@@ -763,17 +776,24 @@ class Model:
 
 class Parent:
     """
-    __Purpose__
-        Properties for Function related to being a parent function to another function
-    __Attributes__
-        children [list of Function]: collection of children associated with function
-        instance_arguments [list of dict list of sympy.Symbol]: arguments which parent function inputs into child function
-            first list index is index of stored child function
-            dictionary key is argument species
-            second list index is index of individual argument sent to child function
+    Stores properties for Function qua parent.
+    
+    :ivar instance_arguments: 2-level dictionary of arguments for children functions.
+        Firsy key is name of child function.
+        Second key is specie of instance arguments.
+        Value is list of symbolic arguments to substitute into child.
+        Only used for :class:`~Function.Dependent` children.
     """
 
     def __init__(self, children: Dict[str, Dict[str, Union[Symbol, List[Symbol]]]]) -> None:
+        """
+        Constructor for :class:`~Function.Parent`.
+        
+        :param children: 2-level dictionary of info for children function.
+            First key is name of child.
+            Second key is specie of instance arguments for child.
+            Value is symbols for instance arguments.
+        """
         self.instance_arguments = {}
 
         if children is not None:
@@ -781,31 +801,32 @@ class Parent:
                 children = [children]
             self.addChildren(children)
 
-    def addChildren(self, children: Dict[str, Dict[str, Union[Symbol, List[Symbol]]]]) -> \
-            Dict[str, Dict[str, List[Symbol]]]:
+    def addChildren(
+            self, children: Dict[str, Dict[str, Union[Symbol, List[Symbol]]]]
+    ) -> Dict[str, Dict[str, List[Symbol]]]:
         """
-        Add information to reference children functions of parent.
+        Add info to reference children functions of parent.
 
         :param self: :class:`~Function.Parent` to add info into
-        :param children: dictionary of information to reference children.
+        :param children: dictionary of info to reference children.
             Key is name of child.
             Value is dictionary to pass into :paramref:`~Function.Parent.addChild.arguments`
-        :returns: Dictionary of information to reference children.
+        :returns: Dictionary of info to reference children.
             Key is name of child.
-            Value is dictionary of information output from :meth:`~Function.Parent.addChild`
+            Value is dictionary of info output from :meth:`~Function.Parent.addChild`
         """
         return {name: self.addChild(name, arguments) for name, arguments in children.items()}
 
     def addChild(self, name: str, arguments: Dict[str, List[Symbol]]) -> Dict[str, List[Symbol]]:
         """
-        Add information to reference child function of parent.
+        Add info to reference child function of parent.
 
         :param self: :class:`~Function.Parent` to add info into
         :param name: name of child to add into parent
-        :param arguments: dictionary of information to reference child.
+        :param arguments: dictionary of info to reference child.
             Key is species of instance argument.
             Value is symbol(s) for this species of argument.
-        :returns: Dictionary of information to reference child.
+        :returns: Dictionary of info to reference child.
             Key is species of instance argument from parent.
             Value is symbol(s) for this species of argument.
         """
@@ -820,13 +841,14 @@ class Parent:
 
     def getChildren(self, names: Union[str, List[str]] = None) -> Union[Function, List[Function]]:
         """
-        __Purpose__
-            Get children functions in order added
+        Get children functions.
+        
         __Recursion Base__
             return all children: names [None]
 
         :param self: parent to retrieve child(s) from
-        :param names: name(s) of child(s) to retrieve from parent
+        :param names: name(s) of child(s) to retrieve from parent.
+            Defaults to all children.
         """
         if isinstance(names, str):
             self: Function
@@ -839,25 +861,20 @@ class Parent:
         else:
             raise RecursiveTypeError(names)
 
-    def getChildrenNames(self) -> Union[str, List[str]]:
+    def getChildrenNames(self) -> List[str]:
         """
-        __Purpose__
-            Get names of stored parents in order added
+        Get names of children functions.
+        
         __Recursion Base__
             retrieve name of single parent: functions [Function]
             retrieve names of all parents: functions [None]
 
         :param self: parent to retrieve child name(s) from
-        :param functions: function(s) to retrieve name(s) from parent
         """
         self: Function
         free_symbol_names = self.getFreeSymbols(generations=0, substitute_dependents=False, return_type=str)
-        dependent_children_names = [
-            child_name
-            for child_name, child_arguments in self.instance_arguments.items()
-            if len(child_arguments) >= 1
-        ]
-        
+        dependent_children_names = list(self.instance_arguments.keys())
+
         children_names = dependent_children_names
         if isinstance(self, Independent):
             self: Function
@@ -872,8 +889,7 @@ class Parent:
 
     def getInstanceArgumentSpecies(self, name: str) -> List[str]:
         """
-        __Purpose__
-            Get all possible species of instance arguments
+        Get all possible species of instance arguments.
 
         :param self: parent to retrieve instance-argument species from
         :param name: name of child to retrieve instance-argument species for
@@ -882,13 +898,13 @@ class Parent:
 
     def getInstanceArguments(self, name: str, specie: str = None) -> Union[Symbol, List[Symbol]]:
         """
-        __Purpose__
-            Get instance arguments of given species for each function associated with given names
+        Get instance arguments of given species for function.
+        
         __Recursion Base__
             return all instance arguments of given specie: specie [None] and names [None]
 
         :param self: parent to retrieve instance arguments from
-        :param specie: name of instance-argument species to retrieve from parent
+        :param specie: name of instance-argument species to retrieve from parent, acts as an optional filter
         :param name: name of child function to retrieve instance arguments for
         """
         if isinstance(specie, str):
@@ -901,26 +917,28 @@ class Parent:
 
 class Child:
     """
-    __Purpose__
-        Properties for Function related to being a child function to another function
-    __Attributes__
-        parents [list of Function]: collection of parents associated with function
+    Stores properties for Function qua child.
     """
 
     def __init__(self) -> None:
+        """
+        Constructor for :class:`~Function.Child`.
+        """
         pass
 
     def getParents(self, names: Union[str, List[str]] = None) -> Union[Function, List[Function]]:
         """
-        __Purpose__
-            Get parent functions in order added
+        Get parent functions.
+        
         __Recursion Base__
-            return all parents: names [None]
+            return single parent: names [str]
 
         :param self: child to retrieve parent(s) from
-        :param names: name(s) of parent(s) to retrieve from child
+        :param names: name(s) of parent(s) to retrieve from child.
+            Defaults to all parents.
         """
         if isinstance(names, str):
+            self: Function
             parents = self.getModel().getFunctions(names=names)
             return parents
         elif isinstance(names, list):
@@ -932,15 +950,11 @@ class Child:
 
     def getParentNames(self) -> Union[str, List[str]]:
         """
-        __Purpose__
-            Get names of stored parents in order added
-        __Recursion Base__
-            retrieve name of single parent: functions [Function]
-            retrieve names of all parents: functions [None]
+        Get names of parents.
 
         :param self: child to retrieve parent name(s) from
-        :param functions: parent(s) to retrieve name(s) from child
         """
+        self: Function
         name = self.getName()
         parents = [
             function.getName()
@@ -952,13 +966,13 @@ class Child:
 
 class Function(Child, Parent):
     """
-    __Purpose__
-        Object to store core information about a function
-    __Attributes__
-        name [str]: name of function
-        variables [list of sympy.Symbol]: collection of variables explicitly included in function form
-        parameters [list of sympy.Symbol]: collection of parameters explicitly included in function form
-        model [Model]: model to associated with function
+    Stores pertinent properties relevant to all types of functions.
+    
+    :ivar name: name of function
+    :ivar expression: symbolic expression stored in memory
+    :ivar model: model that function is part of
+    :ivar is_parameter: True is function is equal to parameter.
+        False otherwise.
     """
 
     use_memory = False
@@ -968,12 +982,23 @@ class Function(Child, Parent):
             self,
             name: str,
             properties: List[str],
-            children: Union[str, List[str]] = None,
+            children: Dict[str, Dict[str, Union[Symbol, List[Symbol]]]] = None,
             model: Model = None,
             **kwargs
     ) -> None:
+        """
+        Constructor for :class:`~Function.Function`.
+        
+        :param name: name of function
+        :param properties: properties indicating types consistent with function
+        :param children: argument to pass into :meth:`~Function.Parent`
+        :param model: model to initialize function within
+        :param kwargs: extraneous arguments
+        """
         Function.functions.append(self)
-        self.form = None
+        self.memory = {
+            "expression": None
+        }
         self.name = name
         self.is_parameter = "Parameter" in properties
 
@@ -985,21 +1010,44 @@ class Function(Child, Parent):
 
     @staticmethod
     def setUseMemory(use: bool) -> None:
+        """
+        Turn memory for all Functions on/off.
+
+        :param use: set True to enable memore.
+            Set False to disable memory.
+        """
         Function.use_memory = use
 
     @staticmethod
     def usingMemory() -> bool:
+        """
+        Determine whether memory is enabled/disabled.
+
+        :returns: True if memory is enabled.
+            False if memory is disabled.
+        """
         return Function.use_memory
 
     @staticmethod
     def clearMemory(functions: List[Function] = None) -> None:
+        """
+        Clear memory for Function objects.
+
+        :param functions: functions to clear memory for.
+            Defaults to all Function objects.
+        """
         if functions is None:
             functions = Function.functions
         for function in functions:
-            function.clearForm()
+            function.clearExpression()
 
-    def clearForm(self) -> None:
-        self.form = None
+    def clearExpression(self) -> None:
+        """
+        Clear memory of expression for Function object.
+
+        :param self: :class:`~Function.Function` to clear memory in
+        """
+        self.memory["expression"] = None
 
     def isParameter(self):
         """
@@ -1039,9 +1087,9 @@ class Function(Child, Parent):
             Defaults to all free symbols.
         :param return_type: class type of output.
             Must be either sympy.Symbol or str.
-        :param kwargs: additional arguments to pass into :meth:`~Function.Piecewise.getForm` or into :meth:`~Function.NonPiecewise.getForm`
+        :param kwargs: additional arguments to pass into :meth:`~Function.Piecewise.getExpression` or into :meth:`~Function.NonPiecewise.getExpression`
         """
-        free_symbols = list(self.getForm(**kwargs).free_symbols)
+        free_symbols = list(self.getExpression(**kwargs).free_symbols)
         if species is None:
             free_symbol_names = [str(free_symbol) for free_symbol in free_symbols]
         else:
@@ -1068,31 +1116,33 @@ class Function(Child, Parent):
         else:
             raise ValueError("return_type must be Symbol or str")
 
-    def getForm(self, **kwargs):
+    def getExpression(self, **kwargs):
         """
-        Get expression for function, dependent on inherited classes.
+        Get expression for function, depends on inherited classes.
         
-        :param self: :class:`~Function.Function` to retrieve form from
-        :param kwargs: additional arguments to pass into :meth:`~Function.Piecewise.getForm` or :meth:`~Function.NonPiecewise.getForm`
+        :param self: :class:`~Function.Function` to retrieve expression from
+        :param kwargs: additional arguments to pass into
+            :meth:`~Function.Piecewise.getExpression` or :meth:`~Function.NonPiecewise.getExpression`
         """
-        if not self.usingMemory() or self.form is None or isinstance(self, Dependent):
+        if not self.usingMemory() or self.expression is None or isinstance(self, Dependent):
             if isinstance(self, Piecewise):
-                form = Piecewise.getForm(self, **kwargs)
+                expression = Piecewise.getExpression(self, **kwargs)
             elif isinstance(self, NonPiecewise):
-                form = NonPiecewise.getForm(self, **kwargs)
+                expression = NonPiecewise.getExpression(self, **kwargs)
             else:
+                self: Function
                 raise TypeError(f"function {self.getName():s} must inherit either Piecewise or NonPiecewise")
-            self.form = form
-            return form
-        elif self.usingMemory() and isinstance(self.form, Expr):
-            return self.form
+            self.expression = expression
+            return expression
+        elif self.usingMemory() and isinstance(self.expression, Expr):
+            return self.expression
         else:
-            raise ValueError(f"improper form in memory for {self.getName():s}")
+            raise ValueError(f"improper expression in memory for {self.getName():s}")
 
     def setModel(self, model: Model) -> None:
         """
         Set model for function.
-        Add function to model if not already in done.
+        Add function to model if not already done.
 
         :param self: :class:`~Function.Function` to set model with
         :param model: new model to associated with function
@@ -1117,22 +1167,22 @@ class Function(Child, Parent):
 
 class Derivative:
     """
-    __Purpose__
-        Properties relating to function being a time derivative
-    __Attributes__
-        variable [sympy.Symbol]: variable that derivative is derivative of
-        time_evolution_type [str]: time-evolution type of derivative (e.g. "Temporal", "Equilibrium", "Constant")
-        initial_condition [float]: initial condition value for associated variable
+    Stores properties for function qua derivative.
+    
+    :ivar variable: variable that derivative is derivative of
+    :ivar time_evolution_type: time-evolution type of derivative (e.g. "Temporal", "Equilibrium", "Constant")
+    :ivar initial_condition: initial condition value for associated variable
     """
 
     def __init__(
-            self, variable: Symbol, time_evolution_type: str = "Temporal", initial_condition: float = 0
+            self, variable: Union[Symbol, str], time_evolution_type: str = "Temporal", initial_condition: float = 0
     ) -> None:
         """
-         __Inputs__
-            variable [sympy.Symbol, str]: variable that derivative is a derivative of
-            time_evolution_type [str]: time-evolution type of derivative (e.g. "Temporal", "Equilibrium", "Constant")
-            initial_condition [float]: initial value of variable
+         Constructor for :class:`~Function.Derivative`.
+         
+        :param variable: variable that derivative is a derivative of
+        :param time_evolution_type: time-evolution type of derivative (e.g. "Temporal", "Equilibrium", "Constant")
+        :param initial_condition: initial value of associated variable
         """
         self.variable = None
         self.setVariable(variable)
@@ -1161,7 +1211,7 @@ class Derivative:
         Set variable associated with derivative.
         
         :param self: :class:`~Function.Derivative` associated with variable
-        :param variable: variable to associated with derivative
+        :param variable: variable to associate with derivative
         """
         if isinstance(variable, str):
             self.setVariable(Symbol(variable))
@@ -1213,47 +1263,58 @@ class Derivative:
 
 class Dependent:
     """
-    __Purpose__
-        Store properties for a function that requires input from another function
-    __Attributes__
-        arguments [dict of list of sympy.Symbol]: arguments to be substituted into from another function
-            keys [str] are species of argument (e.g. "variables", "parameters", "functions")
-            values [sympy.Symbol] are symbolic general arguments
+    Stores properties for a function that requires input from another function.
+    
+    :ivar general_arguments: dictionary of arguments to be substituted from another function.
+        Key is specie of arguments.
+        Value is list of symbols for arguments of specie.
     """
 
     def __init__(self, arguments: Union[Symbol, List[Symbol]]) -> None:
+        """
+        Constructor for :class:`~Function.Dependent`.
+        
+        :param arguments: general arguments to store in function
+        """
         self.general_arguments = {}
         self.setGeneralArguments(arguments)
 
-    def setGeneralArguments(self, arguments: Union[Symbol, List[Symbol]], species: str = None) -> None:
+    def setGeneralArguments(
+            self,
+            arguments: Union[Union[Symbol, List[Symbol]], Dict[str, Union[Symbol, List[Symbol]]]],
+            specie: str = None
+    ) -> None:
         """
-        __Purpose__
-            Set receiver_arguments attribute as list or dict
-        __Inputs__
-            arguments [sympy.Symbol, list of sympy.Symbol, dict of list of sympy.Symbol]: contains information on how to set attribute
-                sympy.Symbol, list of sympy.Symbol:
-                    sets species [str] as key for attribute, single symbol in arguments as value
-                    species must be given
-                dict of list of sympy.Symbol:
-                    key [str] is species type for argument
-                    values [sympy.Symbol, list of sympy.Symbol] are arguments associated with species
-            species [str]: species to associated with given arguments
+        Format stored general arguments.
+        
         __Recursion Base__
             Set attribute for single species: arguments [sympy.Symbol, list of sympy.Symbol] and species [str]
+        
+        :param self: :class:`~Function.Dependent` to set general arguments for
+        :param arguments: Dictionary of argument symbol(s)
+            if :paramref:`~Function.Dependent.setGeneralArguments.arguments` is None.
+            Key is specie of arguments.
+            Value is symbol(s) for argument(s).
+            Symbol(s) for argument(s)
+            if :paramref:`~Function.Dependent.setGeneralArguments.arguments` is None.
+        :param specie: name of specie for arguments
+            if :paramref:`~Function.Dependent.setGeneralArguments.arguments` is Symbol or list.
+            None
+            if :paramref:`~Function.Dependent.setGeneralArguments.arguments` is dictionary.
         """
-        if isinstance(species, str):
+        if isinstance(specie, str):
             if isinstance(arguments, Symbol):
-                self.general_arguments[species] = [arguments]
+                self.general_arguments[specie] = [arguments]
             elif isinstance(arguments, list):
                 for argument in arguments:
                     if not isinstance(argument, Symbol):
                         raise TypeError("argument must be sympy.Symbol")
-                self.general_arguments[species] = arguments
+                self.general_arguments[specie] = arguments
             elif arguments is None:
-                self.general_arguments[species] = []
+                self.general_arguments[specie] = []
             else:
                 raise RecursiveTypeError(arguments, Symbol)
-        elif species is None:
+        elif specie is None:
             if isinstance(arguments, dict):
                 for specie, argument in arguments.items():
                     self.setGeneralArguments(argument, specie)
@@ -1264,13 +1325,15 @@ class Dependent:
 
     def getGeneralSpecies(self, nested: bool = True) -> List[str]:
         """
-        __Purpose__
-            Get species of general arguments that the dependent functions requires
-        __Inputs__
-            nested [bool]: set True to include species from children (implicit); set False to only include self species (explicit)
+        Get species of general arguments for function.
+        
+        :param self: :class:`~Function.Dependent` to retrieve species from
+        :param nested: set True to include species from children (implicit).
+            Set False to only include species from self (explicit).
         """
         species = list(self.general_arguments.keys())
         if nested:
+            self: Function
             for child in self.getChildren():
                 child_species = child.getGeneralSpecies()
                 if isinstance(child_species, str):
@@ -1287,23 +1350,25 @@ class Dependent:
             self, species: Union[str, List[str]] = None, nested: bool = False
     ) -> Union[List[Symbol], Dict[str, List[Symbol]]]:
         """
-        __Purpose__
-            Get general arguments of Dependent Function object
-        __Inputs__
-            species [str, list of str]: species of argument to get
-            nested [bool]:
-                True: includes general arguments of children functions
-                False: includes general arguments explicitly of self function
-        __Return__
-            dict of list of sympy.Symbol: species [None, list of str]
-                key is argument species
-                value is list of sympy.Symbol general arguments
-            list of sympy.Symbol: species [str]
+        Get general arguments of function.
+        
         __Recursion Base__
             return arguments of single species: species [str] and nested [False]
+        
+        :param self: :class:`~Function.Dependent` to retrieve arguments from
+        :param species: specie(s) of arguments to retrieive, acts as an optional filter
+        :param nested: set True to include arguments from children (implicit).
+            Set False to only include arguments from self (explicit).
+        
+        :returns: dictionary of arguments if :paramref:`~Function.Dependent.getGeneralArguments.species` is list.
+            Key is specie of argument.
+            Value is symbols for argument of specie.
+            Symbols for argument
+            if :paramref:`~Function.Dependent.getGeneralArguments.species` is str.
         """
         if nested:
             general_arguments = self.getGeneralArguments(species=species, nested=False)
+            self: Function
             for child in self.getChildren():
                 child_general_arguments = child.getGeneralArguments(species=species, nested=True)
                 if isinstance(child_general_arguments, Symbol):
@@ -1327,14 +1392,15 @@ class Dependent:
             else:
                 raise RecursiveTypeError(species)
 
-    def getInstanceArgumentSubstitutions(self, parent: Function, specie: str) -> List[Expr]:
+    def getInstanceArgumentExpressions(self, parent: Function, specie: str) -> List[Expr]:
         """
-        __Purpose__
-            Get which instance arguments to substitute into general arguments
-        __Inputs__
-            parent [Parent]: parent function to retrieve instance arguments from
-            specie [str]: species of argument to retrieve
+        Get expressions for instance arguments.
+        
+        :param self: :class:`~Function.Dependent` to retrieve general arguments from
+        :param parent: :class:`~Function.Function` to retrieve instance arguments from
+        :param specie: specie of arguments to substitute
         """
+        self: Function
         self_name = self.getName()
         if specie == "functions":
             instance_function_symbols = parent.getInstanceArguments(specie=specie, name=self_name)
@@ -1343,72 +1409,81 @@ class Dependent:
             for instance_name in instance_names:
                 sibling = parent.getChildren(names=instance_name)
                 if isinstance(sibling, Dependent):
-                    instance_functions.append(sibling.getInstanceArgumentFunction(parent))
+                    instance_functions.append(sibling.getInstanceArgumentForm(parent))
                 elif isinstance(sibling, Function):
-                    instance_functions.append(sibling.getForm(generations="all"))
+                    instance_functions.append(sibling.getExpression(generations="all"))
                 else:
                     raise TypeError(f"sibling for {self_name:s} must be Function")
             return instance_functions
         else:
             return parent.getInstanceArguments(specie=specie, name=self_name)
 
-    def getArgumentSubstitutions(self, parent: Function, specie: str) -> Dict[str, Expr]:
+    def getInstanceArgumentSubstitutions(self, parent: Function, specie: str) -> Dict[Symbol, Expr]:
         """
-        __Purpose__
-            Get substitutions for dependent, i.e. which instance argument to substitute into each general argument
-        __Inputs__
-            parent [Parent]: parent function to retrieve instance arguments from
-            specie [str]: species of argument to retrieve
+        Get instance-argument substitutions, to substitute into general arguments.
+        
+        :param self: :class:`~Function.Dependent` to retrieve general arguments from
+        :param parent: :class:`~Function.Function` to retrieve instance arguments from
+        :param specie: specie of arguments to substitute
         """
         general_arguments = self.getGeneralArguments(species=specie)
-        instance_arguments = self.getInstanceArgumentSubstitutions(parent, specie)
+        instance_arguments = self.getInstanceArgumentExpressions(parent, specie)
         return dict(zip(general_arguments, instance_arguments))
 
-    def getInstanceArgumentFunction(self, parent: Function) -> Expr:
+    def getInstanceArgumentForm(self, parent: Function) -> Expr:
         """
-        __Purpose__
-            Get dependent function with instance arguments substituted into general arguments
-        __Inputs__
-            parent [Parent]: parent function to retrieve instance arguments from
+        Get expression for dependent function, with instance arguments substituted into general arguments.
+        
+        :param self: :class:`~Function.Dependent` to retrieve general arguments from
+        :param parent: :class:`~Function.Function` to retrieve instance arguments from
         """
+        self: Function
+        function_sub = self.getExpression(generations="all")
+        self: Dependent
         species = self.getGeneralSpecies()
-        function_sub = self.getForm(generations="all")
         for specie in species:
-            substitutions = self.getArgumentSubstitutions(parent, specie)
+            substitutions = self.getInstanceArgumentSubstitutions(parent, specie)
             function_sub = function_sub.subs(substitutions)
         return function_sub
 
 
 class Independent:
     """
-    __Purpose__
-        Store properties for a function that does not require input from another function
+    Stores properties for a function that does not require input from another function.
     """
 
-    def __init__(self) -> None: pass
+    def __init__(self) -> None:
+        """
+        Constructor for :class:`~Function.Independent`.
+        """
+        pass
 
 
 class Piecewise:
     """
-    __Purpose__
-        Store information pertaining to piecewise function
-    __Attributes__
-        functions [list of Function]: function pieces making up piecewise function
-        conditions [bool]: conditions under which each function piece is used
+    Stores info pertaining to piecewise function.
+    
+    :ivar pieces: function symbols constituting piecewise (pieces)
+    :ivar conditions: conditions under which to use each piece
     """
 
-    def __init__(self, functions: List[Function], conditions: List[str]) -> None:
-        if len(functions) != len(conditions):
-            raise ValueError(
-                "each function must have exactly one corresponding condition"
-            )
-        self.functions = functions
+    def __init__(self, pieces: List[Function], conditions: List[str]) -> None:
+        """
+        Constructor for :class:`~Function.Piecewise`.
+        
+        :param pieces: symbols for function pieces
+        :param conditions: conditions corresponding to function pieces
+        """
+        if len(pieces) != len(conditions):
+            raise ValueError("each function must have exactly one corresponding condition")
+        self.pieces = pieces
         self.conditions = [eval(condition) for condition in conditions]  # eval() to convert str to bool
 
     def getConditions(self) -> List[bool]:
         """
-        __Purpose__
-            Get conditions that determine which function piece to use
+        Get conditions, to determine which function piece to use.
+        
+        :param self: :class:`~Function.Piecewise` to retrieve conditions from
         """
         return self.conditions
 
@@ -1420,12 +1495,14 @@ class Piecewise:
 
         :param self: :class:`~Function.Piecewise` to retrieve constitutes from
         :param return_type: type of output to return list elements as.
-        :returns: Names of pieces if :paramref:`~Function.Piecewise.getPieces.return_type` is str.
-            Symbols for pieces if :paramref:`~Function.Piecewise.getPieces.return_type` is Symbol.
+        :returns: Names of pieces
+            if :paramref:`~Function.Piecewise.getPieces.return_type` is str.
+            Symbols for pieces
+            if :paramref:`~Function.Piecewise.getPieces.return_type` is Symbol.
             Function objects from :class:`~Function.Model`.
             if :paramref:`~Function.Piecewise.getPieces.return_type` is Function.
         """
-        pieces = self.functions
+        pieces = self.pieces
         if return_type == str:
             piece_names = [str(piece) for piece in pieces]
             return piece_names
@@ -1441,25 +1518,26 @@ class Piecewise:
 
     def getPieceCount(self) -> int:
         """
-        __Purpose__
-            Get number of pieces constituting piecewise function
+        Get number of pieces constituting piecewise function.
+        
+        :param self: :class:`~Function.Piecewise` to retrieve pieces from
         """
-        return len(self.functions)
+        return len(self.pieces)
 
-    def getForm(self, generations: Union[int, str] = 0, **kwargs) -> spPiecewise:
+    def getExpression(self, generations: Union[int, str] = 0, **kwargs) -> spPiecewise:
         """
         Get symbolic piecewise expression.
 
         :param self: :class:`~Function.Piecewise` to retrieve expression for
-        :param generations: see :paramref:`~Function.Function.getForm.generations`
-        :param kwargs: additional arguments to substitute into :meth:`~Function.Function.getForm`
+        :param generations: see :paramref:`~Function.Function.getExpression.generations`
+        :param kwargs: additional arguments to substitute into :meth:`~Function.Function.getExpression`
         """
         if generations == "all":
             functions: List[Function] = self.getPieces(return_type=Function)
-            pieces = [function.getForm(generations="all") for function in functions]
+            pieces = [function.getExpression(generations="all", **kwargs) for function in functions]
         elif generations >= 1:
             functions: List[Function] = self.getPieces(return_type=Function)
-            pieces = [function.getForm(generations=generations - 1) for function in functions]
+            pieces = [function.getExpression(generations=generations - 1, **kwargs) for function in functions]
         elif generations == 0:
             pieces = self.getPieces(return_type=Symbol)
         else:
@@ -1471,16 +1549,20 @@ class Piecewise:
 
 class NonPiecewise:
     """
-    __Purpose__
-        Store information pertaining to nonpiecewise (standard) function
-    __Attributes__
-        functions [list of Function]: function form of object
+    Stores info pertaining to nonpiecewise (standard) function.
+    
+    :ivar expression: symbolic expression for function
     """
 
     def __init__(self, expression: Expr) -> None:
+        """
+        Constructor for :class:`~Function.NonPiecewise`.
+
+        :param expression: symbolic expression for function
+        """
         self.expression = expression
 
-    def getForm(
+    def getExpression(
             self, parent: Function = None, substitute_dependents: bool = True, generations: Union[int, str] = 0
     ) -> Expr:
         """
@@ -1490,8 +1572,8 @@ class NonPiecewise:
         :param parent: function to retrieve input arguments from.
             Only called if self is Dependent function.
         :param substitute_dependents: set True to substitute all dependents into expression.
-            Set false to substitute in accordance with :paramref:`~Function.Function.getForm.generations`.
-            Only called if :paramref:`~Function.Function.getForm.generations`>0.
+            Set false to substitute in accordance with :paramref:`~Function.Function.getExpression.generations`.
+            Only called if :paramref:`~Function.Function.getExpression.generations`>0.
         :param generations: number of generations for children to substitute into expression.
             Set to 0 to retrieve original expression without substitutions.
             Set to positive integer n to substitute n generations of children.
@@ -1499,7 +1581,7 @@ class NonPiecewise:
         """
         if isinstance(self, Dependent) and isinstance(parent, Independent):
             parent: Function
-            return self.getInstanceArgumentFunction(parent)
+            return self.getInstanceArgumentForm(parent)
 
         expression = self.expression
         if generations == 0:
@@ -1511,18 +1593,18 @@ class NonPiecewise:
             if isinstance(child, Dependent):
                 child: Function
                 if substitute_dependents:
-                    child_expression = child.getForm(parent=self)
+                    child_expression = child.getExpression(parent=self)
                 else:
                     child_expression = child_symbol
             elif isinstance(child, Independent):
                 child: Function
                 if generations == "all":
-                    child_expression = child.getForm(
+                    child_expression = child.getExpression(
                         substitute_dependents=substitute_dependents,
                         generations=generations
                     )
                 elif generations >= 1:
-                    child_expression = child.getForm(
+                    child_expression = child.getExpression(
                         substitute_dependents=substitute_dependents,
                         generations=generations - 1
                     )
@@ -1543,29 +1625,22 @@ def FunctionMaster(
         **kwargs
 ) -> Function:
     """
-    __Purpose__
-        Get Function object with desired properties
-    __Inputs__
-        name [str]: name associated with function
-        function [sympy.Expr, list of Function]:
-            sympy.Expr: form of function (e.g. x**2 in f(x)=x**2) for non-piecewise function
-            list of Function: collection of function pieces for piecewise function
-        inheritance [tuple of classes]: classes for function to inherit
-            Dependent: inherit if function requires input (e.g. variable or parameter input)
-            Derivative: inherit if function should be included in ODE of model
-            Piecewise: inherit if function is piecewise
-            NonPiecewise: inherit if function is non-piecewise
-        **kwargs [dict]: arguments to be given to each inherited class's __init__
-            e.g. kwargs["Dependent"] holds arguments for Dependent __init__ if function inherits Dependent class
+    Get Function object with desired properties/inheritance.
+    
+    :ivar name: name of function
+    :ivar function: symbolic expression for function
+        if :class:`~Function.NonPiecewise`.
+        Symbols for pieces
+        if :class:`~Function.Piecewise`.
+    :ivar inheritance: classes for Function object to inherit
+    :ivar kwargs: arguments to pass into inheritance classes.
+        Key is string name of class.
+        Value is dictionary of arguments/parameters to pass into class.
     """
 
     class FunctionCore(Function, *inheritance):
         """
-        __Purpose__
-            Object to store various information about a function
-            Allows Function object to dynamically inherit necessary classes
-
-        .. seealso:: Function
+        Stores info pertinent to generate/simulate function.
         """
 
         def __init__(
@@ -1576,10 +1651,14 @@ def FunctionMaster(
                 **kwargs
         ) -> None:
             """
-            __Purpose__
-                Instantiate Function object with necessary class inheritance
-            __Inputs__
-                cf. FunctionMaster
+            Constructor for :class:`~Function.FunctionMaster.FunctionCore`.
+            
+            :param name: name of function
+            :param function: symbol expression/pieces for function
+            :param inheritance: classes for Function object to inherit
+            :param kwargs: arguments to pass into inheritance classes.
+                Key is string name of class.
+                Value is dictionary of arguments/parameters to pass into class.
             """
             if Derivative in inheritance:
                 Derivative.__init__(self, **kwargs["Derivative"])
@@ -1603,99 +1682,68 @@ def FunctionMaster(
     return FunctionCore(name, function, inheritance, **kwargs)
 
 
-def getFunctionInfo(info: Dict[str, Union[str, List[str], Dict[str, Union[str, List[str]]]]], model: Model = None) -> \
+def getFunctionInfo(info: dict, model: Model = None) -> \
         Dict[str, List[str]]:
     """
-    __Purpose__
-        Get properly formatted dictionary of information to create Function object
-    __Inputs__
-        info [dict]: collection of information to properly create Function object
-            {"properties": [list of str],
-            "variables": [str, list of str],
-            "parameters": [str, list of str],
-            "form": [str],
-            "children":
-                [{child_name:
-                    {"variables": [str, list of str],
-                    "parameters": [str, list of str]}
-                }]
-            "arguments":
-                "variables": [str, list of str]
-                "parameters": [str, list of str]
-                "functions": [str, list of str]
-            "variable": [str]
-            }
-        model [Model]: model to associated Function object with
+    Get ormatted dictionary of info to generate Function object.
+
+    :param info: 2/3-level dictionary of info directly from file.
+        First key is name of function.
+        Second key is name of property for function.
+        Value is string or 1-level dictionary, which indicates property value.
+    :param model: model to associated Function object with
     """
 
     def getVariables(info: dict) -> List[Symbol]:
         """
-        __Purpose__
-            Get variable for function
-            Create symbolic variable of each parameter
-        __Inputs__
-            info [dict]: contains information and properties of function
+        Get symbolic variables for function.
+
+        :param info: info for function
         """
         return var(info["variables"])
 
     def getParameters(info: dict) -> List[Symbol]:
         """
-        __Purpose__
-            Get parameters for function
-            Create symbolic variable of each parameter
-        __Inputs__
-            info [dict]: contains information and properties of function
+        Get symbolic parameters for function.
+
+        :param info: info for function
         """
         return var(info["parameters"])
 
     def getProperties(info: dict) -> List[str]:
         """
-        __Purpose__
-            Get collection of properties to give function (e.g. piecewise, dependent)
-        __Inputs__
-            info [dict]: contains information and properties of function
+        Get properties to give function (e.g. piecewise, dependent)
+
+        :param info: info for function
         """
         return info["properties"]
 
     def getArguments(info: dict) -> Dict[str, List[Symbol]]:
         """
-        __Purpose__
-            Get input arguments into function
-            Create symbolic variable of each argument
-        __Inputs__
-            info [dict]: contains information and properties of function
+        Get symbolic general arguments for function.
+
+        :param info: info for function
         """
         arguments = info["arguments"]
         return {key: var(arguments[key]) for key in arguments.keys()}
 
     def getVariable(info: dict) -> Symbol:
         """
-        __Purpose__
-            Get associated variable for derivative
-        __Inputs__
-            info [dict]: contains information and properties of function
+        Get associated variable for derivative.
+
+        :param info: info for function
         """
         return Symbol(info["variable"])
 
-    def getChildren(model: Model, info: dict) -> Dict[str, Dict[str, Union[Function, Union[Symbol, List[Symbol]]]]]:
+    def getChildren(info: dict) -> dict:
         """
-        __Purpose__
-            Get nested functions (a.k.a. children functions), composite functions (e.g. g(x) in f(g(x)))
-            Get associated arguments to input into each child function, keeping track of argument type (e.g. parameter, variable)
-            Create symbolic variable of each argument
-        __Inputs__
-            model [Model]: model to retrieve child Function object from
-            children_info [dict]:
-                keys [str] are name of child function
-                values [dict, None] contain instance argument(s) into child function
-                    keys [str] are species of argument (e.g. "variables","parameters","functions")
-                    values [str, list of str] are argument names
-        __Return__
-            dict
-                keys [str] are name of child function
-                values contain information about child function in relation to parent
-                    keys: values
-                        argument_type [str]: arguments [sympy.Symbol, list of sympy.Symbol] of given argument_type to input to child function
+        Get info to connect function with child.
+        
+        :param info: info for function
+        :returns: 2-level dictionary of instance arguments for function into child.
+            First key is name of child function.
+            Second key is specie of instance arguments.
+            Value is symbols for instance arguments.
         """
         children_info = info["children"]
         children_names = list(children_info.keys())
@@ -1703,14 +1751,11 @@ def getFunctionInfo(info: Dict[str, Union[str, List[str], Dict[str, Union[str, L
 
         children_dict = {}
         for child_name in children_names:
-            child_info = children_info[child_name]
-            if child_info is not None:
+            if (child_info := children_info[child_name]) is not None:
                 children_dict[child_name] = {
                     argument_type: var(child_info[argument_type])
                     for argument_type in child_info.keys()
                 }
-            elif child_info is None:
-                children_dict[child_name] = {}
         return children_dict
 
     kwargs = {}
@@ -1723,7 +1768,7 @@ def getFunctionInfo(info: Dict[str, Union[str, List[str], Dict[str, Union[str, L
     if "parameters" in info_keys:
         kwargs["parameters"] = getParameters(info)
     if "children" in info_keys:
-        kwargs["children"] = getChildren(model, info)
+        kwargs["children"] = getChildren(info)
 
     properties = getProperties(info)
     kwargs["properties"] = properties
@@ -1743,16 +1788,24 @@ def getFunctionInfo(info: Dict[str, Union[str, List[str], Dict[str, Union[str, L
 
 
 def generateFunctionsFromFile(filename: str, **kwargs) -> List[Function]:
+    """
+    Generate all functions from file.
+    
+    :param filename: name of file to read functions from
+    :param kwargs: additional arguments to pass into :meth:`~Function.generateFunction`
+    """
     file = yaml.load(open(filename), Loader=yaml.Loader)
     return [generateFunction(name, file[name], **kwargs) for name in file.keys()]
 
 
-def getInheritance(properties: List[str], name: str = '') -> List[Type[Function]]:
+def getInheritance(
+        properties: List[str], name: str = ''
+) -> List[Type[Union[Derivative, Dependent, Independent, Piecewise, NonPiecewise]]]:
     """
     Get classes that function must inherit from properties.
 
     :param properties: properties to determine inheritance
-    :param name: name of function, used when error is thrown
+    :param name: name of function, only called when error is thrown
     """
     inheritance = []
 
@@ -1775,17 +1828,12 @@ def getInheritance(properties: List[str], name: str = '') -> List[Type[Function]
     return inheritance
 
 
-def generateFunction(name: str, info: Dict[str, dict], model: Model = None) -> Function:
+def generateFunction(name: str, info: Dict[str, Union[str, dict]], model: Model = None) -> Function:
     """
     Generate Function object.
-    
-    This includes
-        #. parent-child associations
-        #. variable-parameter distinctions
-        #. properties
 
     :param name: name of function to generate
-    :param info: dictionary of information needed to generate function
+    :param info: dictionary of info needed to generate function
     :param model: :class:`~Function.Model` to add function into
     :returns: Generated function
     """
@@ -1793,31 +1841,24 @@ def generateFunction(name: str, info: Dict[str, dict], model: Model = None) -> F
 
     info_keys = info.keys()
     if "form" in info_keys:
-        form = eval(info["form"])
+        expression = eval(info["form"])
     elif "pieces" in info_keys:
-        form = [Symbol(piece) for piece in info["pieces"]]  # [model.getFunctions(names=piece_name) for piece_name in
-        # info[
-        # "pieces"]]
+        expression = [Symbol(piece) for piece in info["pieces"]]
     else:
         raise ValueError("info from functions_yml file must contain either form or pieces")
 
     inheritance = getInheritance(kwargs["properties"])
+    return FunctionMaster(name, expression, inheritance=tuple(inheritance), **kwargs)
 
-    return FunctionMaster(name, form, inheritance=tuple(inheritance), **kwargs)
 
-
-def createModel(function_ymls: str, parameters_yml: str) -> Model:
+def createModel(function_ymls: Union[str, List[str]], parameter_ymls: Union[str, List[str]]) -> Model:
     """
-    __Purpose__
-        Create model from given YML files
-    __Inputs__
-        functions_yml [str]: name of YML file containing function/equation info
-        parameters_yml [str]: name of YML file containing parameters info
+    Create model from YML files.
 
-    :param function_ymls: name of YML file containing information for function
-    :param parameters_yml: name of YML file containing information about parameter values/units
+    :param function_ymls: name(s) of YML file(s) containing info for function
+    :param parameter_ymls: name(s) of YML file(s) containing info about parameter values/units
     """
     model = Model()
-    model.loadParametersFromFile(parameters_yml)
+    model.loadParametersFromFile(parameter_ymls)
     model.loadFunctionsFromFiles(function_ymls)
     return model

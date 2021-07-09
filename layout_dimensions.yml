@@ -64,14 +64,14 @@ main_window:
       function_label:
         width: 110 * 169/1350
         height: 1
-      form_label:
+      expression_label:
         width: 385 * 169/1350
         height: 1
     function_row:
       function_label:
         width: 110
         height:
-      form_label:
+      expression_label:
         width: 385
         height:
       function_stem_combobox:

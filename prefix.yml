@@ -11,7 +11,7 @@ parameter_subgroup_section: PARAMETER SUBGROUP SECTION
 function_filestem: FUNCTION FILESTEM
 parameter_filestem: PARAMETER FILESTEM
 custom_parameter: CUSTOM PARAMETER
-function_form: FUNCTION FORM
+function_expression: FUNCTION EXPRESSION
 canvas: CANVAS
 canvas_choice: CANVAS CHOICE
 load_file: LOAD FILE

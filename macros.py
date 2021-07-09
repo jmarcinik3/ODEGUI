@@ -164,26 +164,26 @@ def getTexImage(name: str, tex_folder: str = "tex", **kwargs) -> Union[sg.Image,
         return sg.Text(name, **kwargs)
 
 
-def form2tex(form: Expr, var2tex: str) -> str:
+def expression2tex(expression: Expr, var2tex: str) -> str:
     """
-    Get tex expression from equation form.
+    Get tex expression from symbolic expression.
     
-    :param form: form of equation to convert to tex
+    :param expression: expression of equation to convert to tex
     :param var2tex: name of YML with variable-to-tex dictionary.
         Key is name of variable.
-        Value is tex form of variable.
+        Value is tex expression of variable.
     """
-    form_str = latex(form)
+    expression_str = latex(expression)
     var2tex = yaml.load(open(var2tex, 'r'), Loader=yaml.Loader)
     # noinspection PyTypeChecker
     sorted_tex: List[str] = sorted(var2tex.keys(), key=len, reverse=True)
-    if isinstance(form, Expr):
-        free_symbols = form.free_symbols
+    if isinstance(expression, Expr):
+        free_symbols = expression.free_symbols
         free_symbol_names = [str(free_symbol) for free_symbol in free_symbols]
         sorted_tex = [name for name in sorted_tex if name in free_symbol_names]
 
     for var in sorted_tex:
-        if f"\\{var:s}" in form_str and f"\\\\{var:s}" not in form_str:
+        if f"\\{var:s}" in expression_str and f"\\\\{var:s}" not in expression_str:
             continue
 
         if var[-1].isdigit():
@@ -199,22 +199,22 @@ def form2tex(form: Expr, var2tex: str) -> str:
 
         tex = var2tex[var].replace('$', '')
         var_subscript = f"_{{{var:s}}}"
-        var_in_subscript = var_subscript in form_str
+        var_in_subscript = var_subscript in expression_str
         if var_in_subscript:
-            form_str = form_str.replace(var_subscript, '***')
-        form_str = form_str.replace(sympy_var, tex)
+            expression_str = expression_str.replace(var_subscript, '***')
+        expression_str = expression_str.replace(sympy_var, tex)
         if var_in_subscript:
-            form_str = form_str.replace('***', var_subscript)
-    form_str = '$' + form_str + '$'
+            expression_str = expression_str.replace('***', var_subscript)
+    expression_str = '$' + expression_str + '$'
 
-    return form_str
+    return expression_str
 
 
 def tex2png(tex_text: str, filepath: str, overwrite: bool = False) -> None:
     """
     Save tex for given text as PNG.
     
-    :param tex_text: tex form of text
+    :param tex_text: tex expression of text
     :param filepath: location to save PNG file
     :param overwrite: set True to overwrite existing quantity if name already exists.
         Set False to skip quantities previously saved as TeX image.
@@ -231,20 +231,20 @@ def tex2png(tex_text: str, filepath: str, overwrite: bool = False) -> None:
         preview(**preview_kwargs)
 
 
-def form2png(name: str, form: Expr, folder: str, filename: str, var2tex: str) -> str:
+def expression2png(name: str, expression: Expr, folder: str, filename: str, var2tex: str) -> str:
     """
     Generate PNG image of tex for variable.
     
     :param name: name of variable to generate image for
-    :param form: tex expression to generate image for
+    :param expression: tex expression to generate image for
     :param folder: output folder for image
     :param filename: base filename for image
     :param var2tex: name of YML with variable-to-tex dictionary.
         Key is name of variable.
-        Value is tex form of variable.
+        Value is tex expression of variable.
     :returns: filepath of new image file
     """
-    form_str = form2tex(form, var2tex)
+    expression_str = expression2tex(expression, var2tex)
 
     if not os.path.isdir(folder):
         os.mkdir(folder)
@@ -258,19 +258,19 @@ def form2png(name: str, form: Expr, folder: str, filename: str, var2tex: str) ->
         old_info = {}
 
     filepath = os.path.join(folder, filename)
-    overwrite = name not in old_info.keys() or form_str != old_info[name]["expression"]
+    overwrite = name not in old_info.keys() or expression_str != old_info[name]["expression"]
     kwargs = {
-        "tex_text": form_str,
+        "tex_text": expression_str,
         "filepath": filepath,
         "overwrite": overwrite
     }
     if overwrite:
-        print(f"Overwriting {filepath:s} as {form_str:s}")
+        print(f"Overwriting {filepath:s} as {expression_str:s}")
     tex2png(**kwargs)
 
     new_info = old_info
     new_info[name] = {
-        "expression": form_str,
+        "expression": expression_str,
         "filename": filename
     }
     yaml.dump(new_info, open(logpath, 'w'))
@@ -280,7 +280,7 @@ def form2png(name: str, form: Expr, folder: str, filename: str, var2tex: str) ->
 
 def tex2pngFromFile(output_folder: str, tex_filename: str, **kwargs) -> None:
     """
-    Create PNG for quantity(s) in TeX form.
+    Create PNG for quantity(s) in TeX expression.
     File containing quantity name(s) to TeX math format must be made before call.
 
     :param output_folder: name of folder to save images in

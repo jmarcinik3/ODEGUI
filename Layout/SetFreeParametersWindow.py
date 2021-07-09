@@ -164,13 +164,13 @@ class SetFreeParametersWindowRunner(WindowRunner):
             self, names: Union[str, List[str]] = None
     ) -> Union[List[float, float, int], Dict[str, List[float, float, int]]]:
         """
-        Get information about free parameter values for simulation.
+        Get info about free parameter values for simulation.
         Uses present state of window.
         Spawns popup error message if values are (1) of incorrect type or (2) missing.
         
         :param self: :class:`~Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner` to retrieve values from
-        :param names: names of parameters to retrieve information for
-        :returns: Dictionary of information for free parameters if :paramref:`~Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner.getFreeParameterValues.names` is list.
+        :param names: names of parameters to retrieve info for
+        :returns: Dictionary of info for free parameters if :paramref:`~Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner.getFreeParameterValues.names` is list.
             Key is name of parameter.
             Value is list of (minimum, maximum, stepcount) for parameter.
             Returns only this list if :paramref:`~Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner.getFreeParameterValues.names` is str.

@@ -140,7 +140,7 @@ class ChooseParametersWindow(Window):
         Get parameters stored in window.
 
         :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve parameters from
-        :returns: Dictionary of parameter information.
+        :returns: Dictionary of parameter info.
             Key is name of parameter.
             Value is quantity containing value and unit for parameter.
         """

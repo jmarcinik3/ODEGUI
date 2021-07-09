@@ -26,7 +26,7 @@ class Results:
     :ivar free_parameter_values: dictionary of values for free parameters.
             Key is name of free parameter.
             Value is possible values for free parameter.
-    :ivar general_equilibrium_forms: dictionary of symbolic equilibrium expressions.
+    :ivar general_equilibrium_expressions: dictionary of symbolic equilibrium expressions.
         Key is name of variable.
         Value is symbolic expression.
         This attribute is so that equilibria only need to be calculated once.
@@ -45,7 +45,7 @@ class Results:
         self.results = {}
         self.model = model
         self.free_parameter_values = free_parameter_values
-        self.general_equilibrium_forms = {}
+        self.general_equilibrium_expressions = {}
 
     def getModel(self) -> Model:
         """
@@ -91,44 +91,44 @@ class Results:
         else:
             raise TypeError("names must be str or list")
 
-    def setEquilibriumForms(self, equilibrium_forms: Dict[Symbol, Expr] = None) -> None:
+    def setEquilibriumExpressions(self, equilibrium_expressions: Dict[Symbol, Expr] = None) -> None:
         """
         Set symbolic expressions for equilibrium variables.
         These expressions are simplified, except variables and free parameters are kept symbolic.
         Equilibria may be set manually or calculated automatically from the stored :class:`~Function.Model`.
         
         :param self: :class:`~Results.Results` to set equilibria for
-        :param equilibrium_forms: dictionary of equilibria for variables.
+        :param equilibrium_expressions: dictionary of equilibria for variables.
             Key is symbolic variable.
             Value is symbolic equilibrium expression of variable.
         """
-        if equilibrium_forms is None:
+        if equilibrium_expressions is None:
             solutions = self.getModel().getEquilibriumSolutions(skip_parameters=self.getFreeParameterNames())
             solutions = {variable: solution for variable, solution in solutions.items()}
-            self.general_equilibrium_forms = solutions
+            self.general_equilibrium_expressions = solutions
         else:
-            self.general_equilibrium_forms = equilibrium_forms
+            self.general_equilibrium_expressions = equilibrium_expressions
 
-    def getEquilibriumForm(self, name: Union[Symbol, str]) -> Expr:
+    def getEquilibriumExpression(self, name: Union[Symbol, str]) -> Expr:
         """
         Get equilibrium expression for a variable.
         
         :param self: :class:`~Results.Results` to retrieve equilibrium from
         :param name: name of variable to retrieve equilibrium for
         """
-        if len(self.general_equilibrium_forms.keys()) == 0:
-            self.setEquilibriumForms()
+        if len(self.general_equilibrium_expressions.keys()) == 0:
+            self.setEquilibriumExpressions()
 
         if isinstance(name, Symbol):
-            general_form = self.general_equilibrium_forms[name]
+            general_expression = self.general_equilibrium_expressions[name]
         elif isinstance(name, str):
-            general_form = self.general_equilibrium_forms[Symbol(name)]
+            general_expression = self.general_equilibrium_expressions[Symbol(name)]
         else:
             raise TypeError("name must be sp.Symbol or str")
 
         parameter_substitutions = self.getModel().getParameterSubstitutions(self.getFreeParameterNames())
-        simplified_form = general_form.subs(parameter_substitutions)
-        return simplified_form
+        simplified_expression = general_expression.subs(parameter_substitutions)
+        return simplified_expression
 
     def resetResults(self) -> None:
         """
@@ -164,7 +164,7 @@ class Results:
         """
         model = self.getModel()
         function = model.getFunctions(names=name)
-        form = function.getForm(generations="all")
+        expression = function.getExpression(generations="all")
 
         substitutions = {}
         function_variables = set(function.getFreeSymbols(species="Variable", generations="all"))
@@ -183,9 +183,9 @@ class Results:
         parameter_names = function.getFreeSymbols(species="Parameter", generations="all", return_type=str)
         parameter_substitutions = model.getParameterSubstitutions(parameter_names)
         substitutions.update(parameter_substitutions)
-        form = form.subs(substitutions)
+        expression = expression.subs(substitutions)
 
-        updated_results = self.getSubstitutedResults(index, form)
+        updated_results = self.getSubstitutedResults(index, expression)
         return updated_results
 
     def getEquilibriumVariableResults(self, index: Union[tuple, Tuple[int]], name: str) -> ndarray:
@@ -196,7 +196,7 @@ class Results:
         :param index: index of parameter value for free parameter
         :param name: name of variable to retrieve results of
         """
-        results = self.getSubstitutedResults(index, self.getEquilibriumForm(name))
+        results = self.getSubstitutedResults(index, self.getEquilibriumExpression(name))
         return np.array(results)
 
     def getConstantVariableResults(self, index: Union[tuple, Tuple[int]], name: str) -> ndarray:

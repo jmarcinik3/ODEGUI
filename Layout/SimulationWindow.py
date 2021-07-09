@@ -269,7 +269,7 @@ class ParameterSlider(Element):
         :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to initialize
         :param name: name of parameter
         :param window: window in which slider object will be displayed
-        :param values: tuple of information giving parameter values.
+        :param values: tuple of info giving parameter values.
             First value is minimum value of parameter.
             Second value is maximum value of parameter.
             Third value is number of distinct parameter values.
@@ -1692,7 +1692,7 @@ class SimulationWindowRunner(WindowRunner):
                 "skip_parameters": self.getFreeParameterNames()
             }
             self.general_derivative_vector, equilibrium_substitutions = model.getDerivativeVector(**kwargs)
-            self.results.setEquilibriumForms(equilibrium_forms=equilibrium_substitutions)
+            self.results.setEquilibriumExpressions(equilibrium_expressions=equilibrium_substitutions)
         return self.general_derivative_vector
 
     def getResultsObject(self) -> Results:
@@ -1807,7 +1807,7 @@ class SimulationWindowRunner(WindowRunner):
         
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve quantity name from
         :param name: name axis to retreive quantity name from
-        :returns: Tuple of quantity information.
+        :returns: Tuple of quantity info.
             First index gives quantity name.
             Second index gives quantity type.
             Third index gives condensor name.
@@ -1892,11 +1892,11 @@ class SimulationWindowRunner(WindowRunner):
 
     def getInputTimes(self) -> Tuple[float, float, int]:
         """
-        Get information about time steps to run simulation.
-        Uses present state of :class:`~Layout.SimulationWindow.SimulationWindowRunner` to determine information.
+        Get info about time steps to run simulation.
+        Uses present state of :class:`~Layout.SimulationWindow.SimulationWindowRunner` to determine info.
         
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve time information from
-        :returns: Tuple of time information.
+        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve time info from
+        :returns: Tuple of time info.
             First element is initial time for simulation.
             Second element is final time for simulation.
             Third element is number of time steps for simulation.
@@ -2237,7 +2237,7 @@ class SimulationWindowRunner(WindowRunner):
         This plots the most up-to-date data and aesthetics on the plot.
         
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to update figure-canvas in
-        :param figure: new figure (containing most up-to-date information) to plot
+        :param figure: new figure (containing most up-to-date info) to plot
         :returns: New figure-canvas stored in window runner.
         """
         figure_canvas = self.getFigureCanvas()
@@ -2262,9 +2262,9 @@ class SimulationWindowRunner(WindowRunner):
         Do nothing if simulation has never been run.
         
         :param index: index of parameter value for free parameter(s)
-        :param plot_quantities: dictionary storing information for plot quantities.
+        :param plot_quantities: dictionary storing info for plot quantities.
             Key is name of axis to plot quantity on.
-            Value is tuple of quantity information.
+            Value is tuple of quantity info.
             First element gives quantity name.
             Second element gives quantity type.
             Third element gives condensor name.
