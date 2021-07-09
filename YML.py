@@ -4,6 +4,7 @@ import yaml
 from metpy.units import units
 from pint import Quantity
 
+from Function import Function, generateFunction
 
 def readParameters(filenames: Union[str, List[str]]) -> Dict[str, Quantity]:
     """
@@ -25,6 +26,25 @@ def readParameters(filenames: Union[str, List[str]]) -> Dict[str, Quantity]:
             unit = quantity["unit"]
             quantities[name] = value * units(unit)
     return quantities
+
+def readFunctions(filepath: Union[str, List[str]]) -> Dict[str, Function]:
+    """
+    Read file containing information about parameters
+
+    :param filepath: name(s) of file(s) containing information
+    :returns: Dictionary of parameter quantities.
+        Key is name of parameter.
+        Value is Quantity containg value and unit.
+    """
+    if isinstance(filepath, str):
+        filepath = [filepath]
+    
+    functions = {}
+    for filepath in filepath:
+        function_info = yaml.load(open(filepath, 'r'), Loader=yaml.Loader)
+        for name, info in function_info.items():
+            functions[name] = generateFunction(name, info)
+    return functions
 
 
 def readVar2Tex(filename="var2tex.yml"):
