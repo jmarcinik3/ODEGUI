@@ -1130,10 +1130,11 @@ class Function(Child, Parent):
             else:
                 self: Function
                 raise TypeError(f"function {self.getName():s} must inherit either Piecewise or NonPiecewise")
-            self.expression = expression
+            self: Function
+            self.memory["expression"] = expression
             return expression
         elif self.usingMemory() and isinstance(self.expression, Expr):
-            return self.expression
+            return self.memory["expression"]
         else:
             raise ValueError(f"improper expression in memory for {self.getName():s}")
 
