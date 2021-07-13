@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
 import yaml
+from metpy.units import units
 from numpy import ndarray
 from pint import Quantity
 from scipy import optimize
@@ -15,7 +16,6 @@ from sympy import Symbol, cosh, exp, ln, pi, solve, symbols, var
 from sympy.core import function
 from sympy.utilities.lambdify import lambdify
 
-import YML
 from CustomErrors import RecursiveTypeError
 from macros import formatQuantity, unique
 
@@ -273,7 +273,7 @@ class Model:
             ymls = [ymls]
 
         for yml in ymls:
-            parameters = YML.readParameters(yml)
+            parameters = readParameters(yml)
             self.addParameters(parameters)
 
     def saveParametersToFile(self, filename: str) -> None:
@@ -1436,13 +1436,13 @@ class Dependent:
         :param parent: :class:`~Function.Function` to retrieve instance arguments from
         """
         self: Function
-        function_sub = self.getExpression(generations="all")
+        expression = self.getExpression(generations="all")
         self: Dependent
         species = self.getGeneralSpecies()
         for specie in species:
             substitutions = self.getInstanceArgumentSubstitutions(parent, specie)
-            function_sub = function_sub.subs(substitutions)
-        return function_sub
+            expression = expression.subs(substitutions)
+        return expression
 
 
 class Independent:
@@ -1860,3 +1860,46 @@ def createModel(function_ymls: Union[str, List[str]], parameter_ymls: Union[str,
     model.loadParametersFromFile(parameter_ymls)
     model.loadFunctionsFromFiles(function_ymls)
     return model
+
+
+def readParameters(filenames: Union[str, List[str]]) -> Dict[str, Quantity]:
+    """
+    Read file containing information about parameters
+
+    :param filenames: name(s) of file(s) containing information
+    :returns: Dictionary of parameter quantities.
+        Key is name of parameter.
+        Value is Quantity containg value and unit.
+    """
+    if isinstance(filenames, str):
+        filenames = [filenames]
+
+    quantities = {}
+    for filename in filenames:
+        parameters = yaml.load(open(filename, 'r'), Loader=yaml.Loader)
+        for name, quantity in parameters.items():
+            value = float(quantity["value"])
+            unit = quantity["unit"]
+            quantities[name] = value * units(unit)
+    return quantities
+
+
+def readFunctions(filepath: Union[str, List[str]]) -> Dict[str, Function]:
+    """
+    Read file containing information about parameters
+
+    :param filepath: name(s) of file(s) containing information
+    :returns: Dictionary of parameter quantities.
+        Key is name of parameter.
+        Value is Quantity containg value and unit.
+    """
+
+    if isinstance(filepath, str):
+        filepath = [filepath]
+
+    functions = {}
+    for filepath in filepath:
+        function_info = yaml.load(open(filepath, 'r'), Loader=yaml.Loader)
+        for name, info in function_info.items():
+            functions[name] = generateFunction(name, info)
+    return functions

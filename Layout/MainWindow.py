@@ -10,13 +10,13 @@ from numpy import array
 from numpy import ndarray
 from pint import Quantity
 
-import YML
 from CustomErrors import RecursiveTypeError
-from Function import Function, Independent, Model
+from Function import Function, Independent, Model, readFunctions, readParameters
 from Layout.ChooseParametersWindow import ChooseParametersWindowRunner
 from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabRow, TabbedWindow, WindowRunner, generateCollapsableSection
 from Layout.SetFreeParametersWindow import SetFreeParametersWindowRunner
 from Layout.SimulationWindow import SimulationWindowRunner
+from YML import getDimensions, getStates, readLayout, readStates
 from macros import expression2png, formatQuantity, getTexImage, unique
 
 tet_types = ("Temporal", "Equilibrium", "Constant", "Function")
@@ -158,8 +158,8 @@ class TimeEvolutionTab(Tab):
         """
         super().__init__(name, window)
 
-        self.time_evolution_types = YML.readStates("time_evolution_types")
-        self.initial_conditions = YML.readStates("initial_condition")
+        self.time_evolution_types = readStates("time_evolution_types")
+        self.initial_conditions = readStates("initial_condition")
 
         self.variable_rows = []
         self.addVariableRows(variable_names)
@@ -999,55 +999,55 @@ class MainWindow(TabbedWindow):
             Value is list of filepaths containing this species of quantity.
         """
         dimensions = {
-            "window": YML.getDimensions(["main_window", "window"]),
-            "time_evolution_tab": YML.getDimensions(["main_window", "time_evolution_tab", "tab"]),
-            "evolution_type_text": YML.getDimensions(
+            "window": getDimensions(["main_window", "window"]),
+            "time_evolution_tab": getDimensions(["main_window", "time_evolution_tab", "tab"]),
+            "evolution_type_text": getDimensions(
                 ["main_window", "time_evolution_tab", "header_row", "evolution_type_text"]
             ),
-            "variable_text": YML.getDimensions(["main_window", "time_evolution_tab", "header_row", "variable_text"]),
-            "initial_condition_text": YML.getDimensions(
+            "variable_text": getDimensions(["main_window", "time_evolution_tab", "header_row", "variable_text"]),
+            "initial_condition_text": getDimensions(
                 ["main_window", "time_evolution_tab", "header_row", "initial_condition_text"]
             ),
-            "evolution_type_combobox": YML.getDimensions(
+            "evolution_type_combobox": getDimensions(
                 ["main_window", "time_evolution_tab", "variable_row", "evolution_type_combobox"]
             ),
-            "variable_label": YML.getDimensions(
+            "variable_label": getDimensions(
                 ["main_window", "time_evolution_tab", "variable_row", "variable_label"]
             ),
-            "initial_condition_input_field": YML.getDimensions(
+            "initial_condition_input_field": getDimensions(
                 ["main_window", "time_evolution_tab", "variable_row", "initial_condition_input_field"]
             ),
-            "initial_equilibrium_checkbox": YML.getDimensions(
+            "initial_equilibrium_checkbox": getDimensions(
                 ["main_window", "time_evolution_tab", "variable_row", "initial_equilibrium_checkbox"]
             ),
-            "parameter_tab": YML.getDimensions(["main_window", "parameter_tab", "tab"]),
-            "parameter_section": YML.getDimensions(["main_window", "parameter_tab", "parameter_section"]),
-            "parameter_header_label": YML.getDimensions(
+            "parameter_tab": getDimensions(["main_window", "parameter_tab", "tab"]),
+            "parameter_section": getDimensions(["main_window", "parameter_tab", "parameter_section"]),
+            "parameter_header_label": getDimensions(
                 ["main_window", "parameter_tab", "header_row", "section_label"]
             ),
-            "parameter_label": YML.getDimensions(["main_window", "parameter_tab", "parameter_row", "parameter_label"]),
-            "parameter_value_label": YML.getDimensions(
+            "parameter_label": getDimensions(["main_window", "parameter_tab", "parameter_row", "parameter_label"]),
+            "parameter_value_label": getDimensions(
                 ["main_window", "parameter_tab", "parameter_row", "parameter_value_label"]
             ),
-            "parameter_value_input_field": YML.getDimensions(
+            "parameter_value_input_field": getDimensions(
                 ["main_window", "parameter_tab", "parameter_row", "parameter_value_input_field"]
             ),
-            "parameter_type_combobox": YML.getDimensions(
+            "parameter_type_combobox": getDimensions(
                 ["main_window", "parameter_tab", "parameter_row", "parameter_type_combobox"]
             ),
-            "parameter_stem_combobox": YML.getDimensions(
+            "parameter_stem_combobox": getDimensions(
                 ["main_window", "parameter_tab", "parameter_row", "parameter_stem_combobox"]
             ),
-            "function_tab": YML.getDimensions(["main_window", "function_tab", "tab"]),
-            "function_label": YML.getDimensions(["main_window", "function_tab", "function_row", "function_label"]),
-            "expression_label": YML.getDimensions(["main_window", "function_tab", "function_row", "expression_label"]),
-            "function_stem_combobox": YML.getDimensions(
+            "function_tab": getDimensions(["main_window", "function_tab", "tab"]),
+            "function_label": getDimensions(["main_window", "function_tab", "function_row", "function_label"]),
+            "expression_label": getDimensions(["main_window", "function_tab", "function_row", "expression_label"]),
+            "function_stem_combobox": getDimensions(
                 ["main_window", "function_tab", "function_row", "function_stem_combobox"]
-                ),
-            "function_header_row_function_label": YML.getDimensions(
+            ),
+            "function_header_row_function_label": getDimensions(
                 ["main_window", "function_tab", "header_row", "function_label"]
             ),
-            "function_header_row_expression_label": YML.getDimensions(
+            "function_header_row_expression_label": getDimensions(
                 ["main_window", "function_tab", "header_row", "expression_label"]
             )
         }
@@ -1335,18 +1335,18 @@ class MainWindowRunner(WindowRunner):
         """
         self.custom_param = {}
         self.stem2name2param = {
-            Path(filepath).stem: YML.readParameters(filepath)
+            Path(filepath).stem: readParameters(filepath)
             for filepath in parameter_filepaths
         }
         self.stem2name2func = {
-            Path(filepath).stem: YML.readFunctions(filepath)
+            Path(filepath).stem: readFunctions(filepath)
             for filepath in function_filepaths
         }
 
         blueprints = {
-            "time_evolution": YML.readLayout(time_evolution_layout),
-            "parameters": YML.readLayout(parameter_layout),
-            "functions": YML.readLayout(function_layout),
+            "time_evolution": readLayout(time_evolution_layout),
+            "parameters": readLayout(parameter_layout),
+            "functions": readLayout(function_layout),
         }
         stem2name2obj = {
             "functions": self.stem2name2func,
@@ -1363,6 +1363,10 @@ class MainWindowRunner(WindowRunner):
         window = self.getWindow()
         while True:
             event, self.values = window.read()
+
+            model = self.getModel()
+            print(len(model.getFunctions()))
+
             print(event)
             if event in [sg.WIN_CLOSED, event == 'Exit']:
                 break
@@ -1493,7 +1497,7 @@ class MainWindowRunner(WindowRunner):
                 try:
                     value = float(self.getValue(input_field_key))
                 except AttributeError:
-                    value = float(YML.getStates("initial_condition", names))
+                    value = float(getStates("initial_condition", names))
                 return value
         elif isinstance(names, list):
             return array(self.getInitialConditions(names=name) for name in names)
@@ -1517,7 +1521,7 @@ class MainWindowRunner(WindowRunner):
             try:
                 return self.getValue(key)
             except AttributeError:
-                return YML.getStates("time_evolution_types", names)
+                return getStates("time_evolution_types", names)
         elif isinstance(names, list):
             return [self.getTimeEvolutionTypes(names=name) for name in names]
         else:
@@ -1951,7 +1955,7 @@ class MainWindowRunner(WindowRunner):
         load_quantities = {
             name: quantity
             for filename in filenames
-            for name, quantity in YML.readParameters(filename).items()
+            for name, quantity in readParameters(filename).items()
         }
 
         if choose_parameters:

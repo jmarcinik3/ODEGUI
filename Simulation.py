@@ -27,7 +27,7 @@ def RK4step(ydot: function, y0: ndarray, t0: float, dt: float) -> ndarray:
     return y0 + dy
 
 
-def ODEstep(ydot: function, y0: ndarray, t: List[float, float]) -> float:
+def ODEstep(ydot: function, y0: ndarray, t: List[float]) -> float:
     """
     Get variable vector for ODE after performing one step.
 

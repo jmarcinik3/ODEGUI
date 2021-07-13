@@ -27,12 +27,12 @@ from sympy import Symbol
 from sympy.core import function
 from sympy.utilities.lambdify import lambdify
 
-import YML
 from CustomErrors import RecursiveTypeError
 from Function import Model
 from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabbedWindow, WindowRunner
 from Results import Results
 from Simulation import formatResultsAsDictionary, solveODE
+from YML import getDimensions, getStates
 from macros import formatValue, getTexImage, unique
 
 
@@ -444,7 +444,7 @@ class SimulationTab(Tab):
         :param self: :class:`~Layout.SimulationWindow.SimulationTab` to retrieve element from
         """
         kwargs = {
-            "default_text": YML.getStates("time", "initial"),
+            "default_text": getStates("time", "initial"),
             "tooltip": "Enter initial time (seconds)",
             "size": self.getDimensions(name="initial_time_input_field"),
             "key": self.getKey("initial_time")
@@ -459,7 +459,7 @@ class SimulationTab(Tab):
         :param self: :class:`~Layout.SimulationWindow.SimulationTab` to retrieve element from
         """
         kwargs = {
-            "default_text": YML.getStates("time", "step_count"),
+            "default_text": getStates("time", "step_count"),
             "tooltip": "Enter number of time-steps",
             "size": self.getDimensions(name="timestep_count_input_field"),
             "key": self.getKey("timestep_count")
@@ -474,7 +474,7 @@ class SimulationTab(Tab):
         :param self: :class:`~Layout.SimulationWindow.SimulationTab` to retrieve element from
         """
         kwargs = {
-            "default_text": YML.getStates("time", "final"),
+            "default_text": getStates("time", "final"),
             "tooltip": "Enter final time (seconds)",
             "size": self.getDimensions(name="final_time_input_field"),
             "key": self.getKey("final_time")
@@ -1347,133 +1347,133 @@ class SimulationWindow(TabbedWindow):
         :param plot_choices: collection of quantities that may be plotted along each axis.
         """
         dimensions = {
-            "window": YML.getDimensions(
+            "window": getDimensions(
                 ["simulation_window", "window"]
             ),
-            "parameter_slider_name_label": YML.getDimensions(
+            "parameter_slider_name_label": getDimensions(
                 ["simulation_window", "parameter_slider", "name_label"]
             ),
-            "parameter_slider_minimum_label": YML.getDimensions(
+            "parameter_slider_minimum_label": getDimensions(
                 ["simulation_window", "parameter_slider", "minimum_label"]
             ),
-            "parameter_slider_maximum_label": YML.getDimensions(
+            "parameter_slider_maximum_label": getDimensions(
                 ["simulation_window", "parameter_slider", "maximum_label"]
             ),
-            "parameter_slider_stepcount_label": YML.getDimensions(
+            "parameter_slider_stepcount_label": getDimensions(
                 ["simulation_window", "parameter_slider", "stepcount_label"]
             ),
-            "parameter_slider_slider": YML.getDimensions(
+            "parameter_slider_slider": getDimensions(
                 ["simulation_window", "parameter_slider", "slider"]
             ),
-            "initial_time_input_field": YML.getDimensions(
+            "initial_time_input_field": getDimensions(
                 ["simulation_window", "simulation_tab", "initial_time_input_field"]
             ),
-            "timestep_count_input_field": YML.getDimensions(
+            "timestep_count_input_field": getDimensions(
                 ["simulation_window", "simulation_tab", "final_time_input_field"]
             ),
-            "final_time_input_field": YML.getDimensions(
+            "final_time_input_field": getDimensions(
                 ["simulation_window", "simulation_tab", "time_stepcount_input_field"]
             ),
-            "axis_header_row_element": YML.getDimensions(
+            "axis_header_row_element": getDimensions(
                 ["simulation_window", "aesthetics_tab", "axis_tab", "top_header_row", "element"]
             ),
-            "axis_header_row_limits": YML.getDimensions(
+            "axis_header_row_limits": getDimensions(
                 ["simulation_window", "aesthetics_tab", "axis_tab", "top_header_row", "limits"]
             ),
-            "axis_header_row_scale": YML.getDimensions(
+            "axis_header_row_scale": getDimensions(
                 ["simulation_window", "aesthetics_tab", "axis_tab", "top_header_row", "scale"]
             ),
-            "axis_header_row_element_name": YML.getDimensions(
+            "axis_header_row_element_name": getDimensions(
                 ["simulation_window", "aesthetics_tab", "axis_tab", "bottom_header_row", "element_name"]
             ),
-            "axis_header_row_element_title": YML.getDimensions(
+            "axis_header_row_element_title": getDimensions(
                 ["simulation_window", "aesthetics_tab", "axis_tab", "bottom_header_row", "element_title"]
             ),
-            "axis_header_row_lower_limit": YML.getDimensions(
+            "axis_header_row_lower_limit": getDimensions(
                 ["simulation_window", "aesthetics_tab", "axis_tab", "bottom_header_row", "lower_limit"]
             ),
-            "axis_header_row_upper_limit": YML.getDimensions(
+            "axis_header_row_upper_limit": getDimensions(
                 ["simulation_window", "aesthetics_tab", "axis_tab", "bottom_header_row", "upper_limit"]
             ),
-            "axis_header_row_autoscale": YML.getDimensions(
+            "axis_header_row_autoscale": getDimensions(
                 ["simulation_window", "aesthetics_tab", "axis_tab", "bottom_header_row", "autoscale"]
             ),
-            "axis_header_row_scale_factor": YML.getDimensions(
+            "axis_header_row_scale_factor": getDimensions(
                 ["simulation_window", "aesthetics_tab", "axis_tab", "bottom_header_row", "scale_factor"]
             ),
-            "axis_header_row_scale_type": YML.getDimensions(
+            "axis_header_row_scale_type": getDimensions(
                 ["simulation_window", "aesthetics_tab", "axis_tab", "bottom_header_row", "scale_type"]
             ),
-            "axis_row_label": YML.getDimensions(
+            "axis_row_label": getDimensions(
                 ["simulation_window", "aesthetics_tab", "axis_tab", "axis_row", "name_label"]
             ),
-            "axis_lower_limit_input_field": YML.getDimensions(
+            "axis_lower_limit_input_field": getDimensions(
                 ["simulation_window", "aesthetics_tab", "axis_tab", "axis_row", "lower_limit_input_field"]
             ),
-            "axis_upper_limit_input_field": YML.getDimensions(
+            "axis_upper_limit_input_field": getDimensions(
                 ["simulation_window", "aesthetics_tab", "axis_tab", "axis_row", "upper_limit_input_field"]
             ),
-            "axis_row_title_input_field": YML.getDimensions(
+            "axis_row_title_input_field": getDimensions(
                 ["simulation_window", "aesthetics_tab", "axis_tab", "axis_row", "title_input_field"]
             ),
-            "autoscale_toggle_checkbox": YML.getDimensions(
+            "autoscale_toggle_checkbox": getDimensions(
                 ["simulation_window", "aesthetics_tab", "axis_tab", "axis_row", "autoscale_toggle_checkbox"]
             ),
-            "scale_factor_spin": YML.getDimensions(
+            "scale_factor_spin": getDimensions(
                 ["simulation_window", "aesthetics_tab", "axis_tab", "axis_row", "scale_factor_spin"]
             ),
-            "scale_type_combobox": YML.getDimensions(
+            "scale_type_combobox": getDimensions(
                 ["simulation_window", "aesthetics_tab", "axis_tab", "axis_row", "scale_type_combobox"]
             ),
-            "colorbar_title_input_field": YML.getDimensions(
+            "colorbar_title_input_field": getDimensions(
                 ["simulation_window", "aesthetics_tab", "colorbar_tab", "title_input_field"]
             ),
-            "colorbar_colormap_combobox": YML.getDimensions(
+            "colorbar_colormap_combobox": getDimensions(
                 ["simulation_window", "aesthetics_tab", "colorbar_tab", "colormap_combobox"]
             ),
-            "colorbar_segment_count_spin": YML.getDimensions(
+            "colorbar_segment_count_spin": getDimensions(
                 ["simulation_window", "aesthetics_tab", "colorbar_tab", "segment_count_spin"]
             ),
-            "axis_header_row_quantity_species": YML.getDimensions(
+            "axis_header_row_quantity_species": getDimensions(
                 ["simulation_window", "plotting_tab", "header_row", "quantity_species"]
             ),
-            "axis_header_row_quantity_name": YML.getDimensions(
+            "axis_header_row_quantity_name": getDimensions(
                 ["simulation_window", "plotting_tab", "header_row", "quantity_name"]
             ),
-            "axis_header_row_transform_type": YML.getDimensions(
+            "axis_header_row_transform_type": getDimensions(
                 ["simulation_window", "plotting_tab", "header_row", "transform_type"]
             ),
-            "axis_header_row_condensor_name": YML.getDimensions(
+            "axis_header_row_condensor_name": getDimensions(
                 ["simulation_window", "plotting_tab", "header_row", "condensor_name"]
             ),
-            "axis_quantity_combobox": YML.getDimensions(
+            "axis_quantity_combobox": getDimensions(
                 ["simulation_window", "plotting_tab", "axis_row", "axis_quantity_combobox"]
             ),
-            "axis_quantity_species_combobox": YML.getDimensions(
+            "axis_quantity_species_combobox": getDimensions(
                 ["simulation_window", "plotting_tab", "axis_row", "axis_quantity_species_combobox"]
             ),
-            "axis_condensor_combobox": YML.getDimensions(
+            "axis_condensor_combobox": getDimensions(
                 ["simulation_window", "plotting_tab", "axis_row", "axis_condensor_combobox"]
             ),
-            "transform_type_combobox": YML.getDimensions(
+            "transform_type_combobox": getDimensions(
                 ["simulation_window", "plotting_tab", "transform_type_combobox"]
             ),
-            "frequency_header_row_method_name": YML.getDimensions(
+            "frequency_header_row_method_name": getDimensions(
                 ["simulation_window", "analysis_tab", "frequency_tab", "header_row", "method_name"]
             ),
-            "frequency_header_row_condensor_name": YML.getDimensions(
+            "frequency_header_row_condensor_name": getDimensions(
                 ["simulation_window", "analysis_tab", "frequency_tab", "header_row", "condensor_name"]
             ),
-            "frequency_method_combobox": YML.getDimensions(
+            "frequency_method_combobox": getDimensions(
                 ["simulation_window", "analysis_tab", "frequency_tab", "method_combobox"]
             ),
-            "frequency_condensor_combobox": YML.getDimensions(
+            "frequency_condensor_combobox": getDimensions(
                 ["simulation_window", "analysis_tab", "frequency_tab", "condensor_combobox"]
             ),
-            "mean_header_row_order": YML.getDimensions(
+            "mean_header_row_order": getDimensions(
                 ["simulation_window", "analysis_tab", "mean_tab", "header_row", "order"]
             ),
-            "mean_order_spin": YML.getDimensions(["simulation_window", "analysis_tab", "mean_tab", "order_spin"])
+            "mean_order_spin": getDimensions(["simulation_window", "analysis_tab", "mean_tab", "order_spin"])
         }
         super().__init__(name, runner, dimensions=dimensions)
 
