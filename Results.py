@@ -91,6 +91,50 @@ class Results:
         else:
             raise TypeError("names must be str or list")
 
+    def getFreeParameterSubstitutions(self, index: Union[tuple, Tuple[int, ...]]) -> Dict[Symbol, float]:
+        """
+        Get substitutions for free parameters at index.
+
+        :param self: :class:`~Results.Results` to retrieve substitutions from
+        :param index: index of free parameters to retrieve free-parameter values from
+        """
+        free_parameter_names = self.getFreeParameterNames()
+        free_parameter_substitutions = {}
+        for parameter_location, free_parameter_name in enumerate(free_parameter_names):
+            parameter_index = index[parameter_location]
+            parameter_values = self.getFreeParameterValues(names=free_parameter_name)
+            parameter_value = parameter_values[parameter_index]
+            free_parameter_substitutions[Symbol(free_parameter_name)] = parameter_value
+        print(free_parameter_substitutions)
+        return free_parameter_substitutions
+
+    def getParameterSubstitutions(self, index: Union[tuple, Tuple[int, ...]], name: str = None) -> Dict[Symbol, float]:
+        """
+        Get substutitions from parameter symbol to parameter value.
+
+        :param self: :class:`~Results.Results` to retrieve values from
+        :param index: index of free parameters to retrieve free-parameter values from
+        :param name: name of function to retrieve parameter names from.
+            Returns substitutions for all parameters in model if None.
+            Returns substitutions only for parameters in function if str.
+        """
+        model = self.getModel()
+
+        if name is None:
+            parameter_names = None
+        else:
+            function = model.getFunctions(names=name)
+            kwargs = {
+                "species": "Parameter",
+                "generations": "all",
+                "return_type": str
+            }
+            parameter_names = function.getFreeSymbols(**kwargs)
+
+        substitutions = model.getParameterSubstitutions(parameter_names, skip_parameters=self.getFreeParameterNames())
+        substitutions.update(self.getFreeParameterSubstitutions(index))
+        return substitutions
+
     def setEquilibriumExpressions(self, equilibrium_expressions: Dict[Symbol, Expr] = None) -> None:
         """
         Set symbolic expressions for equilibrium variables.
@@ -109,11 +153,12 @@ class Results:
         else:
             self.general_equilibrium_expressions = equilibrium_expressions
 
-    def getEquilibriumExpression(self, name: Union[Symbol, str]) -> Expr:
+    def getEquilibriumExpression(self, index: Union[tuple, Tuple[int, ...]], name: Union[Symbol, str]) -> Expr:
         """
         Get equilibrium expression for a variable.
         
         :param self: :class:`~Results.Results` to retrieve equilibrium from
+        :param index: index of free parameters to retrieve free-parameter values from
         :param name: name of variable to retrieve equilibrium for
         """
         if len(self.general_equilibrium_expressions.keys()) == 0:
@@ -126,7 +171,7 @@ class Results:
         else:
             raise TypeError("name must be sp.Symbol or str")
 
-        parameter_substitutions = self.getModel().getParameterSubstitutions(self.getFreeParameterNames())
+        parameter_substitutions = self.getParameterSubstitutions(index=index, name=name)
         simplified_expression = general_expression.subs(parameter_substitutions)
         return simplified_expression
 
@@ -138,16 +183,19 @@ class Results:
         """
         self.results = {}
 
-    def getSubstitutedResults(self, index: Union[tuple, Tuple[int]], function: Expr) -> ndarray:
+    def getSubstitutedResults(self, index: Union[tuple, Tuple[int]], expression: Expr, name: str = None) -> ndarray:
         """
         Get results from simulation for function, after substituting results from variables.
 
         :param self: :class:`~Results.Results` to retrieve results from
         :param index: index of free parameters to retrieve substitutive results at
-        :param function: function to substitute results into
+        :param expression: function to substitute results into
+        :param name: name of function where expression was derived from
         """
+        expression_sub = expression.subs(self.getParameterSubstitutions(index=index, name=name))
+
         variables = self.getModel().getVariables(time_evolution_types="Temporal")
-        function_lambda = lambdify((Symbol('t'), tuple(variables)), function, "numpy")
+        function_lambda = lambdify((Symbol('t'), tuple(variables)), expression_sub, "numpy")
         variable_names = [str(variable) for variable in variables]
         temporal_results = self.getResultsOverTime(index, names=variable_names)
         times = self.getResultsOverTime(index, names='t')
@@ -180,11 +228,7 @@ class Results:
         if commonElement(function_variables, derivative_function_variables):
             substitutions.update(model.getFunctionSubstitutions())
 
-        parameter_names = function.getFreeSymbols(species="Parameter", generations="all", return_type=str)
-        parameter_substitutions = model.getParameterSubstitutions(parameter_names)
-        substitutions.update(parameter_substitutions)
         expression = expression.subs(substitutions)
-
         updated_results = self.getSubstitutedResults(index, expression)
         return updated_results
 
@@ -196,7 +240,7 @@ class Results:
         :param index: index of parameter value for free parameter
         :param name: name of variable to retrieve results of
         """
-        results = self.getSubstitutedResults(index, self.getEquilibriumExpression(name))
+        results = self.getSubstitutedResults(index, self.getEquilibriumExpression(index, name))
         return np.array(results)
 
     def getConstantVariableResults(self, index: Union[tuple, Tuple[int]], name: str) -> ndarray:
