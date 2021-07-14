@@ -6,11 +6,15 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
+from colour import Color
+from igraph import Graph, plot
 from numpy import ndarray
 from pint import Quantity
 
 from CustomErrors import RecursiveTypeError
-from Function import Function, Independent, Model, Parameter, readFunctions, readParameters
+from Function import Derivative, Function, Independent, Model, readFunctions, readParameters
+from Function import Parameter
+from Layout.ChooseGraphLayoutWindow import ChooseGraphLayoutWindowRunner
 from Layout.ChooseParametersWindow import ChooseParametersWindowRunner
 from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabRow, TabbedWindow, WindowRunner, generateCollapsableSection
 from Layout.SetFreeParametersWindow import SetFreeParametersWindowRunner
@@ -1290,6 +1294,18 @@ class MainWindow(TabbedWindow):
         }
         return sg.Button(**kwargs)
 
+    def getGenerateGraphButton(self) -> sg.Button:
+        """
+        Get button to generate function-to-argument directional graph.
+
+        :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve button from
+        """
+        kwargs = {
+            "button_text": "Generate Graph",
+            "key": self.getKey("generate_graph")
+        }
+        return sg.Button(**kwargs)
+
     def getLayout(self) -> List[List[sg.Element]]:
         """
         Get layout for window.
@@ -1298,8 +1314,9 @@ class MainWindow(TabbedWindow):
         """
         menu = self.getMenu()
         open_simulation_button = self.getOpenSimulationButton()
+        generate_graph_button = self.getGenerateGraphButton()
         prefix_layout = Layout(rows=Row(window=self, elements=menu))
-        suffix_layout = Layout(rows=Row(window=self, elements=open_simulation_button))
+        suffix_layout = Layout(rows=Row(window=self, elements=[open_simulation_button, generate_graph_button]))
         tabgroup = TabGroup(self.getTabs())
         return prefix_layout.getLayout() + tabgroup.getLayout() + suffix_layout.getLayout()
 
@@ -1440,6 +1457,8 @@ class MainWindowRunner(WindowRunner):
                 self.updateParametersFromFields()
             elif event == self.getKey("open_simulation"):
                 self.openSimulationWindow()
+            elif event == self.getKey("generate_graph"):
+                self.openFunction2ArgumentGraph()
         window.close()
 
     def getPlotChoices(self, model: Model = None) -> Dict[str, List[str]]:
@@ -1768,6 +1787,7 @@ class MainWindowRunner(WindowRunner):
         :param names: name(s) of parameter(s) to retrieve.
             Defaults to all loaded functions.
         """
+
         def get(name: str) -> Parameter:
             filestem = self.getChosenParameterStem(name)
             parameter = self.stem2name2param[filestem][name]
@@ -1782,7 +1802,8 @@ class MainWindowRunner(WindowRunner):
         }
         return recursiveMethod(**kwargs)
 
-    def getParameterNames(self, parameter_types: Union[str, Iterable[str]] = None, custom_type: bool = None) -> List[str]:
+    def getParameterNames(self, parameter_types: Union[str, Iterable[str]] = None, custom_type: bool = None) -> List[
+        str]:
         """
         Get name(s) of parameter(s) in model.
 
@@ -1901,6 +1922,7 @@ class MainWindowRunner(WindowRunner):
         :param names: name(s) of parameter(s) to retrieve values for.
             Defaults to all parameters.
         """
+
         def get(name: str) -> str:
             key = self.getKey("parameter_field", name)
             field_value = self.getValue(key)
@@ -2095,3 +2117,45 @@ class MainWindowRunner(WindowRunner):
             }
             simulation_window = SimulationWindowRunner(**kwargs)
             simulation_window.runWindow()
+
+    def generateFunction2ArgumentGraph(self, color1: str = "red", color2: str = "blue") -> Graph:
+        derivatives: List[Union[Derivative, Function]] = self.getModel().getDerivatives()
+        der2vars = {
+            der.getVariable(return_type=str):
+                der.getFreeSymbols(species="Variable", generations="all", return_type=str)
+            for der in derivatives
+        }
+        variable_names = sorted(der2vars.keys(), key=lambda k: len(der2vars[k]))
+
+        graph = Graph(
+            n=len(variable_names),
+            directed=True
+        )
+        colors = Color(color1).range_to(Color(color2), len(der2vars.keys()))
+        vertex2color = [color.rgb for color in colors]
+
+        for ider in range(len(variable_names)):
+            derivative_name = variable_names[ider]
+            vertex_color = vertex2color[ider]
+            graph.vs[ider]["name"] = derivative_name
+            graph.vs[ider]["color"] = vertex_color
+            for variable_name in der2vars[derivative_name]:
+                ivar = variable_names.index(variable_name)
+                graph.add_edges([(ider, ivar)])
+                graph.es[-1]["color"] = vertex_color
+        graph.vs["label"] = graph.vs["name"]
+
+        return graph
+
+    def openFunction2ArgumentGraph(self) -> None:
+        """
+        Open plot showing function-to-argument directional graph.
+
+        :param self: `~Layout.Layout.MainWindowRunner` to retrieve functions from
+        """
+        choose_graph_layout_window = ChooseGraphLayoutWindowRunner("Choose Graph Layout")
+        event, layout_code = choose_graph_layout_window.getLayoutCode()
+        if event == "Submit":
+            graph = self.generateFunction2ArgumentGraph()
+            layout = graph.layout(layout_code)
+            plot(graph, layout=layout)

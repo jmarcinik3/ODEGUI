@@ -28,9 +28,10 @@ free_parameter_stepcount: FREE PARAMETER STEPCOUNT
 free_parameter_slider: FREE PARAMETER SLIDER
 toolbar_menu: TOOLBAR MENU
 open_simulation: OPEN SIMULATION
+generate_graph: GENERATE GRAPH
 plot_aesthetics: PLOT AESTHETICS
 analysis: ANALYSIS
-
+layout_choice: GRAPH LAYOUT
 
 
 extraneous_key:

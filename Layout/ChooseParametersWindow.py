@@ -248,8 +248,8 @@ class ChooseParametersWindowRunner(WindowRunner):
 
         :param name: name of window
         """
-        window = ChooseParametersWindow(name, self, **kwargs)
-        super().__init__(window)
+        window_object = ChooseParametersWindow(name, self, **kwargs)
+        super().__init__(window_object)
 
     def getParameterNames(self) -> List[str]:
         """
@@ -288,6 +288,7 @@ class ChooseParametersWindowRunner(WindowRunner):
     def getChosenParameters(self) -> List[str]:
         """
         Get checked parameters in window.
+        Uses present state of window.
 
         :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindowRunner` to retrieve checked boxes from
         :returns: List of parameter names, where corresponding checkbox is checked
@@ -296,7 +297,6 @@ class ChooseParametersWindowRunner(WindowRunner):
         event = ''
         while event not in [sg.WIN_CLOSED, "Cancel"]:
             event, self.values = window.read()
-            print(self.getKey("toolbar_menu"), self.getElements(self.getKey("toolbar_menu")))
             menu_value = self.getValue(self.getKey("toolbar_menu"))
 
             parameter_names = self.getParameterNames()
