@@ -7,6 +7,6 @@ Cahbex: # LCP solution given in Table 1
 Ksomaex: # LCP solution given in Table 1
   value: 2
   unit: millimolar
-PT: # gentamicin blocks transduction channels
+PTCa: # gentamicin blocks transduction channels
   value: 0
   unit: micrometer**3/second

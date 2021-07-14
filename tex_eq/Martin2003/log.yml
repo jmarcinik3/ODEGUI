@@ -16,6 +16,9 @@ Fsp:
 IT:
   expression: $I$
   filename: IT.png
+ITCa:
+  expression: $I$
+  filename: ITCa.png
 S:
   expression: $S(0) + p_m \left(- S(0) + S(1)\right)$
   filename: S.png
@@ -49,6 +52,9 @@ dxpT:
 gT:
   expression: $g_{GHK} p_T$
   filename: gT.png
+gTCa:
+  expression: $g_{GHK} p_T$
+  filename: gTCa.png
 kgsinf:
   expression: $\frac{1}{\frac{1}{k_{tl}} + \frac{1}{k_r}}$
   filename: kgsinf.png

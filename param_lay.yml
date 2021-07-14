@@ -16,7 +16,7 @@ Hair Bundle:
   pr: [rr, kar, kdr]
   pT: [dE0, tauT0]
   kgs: [kgs0, kgs1, kr0, kr1, ktl]
-  IT: [Cahbin, Cahbex, ET, PT]
+  ITCa: [Cahbin, Cahbex, ET, PTCa]
   mutual: [gamma, N, d, xc]
 Soma:
   Temporal: [Cm, Ksomain, Ksomaex, U, xiCa, Cvol, KS]
