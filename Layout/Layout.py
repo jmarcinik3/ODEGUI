@@ -625,7 +625,7 @@ class WindowRunner:
         kwargs = {
             "base_method": get,
             "args": keys,
-            "valid_input_types": sg.Element,
+            "valid_input_types": str,
             "output_type": list
         }
         return recursiveMethod(**kwargs)
