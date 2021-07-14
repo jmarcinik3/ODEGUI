@@ -29,6 +29,7 @@ class PaperQuantity:
     :ivar filestem: stem of file where object was loaded from
     :ivar model: model that contains object
     """
+
     def __init__(self, name: str, model: Model, filestem: str = None) -> None:
         """
         Constructor for :class:`~Function.PaperQuantity`.
@@ -563,7 +564,7 @@ class Model:
 
     def getParameterSubstitutions(
             self, names: Union[str, List[str]] = None, skip_parameters: Union[str, List[str]] = None
-    ) -> Dict[Symbol, Expr]:
+    ) -> Dict[Symbol, float]:
         """
         Get parameter values to substitute into parameters.
 
@@ -889,8 +890,8 @@ class Parent:
         """
         if isinstance(names, str):
             self: Function
-            children = self.getModel().getFunctions(names=names)
-            return children
+            child = self.getModel().getFunctions(names=names)
+            return child
         elif isinstance(names, list):
             return [self.getChildren(names=name) for name in names]
         elif names is None:
@@ -1792,6 +1793,7 @@ def generateFunctionsFromFile(filename: str, **kwargs) -> List[Function]:
     filestem = Path(filename).stem
     return [generateFunction(name, file[name], filestem=filestem, **kwargs) for name in file.keys()]
 
+
 def generateParametersFromFile(filename: str, **kwargs) -> List[Parameter]:
     """
     Generate all parameter from file.
@@ -1803,6 +1805,7 @@ def generateParametersFromFile(filename: str, **kwargs) -> List[Parameter]:
     file = yaml.load(open(filename), Loader=yaml.Loader)
     filestem = Path(filename).stem
     return [generateParameter(name, file[name], filestem=filestem, **kwargs) for name in file.keys()]
+
 
 def getInheritance(
         properties: List[str], name: str = ''
@@ -1833,7 +1836,13 @@ def getInheritance(
         raise ValueError(f"Function {name:s} must have either 'Piecewise' or 'NonPiecewise' as property")
     return inheritance
 
-def generateFunction(name: str, info: Dict[str, Union[str, dict]], model: Model = None, filestem: str = None) -> Function:
+
+def generateFunction(
+        name: str,
+        info: Dict[str, Union[str, dict]],
+        model: Model = None,
+        filestem: str = None
+        ) -> Function:
     """
     Generate Function object.
 
@@ -1857,11 +1866,21 @@ def generateFunction(name: str, info: Dict[str, Union[str, dict]], model: Model 
     inheritance = getInheritance(kwargs["properties"])
     return FunctionMaster(name, expression, inheritance=tuple(inheritance), **kwargs)
 
+
 def generateParameter(name: str, info: Dict[str, Union[float, str]], **kwargs) -> Parameter:
+    """
+    Generate Parameter object.
+
+    :param name: name of function to generate
+    :param info: dictionary of info needed to generate function
+    :param kwargs: additional arguments to pass into :class:`~Function.Parameter`
+    :returns: Generated function object
+    """
     value = float(info["value"])
     unit = info["unit"]
     quantity = value * units(unit)
     return Parameter(name, quantity, **kwargs)
+
 
 def createModel(function_ymls: Union[str, List[str]], parameter_ymls: Union[str, List[str]]) -> Model:
     """
@@ -1893,7 +1912,7 @@ def readParameters(filepaths: Union[str, List[str]]) -> Dict[str, Parameter]:
         parameters = yaml.load(open(filepath, 'r'), Loader=yaml.Loader)
         filestem = Path(filepath).stem
         for name, info in parameters.items():
-           parameters[name] = generateParameter(name, info, filestem=filestem)
+            parameters[name] = generateParameter(name, info, filestem=filestem)
     return parameters
 
 

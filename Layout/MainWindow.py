@@ -164,37 +164,14 @@ class TimeEvolutionTab(Tab):
         self.time_evolution_types = readStates("time_evolution_types")
         self.initial_conditions = readStates("initial_condition")
 
-        self.variable_rows = []
-        self.addVariableRows(variable_names)
-
-    def addVariableRows(
-            self, names: Union[str, Iterable[str]]
-    ) -> Union[TimeEvolutionVariableRow, Iterable[TimeEvolutionVariableRow]]:
-        """
-        Add rows corresponding to variable names.
-        
-        :param self: :class:`~Layout.MainWindow.TimeEvolutionTab` to add rows to
-        :param names: name(s) of variable(s) to add rows for
-        :returns: New row added if names is str.
-            List of new rows if names is list.
-        """
-
-        def get(name: str) -> TimeEvolutionVariableRow:
-            new_row = TimeEvolutionVariableRow(name, self)
-            self.variable_rows.append(new_row)
-            return new_row
-
-        kwargs = {
-            "base_method": get,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": list
-        }
-        return recursiveMethod(**kwargs)
+        self.variable_rows = [
+            TimeEvolutionVariableRow(variable_name, self)
+            for variable_name in variable_names
+        ]
 
     def getVariableRows(self) -> List[TimeEvolutionVariableRow]:
         """
-        Get variable rows added to tab.
+        Get variable rows in tab.
 
         :param self: :class:`~Layout.MainWindow.TimeEvolutionTab` to retrieve rows from
         """
@@ -209,6 +186,7 @@ class TimeEvolutionTab(Tab):
         """
 
         def get(name: str) -> float:
+            """Base method for :meth:`~Layout.MainWindow.TimeEvolutionTab.getInitialConditions`."""
             return self.initial_conditions[name]
 
         kwargs = {
@@ -1139,6 +1117,7 @@ class MainWindow(TabbedWindow):
         """
 
         def add(name: str) -> str:
+            """Base method for :meth:`~Layout.MainWindow.MainWindow.addVariableNames`."""
             new_variable_name = name
             self.variable_names.append(name)
             return new_variable_name
@@ -1171,6 +1150,7 @@ class MainWindow(TabbedWindow):
         """
 
         def add(name: str) -> str:
+            """Base method for :meth:`~Layout.MainWindow.MainWindow.addFunctionNames`."""
             new_function_name = name
             self.function_names.append(name)
             return new_function_name
@@ -1203,6 +1183,7 @@ class MainWindow(TabbedWindow):
         """
 
         def add(name: str) -> str:
+            """Base method for :meth:`~Layout.MainWindow.MainWindow.addParameterNames`."""
             new_parameter_name = name
             self.parameter_names.append(name)
             return new_parameter_name
@@ -1528,6 +1509,7 @@ class MainWindowRunner(WindowRunner):
         """
 
         def get(name: str) -> Union[float, str]:
+            """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getInitialConditions`."""
             time_evolution_type = self.getValue(self.getKey("time_evolution_type", name))
             is_equilibrium = time_evolution_type == "Equilibrium"
             is_initial_equilibrium = self.getValue(self.getKey("initial_condition_equilibrium", name)) or is_equilibrium
@@ -1566,6 +1548,7 @@ class MainWindowRunner(WindowRunner):
         """
 
         def get(name: str) -> str:
+            """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getTimeEvolutionTypes`."""
             key = self.getKey("time_evolution_type", name)
             try:
                 return self.getValue(key)
@@ -1656,6 +1639,7 @@ class MainWindowRunner(WindowRunner):
         """
 
         def get(name: str) -> str:
+            """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getFunctions`."""
             filestem = self.getChosenFunctionStem(name)
             function = self.stem2name2func[filestem][name]
             return function
@@ -1691,6 +1675,7 @@ class MainWindowRunner(WindowRunner):
         """
 
         def update(name: str) -> None:
+            """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.updateFunctionExpressions`."""
             function_filestem = self.getChosenFunctionStem(name)
             image_folder = join("tex_eq", function_filestem)
             image_filename = '.'.join((name, "png"))
@@ -1754,6 +1739,7 @@ class MainWindowRunner(WindowRunner):
         """
 
         def get(name: str) -> str:
+            """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getCustomParameterQuantities`."""
             return self.custom_param[name]
 
         kwargs = {
@@ -1789,6 +1775,7 @@ class MainWindowRunner(WindowRunner):
         """
 
         def get(name: str) -> Parameter:
+            """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getParameters`."""
             filestem = self.getChosenParameterStem(name)
             parameter = self.stem2name2param[filestem][name]
             return parameter
@@ -1802,8 +1789,9 @@ class MainWindowRunner(WindowRunner):
         }
         return recursiveMethod(**kwargs)
 
-    def getParameterNames(self, parameter_types: Union[str, Iterable[str]] = None, custom_type: bool = None) -> List[
-        str]:
+    def getParameterNames(
+            self, parameter_types: Union[str, Iterable[str]] = None, custom_type: bool = None
+    ) -> List[str]:
         """
         Get name(s) of parameter(s) in model.
 
@@ -1867,6 +1855,7 @@ class MainWindowRunner(WindowRunner):
         """
 
         def get(name: str) -> Parameter:
+            """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getParameterQuantities`."""
             if self.isCustomParameter(name):
                 quantity = self.getCustomParameterQuantities(names=name)
             else:
@@ -1910,7 +1899,7 @@ class MainWindowRunner(WindowRunner):
         else:
             raise TypeError("new quantity must be same class as old quantity")
 
-    def getInputParameterValue(self, names: Union[str, Iterable[str]] = None) -> Union[str, Iterable[str]]:
+    def getInputParameterValues(self, names: Union[str, Iterable[str]] = None) -> Union[str, Iterable[str]]:
         """
         Get values for parameter-value input-fields.
         Uses present state of window.
@@ -1924,6 +1913,7 @@ class MainWindowRunner(WindowRunner):
         """
 
         def get(name: str) -> str:
+            """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getInputParameterValues`."""
             key = self.getKey("parameter_field", name)
             field_value = self.getValue(key)
             return field_value
@@ -1965,6 +1955,7 @@ class MainWindowRunner(WindowRunner):
         """
 
         def update(name: str) -> None:
+            """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.updateParameterFromStems`."""
             filestem = self.getChosenParameterStem(name)
             quantity = self.getParameterFromStem(name, filestem).getQuantity()
             self.setParameter(name=name, quantity=quantity, custom=False)
@@ -1992,7 +1983,8 @@ class MainWindowRunner(WindowRunner):
         """
 
         def update(name: str) -> None:
-            field_value = self.getInputParameterValue(names=name)
+            """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.updateParametersFromFields`."""
+            field_value = self.getInputParameterValues(names=name)
             if field_value != '':
                 old_unit, new_value = self.getParameterQuantities(names=name, form="unit"), float(field_value)
                 new_quantity = new_value * old_unit
@@ -2020,6 +2012,7 @@ class MainWindowRunner(WindowRunner):
         """
 
         def update(name: str) -> None:
+            """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.updateParameterLabels`."""
             label_key = self.getKey("quantity_label", name)
             label_element = self.getElements(label_key)
             new_label = formatQuantity(self.getParameterQuantities(names=name))
@@ -2119,6 +2112,14 @@ class MainWindowRunner(WindowRunner):
             simulation_window.runWindow()
 
     def generateFunction2ArgumentGraph(self, color1: str = "red", color2: str = "blue") -> Graph:
+        """
+        Generate directional graph from (1) derivative variable to (2) variables in derivative.
+
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve derivatives from
+        :param color1: color of first node (and edges) in graph
+        :param color2: color of last node (and edges) in graph
+        :returns: Generated graph
+        """
         derivatives: List[Union[Derivative, Function]] = self.getModel().getDerivatives()
         der2vars = {
             der.getVariable(return_type=str):
