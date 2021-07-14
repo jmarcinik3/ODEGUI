@@ -38,57 +38,6 @@ tauDRK: # mDRK time constant
     betaDRK:
   form: 1 / (alphaDRK+betaDRK)
 
-KpC1: # characteristic concentration for C1 state
-  properties: [Independent]
-  parameters: [KC10,deltaC1,zK]
-  children:
-    BoltzX:
-      parameters: zK
-  form: KC10 * BoltzX**deltaC1
-KpC2: # characteristic concentration for C2 state
-  properties: [Independent]
-  parameters: [KC20,deltaC2,zK]
-  children:
-    BoltzX:
-      parameters: zK
-  form: KC20 * BoltzX**deltaC2
-KpO3: # characteristic concentration for O3 state
-  properties: [Independent]
-  parameters: [KO20,deltaO2,zK]
-  children:
-    BoltzX:
-      parameters: zK
-  form: KO20 * BoltzX**deltaO2
-kaC1: # association constant into C1 state from C0 state
-  properties: [Independent]
-  variables: Ca
-  parameters: kdC1
-  children:
-    KpC1:
-  form: kdC1*Ca / KpC1
-kaC2: # association constant into C2 state from C1 state
-  properties: [Independent]
-  variables: Ca
-  parameters: kdC2
-  children:
-    KpC2:
-  form: kdC2*Ca / KpC2
-kdO2: # dissociation constant from O2 state into C2 state
-  properties: [Independent]
-  variables: Vm
-  parameters: [kdO20,zCa,dK]
-  children:
-    BoltzX:
-      parameters: zCa
-  form: kdO20 * BoltzX**(dK-1)
-kaO3: # association constant into O3 state from O2 state
-  properties: [Independent]
-  variables: Ca
-  parameters: kdO3
-  children:
-    KpO3:
-  form: kdO3*Ca / KpO3
-
 gCa: # conductance for Ca2+ channel
   properties: [Independent]
   variables: mCa
@@ -277,14 +226,6 @@ dVm: # soma membrane potential
     IA:
   form: -(IL+ICa+IT+IK1+Ih+IBK+IDRK) / Cm
 
-dCa: # soma Ca2+ concentration
-  properties: [Derivative, Independent]
-  variable: Ca
-  variables: Ca
-  parameters: [U,zCa,F,Cvol,xiCa,KS]
-  children:
-    ICa:
-  form: -ICa*U/(zCa*F*Cvol*xiCa) - KS*Ca
 dmCa: # Ca channel activation
   properties: [Derivative, Independent]
   variable: mCa
@@ -421,49 +362,5 @@ dmA: # A channel activation
   parameters: VmhA
   pieces: [dmAlt, dmAgt]
   conditions: [Vm<VmhA, Vm>=VmhA]
-
-dpC0: # proportion of BK channels in C0 state
-  properties: [Derivative, Independent]
-  variable: pC0
-  variables: [pC0,pC1]
-  parameters: kdC1
-  children:
-    kaC1:
-  form: kdC1*pC1 - kaC1*pC0
-dpC1: # proportion of BK channels in C1 state
-  properties: [Derivative, Independent]
-  variable: pC1
-  variables: [pC0,pC1,pC2]
-  parameters: [kdC1,kdC2]
-  children:
-    kaC1:
-    kaC2:
-  form: kdC2*pC2 + kaC1*pC0 - (kdC1+kaC2)*pC1
-dpC2: # proportion of BK channels in C2 state
-  properties: [Derivative, Independent]
-  variable: pC2
-  variables: [pC1,pC2,pO2]
-  parameters: [kdC2,kaO2]
-  children:
-    kdO2:
-    kaC2:
-  form: kdO2*pO2 + kaC2*pC1 - (kdC2+kaO2)*pC2
-dpO2: # proportion of BK channels in O2 state
-  properties: [Derivative, Independent]
-  variable: pO2
-  variables: [pC2,pO2,pO3]
-  parameters: [kdO3,kaO2]
-  children:
-    kdO2:
-    kaO3:
-  form: kdO3*pO3 + kaO2*pC2 - (kdO2+kaO3)*pO2
-dpO3: # proportion of BK channels in O3 state
-  properties: [Derivative, Independent]
-  variable: pO3
-  variables: [pO2,pO3]
-  parameters: kdO3
-  children:
-    kaO3:
-  form: kaO3*pO2 - kdO3*pO3
 
 
