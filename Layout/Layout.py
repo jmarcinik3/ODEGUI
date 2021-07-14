@@ -4,12 +4,13 @@ This modules contains wrapper and containers for PySimpleGUI elements.
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
 
 from KeyList import KeyList
+from macros import recursiveMethod
 
 
 def generateCollapsableSection(layout: List[List[sg.Element]], **kwargs) -> sg.pin:
@@ -94,7 +95,7 @@ class Row:
     def __init__(
             self,
             name: str = None,
-            elements: Union[sg.Element, List[sg.Element]] = None,
+            elements: Union[sg.Element, Iterable[sg.Element]] = None,
             window: Window = None
     ) -> None:
         """
@@ -129,20 +130,24 @@ class Row:
         """
         return self.name
 
-    def addElements(self, elements: Union[sg.Element, List[sg.Element]]) -> None:
+    def addElements(self, elements: Union[sg.Element, Iterable[sg.Element]]) -> None:
         """
         Add elements to row.
 
         :param self: :class:`~Layout.Layout.Row` to add elements to
         :param elements: element(s) to add to row
         """
-        if isinstance(elements, sg.Element):
-            self.elements.append(elements)
-        elif isinstance(elements, list):
-            for element in elements:
-                self.addElements(element)
-        else:
-            raise TypeError("elements must be sg.Element or list")
+
+        def add(element: sg.Element) -> None:
+            self.elements.append(element)
+
+        kwargs = {
+            "base_method": add,
+            "args": elements,
+            "valid_input_types": sg.Element,
+            "output_type": list
+        }
+        return recursiveMethod(**kwargs)
 
     def getRow(self) -> List[sg.Element]:
         """
@@ -176,7 +181,7 @@ class Layout:
     :ivar rows: rows contained in layout
     """
 
-    def __init__(self, rows: Union[Row, List[Row]] = None) -> None:
+    def __init__(self, rows: Union[Row, Iterable[Row]] = None) -> None:
         """
         Constructor for :class:`~Layout.Layout.Layout`.
 
@@ -191,20 +196,24 @@ class Layout:
         else:
             raise TypeError("rows must be Row or list")
 
-    def addRows(self, rows: Union[Row, List[Row]]) -> None:
+    def addRows(self, rows: Union[Row, Iterable[Row]]) -> None:
         """
         Add rows to layout.
 
         :param self: :class:`~Layout.Layout.Layout` to add rows to
         :param rows: row(s) to add to layout
         """
-        if isinstance(rows, Row):
-            self.rows.append(rows)
-        elif isinstance(rows, list):
-            for row in rows:
-                self.addRows(row)
-        else:
-            raise TypeError("rows must be Row or list")
+
+        def add(row: Row) -> None:
+            self.rows.append(row)
+
+        kwargs = {
+            "base_method": add,
+            "args": rows,
+            "valid_input_types": Row,
+            "output_type": list
+        }
+        return recursiveMethod(**kwargs)
 
     def getRows(self) -> List[Row]:
         """
@@ -318,7 +327,7 @@ class TabGroup:
     """
 
     def __init__(
-            self, tabs: Union[sg.Tab, Tab, List[sg.Tab, Tab]], name: str = None, suffix_layout: Layout = None
+            self, tabs: Union[Union[sg.Tab, Tab], Iterable[Union[sg.Tab, Tab]]], name: str = None, suffix_layout: Layout = None
     ) -> None:
         """
         Constructor for :class:`~Layout.Layout.Tabgroup`.
@@ -379,7 +388,7 @@ class TabGroup:
         """
         return self.suffix_layout.getLayout()
 
-    def getLayout(self) -> List[List[Union[sg.Element]]]:
+    def getLayout(self) -> List[List[sg.Element]]:
         """
         Get PySimpleGUI-friendly layout for tabgroup.
 
@@ -511,20 +520,24 @@ class TabbedWindow(Window):
         super().__init__(name, runner, dimensions=dimensions)
         self.tabs = []
 
-    def addTabs(self, tabs: Union[sg.Tab, Tab, List[sg.Tab, Tab]]):
+    def addTabs(self, tabs: Union[Union[sg.Tab, Tab], Iterable[Union[sg.Tab, Tab]]]) -> None:
         """
         Add tabs to window
 
         :param self: :class:`~Layout.Layout.TabbedWindow` to add tabs into
         :param tabs: tabs to contain in window
         """
-        if isinstance(tabs, (Tab, sg.Tab)):
-            self.tabs.append(tabs)
-        elif isinstance(tabs, list):
-            for tab in tabs:
-                self.addTabs(tab)
-        else:
-            raise TypeError("tabs must be Tab, sg.Tab, or list")
+
+        def add(tab: Union[sg.Tab, Tab]) -> None:
+            self.tabs.append(tab)
+
+        kwargs = {
+            "base_method": add,
+            "args": tabs,
+            "valid_input_types": (sg.Tab, Tab),
+            "output_type": list
+        }
+        return recursiveMethod(**kwargs)
 
     def getTabs(self) -> List[sg.Tab]:
         """
@@ -598,19 +611,24 @@ class WindowRunner:
         """
         return self.values[key]
 
-    def getElements(self, keys: Union[str, List[str]]) -> Union[sg.Element, List[sg.Element]]:
+    def getElements(self, keys: Union[str, Iterable[str]]) -> Union[sg.Element, Iterable[Element]]:
         """
         Get element(s) in window runner from key
         
         :param self: :class:`~Layout.Layout.WindowRunner` to retrieve element(s) from
         :param keys: key(s) of element(s) to retrieve
         """
-        if isinstance(keys, str):
-            return self.getWindow()[keys]
-        elif isinstance(keys, list):
-            return [self.getElements(keys=key) for key in keys]
-        else:
-            raise TypeError("keys must be str or list")
+
+        def get(key: str) -> sg.Element:
+            return self.getWindow()[key]
+
+        kwargs = {
+            "base_method": get,
+            "args": keys,
+            "valid_input_types": sg.Element,
+            "output_type": list
+        }
+        return recursiveMethod(**kwargs)
 
     def toggleVisibility(self, key: str) -> None:
         """

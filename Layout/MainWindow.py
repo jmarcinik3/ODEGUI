@@ -2,22 +2,21 @@ from __future__ import annotations
 
 from os.path import dirname, join
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
-from numpy import array
 from numpy import ndarray
 from pint import Quantity
 
 from CustomErrors import RecursiveTypeError
-from Function import Function, Independent, Model, readFunctions, readParameters
+from Function import Function, Independent, Model, Parameter, readFunctions, readParameters
 from Layout.ChooseParametersWindow import ChooseParametersWindowRunner
 from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabRow, TabbedWindow, WindowRunner, generateCollapsableSection
 from Layout.SetFreeParametersWindow import SetFreeParametersWindowRunner
 from Layout.SimulationWindow import SimulationWindowRunner
 from YML import getDimensions, getStates, readLayout, readStates
-from macros import expression2png, formatQuantity, getTexImage, unique
+from macros import expression2png, formatQuantity, getTexImage, recursiveMethod, unique
 
 tet_types = ("Temporal", "Equilibrium", "Constant", "Function")
 p_types = ("Constant", "Free")
@@ -64,7 +63,7 @@ class TimeEvolutionVariableRow(TabRow):
         """
         return self.getTab().getInitialConditions(self.getName())
 
-    def getTimeEvolutionTypes(self, **kwargs) -> Union[str, List[str]]:
+    def getTimeEvolutionTypes(self, **kwargs) -> Union[str, Iterable[str]]:
         """
         Get possible time-evolution types for variable.
         
@@ -165,8 +164,8 @@ class TimeEvolutionTab(Tab):
         self.addVariableRows(variable_names)
 
     def addVariableRows(
-            self, names: Union[str, List[str]]
-    ) -> Union[TimeEvolutionVariableRow, List[TimeEvolutionVariableRow]]:
+            self, names: Union[str, Iterable[str]]
+    ) -> Union[TimeEvolutionVariableRow, Iterable[TimeEvolutionVariableRow]]:
         """
         Add rows corresponding to variable names.
         
@@ -175,19 +174,24 @@ class TimeEvolutionTab(Tab):
         :returns: New row added if names is str.
             List of new rows if names is list.
         """
-        if isinstance(names, str):
-            new_row = TimeEvolutionVariableRow(names, self)
+
+        def get(name: str) -> TimeEvolutionVariableRow:
+            new_row = TimeEvolutionVariableRow(name, self)
             self.variable_rows.append(new_row)
             return new_row
-        elif isinstance(names, list):
-            return [self.addVariableRows(name) for name in names]
-        else:
-            raise RecursiveTypeError(names)
+
+        kwargs = {
+            "base_method": get,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": list
+        }
+        return recursiveMethod(**kwargs)
 
     def getVariableRows(self) -> List[TimeEvolutionVariableRow]:
         """
         Get variable rows added to tab.
-        
+
         :param self: :class:`~Layout.MainWindow.TimeEvolutionTab` to retrieve rows from
         """
         return self.variable_rows
@@ -195,19 +199,24 @@ class TimeEvolutionTab(Tab):
     def getInitialConditions(self, names: str = None) -> Union[float, Dict[str, float]]:
         """
         Get default initial condition for variable.
-        
+
         :param self: :class:`~Layout.MainWindow.TimeEvolutionTab` to retrieve initial condition from
         :param names: name(s) of variable to retrieve initial conditions for
         """
-        if isinstance(names, str):
-            initial_conditions = self.initial_conditions
-            return initial_conditions[names]
-        elif isinstance(names, list):
-            return {name: self.getInitialConditions(names=name) for name in names}
-        elif names is None:
-            return self.initial_conditions
 
-    def getTimeEvolutionTypes(self, name: str, index: int = None) -> Union[str, List[str]]:
+        def get(name: str) -> float:
+            return self.initial_conditions[name]
+
+        kwargs = {
+            "base_method": get,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": dict,
+            "default_args": list(self.initial_conditions.keys())
+        }
+        return recursiveMethod(**kwargs)
+
+    def getTimeEvolutionTypes(self, name: str, index: int = None) -> Union[str, Iterable[str]]:
         """
         Get default initial condition for variable.
 
@@ -228,7 +237,7 @@ class TimeEvolutionTab(Tab):
     def getHeaderRow(self) -> Row:
         """
         Get header row for single time-evolution tab.
-        
+
         :param self: :class:`~Layout.MainWindow.TimeEvolutionTab` to retrieve row from
         """
         row = Row(window=self.getWindowObject())
@@ -255,7 +264,7 @@ class TimeEvolutionTab(Tab):
     def getAsColumn(self) -> sg.Column:
         """
         Get time-evolution tab as an column object.
-        
+
         :param self: :class:`~Layout.MainWindow.TimeEvolutionTab` to retrieve as column
         """
         header_row = self.getHeaderRow()
@@ -272,7 +281,7 @@ class TimeEvolutionTab(Tab):
     def getLayout(self) -> List[List[sg.Element]]:
         """
         Get layout for time-evolution tab.
-        
+
         :param self: :class:`~Layout.MainWindow.TimeEvolutionTab` to retrieve layout from
         """
         return [[self.getAsColumn()]]
@@ -281,7 +290,7 @@ class TimeEvolutionTab(Tab):
 class TimeEvolutionTabGroup(TabGroup):
     """
     Tabgroup for time-evolution tabs.
-    
+
     This contains
         #. :class:`~Layout.MainWindow.TimeEvolutionTab` for each group of variables
     """
@@ -308,7 +317,7 @@ class TimeEvolutionTabGroup(TabGroup):
 class ParameterRow(TabRow):
     """
     Row to set properties for parameter.
-    
+
     This contains
         #. Label of parameter name
         #. Label for present parameter value and unit
@@ -321,7 +330,7 @@ class ParameterRow(TabRow):
             self,
             name: str,
             section: ParameterSection,
-            stem2quant: Dict[str, Quantity],
+            parameters: List[Parameter],
             parameter_types: Tuple[str] = ("Constant", "Free")
     ) -> None:
         """
@@ -329,7 +338,7 @@ class ParameterRow(TabRow):
 
         :param name: name of tab group
         :param section: :class:`~Layout.MainWindow.ParameterSection` that row is stored in
-        :param stem2quant: dictionary of filepaths for file containing parameter.
+        :param parameters: dictionary of filepaths for file containing parameter.
             Key is name of filestem for file.
             Value is filepath for file.
         :param parameter_types: collection of types that each parameter can take on
@@ -339,7 +348,7 @@ class ParameterRow(TabRow):
         window_object: MainWindow = self.getWindowObject()
         window_object.addParameterNames(names=name)
 
-        self.stem2quant = stem2quant
+        self.parameters = parameters
         self.section = section
         self.parameter_types = parameter_types
 
@@ -356,23 +365,31 @@ class ParameterRow(TabRow):
     def getStems(self) -> List[str]:
         """
         Get filestems for files containing parameter.
-        
+
         :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve filestems from
         """
-        return list(self.stem2quant.keys())
+        return [parameter.getStem() for parameter in self.getParameters()]
 
     def getQuantities(self) -> List[Quantity]:
         """
         Get filepaths for files containing parameter.
-        
+
         :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve filepaths from
         """
-        return list(self.stem2quant.values())
+        return [parameter.getQuantity() for parameter in self.getParameters()]
+
+    def getParameters(self) -> List[Parameter]:
+        """
+        Get parameters for row.
+
+        :param self: `~Layout.MainWindow.ParameterRow` to retrieve parameters from
+        """
+        return self.parameters
 
     def getSection(self) -> ParameterSection:
         """
         Get parameter section containing row.
-        
+
         :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve section for
         """
         return self.section
@@ -380,7 +397,7 @@ class ParameterRow(TabRow):
     def getParameterTypes(self, index: int = None) -> Tuple[str]:
         """
         Get possible types for parameter associated with row.
-        
+
         :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve types from
         :param index: index of parameter type to retrieve within collection of parameter types
         :returns: Parameter type at index if :paramref:`~Layout.MainWindow.ParameterRow.getParameterTypes.index` is int.
@@ -397,7 +414,7 @@ class ParameterRow(TabRow):
     def getCustomCheckbox(self) -> sg.Checkbox:
         """
         Get checkbox allowing user to use custom value for parameter.
-        
+
         :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve checkbox from
         """
         name = self.getName()
@@ -434,7 +451,7 @@ class ParameterRow(TabRow):
     def getNameLabel(self) -> Union[sg.Text, sg.Image]:
         """
         Get label to indicate parameter name.
-        
+
         :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve label from
         """
         kwargs = {
@@ -491,7 +508,7 @@ class ParameterRow(TabRow):
 class ParameterSection(Element):
     """
     Section to organize parameter rows for parameters.
-    
+
     This contains
         #. Header to indicate name of parameter section
         #. collapsable section of :class:`~Layout.MainWindow.ParameterRow` for each parameter in section
@@ -501,13 +518,13 @@ class ParameterSection(Element):
     :ivar parameters_rows: list of :class:`~Layout.MainWindow.ParameterRow`, one for each parameter in section
     """
 
-    def __init__(self, name: str, tab: ParameterTab, name2stem2quant: Dict[str, Dict[str, Quantity]]) -> None:
+    def __init__(self, name: str, tab: ParameterTab, name2params: Dict[str, List[Parameter]]) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.ParameterSection`.
 
         :param name: name of tab
         :param tab: tab that section in stored in
-        :param name2stem2quant: dictionary dictating how to set up each row within section.
+        :param name2params: dictionary dictating how to set up each row within section.
             Key is name of parameter in section.
             Value is dictionary from stems to paths for parameter.
                 Key is filestems for files containing parameter.
@@ -518,8 +535,8 @@ class ParameterSection(Element):
         self.tab = tab
 
         self.parameter_rows = []
-        for parameter_name, stem2path in name2stem2quant.items():
-            self.parameter_rows.append(ParameterRow(parameter_name, self, stem2path))
+        for parameter_name, parameters in name2params.items():
+            self.parameter_rows.append(ParameterRow(parameter_name, self, parameters))
 
     def getParameterRows(self) -> List[ParameterRow]:
         """
@@ -532,7 +549,7 @@ class ParameterSection(Element):
     def getName(self) -> str:
         """
         Get name of section.
-        
+
         :param self: :class:`~Layout.MainWindow.ParameterSection` to retrieve name from
         """
         return self.name
@@ -540,7 +557,7 @@ class ParameterSection(Element):
     def getTab(self) -> ParameterTab:
         """
         Get parameter tab that section is contained within.
-        
+
         :param self: :class:`~Layout.MainWindow.ParameterSection` to retrieve tab from
         """
         return self.tab
@@ -548,7 +565,7 @@ class ParameterSection(Element):
     def getHeaderLabel(self) -> Union[sg.Text, sg.Image]:
         """
         Get label in header to indicate section of parameters.
-        
+
         :param self: :class:`~Layout.MainWindow.ParameterSection` to retrieve label from
         """
         name = self.getName()
@@ -562,7 +579,7 @@ class ParameterSection(Element):
     def getHeaderRow(self) -> Row:
         """
         Get header row to indicate section of parameters.
-        
+
         :param self: :class:`~Layout.MainWindow.ParameterSection` to retrieve row from
         """
         row = Row(window=self.getWindowObject())
@@ -593,10 +610,10 @@ class ParameterSection(Element):
 class ParameterTab(Tab):
     """
     Tab to organize parameter sections.
-    
+
     This contains
         #. :class:`~Layout.MainWindow.ParameterSection` for each section of parameters
-        
+
     :ivar sections: list of :class:`~Layout.MainWindow.ParameterSection`, one for each section in tab
     """
 
@@ -616,7 +633,7 @@ class ParameterTab(Tab):
             Value is filepaths for files.
         """
         super().__init__(name, window)
-        layout_blueprint, name2stem2quant = blueprints
+        layout_blueprint, name2params = blueprints
 
         if isinstance(layout_blueprint, list):
             layout_blueprint = {
@@ -625,11 +642,11 @@ class ParameterTab(Tab):
 
         self.sections = []
         for section_name, parameter_names in layout_blueprint.items():
-            name2stem2quant_sub = {
-                parameter_name: name2stem2quant[parameter_name]
+            name2params_sub = {
+                parameter_name: name2params[parameter_name]
                 for parameter_name in parameter_names
             }
-            self.sections.append(ParameterSection(section_name, self, name2stem2quant_sub))
+            self.sections.append(ParameterSection(section_name, self, name2params_sub))
 
     def getSections(self) -> List[ParameterSection]:
         """
@@ -642,7 +659,7 @@ class ParameterTab(Tab):
     def getAsColumn(self) -> sg.Column:
         """
         Get scrollable element with tab layout.
-        
+
         :param self: :class:`~Layout.MainWindow.ParameterTab` to retrieve element from
         """
         layout = [[]]
@@ -660,7 +677,7 @@ class ParameterTab(Tab):
     def getLayout(self) -> List[List[sg.Column]]:
         """
         Get layout for tab.
-        
+
         :param self: :class:`~Layout.MainWindow.ParameterTab` to retrieve layout from
         """
         return [[self.getAsColumn()]]
@@ -669,7 +686,7 @@ class ParameterTab(Tab):
 class ParameterTabGroup(TabGroup):
     """
     Tabgroup for parameter tabs.
-    
+
     This contains
         #. :class:`~Layout.MainWindow.ParameterTab` for each group of parameters
     """
@@ -690,7 +707,7 @@ class ParameterTabGroup(TabGroup):
             Value is filepaths for files.
         :param suffix_layout: layout shared by all tabs in tab group
         """
-        tabgroup_blueprint, name2stem2quant = blueprints
+        tabgroup_blueprint, name2params = blueprints
 
         tabs = []
         tab_names = tabgroup_blueprint.keys()
@@ -703,38 +720,38 @@ class ParameterTabGroup(TabGroup):
             parameter_namess = []
             for parameter_names in tab_blueprint.values():
                 parameter_namess.extend(parameter_names)
-            name2stem2quant_sub = {
-                parameter_name: name2stem2quant[parameter_name]
+            name2params_sub = {
+                parameter_name: name2params[parameter_name]
                 for parameter_name in parameter_namess
             }
-            tabs.append(ParameterTab(tab_name, window, (tab_blueprint, name2stem2quant_sub)))
+            tabs.append(ParameterTab(tab_name, window, (tab_blueprint, name2params_sub)))
         super().__init__(tabs, name=name, suffix_layout=suffix_layout)
 
 
 class FunctionRow(TabRow):
     """
     Row to display function info.
-    
+
     This contains
         #. Label for name of function
         #. Label for expression of function
         #. Combobox to choose filestem to load function from
     """
 
-    def __init__(self, name: str, tab: FunctionTab, stem2func: Dict[str, Function]) -> None:
+    def __init__(self, name: str, tab: FunctionTab, functions: List[Function]) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.FunctionRow`.
 
         :param name: name of function
         :param tab: tab that row is stored in
-        :param stem2func: dictionary from of functions.
+        :param functions: dictionary from of functions.
             Key is filestem for file.
             Value is function object loaded from file.
         """
         super().__init__(name, tab)
         self.image_folder = "tex_eq"
+        self.functions = functions
 
-        self.stem2func = stem2func
         # noinspection PyTypeChecker
         window_object: MainWindow = self.getWindowObject()
         window_object.addFunctionNames(name)
@@ -749,7 +766,7 @@ class FunctionRow(TabRow):
     def getImageFoldername(self, filestem: str) -> str:
         """
         Get folderpath to save or load image from.
-        
+
         :param self: :class:`~Layout.MainWindow.FunctionRow` to retrieve folderpath from
         :param filestem: stem of file to retrieve folderpath for
         """
@@ -760,7 +777,7 @@ class FunctionRow(TabRow):
     def generatePngExpressions(self) -> List[str]:
         """
         Generate PNG images for each function corresponding to filestem.
-        
+
         :param self: :class:`~Layout.MainWindow.FunctionRow` to generate images for
         :returns: List of filepaths for generate images.
         """
@@ -800,7 +817,7 @@ class FunctionRow(TabRow):
 
         :param self: :class:`~Layout.MainWindow.FunctionRow` to retrieve filestems from
         """
-        return list(self.stem2func.keys())
+        return [function.getStem() for function in self.getFunctions()]
 
     def getFunctions(self) -> List[Function]:
         """
@@ -808,12 +825,12 @@ class FunctionRow(TabRow):
 
         :param self: :class:`~Layout.MainWindow.FunctionRow` to retrieve filepaths from
         """
-        return list(self.stem2func.values())
+        return self.functions
 
     def getChooseFileElement(self) -> sg.Combo:
         """
         Get element allowing user to choose which file to load function.
-        
+
         :param self: :class:`~Layout.MainWindow.FunctionRow` to retrieve element from
         """
         filestems = self.getStems()
@@ -855,7 +872,7 @@ class FunctionTab(Tab):
     This contains
         #. Header of labels to indicate purpose of each element in tab columns
         #. :class:`~Layout.MainWindow.FunctionRow` for each function in tab
-    
+
     :ivar function_rows: list of :class:`~Layout.MainWindow.FunctionRow`, one for each function in tab
     """
 
@@ -863,11 +880,11 @@ class FunctionTab(Tab):
             self,
             name: str,
             window: MainWindow,
-            blueprint: Dict[str, Dict[str, Function]]
+            blueprint: Dict[str, List[Function]]
     ) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.FunctionTab`.
-    
+
         :param name: name of tab
         :param window: window that tab is stored in
         :param blueprint: 2-level dictionary dictating which rows to add into tab.
@@ -885,7 +902,7 @@ class FunctionTab(Tab):
     def getFunctionRows(self) -> List[FunctionRow]:
         """
         Get function rows stored in tab.
-    
+
         :param self: :class:`~Layout.MainWindow.FunctionTab` to retrieve rows from
         """
         return self.function_rows
@@ -893,7 +910,7 @@ class FunctionTab(Tab):
     def getHeaderRow(self) -> Row:
         """
         Get header row for single function tab.
-    
+
         :param self: :class:`~Layout.MainWindow.FunctionTab` to retrieve row from
         """
         row = Row(window=self.getWindowObject())
@@ -912,7 +929,7 @@ class FunctionTab(Tab):
     def getAsColumn(self) -> sg.Column:
         """
         Get function tab as an column object.
-    
+
         :param self: :class:`~Layout.MainWindow.FunctionTab` to retrieve as column
         """
         header_row = self.getHeaderRow()
@@ -929,7 +946,7 @@ class FunctionTab(Tab):
     def getLayout(self) -> List[List[sg.Element]]:
         """
         Get layout for function tab.
-    
+
         :param self: :class:`~Layout.MainWindow.FunctionTab` to retrieve layout from
         """
         return [[self.getAsColumn()]]
@@ -958,14 +975,13 @@ class FunctionTabGroup(TabGroup):
             Second key is filestems for files containing function.
             Value is filepaths for files.
         """
-        tabgroup_blueprint, name2stem2func = blueprints
-
+        tabgroup_blueprint, name2funcs = blueprints
         tabs = []
         tab_names = tabgroup_blueprint.keys()
         for tab_name in tab_names:
             function_names = tabgroup_blueprint[tab_name]
             tab_blueprint = {
-                function_name: name2stem2func[function_name]
+                function_name: name2funcs[function_name]
                 for function_name in function_names
             }
             tabs.append(FunctionTab(tab_name, window, tab_blueprint))
@@ -975,7 +991,7 @@ class FunctionTabGroup(TabGroup):
 class MainWindow(TabbedWindow):
     """
     Primary window to run program.
-    
+
     This contains
         #. :class:`~Layout.MainWindow.TimeEvolutionTabGroup` to allow user to set time-evolution properties for each variable
         #. :class:`~Layout.MainWindow.ParameterTabGroup` to allow user to set properties for each parameter
@@ -990,7 +1006,7 @@ class MainWindow(TabbedWindow):
     ) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.MainWindow`.
-        
+
         :param name: title of window
         :param runner: :class:`~Layout.MainWindow.MainWindowRunner` that window is stored in
         :param blueprint: dictionary indicating how to set up elements in window
@@ -1068,10 +1084,10 @@ class MainWindow(TabbedWindow):
         ]
         self.addTabs(tabs)
 
-    def getName2Stem2Function(self) -> Dict[str, Dict[str, Function]]:
+    def getName2Functions(self) -> Dict[str, Dict[str, Function]]:
         """
         Get dictionary from function name to filestem to function object.
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve dictionary from
         """
         stem2name2func = self.stem2name2func
@@ -1081,32 +1097,34 @@ class MainWindow(TabbedWindow):
                 if name not in name2stem2func:
                     name2stem2func[name] = {}
                 name2stem2func[name][stem] = func
-        return name2stem2func
+        name2funcs = {name: list(name2stem2func[name].values()) for name in name2stem2func.keys()}
+        return name2funcs
 
-    def getName2Stem2Parameter(self) -> Dict[str, Dict[str, Quantity]]:
+    def getName2Parameters(self) -> Dict[str, Dict[str, Quantity]]:
         """
         Get dictionary from parameter name to filestem to quantity object.
 
         :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve dictionary from
         """
-        stem2name2quant = self.stem2name2param
-        name2stem2quant = {}
-        for stem, name2quant in stem2name2quant.items():
+        stem2name2param = self.stem2name2param
+        name2stem2param = {}
+        for stem, name2quant in stem2name2param.items():
             for name, quant in name2quant.items():
-                if name not in name2stem2quant:
-                    name2stem2quant[name] = {}
-                name2stem2quant[name][stem] = quant
-        return name2stem2quant
+                if name not in name2stem2param:
+                    name2stem2param[name] = {}
+                name2stem2param[name][stem] = quant
+        name2params = {name: list(name2stem2param[name].values()) for name in name2stem2param.keys()}
+        return name2params
 
     def getVariableNames(self) -> List[str]:
         """
         Get names of variables included in window.
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve names from
         """
         return self.variable_names
 
-    def addVariableNames(self, names: Union[str, List[str]]) -> Union[str, List[str]]:
+    def addVariableNames(self, names: Union[str, Iterable[str]]) -> Union[str, Iterable[str]]:
         """
         Add names of variables included in window.
 
@@ -1115,14 +1133,19 @@ class MainWindow(TabbedWindow):
         :returns: Name of new variable added if :paramref:`~Layout.MainWindow.MainWindow.addVariableNames.names` is str.
             List of new variables added if :paramref:`~Layout.MainWindow.MainWindow.addVariableNames.names` is list.
         """
-        if isinstance(names, str):
-            new_variable_name = names
-            self.variable_names.append(names)
+
+        def add(name: str) -> str:
+            new_variable_name = name
+            self.variable_names.append(name)
             return new_variable_name
-        elif isinstance(names, list):
-            return [self.addVariableNames(names=name) for name in names]
-        else:
-            raise RecursiveTypeError(names)
+
+        kwargs = {
+            "base_method": add,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": list
+        }
+        return recursiveMethod(**kwargs)
 
     def getFunctionNames(self) -> List[str]:
         """
@@ -1132,7 +1155,7 @@ class MainWindow(TabbedWindow):
         """
         return self.function_names
 
-    def addFunctionNames(self, names: Union[str, List[str]]) -> Union[str, List[str]]:
+    def addFunctionNames(self, names: Union[str, Iterable[str]]) -> Union[str, Iterable[str]]:
         """
         Add names of functions included in window.
 
@@ -1142,14 +1165,19 @@ class MainWindow(TabbedWindow):
             if :paramref:`~Layout.MainWindow.MainWindow.addFunctionNames.names` is str.
             List of new functions added if :paramref:`~Layout.MainWindow.MainWindow.addFunctionNames.names` is list.
         """
-        if isinstance(names, str):
-            new_function_name = names
-            self.function_names.append(names)
+
+        def add(name: str) -> str:
+            new_function_name = name
+            self.function_names.append(name)
             return new_function_name
-        elif isinstance(names, list):
-            return [self.addFunctionNames(names=name) for name in names]
-        else:
-            raise RecursiveTypeError(names)
+
+        kwargs = {
+            "base_method": add,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": list
+        }
+        return recursiveMethod(**kwargs)
 
     def getParameterNames(self) -> List[str]:
         """
@@ -1159,7 +1187,7 @@ class MainWindow(TabbedWindow):
         """
         return self.parameter_names
 
-    def addParameterNames(self, names: Union[str, List[str]]) -> Union[str, List[str]]:
+    def addParameterNames(self, names: Union[str, Iterable[str]]) -> Union[str, Iterable[str]]:
         """
         Add names of parameters included in window.
 
@@ -1169,14 +1197,19 @@ class MainWindow(TabbedWindow):
             :paramref:`~Layout.MainWindow.MainWindow.addParameterNames.names` is str.
             List of new parameters added if :paramref:`~Layout.MainWindow.MainWindow.addParameterNames.names` is list.
         """
-        if isinstance(names, str):
-            new_parameter_name = names
-            self.parameter_names.append(names)
+
+        def add(name: str) -> str:
+            new_parameter_name = name
+            self.parameter_names.append(name)
             return new_parameter_name
-        elif isinstance(names, list):
-            return [self.addParameterNames(names=name) for name in names]
-        else:
-            raise RecursiveTypeError(names)
+
+        kwargs = {
+            "base_method": add,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": list
+        }
+        return recursiveMethod(**kwargs)
 
     def getBlueprints(self, tab_name: str = None) -> dict:
         """
@@ -1273,7 +1306,7 @@ class MainWindow(TabbedWindow):
     def getTimeEvolutionTypeTab(self) -> sg.Tab:
         """
         Get time-evolution tabgroup as tab, containing tab for each variable group
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve tabgroup from
         """
         tabgroup = TimeEvolutionTabGroup("Time Evolution", self, self.getBlueprints("time_evolution"))
@@ -1283,11 +1316,11 @@ class MainWindow(TabbedWindow):
     def getParameterTab(self) -> sg.Tab:
         """
         Get time-evolution tabgroup as tab, containing tab for each parameter group
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve tabgroup from
         """
         common = Layout(rows=Row(elements=sg.Button("Update Parameters")))
-        blueprints = (self.getBlueprints("parameters"), self.getName2Stem2Parameter())
+        blueprints = (self.getBlueprints("parameters"), self.getName2Parameters())
         tabgroup = ParameterTabGroup("Parameters", self, blueprints, common)
         tab = tabgroup.getAsTab()
         return tab
@@ -1298,7 +1331,7 @@ class MainWindow(TabbedWindow):
 
         :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve tabgroup from
         """
-        blueprints = (self.getBlueprints("functions"), self.getName2Stem2Function())
+        blueprints = (self.getBlueprints("functions"), self.getName2Functions())
         tabgroup = FunctionTabGroup("Function", self, blueprints)
         tab = tabgroup.getAsTab()
         return tab
@@ -1307,7 +1340,7 @@ class MainWindow(TabbedWindow):
 class MainWindowRunner(WindowRunner):
     """
     Runner for :class:`~Layout.MainWindow.MainWindow`.
-    
+
     :ivar function_ymls: filename(s) of YML files, containing info about functions for model
     :ivar parameters: dictionary of parameter quantities.
         Key is name of parameter.
@@ -1317,15 +1350,15 @@ class MainWindowRunner(WindowRunner):
     def __init__(
             self,
             name: str,
-            parameter_filepaths: Union[str, List[str]],
-            function_filepaths: Union[str, List[str]],
+            parameter_filepaths: Union[str, Iterable[str]],
+            function_filepaths: Union[str, Iterable[str]],
             time_evolution_layout: str,
             parameter_layout: str,
             function_layout: str
     ) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.MainWindowRunner`.
-        
+
         :param name: name of window
         :param parameter_filepaths: name(s) for file(s), containing info about parameters in model
         :param function_filepaths: name(s) for file(s), containing info about functions in model
@@ -1363,10 +1396,6 @@ class MainWindowRunner(WindowRunner):
         window = self.getWindow()
         while True:
             event, self.values = window.read()
-
-            model = self.getModel()
-            print(len(model.getFunctions()))
-
             print(event)
             if event in [sg.WIN_CLOSED, event == 'Exit']:
                 break
@@ -1416,7 +1445,7 @@ class MainWindowRunner(WindowRunner):
     def getPlotChoices(self, model: Model = None) -> Dict[str, List[str]]:
         """
         Get names of variable/functions to analyze for plot.
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve choices from
         :param model: model to retrieve choices from.
             Default to model associated with window.
@@ -1437,16 +1466,10 @@ class MainWindowRunner(WindowRunner):
         """
         Get model for window.
         Uses present state of window.
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve model from
         """
-        parameters = {name: self.getParameters(names=name) for name in self.getParameterNames()}
-        model = Model(parameters=parameters)
-
-        functions = self.getFunctions()
-        for function in functions:
-            model.addFunctions(function)
-
+        model = Model(functions=self.getFunctions(), parameters=self.getParameters())
         for derivative in model.getDerivatives():
             variable_name = derivative.getVariable(return_type=str)
             derivative.setTimeEvolutionType(self.getTimeEvolutionTypes(names=variable_name))
@@ -1457,7 +1480,7 @@ class MainWindowRunner(WindowRunner):
         """
         Set elements with same function to certain value.
         For example, set all elements that allow user input for time-evolution type to 'Temporal'.
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to set elements in
         :param prefix: prefix that elements to change value have in common
         :param value: value to set elements to
@@ -1470,62 +1493,74 @@ class MainWindowRunner(WindowRunner):
                 element.update(value)
                 window.write_event_value(key, value)
 
-    def getInitialConditions(self, names: Union[str, List[str]] = None) -> Union[float, ndarray, str]:
+    def getInitialConditions(self, names: Union[str, Iterable[str]] = None) -> Union[float, ndarray, str]:
         """
         Get initial conditions for variables.
         Uses present state of window.
-        
+
         __Recursion Base__
             get initial condition value for single variable: names [str]
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve conditions from
-        :param names: name(s) of variables to retrieve conditions for
+        :param names: name(s) of variable(s) to retrieve conditions for.
+            Defaults to all variables.
         :returns: Initial value if variable does not begin in equilibrium.
             "Equilibrium" if variable begins in equilibrium.
         """
-        if isinstance(names, str):
-            time_evolution_type = self.getValue(self.getKey("time_evolution_type", names))
+
+        def get(name: str) -> Union[float, str]:
+            time_evolution_type = self.getValue(self.getKey("time_evolution_type", name))
             is_equilibrium = time_evolution_type == "Equilibrium"
-            is_initial_equilibrium = self.getValue(
-                self.getKey("initial_condition_equilibrium", names)
-            ) or is_equilibrium
+            is_initial_equilibrium = self.getValue(self.getKey("initial_condition_equilibrium", name)) or is_equilibrium
 
             if is_initial_equilibrium:
                 return "Equilibrium"
             else:
-                input_field_key = self.getKey("initial_condition_value", names)
+                input_field_key = self.getKey("initial_condition_value", name)
                 try:
                     value = float(self.getValue(input_field_key))
                 except AttributeError:
-                    value = float(getStates("initial_condition", names))
+                    value = float(getStates("initial_condition", name))
                 return value
-        elif isinstance(names, list):
-            return array(self.getInitialConditions(names=name) for name in names)
-        else:
-            raise RecursiveTypeError(names)
 
-    def getTimeEvolutionTypes(self, names: Union[str, List[str]] = None) -> Union[str, List[str]]:
+        kwargs = {
+            "base_method": get,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": list,
+            "default_args": self.getVariableNames()
+        }
+        return recursiveMethod(**kwargs)
+
+    def getTimeEvolutionTypes(self, names: Union[str, Iterable[str]] = None) -> Union[str, Iterable[str]]:
         """
         Get selected time-evolution type for variable.
         Get default time-evolution type if none selected.
         Uses present state of window.
-        
+
         __Recursion Base__
             get time-evolution selection for single variable: names [str]
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve time-evolution types from
-        :param names: name(s) of variables to retrieve time-evolution types for
+        :param names: name(s) of variable(s) to retrieve time-evolution types for.
+            Defaults to all variables.
         """
-        if isinstance(names, str):
-            key = self.getKey("time_evolution_type", names)
+
+        def get(name: str) -> str:
+            key = self.getKey("time_evolution_type", name)
             try:
                 return self.getValue(key)
             except AttributeError:
-                return getStates("time_evolution_types", names)
-        elif isinstance(names, list):
-            return [self.getTimeEvolutionTypes(names=name) for name in names]
-        else:
-            raise RecursiveTypeError(names)
+                return getStates("time_evolution_types", name)
+
+        kwargs = {
+            "base_method": get,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": list,
+            "default_args": self.getVariableNames()
+        }
+        return recursiveMethod(**kwargs)
 
     def getVariableNameFromElementKey(self, key: str, prefix: str) -> Optional[str]:
         """
@@ -1548,7 +1583,7 @@ class MainWindowRunner(WindowRunner):
         Disable input field for initial conditions if time-evolution type is set to "Equilibrium" or if initial condition is set to equilibrium.
         Disable checkbox if time-evolution type is set to "Equilibrium".
         Enable elements otherwise.
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve elements from
         :param name: name of variable associated with elements
         """
@@ -1572,6 +1607,7 @@ class MainWindowRunner(WindowRunner):
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve names from
         :param filestem: stem for file, acts as optional filter
         """
+
         if isinstance(filestem, str):
             filtered_names = [
                 function_name
@@ -1590,30 +1626,29 @@ class MainWindowRunner(WindowRunner):
         else:
             raise TypeError("filestem must be of type str")
 
-    def getFunctions(
-            self, names: Union[str, List[str]] = None, filestem: str = None
-    ) -> Union[Function, List[Function]]:
+    def getFunctions(self, names: Union[str, Iterable[str]] = None) -> Union[Function, Iterable[Function]]:
         """
         Get function object from filestem and name.
         Uses present state of window.
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve function from
         :param names: name(s) of function(s) to retrieve.
             Defaults to all loaded functions.
-        :param filestem: stem for file to load function from
-            Defaults to chosen filestem.
         """
-        if isinstance(names, str):
-            if filestem is None:
-                filestem = self.getChosenFunctionStem(names)
-            function = self.stem2name2func[filestem][names]
+
+        def get(name: str) -> str:
+            filestem = self.getChosenFunctionStem(name)
+            function = self.stem2name2func[filestem][name]
             return function
-        elif isinstance(names, list):
-            return [self.getFunctions(names=name) for name in names]
-        elif names is None:
-            return self.getFunctions(names=self.getFunctionNames())
-        else:
-            raise RecursiveTypeError(names)
+
+        kwargs = {
+            "base_method": get,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": list,
+            "default_args": self.getFunctionNames()
+        }
+        return recursiveMethod(**kwargs)
 
     def getChosenFunctionStem(self, name: str) -> str:
         """
@@ -1627,27 +1662,33 @@ class MainWindowRunner(WindowRunner):
         filestem = self.getValue(combobox_key)
         return filestem
 
-    def updateFunctionExpressions(self, names: Union[str, List[str]]) -> None:
+    def updateFunctionExpressions(self, names: Union[str, Iterable[str]]) -> None:
         """
         Update function expression from selected file.
 
         :param self: :class`~Layout.MainWindow.MainWindowRunner` to update expression in
-        :param names: name(s) of function(s) to update expression for
+        :param names: name(s) of function(s) to update expression for.
+            Defaults to all functions.
         """
-        if isinstance(names, str):
-            function_filestem = self.getChosenFunctionStem(names)
+
+        def update(name: str) -> None:
+            function_filestem = self.getChosenFunctionStem(name)
             image_folder = join("tex_eq", function_filestem)
-            image_filename = '.'.join((names, "png"))
+            image_filename = '.'.join((name, "png"))
             image_filepath = join(image_folder, image_filename)
             image_data = open(image_filepath, 'rb').read()
-            image_expression = self.getElements(self.getKey("function_expression", names))
+            image_expression = self.getElements(self.getKey("function_expression", name))
             image_size = vars(image_expression)["Size"]
             image_expression.update(data=image_data, size=image_size)
-        elif isinstance(names, list):
-            for name in names:
-                self.updateFunctionExpressions(names=name)
-        elif names is None:
-            self.updateFunctionExpressions(names=self.getFunctionNames())
+
+        kwargs = {
+            "base_method": update,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": list,
+            "default_args": self.getFunctionNames()
+        }
+        return recursiveMethod(**kwargs)
 
     def getChosenParameterStem(self, name: str) -> str:
         """
@@ -1661,13 +1702,13 @@ class MainWindowRunner(WindowRunner):
         filestem = self.getValue(combobox_key)
         return filestem
 
-    def getParameterQuantitiesFromStems(self, name: str, filestem: str) -> Quantity:
+    def getParameterFromStem(self, name: str, filestem: str) -> Parameter:
         """
-        Get quantity for parameter from file.
-        
+        Get parameter from file.
+
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve quantity from
         :param name: name of parameter to retrieve quantity for
-        :param filestem: stem fo file to retrieve quantity from
+        :param filestem: stem for file to retrieve quantity from
         """
         return self.stem2name2param[filestem][name]
 
@@ -1684,27 +1725,31 @@ class MainWindowRunner(WindowRunner):
         return parameter_type
 
     def getCustomParameterQuantities(
-            self, names: Union[str, List[str]] = None
+            self, names: Union[str, Iterable[str]] = None
     ) -> Union[Quantity, Dict[str, Quantity]]:
         """
         Get custom value for parameter.
-        
+
         :param self: `~Layout.MainWindow.MainWindowRunner` to retrieve value from
         :param names: name(s) of parameter(s) to retrieve quantity(s) for
         """
-        if isinstance(names, str):
-            return self.custom_param[names]
-        elif isinstance(names, list):
-            return {name: self.getCustomParameterQuantities(names=name) for name in names}
-        elif names is None:
-            return self.getCustomParameterQuantities(names=list(self.custom_param.keys()))
-        else:
-            raise RecursiveTypeError(names)
+
+        def get(name: str) -> str:
+            return self.custom_param[name]
+
+        kwargs = {
+            "base_method": get,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": list,
+            "default_args": list(self.custom_param.keys())
+        }
+        return recursiveMethod(**kwargs)
 
     def isCustomParameter(self, name: str) -> bool:
         """
         Determine whether or not parameter should use custom value.
-        
+
         :param self: `~Layout.MainWindow.MainWindowRunner` to retrieve parameter property from
         :param name: name of parameter
         :returns: True if parameter is custom.
@@ -1714,7 +1759,30 @@ class MainWindowRunner(WindowRunner):
         is_custom = name in custom_parameter_names
         return is_custom
 
-    def getParameterNames(self, parameter_types: Union[str, List[str]] = None, custom_type: bool = None) -> List[str]:
+    def getParameters(self, names: Union[str, Iterable[str]] = None) -> Union[Parameter, Iterable[Parameter]]:
+        """
+        Get parameter object from filestem and name.
+        Uses present state of window.
+
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve function from
+        :param names: name(s) of parameter(s) to retrieve.
+            Defaults to all loaded functions.
+        """
+        def get(name: str) -> Parameter:
+            filestem = self.getChosenParameterStem(name)
+            parameter = self.stem2name2param[filestem][name]
+            return parameter
+
+        kwargs = {
+            "base_method": get,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": list,
+            "default_args": self.getParameterNames()
+        }
+        return recursiveMethod(**kwargs)
+
+    def getParameterNames(self, parameter_types: Union[str, Iterable[str]] = None, custom_type: bool = None) -> List[str]:
         """
         Get name(s) of parameter(s) in model.
 
@@ -1754,62 +1822,66 @@ class MainWindowRunner(WindowRunner):
         else:
             raise RecursiveTypeError(parameter_types)
 
-    def getParameters(
-            self, names: Union[str, List[str]] = None, expression: str = "quantity"
+    def getParameterQuantities(
+            self, names: Union[str, Iterable[str]] = None, form: str = "quantity"
     ) -> Optional[Union[Quantity, Dict[str, Quantity]]]:
         """
         Get parameter(s), including value and unit
-        
+
         __Recursion Base__
             return quantity, value, or unit of single parameter: names [str]
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve parameter(s) from
         :param names: name(s) of parameter(s) to retrieve.
             Defaults to all loaded parameters.
-        :param expression: form of quantity to retrieve. Each desired option must be a substring of this argument.
+        :param form: form of quantity to retrieve. Each desired option must be a substring of this argument.
             "quantity": retrieve value and unit
             "unit": retrieve only unit
             "value": retrieve only value
             "base" prefix or suffix: convert to base units (SI)
-            
+
         :returns: Quantity for single parameter if :paramref:`~Layout.MainWindow.MainWindowRunner.getQuantities.names` is str
             List of quantities if :paramref:`~Layout.MainWindow.MainWindowRunner.getQuantities.names` is list.
             None if parameter is not included in window.
         """
-        if isinstance(names, str):
-            if self.isCustomParameter(names):
-                quantity = self.getCustomParameterQuantities(names=names)
-            else:
-                filestem = self.getChosenParameterStem(names)
-                quantity = self.getParameterQuantitiesFromStems(names, filestem)
 
-            if "base" in expression:
+        def get(name: str) -> Parameter:
+            if self.isCustomParameter(name):
+                quantity = self.getCustomParameterQuantities(names=name)
+            else:
+                filestem = self.getChosenParameterStem(name)
+                quantity = self.getParameterFromStem(name, filestem).getQuantity()
+
+            if "base" in form:
                 quantity = quantity.to_base_units()
-            if "quantity" in expression:
+            if "quantity" in form:
                 return quantity
-            elif "value" in expression:
+            elif "value" in form:
                 return quantity.magnitude
-            elif "unit" in expression:
+            elif "unit" in form:
                 return quantity.units
             raise ValueError("Invalid entry for form input")
-        elif isinstance(names, list):
-            return {name: self.getParameters(names=name, expression=expression) for name in names}
-        elif names is None:
-            return self.getParameters(names=self.getParameterNames(), expression=expression)
-        else:
-            raise RecursiveTypeError(names)
+
+        kwargs = {
+            "base_method": get,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": dict,
+            "default_args": self.getParameterNames()
+        }
+        return recursiveMethod(**kwargs)
 
     def setParameter(self, name: str, quantity: Quantity, custom: bool) -> None:
         """
         Set or overwrite custom parameter quantity stored in window.
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store quantity in
         :param name: name of parameter to set/overwrite
         :param quantity: quantity to set parameter as
         :param custom: set True to make parameter custom.
             Set False to make parameter noncustom.
         """
-        old_quantity = self.getParameters(names=name)
+        old_quantity = self.getParameterQuantities(names=name)
         if isinstance(quantity, type(old_quantity)):
             self.custom_param[name] = quantity
             self.setParameterAsCustom(name, custom)
@@ -1817,33 +1889,36 @@ class MainWindowRunner(WindowRunner):
         else:
             raise TypeError("new quantity must be same class as old quantity")
 
-    def getInputParameterValue(self, names: Union[str, List[str]] = None) -> Union[str, List[str]]:
+    def getInputParameterValue(self, names: Union[str, Iterable[str]] = None) -> Union[str, Iterable[str]]:
         """
         Get values for parameter-value input-fields.
         Uses present state of window.
-        
+
         __Recursion Base__
             get field value for single parameter: names [str]
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve values from
         :param names: name(s) of parameter(s) to retrieve values for.
             Defaults to all parameters.
         """
-        if isinstance(names, str):
-            key = self.getKey("parameter_field", names)
+        def get(name: str) -> str:
+            key = self.getKey("parameter_field", name)
             field_value = self.getValue(key)
             return field_value
-        elif isinstance(names, list):
-            return [self.getInputParameterValue(names=name) for name in names]
-        elif names is None:
-            return self.getInputParameterValue(names=self.getParameterNames())
-        else:
-            raise RecursiveTypeError(names)
+
+        kwargs = {
+            "base_method": get,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": list,
+            "default_args": self.getParameterNames()
+        }
+        return recursiveMethod(**kwargs)
 
     def setParameterAsCustom(self, name: str, custom: bool) -> None:
         """
         Visually display whether or not parameter is custom.
-        
+
         :param self: `~Layout.MainWindow.MainWindowRunner` to display in
         :param name: name of parameter to display for
         :param custom: set True to display parameter as custom.
@@ -1854,7 +1929,7 @@ class MainWindowRunner(WindowRunner):
         checkbox.update(value=custom)
         self.getWindow().write_event_value(checkbox_key, custom)
 
-    def updateParametersFromStems(self, names: Union[str, List[str]] = None):
+    def updateParametersFromStems(self, names: Union[str, Iterable[str]] = None):
         """
         Update parameter quantity(s) stored in window from chosen filestems.
         Uses present state of window.
@@ -1866,66 +1941,76 @@ class MainWindowRunner(WindowRunner):
         :param names: name(s) of parameter(s) to update.
             Defaults to all loaded parameters.
         """
-        if isinstance(names, str):
-            filestem = self.getChosenParameterStem(names)
-            quantity = self.getParameterQuantitiesFromStems(names, filestem)
-            self.setParameter(name=names, quantity=quantity, custom=False)
-        elif isinstance(names, list):
-            for name in names:
-                self.updateParametersFromFields(names=name)
-        elif names is None:
-            self.updateParametersFromFields(names=self.getParameterNames())
-        else:
-            raise TypeError("names input be str or list")
 
-    def updateParametersFromFields(self, names: Union[str, List[str]] = None) -> None:
+        def update(name: str) -> None:
+            filestem = self.getChosenParameterStem(name)
+            quantity = self.getParameterFromStem(name, filestem).getQuantity()
+            self.setParameter(name=name, quantity=quantity, custom=False)
+
+        kwargs = {
+            "base_method": update,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": list,
+            "default_args": self.getParameterNames()
+        }
+        return recursiveMethod(**kwargs)
+
+    def updateParametersFromFields(self, names: Union[str, Iterable[str]] = None) -> None:
         """
         Update parameter quantity(s) stored in window from input fields.
         Uses present state of window.
-        
+
         __Recursion Base__
             update quantity associated with single parameter: names [str]
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to update parameters in
         :param names: name(s) of parameter(s) to update.
             Defaults to all loaded parameters.
         """
-        if isinstance(names, str):
-            field_value = self.getInputParameterValue(names=names)
-            if field_value != '':
-                old_unit, new_value = self.getParameters(names=names, expression="unit"), float(field_value)
-                new_quantity = new_value * old_unit
-                self.setParameter(name=names, quantity=new_quantity, custom=True)
-        elif isinstance(names, list):
-            for name in names:
-                self.updateParametersFromFields(names=name)
-        elif names is None:
-            self.updateParametersFromFields(names=self.getParameterNames())
-        else:
-            raise TypeError("names input be str or list")
 
-    def updateParameterLabels(self, names: Union[str, List[str]] = None) -> None:
+        def update(name: str) -> None:
+            field_value = self.getInputParameterValue(names=name)
+            if field_value != '':
+                old_unit, new_value = self.getParameterQuantities(names=name, form="unit"), float(field_value)
+                new_quantity = new_value * old_unit
+                self.setParameter(name=name, quantity=new_quantity, custom=True)
+
+        kwargs = {
+            "base_method": update,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": list,
+            "default_args": self.getParameterNames()
+        }
+        return recursiveMethod(**kwargs)
+
+    def updateParameterLabels(self, names: Union[str, Iterable[str]] = None) -> None:
         """
         Update quantity (value and unit) label for parameter.
-        
+
         __Recursion Base__
             update label for single parameter: names [str]
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to update label in
-        :param names: name(s) of parameter(s) to update labels for
+        :param names: name(s) of parameter(s) to update labels for.
+            Defaults to all parameters.
         """
-        if isinstance(names, str):
-            label_key = self.getKey("quantity_label", names)
+
+        def update(name: str) -> None:
+            label_key = self.getKey("quantity_label", name)
             label_element = self.getElements(label_key)
-            new_label = formatQuantity(self.getParameters(names=names))
+            new_label = formatQuantity(self.getParameterQuantities(names=name))
             label_element.update(new_label)
-        elif isinstance(names, list):
-            for name in names:
-                self.updateParameterLabels(names=name)
-        elif names is None:
-            self.updateParameterLabels(names=self.getInputParameterValue())
-        else:
-            raise RecursiveTypeError(names)
+
+        kwargs = {
+            "base_method": update,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": list,
+            "default_args": self.getParameterNames()
+        }
+        return recursiveMethod(**kwargs)
 
     def loadParametersFromFile(self, filenames: str = None, choose_parameters: bool = True) -> None:
         """
@@ -1976,7 +2061,7 @@ class MainWindowRunner(WindowRunner):
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve free parameters from
         """
         free_parameter_names = self.getParameterNames(parameter_types="Free")
-        free_parameter_quantities = self.getParameters(names=free_parameter_names)
+        free_parameter_quantities = self.getParameterQuantities(names=free_parameter_names)
 
         kwargs = {
             "name": "Set Values for Free Parameters",

@@ -2,11 +2,14 @@
 This file contains miscellaneous functions that are used often throughout the project.
 """
 import os
-from typing import Any, List, Union
+from functools import partial
+from typing import Any, Iterable, List, Type, Union
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
+import numpy as np
 import yaml
+from numpy import ndarray
 from pint import Quantity
 from sympy import Expr, latex
 from sympy.printing.preview import preview
@@ -296,3 +299,29 @@ def tex2pngFromFile(output_folder: str, tex_filename: str, **kwargs) -> None:
     for key in YML.readVar2Tex(tex_filename):
         filepath = f"{output_folder:s}/{key:s}.png"
         tex2png(tex_yml[key], filepath, **kwargs)
+
+
+def recursiveMethod(
+        args: Any,
+        base_method,
+        valid_input_types: Union[type, List[type]],
+        output_type: Type[Union[list, dict, ndarray]] = list,
+        default_args: Any = None
+) -> Union[Any, List[Any]]:
+    if isinstance(args, valid_input_types):
+        return base_method(args)
+    elif isinstance(args, Iterable):
+        partialGet = partial(recursiveMethod, base_method=base_method, valid_input_types=valid_input_types, output_type=output_type)
+        if output_type == list:
+            return [partialGet(args=arg) for arg in args]
+        elif output_type == ndarray:
+            return np.array([partialGet(args=arg) for arg in args])
+        elif output_type == dict:
+            return {arg: partialGet(args=arg) for arg in args}
+        else:
+            raise ValueError("invalid output type specified")
+    elif args is None:
+        partialGet = partial(recursiveMethod, base_method=base_method, valid_input_types=valid_input_types, output_type=output_type)
+        return partialGet(args=default_args)
+    else:
+        raise TypeError("invalid type for args")

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Tuple, Union
+from typing import Dict, Iterable, List, Tuple, Union
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
@@ -93,7 +93,7 @@ class SetFreeParametersWindow(Window):
         """
         return self.free_parameter_quantities[name]
 
-    def getFreeParameterNames(self, indicies: Union[int, List[str]] = None) -> Union[str, List[str]]:
+    def getFreeParameterNames(self, indicies: Union[int, Iterable[int]] = None) -> Union[str, Iterable[str]]:
         """
         Get stored name(s) for free parameter(s).
         The user may change the values of these parameters during simulation.
@@ -161,7 +161,7 @@ class SetFreeParametersWindowRunner(WindowRunner):
         return window_object.getFreeParameterNames(**kwargs)
 
     def getFreeParameterValues(
-            self, names: Union[str, List[str]] = None
+            self, names: Union[str, Iterable[str]] = None
     ) -> Union[List[float, float, int], Dict[str, List[float, float, int]]]:
         """
         Get info about free parameter values for simulation.

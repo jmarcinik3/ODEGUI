@@ -4,15 +4,14 @@ This file contains classes relating to the choose-parameters window.
 from __future__ import annotations
 
 from os.path import basename
-from typing import Dict, List, Union
+from typing import Dict, Iterable, List, Union
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
 from pint import Quantity
 
-from CustomErrors import RecursiveTypeError
 from Layout.Layout import Layout, Row, Window, WindowRunner
-from macros import formatQuantity, getTexImage
+from macros import formatQuantity, getTexImage, recursiveMethod
 
 
 class ChooseParameterRow(Row):
@@ -263,8 +262,8 @@ class ChooseParametersWindowRunner(WindowRunner):
         quantites = window_object.getParameters()
         parameter_names = list(quantites.keys())
         return parameter_names
-
-    def setChecks(self, names: Union[str, List[str]], overwrite: bool) -> None:
+    
+    def setChecks(self, names: Union[str, Iterable[str]], overwrite: bool) -> None:
         """
         Set all checkboxes (determining whether to overwrite parameter) to chosen value.
 
@@ -273,14 +272,18 @@ class ChooseParametersWindowRunner(WindowRunner):
         :param overwrite: set True to set all checkboxes to True.
             Set False to set all checkboxes to False.
         """
-        if isinstance(names, str):
-            checkbox = self.getElements(names)
+
+        def set(name: str) -> None:
+            checkbox = self.getElements(name)
             checkbox.update(value=overwrite)
-        elif isinstance(names, list):
-            for name in names:
-                self.setChecks(names=name, overwrite=overwrite)
-        else:
-            raise RecursiveTypeError(names)
+
+        kwargs = {
+            "base_method": set,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": list,
+        }
+        return recursiveMethod(**kwargs)
 
     def getChosenParameters(self) -> List[str]:
         """
