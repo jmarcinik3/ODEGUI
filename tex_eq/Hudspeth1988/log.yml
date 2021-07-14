@@ -1,0 +1,52 @@
+IBK:
+  expression: $I$
+  filename: IBK.png
+ICa:
+  expression: $I$
+  filename: ICa.png
+KpC1:
+  expression: $\varepsilon_X^{\delta_{C_1}} KC_{10}$
+  filename: KpC1.png
+KpC2:
+  expression: $\varepsilon_X^{\delta_{C_2}} KC_{20}$
+  filename: KpC2.png
+KpO3:
+  expression: $\varepsilon_X^{\delta_{O_2}} KO_{20}$
+  filename: KpO3.png
+dCa:
+  expression: $- [Ca^{2+}] K_S - \frac{I_{Ca} U}{C_{vol} F \xi_{[[Ca^{2+}]^{2+}]}
+    z_{Ca}}$
+  filename: dCa.png
+dpC0:
+  expression: $- k_{C_1}^+ p_{C0} + k^-_{C_1} p_{C1}$
+  filename: dpC0.png
+dpC1:
+  expression: $k_{C_1}^+ p_{C0} + k^-_{C_2} p_{C2} - p_{C1} \left(k_{C_2}^+ + k^-_{C_1}\right)$
+  filename: dpC1.png
+dpC2:
+  expression: $k_{C_2}^+ p_{C1} + k_{O_2}^- p_{O2} - p_{C2} \left(k^+_{O_2} + k^-_{C_2}\right)$
+  filename: dpC2.png
+dpO2:
+  expression: $k^+_{O_2} p_{C2} + k^-_{O_3} p_{O3} - p_{O2} \left(k_{O_3}^+ + k_{O_2}^-\right)$
+  filename: dpO2.png
+dpO3:
+  expression: $k_{O_3}^+ p_{O2} - k^-_{O_3} p_{O3}$
+  filename: dpO3.png
+gBK:
+  expression: $gBK_{11} \left(p_{O2} + p_{O3}\right)$
+  filename: gBK.png
+gCa:
+  expression: $g_{Ca}(1) m_{Ca}^{3}$
+  filename: gCa.png
+kaC1:
+  expression: $\frac{[Ca^{2+}] k^-_{C_1}}{K_{p_{C_1}}}$
+  filename: kaC1.png
+kaC2:
+  expression: $\frac{[Ca^{2+}] k^-_{C_2}}{K_{p_{C_2}}}$
+  filename: kaC2.png
+kaO3:
+  expression: $\frac{[Ca^{2+}] k^-_{O_3}}{K_{p_{O_3}}}$
+  filename: kaO3.png
+kdO2:
+  expression: $\varepsilon_X^{\tilde{d}_K - 1} kdO_{20}$
+  filename: kdO2.png
