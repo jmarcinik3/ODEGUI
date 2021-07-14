@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import KeysView
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
@@ -20,7 +21,68 @@ from CustomErrors import RecursiveTypeError
 from macros import formatQuantity, unique
 
 
-class Parameter:
+class PaperQuantity:
+    """
+    Stores information about objects generated from files, for models.
+
+    :ivar name: name of object
+    :ivar filestem: stem of file where object was loaded from
+    :ivar model: model that contains object
+    """
+    def __init__(self, name: str, model: Model, filestem: str = None) -> None:
+        """
+        Constructor for :class:`~Function.PaperQuantity`.
+
+        :param name: name of object
+        :param model: model that contains object
+        :param filestem: stem of file where object was loaded from
+        """
+        self.name = name
+        self.filestem = filestem
+        self.model = model
+
+    def getName(self, return_type: Type[str, Symbol] = str) -> str:
+        """
+        Get name of object.
+
+        :param self: `~Function.PaperQuantity` to retrieve name from
+        :param return_type: return type of output.
+            Must be str or Symbol.
+        """
+        if return_type == str:
+            return self.name
+        elif return_type == Symbol:
+            return Symbol(self.name)
+        else:
+            raise ValueError("invalid return type")
+
+    def getStem(self) -> str:
+        """
+        Get filestem for file that generated object.
+
+        :param self: `~Function.PaperQuantity` to retrieve filestem from
+        """
+        return self.filestem
+
+    def getModel(self) -> Model:
+        """
+        Get :class:`~Function.Model` that contains object.
+
+        :param self: `~Function.PaperQuantity` to retrieve model from
+        """
+        return self.model
+
+    def setModel(self, model: Model) -> None:
+        """
+        Set :class:`~Function.Model` that contains object.
+
+        :param self: `~Function.PaperQuantity` to set model for
+        :param model: model to set for object
+        """
+        self.model = model
+
+
+class Parameter(PaperQuantity):
     """
     Store info pertinent to generate/simulate parameter.
 
@@ -29,7 +91,7 @@ class Parameter:
     :ivar model: model that parameter is stored in
     """
 
-    def __init__(self, name: str, quantity: Quantity, model: Model) -> None:
+    def __init__(self, name: str, quantity: Quantity, model: Model = None, filestem: str = None) -> None:
         """
         Constructor for :class:`~Function.Parameter`.
 
@@ -37,17 +99,9 @@ class Parameter:
         :param quantity: quantity containing value and unit for parameter
         :param model: model that parameter is stored in
         """
+        super().__init__(name, model=model, filestem=filestem)
         self.name = name
         self.quantity = quantity
-        self.model = model
-
-    def getName(self) -> str:
-        """
-        Get name of parameter.
-
-        :param self: :class:`~Function.Parameter` to retrieve name from
-        """
-        return self.name
 
     def getQuantity(self) -> Quantity:
         """
@@ -56,14 +110,6 @@ class Parameter:
         :param self: :class:`~Function.Parameter` to retrieve quantity from
         """
         return self.quantity
-
-    def getModel(self) -> Model:
-        """
-        Get model that parameter is stored in.
-
-        :param self: :class:`~Function.Parameter` to retrieve model from
-        """
-        return self.model
 
     def getFunctions(self) -> List[Function]:
         """
@@ -97,7 +143,7 @@ class Model:
     def __init__(
             self,
             functions: List[Function] = None,
-            parameters: Dict[str, Quantity] = None,
+            parameters: List[Parameter] = None,
     ) -> None:
         """
         Constructor for :class:`~Function.Model`.
@@ -108,56 +154,48 @@ class Model:
         self.functions = {}
         self.parameters = {}
         if parameters is not None:
-            self.addParameters(parameters)
+            self.addPaperQuantities(parameters)
         if functions is not None:
-            self.addFunctions(functions)
+            self.addPaperQuantities(functions)
 
-    def addParameters(self, quantities: Dict[str, Quantity]) -> None:
+    def addPaperQuantities(self, quantity_objects: Union[PaperQuantity, List[PaperQuantity]]) -> None:
         """
-        Set/add parameter(s) value and unit for model as Quantity.
-        
-        :param self: :class:`~Function.Model` to set parameter(s) for
-        :param quantities:
-            Key is name of parameter.
-            Value is quantity containing value and unit for parameter.
+        Add Function object(s) to model.
+        Set self as model for Function object(s).
+
+        :param self: :class:`~Function.Model` to add function to
+        :param quantity_objects: function(s) to add to model
         """
-        for name, quantity in quantities.items():
+        if isinstance(quantity_objects, Function):
+            if quantity_objects not in self.getFunctions():
+                name = quantity_objects.getName()
+                if name in self.getFunctionNames():
+                    print(f"Overwriting {name:s}={quantity_objects.getExpression():} into model")
+                    del self.functions[name]
+                if quantity_objects.isParameter():
+                    print(f"Overwriting function {name:s}={quantity_objects.getExpression():} as parameter")
+                elif name in self.getParameterNames():
+                    print(f"Overwriting parameter {name:s} as function {name:s}={quantity_objects.getExpression():}")
+                    del self.parameters[name]
+
+                if quantity_objects.getModel() is not self:
+                    quantity_objects.setModel(self)
+                if not quantity_objects.isParameter():
+                    self.functions[name] = quantity_objects
+        elif isinstance(quantity_objects, Parameter):
+            name = quantity_objects.getName()
+            quantity = quantity_objects.getQuantity()
             if name in self.getFunctionNames():
                 print(f"Overwriting function {name:s} as parameter {name:s}={formatQuantity(quantity)}")
                 del self.functions[name]
             elif name in self.getParameterNames():
                 print(f"Overwriting parameter {name:s}={formatQuantity(quantity):s} into model")
             self.parameters[name] = Parameter(name, quantity, self)
-
-    def addFunctions(self, functions: Union[Function, List[Function]]) -> None:
-        """
-        Add Function object(s) to model.
-        Set self as model for Function object(s).
-
-        :param self: :class:`~Function.Model` to add function to
-        :param functions: function(s) to add to model
-        """
-        if isinstance(functions, Function):
-            if functions not in self.getFunctions():
-                name = functions.getName()
-                if name in self.getFunctionNames():
-                    print(f"Overwriting {name:s}={functions.getExpression():} into model")
-                    del self.functions[name]
-                if functions.isParameter():
-                    print(f"Overwriting function {name:s}={functions.getExpression():} as parameter")
-                elif name in self.getParameterNames():
-                    print(f"Overwriting parameter {name:s} as function {name:s}={functions.getExpression():}")
-                    del self.parameters[name]
-
-                if functions.getModel() is not self:
-                    functions.setModel(self)
-                if not functions.isParameter():
-                    self.functions[name] = functions
-        elif isinstance(functions, list):
-            for function in functions:
-                self.addFunctions(function)
+        elif isinstance(quantity_objects, list):
+            for quantity_object in quantity_objects:
+                self.addPaperQuantities(quantity_object)
         else:
-            raise RecursiveTypeError(functions, Function)
+            raise RecursiveTypeError(quantity_objects, [Function, Parameter])
 
     def getParameterNames(self):
         """
@@ -273,8 +311,7 @@ class Model:
             ymls = [ymls]
 
         for yml in ymls:
-            parameters = readParameters(yml)
-            self.addParameters(parameters)
+            generateParametersFromFile(yml, model=self)
 
     def saveParametersToFile(self, filename: str) -> None:
         """
@@ -964,7 +1001,7 @@ class Child:
         return parents
 
 
-class Function(Child, Parent):
+class Function(Child, Parent, PaperQuantity):
     """
     Stores pertinent properties relevant to all types of functions.
     
@@ -984,29 +1021,27 @@ class Function(Child, Parent):
             properties: List[str],
             children: Dict[str, Dict[str, Union[Symbol, List[Symbol]]]] = None,
             model: Model = None,
+            filestem: str = '',
             **kwargs
     ) -> None:
         """
         Constructor for :class:`~Function.Function`.
-        
-        :param name: name of function
+
         :param properties: properties indicating types consistent with function
         :param children: argument to pass into :meth:`~Function.Parent`
-        :param model: model to initialize function within
         :param kwargs: extraneous arguments
         """
         Function.functions.append(self)
-        self.memory = {
-            "expression": None
-        }
-        self.name = name
-        self.is_parameter = "Parameter" in properties
-
-        self.model = None
-        self.setModel(model)
 
         Parent.__init__(self, children)
         Child.__init__(self)
+        PaperQuantity.__init__(self, name, model=model, filestem=filestem)
+
+        self.memory = {
+            "expression": Expr
+        }
+        self.is_parameter = "Parameter" in properties
+        self.setModel(model)
 
     @staticmethod
     def setUseMemory(use: bool) -> None:
@@ -1057,22 +1092,6 @@ class Function(Child, Parent):
         """
         return self.is_parameter
 
-    def getName(self) -> str:
-        """
-        Get name of function.
-
-        :param self: :class:`~Function.Function` to retrieve name of
-        """
-        return self.name
-
-    def getSymbol(self) -> Symbol:
-        """
-        Get symbol representing function.
-
-        :param self: :class:`~Function.Function` to retrieve symbolic variable of
-        """
-        return Symbol(self.getName())
-
     def getFreeSymbols(
             self, species: str = None, return_type: Type[Union[str, Symbol]] = Symbol, **kwargs
     ) -> Union[List[str], List[Symbol]]:
@@ -1122,7 +1141,8 @@ class Function(Child, Parent):
         :param kwargs: additional arguments to pass into
             :meth:`~Function.Piecewise.getExpression` or :meth:`~Function.NonPiecewise.getExpression`
         """
-        if not self.usingMemory() or self.expression is None or isinstance(self, Dependent):
+        expression_memory = self.memory["expression"]
+        if not self.usingMemory() or expression_memory is None or isinstance(self, Dependent):
             if isinstance(self, Piecewise):
                 expression = Piecewise.getExpression(self, **kwargs)
             elif isinstance(self, NonPiecewise):
@@ -1133,35 +1153,10 @@ class Function(Child, Parent):
             self: Function
             self.memory["expression"] = expression
             return expression
-        elif self.usingMemory() and isinstance(self.expression, Expr):
-            return self.memory["expression"]
+        elif self.usingMemory() and isinstance(expression_memory, Expr):
+            return expression_memory
         else:
             raise ValueError(f"improper expression in memory for {self.getName():s}")
-
-    def setModel(self, model: Model) -> None:
-        """
-        Set model for function.
-        Add function to model if not already done.
-
-        :param self: :class:`~Function.Function` to set model with
-        :param model: new model to associated with function
-        """
-        self.model = model
-        if isinstance(model, Model):
-            if self not in model.getFunctions():
-                model.addFunctions(self)
-        elif model is None:
-            pass
-        else:
-            raise TypeError("model input must be Model")
-
-    def getModel(self) -> Model:
-        """
-        Get model that function is stored within.
-
-        :param self: :class:`~Function.Function` to retrieve model of
-        """
-        return self.model
 
 
 class Derivative:
@@ -1588,7 +1583,7 @@ class NonPiecewise:
 
         self: Function
         for child in self.getChildren():
-            child_symbol = child.getSymbol()
+            child_symbol = child.getName(return_type=Symbol)
             if isinstance(child, Dependent):
                 child: Function
                 if substitute_dependents:
@@ -1681,8 +1676,7 @@ def FunctionMaster(
     return FunctionCore(name, function, inheritance, **kwargs)
 
 
-def getFunctionInfo(info: dict, model: Model = None) -> \
-        Dict[str, List[str]]:
+def getFunctionInfo(info: dict, model: Model = None) -> dict:
     """
     Get ormatted dictionary of info to generate Function object.
 
@@ -1792,10 +1786,23 @@ def generateFunctionsFromFile(filename: str, **kwargs) -> List[Function]:
     
     :param filename: name of file to read functions from
     :param kwargs: additional arguments to pass into :meth:`~Function.generateFunction`
+    :returns: Generated functions
     """
     file = yaml.load(open(filename), Loader=yaml.Loader)
-    return [generateFunction(name, file[name], **kwargs) for name in file.keys()]
+    filestem = Path(filename).stem
+    return [generateFunction(name, file[name], filestem=filestem, **kwargs) for name in file.keys()]
 
+def generateParametersFromFile(filename: str, **kwargs) -> List[Parameter]:
+    """
+    Generate all parameter from file.
+
+    :param filename: name of file to read parameters from
+    :param kwargs: additional arguments to pass into :meth:`~Function.generateParameter`
+    :returns: Generated parameters
+    """
+    file = yaml.load(open(filename), Loader=yaml.Loader)
+    filestem = Path(filename).stem
+    return [generateParameter(name, file[name], filestem=filestem, **kwargs) for name in file.keys()]
 
 def getInheritance(
         properties: List[str], name: str = ''
@@ -1826,17 +1833,18 @@ def getInheritance(
         raise ValueError(f"Function {name:s} must have either 'Piecewise' or 'NonPiecewise' as property")
     return inheritance
 
-
-def generateFunction(name: str, info: Dict[str, Union[str, dict]], model: Model = None) -> Function:
+def generateFunction(name: str, info: Dict[str, Union[str, dict]], model: Model = None, filestem: str = None) -> Function:
     """
     Generate Function object.
 
     :param name: name of function to generate
     :param info: dictionary of info needed to generate function
     :param model: :class:`~Function.Model` to add function into
-    :returns: Generated function
+    :param filestem: stem of filepath where function was loaded form, optional
+    :returns: Generated function object
     """
     kwargs = getFunctionInfo(info, model=model)
+    kwargs["filestem"] = filestem
 
     info_keys = info.keys()
     if "form" in info_keys:
@@ -1849,6 +1857,11 @@ def generateFunction(name: str, info: Dict[str, Union[str, dict]], model: Model 
     inheritance = getInheritance(kwargs["properties"])
     return FunctionMaster(name, expression, inheritance=tuple(inheritance), **kwargs)
 
+def generateParameter(name: str, info: Dict[str, Union[float, str]], **kwargs) -> Parameter:
+    value = float(info["value"])
+    unit = info["unit"]
+    quantity = value * units(unit)
+    return Parameter(name, quantity, **kwargs)
 
 def createModel(function_ymls: Union[str, List[str]], parameter_ymls: Union[str, List[str]]) -> Model:
     """
@@ -1863,26 +1876,25 @@ def createModel(function_ymls: Union[str, List[str]], parameter_ymls: Union[str,
     return model
 
 
-def readParameters(filenames: Union[str, List[str]]) -> Dict[str, Quantity]:
+def readParameters(filepaths: Union[str, List[str]]) -> Dict[str, Parameter]:
     """
     Read file containing information about parameters
 
-    :param filenames: name(s) of file(s) containing information
+    :param filepaths: name(s) of file(s) containing information
     :returns: Dictionary of parameter quantities.
         Key is name of parameter.
         Value is Quantity containg value and unit.
     """
-    if isinstance(filenames, str):
-        filenames = [filenames]
+    if isinstance(filepaths, str):
+        filepaths = [filepaths]
 
-    quantities = {}
-    for filename in filenames:
-        parameters = yaml.load(open(filename, 'r'), Loader=yaml.Loader)
-        for name, quantity in parameters.items():
-            value = float(quantity["value"])
-            unit = quantity["unit"]
-            quantities[name] = value * units(unit)
-    return quantities
+    parameters = {}
+    for filepath in filepaths:
+        parameters = yaml.load(open(filepath, 'r'), Loader=yaml.Loader)
+        filestem = Path(filepath).stem
+        for name, info in parameters.items():
+           parameters[name] = generateParameter(name, info, filestem=filestem)
+    return parameters
 
 
 def readFunctions(filepath: Union[str, List[str]]) -> Dict[str, Function]:
@@ -1901,6 +1913,7 @@ def readFunctions(filepath: Union[str, List[str]]) -> Dict[str, Function]:
     functions = {}
     for filepath in filepath:
         function_info = yaml.load(open(filepath, 'r'), Loader=yaml.Loader)
+        filestem = Path(filepath).stem
         for name, info in function_info.items():
-            functions[name] = generateFunction(name, info)
+            functions[name] = generateFunction(name, info, filestem=filestem)
     return functions
