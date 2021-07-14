@@ -1,0 +1,3 @@
+dK:
+  expression: $\frac{T k_B}{\Delta{V_{k_{O_2}^-}} q_e z_{Ca}} + 1$
+  filename: dK.png

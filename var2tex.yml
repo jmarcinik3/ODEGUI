@@ -80,25 +80,29 @@ alphaDRK: $\alpha_{DRK}$
 betaDRK: $\beta_{DRK}$
 tauDRK: $\tau_{DRK}$
 gT: $g_T$
+gTCa: $g_{T,Ca}$
 gCa: $g_{Ca}$
 gh: $g_h$
 gBKS: $g_{BKS}$
 gBKT: $g_{BKT}$
+gBK: $g_{BK}$
 gDRK: $g_{DKR}$
 gK1f: $g_{K1s}$
 gK1s: $g_{K1f}$
 gA1: $g_{A1}$
 gA2: $g_{A2}$
 aA1: $a_{g_{A1}}$
+gBK11: $g_{BK}(1,1)$
+dVkdO2: $\Delta{V_{k_{O_2}^-}}$
 
 ## BK scheme
-KpC1: $K_{p_{C1}}$
-KpC2: $K_{p_{C2}}$
-KpO3: $K_{p_{O3}}$
-kaC1: $k_{C1}^+$
-kaC2: $k_{C2}^+$
-kdO2: $k_{O2}^-$
-kaO3: $k_{O3}^+$
+KpC1: $K_{p_{C_1}}$
+KpC2: $K_{p_{C_2}}$
+KpO3: $K_{p_{O_3}}$
+kaC1: $k_{C_1}^+$
+kaC2: $k_{C_2}^+$
+kdO2: $k_{O_2}^-$
+kaO3: $k_{O_3}^+$
 
 ## derivatives
 dXhb: $\frac{dX_{hb}}{dt}$
@@ -123,11 +127,11 @@ dmK1s: $\frac{dm_{K1s}}{dt}$
 dmAlt: $\frac{dm_{A<}}{dt}$
 dmAgt: $\frac{dm_{A>}}{dt}$
 dmA: $\frac{dm_A}{dt}$
-dpC0: $\frac{dp_{C0}}{dt}$
-dpC1: $\frac{dp_{C1}}{dt}$
-dpC2: $\frac{dp_{C2}}{dt}$
-dpO2: $\frac{dp_{O2}}{dt}$
-dpO3: $\frac{dp_{O3}}{dt}$
+dpC0: $\frac{dp_{C_0}}{dt}$
+dpC1: $\frac{dp_{C_1}}{dt}$
+dpC2: $\frac{dp_{C_2}}{dt}$
+dpO2: $\frac{dp_{O_2}}{dt}$
+dpO3: $\frac{dp_{O_3}}{dt}$
 
 
 # constants
@@ -302,6 +306,9 @@ mhmaxA2: $h_{A2,max}$
 mhminA2: $h_{A2,min}$
 deltaA2: $\delta_{A2}$
 deltatauA2: $\delta_{\tau_{A2}}$
+
+### IBK
+EBK: $E_{BK}$
 
 ### IBKS
 EBKS: $E_{BKS}$

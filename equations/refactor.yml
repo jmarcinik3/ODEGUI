@@ -1,0 +1,5 @@
+dK:
+  properties: [Independent]
+  variables: Vm
+  parameters: [zCa, qe, kB, T, dVkdO2]
+  form: 1 + kB*T / (zCa*qe*dVkdO2)

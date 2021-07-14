@@ -4,10 +4,12 @@
 
 Function:
   Vm: [Vm0, Vmout, Vmin]
+
+Refactor:
   Martin: [msf, xisf, ksf, mhb, pT0]
   Barral: [kgstot, ksptot, Fmmax, Sm, Dgs]
   Bormuth: [kestot]
-
+  Hudspeth1988: [dVkdO2, gBK11, EBK]
 
 Hair Bundle:
   Xhb: [lambdaH, lambdaC, xsp, ksp]
