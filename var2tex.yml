@@ -172,6 +172,13 @@ Cahbin: $[Ca^{2+}]_{hb,in}$
 Cahbex: $[Ca^{2+}]_{hb,ex}$
 ET: $E_T$
 PT: $P_T$
+gTmax: $g_{T,max}$
+GT1: $G_{T1}$
+GT2: $G_{T2}$
+ZT1: $Z_{T1}$
+ZT2: $Z_{T2}$
+AT: $A_T$
+BT: $B_T$
 
 ### kgs (Roongthumskull2011)
 kgs0: $k_{gs}(0)$

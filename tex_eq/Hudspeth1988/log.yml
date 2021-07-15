@@ -1,9 +1,21 @@
+AT:
+  expression: $\frac{G_{T1} - X_{hb} Z_{T1}}{R T}$
+  filename: AT.png
+BT:
+  expression: $\frac{G_{T2} - X_{hb} Z_{T2}}{R T}$
+  filename: BT.png
 IBK:
   expression: $I$
   filename: IBK.png
 ICa:
   expression: $I$
   filename: ICa.png
+IL:
+  expression: $g_L \left(- E_L + V_m\right)$
+  filename: IL.png
+IT:
+  expression: $I$
+  filename: IT.png
 KpC1:
   expression: $\varepsilon_X^{\delta_{C_1}} KC_{10}$
   filename: KpC1.png
@@ -38,6 +50,9 @@ gBK:
 gCa:
   expression: $g_{Ca}(1) m_{Ca}^{3}$
   filename: gCa.png
+gT:
+  expression: $\frac{g_{T,max}}{\left(e^{A_T} + 1\right) e^{B_T} + 1}$
+  filename: gT.png
 kaC1:
   expression: $\frac{[Ca^{2+}] k^-_{C_1}}{K_{p_{C_1}}}$
   filename: kaC1.png

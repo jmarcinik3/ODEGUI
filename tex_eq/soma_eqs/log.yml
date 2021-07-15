@@ -16,9 +16,6 @@ IBKS:
 IBKT:
   expression: $I$
   filename: IBKT.png
-ICa:
-  expression: $I$
-  filename: ICa.png
 IDRK:
   expression: $I$
   filename: IDRK.png
@@ -31,21 +28,9 @@ IK1f:
 IK1s:
   expression: $I$
   filename: IK1s.png
-IL:
-  expression: $g_L \left(- E_L + V_m\right)$
-  filename: IL.png
 Ih:
   expression: $I$
   filename: Ih.png
-KpC1:
-  expression: $\varepsilon_X^{\delta_{C_1}} KC_{10}$
-  filename: KpC1.png
-KpC2:
-  expression: $\varepsilon_X^{\delta_{C_2}} KC_{20}$
-  filename: KpC2.png
-KpO3:
-  expression: $\varepsilon_X^{\delta_{O_2}} KO_{20}$
-  filename: KpO3.png
 aA1:
   expression: $a_{A1}(\pm\infty) - \frac{1 - a_{A1}(\pm\infty)}{e^{\frac{V_{1/2a_{A1}}
     - V_m}{\Delta{V_{a_{A1}}}}} + 1}$
@@ -58,10 +43,6 @@ betaDRK:
   expression: $\frac{1}{\left(- \frac{1}{\beta(-\infty)} + \frac{1}{\\beta(0)}\right)
     e^{- \frac{V_m}{\Delta{V_\beta}}} + \frac{1}{\beta(-\infty)}}$
   filename: betaDRK.png
-dCa:
-  expression: $- [Ca^{2+}] K_S - \frac{I_{Ca} U}{C_{vol} F \xi_{[[Ca^{2+}]^{2+}]}
-    z_{Ca}}$
-  filename: dCa.png
 dVm:
   expression: $\frac{- I_{BK} - I_{Ca} - I_{DRK} - I_{K1} - I_L - I_T - I_h}{C_m}$
   filename: dVm.png
@@ -116,21 +97,6 @@ dmh:
 dmhs:
   expression: $\frac{- m_s + m_s(\infty)}{\tau_{m_s}}$
   filename: dmhs.png
-dpC0:
-  expression: $- k_{C1}^+ p_{C0} + k^-_{C_1} p_{C1}$
-  filename: dpC0.png
-dpC1:
-  expression: $k_{C1}^+ p_{C0} + k^-_{C_2} p_{C2} - p_{C1} \left(k_{C2}^+ + k^-_{C_1}\right)$
-  filename: dpC1.png
-dpC2:
-  expression: $k_{C2}^+ p_{C1} + k_{O2}^- p_{O2} - p_{C2} \left(k^+_{O_2} + k^-_{C_2}\right)$
-  filename: dpC2.png
-dpO2:
-  expression: $k^+_{O_2} p_{C2} + k^-_{O_3} p_{O3} - p_{O2} \left(k_{O3}^+ + k_{O2}^-\right)$
-  filename: dpO2.png
-dpO3:
-  expression: $k_{O3}^+ p_{O2} - k^-_{O_3} p_{O3}$
-  filename: dpO3.png
 gA1:
   expression: $g_{GHK} h_{A1} m_A^{3}$
   filename: gA1.png
@@ -143,9 +109,6 @@ gBKS:
 gBKT:
   expression: $g_{GHK} \left(p_{O2} + p_{O3}\right)$
   filename: gBKT.png
-gCa:
-  expression: $g_{Ca}(1) m_{Ca}^{3}$
-  filename: gCa.png
 gDRK:
   expression: $g_{GHK} m_{DRK}^{2}$
   filename: gDRK.png
@@ -158,18 +121,6 @@ gK1s:
 gh:
   expression: $g_h(1) \left(3 m_h^{3} \left(1 - m_h\right) + m_h^{3}\right)$
   filename: gh.png
-kaC1:
-  expression: $\frac{[Ca^{2+}] k^-_{C_1}}{K_{p_{C1}}}$
-  filename: kaC1.png
-kaC2:
-  expression: $\frac{[Ca^{2+}] k^-_{C_2}}{K_{p_{C2}}}$
-  filename: kaC2.png
-kaO3:
-  expression: $\frac{[Ca^{2+}] k^-_{O_3}}{K_{p_{O3}}}$
-  filename: kaO3.png
-kdO2:
-  expression: $\varepsilon_X^{\tilde{d}_K - 1} kdO_{20}$
-  filename: kdO2.png
 mhsinf:
   expression: $m_{s,min} + \left(m_{s,max} - m_{s,min}\right) \left(e^{\frac{V_{1/2s}
     - V_m}{\Delta_{V_s}}} + 1\right)^{- \delta_s}$

@@ -49,6 +49,11 @@ kaO3: # association constant into O3 state from O2 state
     KpO3:
   form: kdO3*Ca / KpO3
 
+IL:
+  properties: [Independent]
+  variables: Vm
+  parameters: [gL,EL]
+  form: gL * (Vm-EL)
 gCa: # conductance for Ca2+ current
   properties: [Independent]
   variables: mCa
@@ -78,6 +83,33 @@ IBK: # Ca2+-activated K+ current
     I:
       parameters: EBK
       functions: gBK
+  form: I
+
+AT: # A
+  properties: [Independent]
+  parameters: [GT1, ZT1, R, T]
+  variables: Xhb
+  form: (GT1-ZT1*Xhb) / (R*T)
+BT: # B
+  properties: [Independent]
+  parameters: [GT2, ZT2, R, T]
+  variables: Xhb
+  form: (GT2-ZT2*Xhb) / (R*T)
+gT:
+  properties: [Independent]
+  parameters: gTmax
+  children:
+    AT:
+    BT:
+  form: gTmax / ( 1+exp(BT)*(1+exp(AT)) )
+IT:
+  properties: [Independent]
+  parameters: ET
+  children:
+    gT:
+    I:
+      parameters: ET
+      functions: gT
   form: I
 
 dCa: # soma Ca2+ concentration

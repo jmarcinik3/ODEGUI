@@ -1,17 +1,3 @@
-# Ca2+ concentration at soma
-U:  # proportion of free calcium
-  value: 0.02
-  unit:
-xiCa:  # volumetric proportion of calcium near membrane
-  value: 3.4e-5
-  unit:
-Cvol:  # cell volume
-  value: 1.25
-  unit: picoliter
-KS:  # rate constant
-  value: 2.8
-  unit: kilohertz
-
 # Ca2+ channel at soma
 tauinfCa:
   value: 0.046
@@ -355,9 +341,6 @@ deltatauA2:
   unit:
 
 # channel reference potential
-ECa:
-  value: 42.5
-  unit: millivolt
 EK1f:
   value: -95
   unit: millivolt
@@ -382,17 +365,8 @@ EA1:
 EA2:
   value: 0
   unit: millivolt
-EL:
-  value: 0
-  unit: millivolt
-ET:
-  value: 0
-  unit: millivolt
 
 # channel conductance or permeability
-gCa1:
-  value: 3.2
-  unit: nanosiemens
 gK1f1:
   value: 28
   unit: nanosiemens
@@ -417,50 +391,6 @@ PDRK:
 gh1:
   value: 2.2
   unit: nanosiemens
-gL:
-  value: 1.0
-  unit: nanosiemens
-Cm:  # capacitance for soma membrane
-  value: 14
-  unit: picofarad
 Ksomain:  # intracellular K+ concentration at soma
   value: 112
   unit: millimolar
-
-# BK channel kinetic scheme
-KC10:
-  value: 18.4
-  unit: micromolar
-KC20:
-  value: 45
-  unit: micromolar
-KO20:
-  value: 61.2
-  unit: micromolar
-deltaC1:
-  value: 0.2
-  unit:
-deltaC2:
-  value: 0
-  unit:
-deltaO2:
-  value: 0.2
-  unit:
-kdC1:
-  value: 0.3
-  unit: kilohertz
-kdC2:
-  value: 5
-  unit: kilohertz
-kdO3:
-  value: 0.3
-  unit: kilohertz
-kaO2:
-  value: 1
-  unit: kilohertz
-kdO20:
-  value: 11.3
-  unit: kilohertz
-dK:
-  value: 0.6104
-  unit:

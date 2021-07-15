@@ -59,4 +59,32 @@ kaO2: # \beta_C
   value: 1000
   unit: hertz
 
+EL:
+  value: -30
+  unit: millivolt
+gL:
+  value: 1.0
+  unit: nanosiemens
+ET:
+  value: 0
+  unit: millivolt
+gTmax: # \bar{g}_T
+  value: 3.0
+  unit: nanosiemens
+Cm:
+  value: 15
+  unit: picofarad
+
+GT1: # G_1
+  value: 3.14
+  unit: kilojoule / mole
+ZT1: # Z_1
+  value: 41.9
+  unit: giganewton / mole
+GT2: # G_2
+  value: 1.05
+  unit: kilojoule / mole
+ZT2: # Z_2
+  value: 8.4
+  unit: giganewton / mole
   
