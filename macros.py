@@ -3,7 +3,7 @@ This file contains miscellaneous functions that are used often throughout the pr
 """
 import os
 from functools import partial
-from typing import Any, Iterable, List, Type, Union
+from typing import Any, Callable, Iterable, List, Type, Union
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
@@ -303,21 +303,42 @@ def tex2pngFromFile(output_folder: str, tex_filename: str, **kwargs) -> None:
 
 def recursiveMethod(
         args: Any,
-        base_method,
+        base_method: Callable,
         valid_input_types: Union[type, List[type]],
         output_type: Type[Union[list, dict, ndarray]] = list,
         default_args: Any = None
 ) -> Union[Any, List[Any]]:
+    """
+    Method to recursively perform base method on iterable.
+
+    :param args: arguments to perform method over
+    :param base_method: base method for recursion
+    :param valid_input_types: valid class types for elements in iterable
+    :param output_type: class type for output.
+        Only called if :paramref:`~macros.recursiveMethod.args` is iterable.
+        May be list, tuple, ndarray, map, dict
+    :param default_args: default iterable
+        if :paramref:`~macros.recursiveMethod.args` is None
+    """
     if isinstance(args, valid_input_types):
         return base_method(args)
     elif isinstance(args, Iterable):
-        partialGet = partial(recursiveMethod, base_method=base_method, valid_input_types=valid_input_types, output_type=output_type)
+        partialGet = partial(
+            recursiveMethod,
+            base_method=base_method,
+            valid_input_types=valid_input_types,
+            output_type=output_type
+        )
         if output_type == list:
-            return [partialGet(args=arg) for arg in args]
+            return list(map(partialGet, args))
+        elif output_type == tuple:
+            return tuple(map(partialGet, args))
         elif output_type == ndarray:
-            return np.array([partialGet(args=arg) for arg in args])
+            return np.array(list(map(partialGet, args)))
+        elif output_type == map:
+            return map(partialGet, args)
         elif output_type == dict:
-            return {arg: partialGet(args=arg) for arg in args}
+            return {arg: partialGet(arg) for arg in args}
         else:
             raise ValueError("invalid output type specified")
     elif args is None:

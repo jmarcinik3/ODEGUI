@@ -1640,7 +1640,6 @@ class SimulationWindow(TabbedWindow):
 
         right_layout = Layout()
         right_layout.addRows(Row(window=self, elements=canvas))
-
         # noinspection PyTypeChecker
         return prefix_layout.getLayout() + [[sg.Column(left_layout.getLayout()), sg.Column(right_layout.getLayout())]]
 

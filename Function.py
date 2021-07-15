@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import KeysView
+from functools import partial
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Type, Union
 
@@ -18,7 +19,7 @@ from sympy.core import function
 from sympy.utilities.lambdify import lambdify
 
 from CustomErrors import RecursiveTypeError
-from macros import formatQuantity, unique
+from macros import formatQuantity, recursiveMethod, unique
 
 
 class PaperQuantity:
@@ -122,9 +123,9 @@ class Parameter(PaperQuantity):
         model_functions = model.getFunctions()
         symbol = Symbol(self.getName())
         functions = [
-            function
-            for function in model_functions
-            if symbol in function.getFreeSymbols(generations="all", species="Parameter")
+            function_object
+            for function_object in model_functions
+            if symbol in function_object.getFreeSymbols(generations="all", species="Parameter")
         ]
         return functions
 
@@ -222,14 +223,19 @@ class Model:
         :param names: name(s) of parameter(s) to retrieve.
             Defaults to all parameters.
         """
-        if isinstance(names, str):
-            return self.parameters[names]
-        elif isinstance(names, list):
-            return [self.getParameters(names=name) for name in names]
-        elif names is None:
-            return self.getParameters(names=list(self.parameters.keys()))
-        else:
-            raise RecursiveTypeError(names)
+
+        def get(name: str) -> Parameter:
+            """Base method for :meth:`~Function.Model.getParameters`"""
+            return self.parameters[name]
+
+        kwargs = {
+            "base_method": get,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": list,
+            "default_args": self.getParameterNames()
+        }
+        return recursiveMethod(**kwargs)
 
     def getParameterQuantites(self, names: Union[str, List[str]] = None) -> Union[Quantity, Dict[str, Quantity]]:
         """
@@ -243,18 +249,21 @@ class Model:
         :returns: Quantity for parameter if :paramref:~Function.Model.getParameters.names` is str.
             List of quantities if :paramref:~Function.Model.getParameters.names` is list.
         """
-        if isinstance(names, str):
-            parameter = self.getParameters(names=names)
+
+        def get(name: str) -> Quantity:
+            """Base method for :meth:`~Function.Model.getParameterQuantities`"""
+            parameter = self.getParameters(names=str(name))
             quantity = parameter.getQuantity()
             return quantity
-        elif isinstance(names, Symbol):
-            return self.getParameterQuantites(names=str(names))
-        elif isinstance(names, list):
-            return {str(name): self.getParameterQuantites(names=name) for name in names}
-        elif names is None:
-            return self.getParameterQuantites(names=self.getParameterNames())
-        else:
-            raise RecursiveTypeError(names, [str, Symbol])
+
+        kwargs = {
+            "base_method": get,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": dict,
+            "default_args": self.getParameterNames()
+        }
+        return recursiveMethod(**kwargs)
 
     def getFunctions(
             self,
@@ -272,9 +281,9 @@ class Model:
         :param filter_type: only retrieve function(s) of this class, acts as a filter
         """
         if isinstance(names, str):
-            function = self.functions[names]
-            if filter_type is None or isinstance(function, filter_type):
-                return function
+            function_object = self.functions[names]
+            if filter_type is None or isinstance(function_object, filter_type):
+                return function_object
             else:
                 raise TypeError(f"names input must correspond to {filter_type:s}")
         elif isinstance(names, list):
@@ -282,7 +291,7 @@ class Model:
             if filter_type is None:
                 return functions
             else:
-                return [function for function in functions if isinstance(function, filter_type)]
+                return [function_object for function_object in functions if isinstance(function_object, filter_type)]
         elif names is None:
             return self.getFunctions(names=self.getFunctionNames(), filter_type=filter_type)
         else:
@@ -398,7 +407,7 @@ class Model:
             Only called if :paramref:`~Function.Model.getEquilibriumSolutions.substitute_parameters` is set True.
         :param substitute_constants: set True to substitute numerical values in for all constant derivative.
             Set False to leave them as symbolic variables.
-        :param substitute_functions: set True to substitute corresponding functions in for all function-type derivatives.
+        :param substitute_functions: set True to substitute corresponding expressions for function-type derivatives.
             Set False to leave them as symbolic variables.
         :returns: Dictionary of substitutions.
             Key is symbolic variable to replace.
@@ -409,7 +418,7 @@ class Model:
 
         if isinstance(names, (str, list)):
             equilibria = self.getFunctions(names=names)
-            if not all([isinstance(function, Derivative) for function in equilibria]):
+            if not all([isinstance(function_object, Derivative) for function_object in equilibria]):
                 raise TypeError("names must correspond to Derivative stored in Model")
         elif names is None:
             equilibria = self.getDerivatives(time_evolution_types="Equilibrium")
@@ -420,7 +429,7 @@ class Model:
         if equilibrium_count == 0:
             return {}
         elif equilibrium_count >= 1:
-            equilibrium_variables = [equilibrium.getVariable() for equilibrium in equilibria]
+            equilibrium_variables = list(map(Derivative.getVariable, equilibria))
             equilibrium_derivatives = [equilibrium.getExpression(generations="all") for equilibrium in equilibria]
 
             bk_probs = list(symbols("pC0 pC1 pC2 pO2 pO3"))
@@ -475,7 +484,7 @@ class Model:
             Only called if :paramref:`~Function.Model.getEquilibriumSolutions.substitute_parameters` is set True.
         :param substitute_constants: set True to substitute numerical values in for all constant derivative.
             Set False to leave them as symbolic variables.
-        :param substitute_functions: set True to substitute corresponding functions in for all function-type derivatives.
+        :param substitute_functions: set True to substitute corresponding expressions for function-type derivatives.
             Set False to leave them as symbolic variables.
         """
         equilibria = self.getEquilibriumSolutions(
@@ -484,8 +493,8 @@ class Model:
             substitute_constants=substitute_constants,
             substitute_functions=substitute_functions
         )
-        function = self.getDerivativesFromVariableNames(names=name)
-        equilibrium = equilibria[function.getVariable()]
+        function_object = self.getDerivativesFromVariableNames(names=name)
+        equilibrium = equilibria[function_object.getVariable()]
         return equilibrium
 
     def getFunctionSubstitutions(
@@ -517,17 +526,18 @@ class Model:
             return {}
         elif variable_count >= 1:
             functions = self.getFunctions(names=names)
-            expressions = [function.getExpression(generations="all") for function in functions]
-            variables = [Symbol(name) for name in names]
+            getExpression = partial(Function.getExpression, generations="all")
+            expressions = list(map(getExpression, functions))
+            variables = list(map(Symbol, names))
 
             substitutions = {}
             if substitute_parameters:
                 parameter_names = unique(
                     [
                         parameter_name
-                        for function in functions
+                        for function_object in functions
                         for parameter_name in
-                        function.getFreeSymbols(species="Parameter", generations="all", return_type=str)
+                        function_object.getFreeSymbols(species="Parameter", generations="all", return_type=str)
                         if parameter_name not in skip_parameters
                     ]
                 )
@@ -548,8 +558,8 @@ class Model:
         """
         if isinstance(names, (str, list)):
             constant_functions = self.getFunctions(names=names)
-            for function in constant_functions:
-                if not isinstance(function, Derivative):
+            for function_object in constant_functions:
+                if not isinstance(function_object, Derivative):
                     raise TypeError("names must correspond to Derivative stored in Model")
         elif names is None:
             constant_functions = self.getDerivatives(time_evolution_types="Constant")
@@ -559,7 +569,11 @@ class Model:
         if constant_count == 0:
             return {}
         elif constant_count >= 1:
-            substitutions = {function.getVariable(): function.getInitialCondition() for function in constant_functions}
+            substitutions = {
+                function_object.getVariable():
+                    function_object.getInitialCondition()
+                for function_object in constant_functions
+            }
             return substitutions
 
     def getParameterSubstitutions(
@@ -608,14 +622,16 @@ class Model:
             Set False to leave them as symbolic variables.
         :param substitute_constants: set True to substitute numerical values in for all constant derivative.
             Set False to leave them as symbolic variables.
-        :param substitute_functions: set True to substitute corresponding functions in for all function-type derivatives.
+        :param substitute_functions: set True to substitute corresponding expresions for function-type derivatives.
             Set False to leave them as symbolic variables.
         :param lambdified: set True to return derivative vector as lambda function handle.
             Set False to return symbolic derivative vector
         :returns: vector of derivatives.
             Uses derivatives in :class:`~Function.Model` to determine derivatives.
-            Returned as list of symbolic expressions if :paramref:`~Function.Model.getDerivativeVector.lambdified` is set to True.
-            Returned as lambda function handle if :paramref:`~Function.Model.getDerivativeVector.lambdified` is set to False.
+            Returned as list of symbolic expressions
+            if :paramref:`~Function.Model.getDerivativeVector.lambdified` is set to True.
+            Returned as lambda function handle
+            if :paramref:`~Function.Model.getDerivativeVector.lambdified` is set to False.
         """
         if skip_parameters is None:
             skip_parameters = []
@@ -650,7 +666,8 @@ class Model:
 
         if names is None:
             temporal_derivatives = self.getDerivatives(time_evolution_types="Temporal")
-            names = [str(derivative.getVariable()) for derivative in temporal_derivatives]
+            getVariable = partial(Derivative.getVariable, return_type=str)
+            names = list(map(getVariable, temporal_derivatives))
         else:
             temporal_derivatives = self.getDerivativesFromVariableNames(names=names)
 
@@ -701,7 +718,9 @@ class Model:
             Key is symbol for variable.
             Value is float for initial value.
         :returns: Initial values for desired variables.
-            Dictionary of initial values if return_type is dict; key is symbol for variable, value if float for initial value.
+            Dictionary of initial values if return_type is dict
+                Key is symbol for variable
+                Value is float for initial value.
             List of floats if return_type is list.
             ndarray of float if return_type is ndarray.
         """
@@ -772,7 +791,7 @@ class Model:
         """
         if isinstance(time_evolution_types, str):
             derivatives = self.getDerivatives(time_evolution_types=time_evolution_types)
-            variables = [derivative.getVariable() for derivative in derivatives]
+            variables = list(map(Derivative.getVariable, derivatives))
         elif isinstance(time_evolution_types, list):
             variables = [
                 self.getVariables(time_evolution_types=time_evolution_type)
@@ -780,14 +799,14 @@ class Model:
             ]
         elif time_evolution_types is None:
             derivatives = self.getDerivatives()
-            variables = [derivative.getVariable() for derivative in derivatives]
+            variables = list(map(Derivative.getVariable, derivatives))
         else:
             raise RecursiveTypeError(time_evolution_types)
 
         if return_type == Symbol:
             return variables
         elif return_type == str:
-            return [str(variable) for variable in variables]
+            return list(map(str, variables))
         else:
             raise ValueError("return_type must be Symbol or str")
 
@@ -800,16 +819,21 @@ class Model:
         :param self: :class:`~Function.Model` to retrieve derivative(s) from
         :param names: name(s) of variable(s) associated with derivative(s)
         """
-        if isinstance(names, (str, Symbol)):
-            derivatives = self.getDerivatives()
-            for derivative in derivatives:
-                if derivative.getVariable(return_type=str) == str(names):
+
+        def get(name: str) -> Derivative:
+            """Base method for :meth:`~Function.Model.getDerivativesFromVariableNames`"""
+            for derivative in self.getDerivatives():
+                if derivative.getVariable(return_type=str) == str(name):
                     return derivative
             raise ValueError("names input must correspond to some Derivative stored in Model")
-        elif isinstance(names, list):
-            return [self.getDerivativesFromVariableNames(names=name) for name in names]
-        else:
-            RecursiveTypeError(names, [str, Symbol])
+
+        kwargs = {
+            "base_method": get,
+            "args": names,
+            "valid_input_types": (str, Symbol),
+            "output_type": list
+        }
+        return recursiveMethod(**kwargs)
 
 
 class Parent:
@@ -888,16 +912,22 @@ class Parent:
         :param names: name(s) of child(s) to retrieve from parent.
             Defaults to all children.
         """
-        if isinstance(names, str):
-            self: Function
-            child = self.getModel().getFunctions(names=names)
+
+        self: Function
+
+        def get(name: str) -> Function:
+            """Base method for :meth:`~Function.Model.getChildren`"""
+            child = self.getModel().getFunctions(names=name)
             return child
-        elif isinstance(names, list):
-            return [self.getChildren(names=name) for name in names]
-        elif names is None:
-            return self.getChildren(names=self.getChildrenNames())
-        else:
-            raise RecursiveTypeError(names)
+
+        kwargs = {
+            "base_method": get,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": list,
+            "default_args": self.getChildrenNames()
+        }
+        return recursiveMethod(**kwargs)
 
     def getChildrenNames(self) -> List[str]:
         """
@@ -975,16 +1005,22 @@ class Child:
         :param names: name(s) of parent(s) to retrieve from child.
             Defaults to all parents.
         """
-        if isinstance(names, str):
-            self: Function
-            parents = self.getModel().getFunctions(names=names)
+
+        self: Function
+
+        def get(name: str) -> Derivative:
+            """Base method for :meth:`~Function.Model.getParents`"""
+            parents = self.getModel().getFunctions(names=name)
             return parents
-        elif isinstance(names, list):
-            return [self.getParents(names=name) for name in names]
-        elif names is None:
-            return self.getParents(names=self.getParentNames())
-        else:
-            raise RecursiveTypeError(names)
+
+        kwargs = {
+            "base_method": get,
+            "args": names,
+            "valid_input_types": str,
+            "output_type": list,
+            "default_args": self.getParentNames()
+        }
+        return recursiveMethod(**kwargs)
 
     def getParentNames(self) -> Union[str, List[str]]:
         """
@@ -995,9 +1031,9 @@ class Child:
         self: Function
         name = self.getName()
         parents = [
-            function.getName()
-            for function in self.getModel().getFunctions()
-            if name in function.getChildrenNames()
+            function_object.getName()
+            for function_object in self.getModel().getFunctions()
+            if name in function_object.getChildrenNames()
         ]
         return parents
 
@@ -1074,8 +1110,8 @@ class Function(Child, Parent, PaperQuantity):
         """
         if functions is None:
             functions = Function.functions
-        for function in functions:
-            function.clearExpression()
+        for function_object in functions:
+            function_object.clearExpression()
 
     def clearExpression(self) -> None:
         """
@@ -1105,13 +1141,14 @@ class Function(Child, Parent, PaperQuantity):
             Defaults to all free symbols.
         :param return_type: class type of output.
             Must be either sympy.Symbol or str.
-        :param kwargs: additional arguments to pass into :meth:`~Function.Piecewise.getExpression` or into :meth:`~Function.NonPiecewise.getExpression`
+        :param kwargs: additional arguments to pass into
+            :meth:`~Function.Piecewise.getExpression` or into :meth:`~Function.NonPiecewise.getExpression`
         """
         free_symbols = list(self.getExpression(**kwargs).free_symbols)
         if species is None:
-            free_symbol_names = [str(free_symbol) for free_symbol in free_symbols]
+            free_symbol_names = list(map(str, free_symbols))
         else:
-            unfiltered_names = [str(free_symbol) for free_symbol in free_symbols]
+            unfiltered_names = list(map(str, free_symbols))
 
             model = self.getModel()
             if species == "Parameter":
@@ -1130,7 +1167,7 @@ class Function(Child, Parent, PaperQuantity):
         if return_type == str:
             return free_symbol_names
         elif return_type == Symbol:
-            return [Symbol(free_symbol_name) for free_symbol_name in free_symbol_names]
+            return list(map(Symbol, free_symbol_names))
         else:
             raise ValueError("return_type must be Symbol or str")
 
@@ -1399,7 +1436,7 @@ class Dependent:
         self_name = self.getName()
         if specie == "functions":
             instance_function_symbols = parent.getInstanceArguments(specie=specie, name=self_name)
-            instance_names = [str(instance_name) for instance_name in instance_function_symbols]
+            instance_names = list(map(str, instance_function_symbols))
             instance_functions = []
             for instance_name in instance_names:
                 sibling = parent.getChildren(names=instance_name)
@@ -1472,7 +1509,7 @@ class Piecewise:
         if len(pieces) != len(conditions):
             raise ValueError("each function must have exactly one corresponding condition")
         self.pieces = pieces
-        self.conditions = [eval(condition) for condition in conditions]  # eval() to convert str to bool
+        self.conditions = list(map(eval, conditions))  # eval() to convert str to bool
 
     def getConditions(self) -> List[bool]:
         """
@@ -1499,7 +1536,7 @@ class Piecewise:
         """
         pieces = self.pieces
         if return_type == str:
-            piece_names = [str(piece) for piece in pieces]
+            piece_names = list(map(str, pieces))
             return piece_names
         elif return_type == Symbol:
             return pieces
@@ -1529,10 +1566,12 @@ class Piecewise:
         """
         if generations == "all":
             functions: List[Function] = self.getPieces(return_type=Function)
-            pieces = [function.getExpression(generations="all", **kwargs) for function in functions]
+            getExpression = partial(Function.getExpression, generations="all", **kwargs)
+            pieces = list(map(getExpression, functions))
         elif generations >= 1:
             functions: List[Function] = self.getPieces(return_type=Function)
-            pieces = [function.getExpression(generations=generations - 1, **kwargs) for function in functions]
+            getExpression = partial(Function.getExpression, generations=generations - 1, **kwargs)
+            pieces = list(map(getExpression, functions))
         elif generations == 0:
             pieces = self.getPieces(return_type=Symbol)
         else:
@@ -1615,7 +1654,7 @@ class NonPiecewise:
 
 def FunctionMaster(
         name: str,
-        function: Union[Expr, List[Function]],
+        expression: Union[Expr, List[Function]],
         inheritance: Tuple[Type[Union[Derivative, Dependent, Independent, Piecewise, NonPiecewise]]] = (),
         **kwargs
 ) -> Function:
@@ -1638,10 +1677,11 @@ def FunctionMaster(
         Stores info pertinent to generate/simulate function.
         """
 
+        # noinspection PyShadowingNames
         def __init__(
                 self,
                 name: str,
-                function: Union[Expr, List[Function]],
+                expression: Union[Expr, List[Function]],
                 inheritance: Tuple[Type[Union[Derivative, Dependent, Independent, Piecewise, NonPiecewise]]] = (),
                 **kwargs
         ) -> None:
@@ -1649,7 +1689,7 @@ def FunctionMaster(
             Constructor for :class:`~Function.FunctionMaster.FunctionCore`.
             
             :param name: name of function
-            :param function: symbol expression/pieces for function
+            :param expression: symbol expression/pieces for function
             :param inheritance: classes for Function object to inherit
             :param kwargs: arguments to pass into inheritance classes.
                 Key is string name of class.
@@ -1666,15 +1706,15 @@ def FunctionMaster(
                 raise ValueError("Function must inherit either Dependent or Independent")
 
             if Piecewise in inheritance:
-                Piecewise.__init__(self, function, **kwargs["Piecewise"])
+                Piecewise.__init__(self, expression, **kwargs["Piecewise"])
             elif NonPiecewise in inheritance:
-                NonPiecewise.__init__(self, function)
+                NonPiecewise.__init__(self, expression)
             else:
                 raise ValueError("Function must inherit either Piecewise of NonPiecewise")
 
             Function.__init__(self, name, **kwargs)
 
-    return FunctionCore(name, function, inheritance, **kwargs)
+    return FunctionCore(name, expression, inheritance, **kwargs)
 
 
 def getFunctionInfo(info: dict, model: Model = None) -> dict:
@@ -1688,6 +1728,7 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
     :param model: model to associated Function object with
     """
 
+    # noinspection PyShadowingNames
     def getVariables(info: dict) -> List[Symbol]:
         """
         Get symbolic variables for function.
@@ -1696,6 +1737,7 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
         """
         return var(info["variables"])
 
+    # noinspection PyShadowingNames
     def getParameters(info: dict) -> List[Symbol]:
         """
         Get symbolic parameters for function.
@@ -1704,6 +1746,7 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
         """
         return var(info["parameters"])
 
+    # noinspection PyShadowingNames
     def getProperties(info: dict) -> List[str]:
         """
         Get properties to give function (e.g. piecewise, dependent)
@@ -1712,6 +1755,7 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
         """
         return info["properties"]
 
+    # noinspection PyShadowingNames
     def getArguments(info: dict) -> Dict[str, List[Symbol]]:
         """
         Get symbolic general arguments for function.
@@ -1721,6 +1765,7 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
         arguments = info["arguments"]
         return {key: var(arguments[key]) for key in arguments.keys()}
 
+    # noinspection PyShadowingNames
     def getVariable(info: dict) -> Symbol:
         """
         Get associated variable for derivative.
@@ -1729,6 +1774,7 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
         """
         return Symbol(info["variable"])
 
+    # noinspection PyShadowingNames
     def getChildren(info: dict) -> dict:
         """
         Get info to connect function with child.
@@ -1842,7 +1888,7 @@ def generateFunction(
         info: Dict[str, Union[str, dict]],
         model: Model = None,
         filestem: str = None
-        ) -> Function:
+) -> Function:
     """
     Generate Function object.
 
@@ -1859,7 +1905,7 @@ def generateFunction(
     if "form" in info_keys:
         expression = eval(info["form"])
     elif "pieces" in info_keys:
-        expression = [Symbol(piece) for piece in info["pieces"]]
+        expression = list(map(Symbol, info["pieces"]))
     else:
         raise ValueError("info from functions_yml file must contain either form or pieces")
 

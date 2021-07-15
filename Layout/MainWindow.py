@@ -250,7 +250,7 @@ class TimeEvolutionTab(Tab):
         :param self: :class:`~Layout.MainWindow.TimeEvolutionTab` to retrieve as column
         """
         header_row = self.getHeaderRow()
-        rows = [row.getRow() for row in self.getVariableRows()]
+        rows = list(map(TimeEvolutionVariableRow.getRow, self.getVariableRows()))
         layout = header_row.getLayout() + rows
         kwargs = {
             "layout": layout,
@@ -350,7 +350,8 @@ class ParameterRow(TabRow):
 
         :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve filestems from
         """
-        return [parameter.getStem() for parameter in self.getParameters()]
+        filestems = list(map(Parameter.getStem, self.getParameters()))
+        return filestems
 
     def getQuantities(self) -> List[Quantity]:
         """
@@ -358,7 +359,8 @@ class ParameterRow(TabRow):
 
         :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve filepaths from
         """
-        return [parameter.getQuantity() for parameter in self.getParameters()]
+        quantities = list(map(Parameter.getQuantity, self.getParameters()))
+        return quantities
 
     def getParameters(self) -> List[Parameter]:
         """
@@ -577,7 +579,7 @@ class ParameterSection(Element):
         """
         header_row = self.getHeaderRow()
         kwargs = {
-            "layout": [row.getRow() for row in self.getParameterRows()],
+            "layout": list(map(ParameterRow.getRow, self.getParameterRows())),
             "size": self.getDimensions(name="parameter_section"),
             "key": self.getWindowObject().getKey("parameter_subgroup_section", self.getName())
         }
@@ -645,7 +647,7 @@ class ParameterTab(Tab):
         :param self: :class:`~Layout.MainWindow.ParameterTab` to retrieve element from
         """
         layout = [[]]
-        section_layouts = [section.getLayout() for section in self.getSections()]
+        section_layouts = map(ParameterSection.getLayout, self.getSections())
         for section_layout in section_layouts:
             layout += section_layout
         kwargs = {
@@ -799,7 +801,8 @@ class FunctionRow(TabRow):
 
         :param self: :class:`~Layout.MainWindow.FunctionRow` to retrieve filestems from
         """
-        return [function.getStem() for function in self.getFunctions()]
+        filestems = list(map(Function.getStem, self.getFunctions()))
+        return filestems
 
     def getFunctions(self) -> List[Function]:
         """
@@ -915,7 +918,7 @@ class FunctionTab(Tab):
         :param self: :class:`~Layout.MainWindow.FunctionTab` to retrieve as column
         """
         header_row = self.getHeaderRow()
-        rows = [row.getRow() for row in self.getFunctionRows()]
+        rows = list(map(FunctionRow.getRow, self.getFunctionRows()))
         layout = header_row.getLayout() + rows
         kwargs = {
             "layout": layout,
@@ -1457,7 +1460,7 @@ class MainWindowRunner(WindowRunner):
             model = self.getModel()
         plot_choices = {
             "Variable": ['t'] + model.getVariables(return_type=str),
-            "Function": [function.getName() for function in model.getFunctions(filter_type=Independent)],
+            "Function": list(map(Function.getName, model.getFunctions(filter_type=Independent))),
             "Parameter": self.getParameterNames(parameter_types="Free")
         }
         return plot_choices
