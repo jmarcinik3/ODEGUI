@@ -38,11 +38,6 @@ tauDRK: # mDRK time constant
     betaDRK:
   form: 1 / (alphaDRK+betaDRK)
 
-gCa: # conductance for Ca2+ channel
-  properties: [Independent]
-  variables: mCa
-  parameters: gCa1
-  form: gCa1 * mCa**3
 gh: # conductance for h channel
   properties: [Independent]
   variables: mh
@@ -104,20 +99,6 @@ aA1: # proportion of A1-channel current in A-channel current
   parameters: [aA1inf,VhalfaA1,dVaA1]
   form: aA1inf - (1-aA1inf) / (1+exp(-(Vm-VhalfaA1)/dVaA1))
 
-IL:
-  properties: [Independent]
-  variables: Vm
-  parameters: [gL,EL]
-  form: gL * (Vm-EL)
-ICa: # current for Ca2+ channel
-  properties: [Independent]
-  parameters: ECa
-  children:
-    gCa:
-    I:
-      parameters: ECa
-      functions: gCa
-  form: I
 Ih: # current for h channel
   properties: [Independent]
   parameters: Eh
