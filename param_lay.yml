@@ -18,10 +18,12 @@ Hair Bundle:
   pr: [rr, kar, kdr]
   pT: [dE0, tauT0]
   kgs: [kgs0, kgs1, kr0, kr1, ktl]
-  ITCa: [Cahbin, Cahbex, ET, PTCa]
+  ITCa: [Cahbin, Cahbex, ETCa, PTCa]
   mutual: [gamma, N, d, xc]
+
 Soma:
   Temporal: [Cm, Ksomain, Ksomaex, U, xiCa, Cvol, KS]
+
 Current:
   IT: [ET, gTmax, GT1, ZT1, GT2, ZT2]
   IL: [EL, gL]
@@ -40,8 +42,12 @@ Current:
     EK1f, gK1f1, dVK1f, VhalfK1f, mhmaxK1f, mhminK1f, deltaK1f, deltatauK1f]
   IK1s: [tauinfK1sgt, tauVtauK1sgt, VtauK1sgt, dVtauK1sgt, tauinfK1slt, tauVtauK1slt, VtauK1slt, dVtauK1slt,
     EK1s, gK1s1, dVK1s, VhalfK1s, mhmaxK1s, mhminK1s, deltaK1s, deltatauK1s]
+
 BK Scheme: [KC10, KC20, KO20,
   deltaC1, deltaC2, deltaO2,
   kdC1, kdC2, kdO3, kaO2,
   kdO20, dVkdO2]
+
 Physical Constant: [F, qe, R, kB, T, zCa, zK, DCa]
+
+

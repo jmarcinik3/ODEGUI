@@ -80,11 +80,11 @@ gTCa: # conductance for transduction channel
   form: pT * gGHK
 ITCa: # current for transduction channel
   properties: [Independent]
-  parameters: ET
+  parameters: ETCa
   children:
     gTCa:
     I:
-      parameters: ET
+      parameters: ETCa
       functions: gTCa
   form: I
 

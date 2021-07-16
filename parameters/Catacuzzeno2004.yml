@@ -1,0 +1,185 @@
+aK1f:
+  value: 0.7
+  unit:
+tauinfK1fgt:  # Vm>=E_{K1f}
+  value: 0.04
+  unit: millisecond
+tauVtauK1fgt:  # Vm>=E_{K1f}
+  value: 0.74
+  unit: millisecond
+VtauK1fgt:  # Vm>=E_{K1f}
+  value: -120
+  unit: millivolt
+dVtauK1fgt:  # Vm>=E_{K1f}
+  value: 43.8
+  unit: millivolt
+tauinfK1flt:  # Vm<E_{K1f}
+  value: 0.17
+  unit: millisecond
+tauVtauK1flt:  # Vm<E_{K1f}
+  value: 7.67
+  unit: millisecond
+VtauK1flt:  # Vm<E_{K1f}
+  value: -80
+  unit: millivolt
+dVtauK1flt:  # Vm<E_{K1f}
+  value: -30.5
+  unit: millivolt
+dVK1f:
+  value: -11
+  unit: millivolt
+VhalfK1f:
+  value: -110
+  unit: millivolt
+mhmaxK1f:
+  value: 1
+  unit:
+mhminK1f:
+  value: 0
+  unit:
+deltaK1f:
+  value: 1
+  unit:
+deltatauK1f:
+  value: 1
+  unit:
+
+tauinfK1sgt:  # Vm>=E_{K1s}
+  value: 0.04
+  unit: millisecond
+tauVtauK1sgt:  # Vm>=E_{K1s}
+  value: 14.14
+  unit: millisecond
+VtauK1sgt:  # Vm>=E_{K1s}
+  value: -120
+  unit: millivolt
+dVtauK1sgt:  # Vm>=E_{K1s}
+  value: 28
+  unit: millivolt
+tauinfK1slt:  # Vm<E_{K1s}
+  value: 0.17
+  unit: millisecond
+tauVtauK1slt:  # Vm<E_{K1s}
+  value: 7.67
+  unit: millisecond
+VtauK1slt:  # Vm<E_{K1s}
+  value: -80
+  unit: millivolt
+dVtauK1slt:  # Vm<E_{K1s}
+  value: -30.5
+  unit: millivolt
+dVK1s:
+  value: -11
+  unit: millivolt
+VhalfK1s:
+  value: -110
+  unit: millivolt
+mhmaxK1s:
+  value: 1
+  unit:
+mhminK1s:
+  value: 0
+  unit:
+deltaK1s:
+  value: 1
+  unit:
+deltatauK1s:
+  value: 1
+  unit:
+
+tauinfh:
+  value: 63.7
+  unit: millisecond
+tauVtauh:
+  value: 199.4
+  unit: millisecond
+Vtauh:
+  value: -91.4
+  unit: millivolt
+dVtauh:
+  value: 21.2
+  unit: millivolt
+dVh:
+  value: -16.7
+  unit: millivolt
+Vhalfh:
+  value: -87
+  unit: millivolt
+mhmaxh:
+  value: 1
+  unit:
+mhminh:
+  value: 0
+  unit:
+deltah:
+  value: 1
+  unit:
+deltatauh:
+  value: 2
+  unit:
+
+tauinfBKT:
+  value: 2.1
+  unit: millisecond
+tauVtauBKT:
+  value: 11.5
+  unit: millisecond
+VtauBKT:
+  value: 66.9
+  unit: millivolt
+dVtauBKT:
+  value: 17.7
+  unit: millivolt
+dVBKT:
+  value: -3.65
+  unit: millivolt
+VhalfBKT:
+  value: -61.6
+  unit: millivolt
+mhmaxBKT:
+  value: 1
+  unit:
+mhminBKT:
+  value: 0
+  unit:
+deltaBKT:
+  value: 1
+  unit:
+deltatauBKT:
+  value: 2
+  unit:
+
+EK1f:
+  value: -95
+  unit: millivolt
+EK1s:
+  value: -95
+  unit: millivolt
+Eh:
+  value: -40
+  unit: millivolt
+EBKS:
+  value: 0
+  unit: millivolt
+EBKT:
+  value: 0
+  unit: millivolt
+
+gK1f1:
+  value: 28
+  unit: nanosiemens
+gK1s1:
+  value: 28
+  unit: nanosiemens
+PBKS:
+  value: 0.2
+  unit: picoliter/second
+PBKT:
+  value: 1.4
+  unit: picoliter/second
+gh1:
+  value: 2.2
+  unit: nanosiemens
+Ksomain:  # intracellular K+ concentration at soma
+  value: 112
+  unit: millimolar

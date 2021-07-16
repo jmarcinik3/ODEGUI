@@ -167,9 +167,13 @@ dE0: $\Delta{E}^\varnothing$
 tauT0: $\tau_T^\varnothing$
 pT0: $p_T(0)$
 
-### IT
+### ITCa
 Cahbin: $[Ca^{2+}]_{hb,in}$
 Cahbex: $[Ca^{2+}]_{hb,ex}$
+ETCa: $E_{T,Ca}$
+PTCa: $P_{T,Ca}$
+
+### IT
 ET: $E_T$
 PT: $P_T$
 gTmax: $g_{T,max}$
