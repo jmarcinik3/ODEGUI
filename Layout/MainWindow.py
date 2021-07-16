@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import partial
 from os.path import dirname, join
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
@@ -72,7 +73,8 @@ class TimeEvolutionVariableRow(TabRow):
         Get possible time-evolution types for variable.
         
         :param self: :class:`~Layout.MainWindow.TimeEvolutionVariableRow` to retrieve time-evolution types from
-        :param kwargs: additional arguments to pass into :meth:`~Layout.MainWindow.TimeEvolutionTab.getTimeEvolutionTypes`
+        :param kwargs: additional arguments to pass into
+            :meth:`~Layout.MainWindow.TimeEvolutionTab.getTimeEvolutionTypes`
         """
         tab: TimeEvolutionTab = self.getTab()
         return tab.getTimeEvolutionTypes(self.getName(), **kwargs)
@@ -205,8 +207,10 @@ class TimeEvolutionTab(Tab):
         :param self: :class:`~Layout.MainWindow.TimeEvolutionTab` to retrieve initial condition from
         :param name: name of variable to retrieve time-evolution type for
         :param index: index of time-evolution type to retrieve within collection of time-evolution types for variable
-        :returns: Time-evolution type at index if :paramref:`~Layout.MainWindow.TimeEvolutionTab.getTimeEvolutionTypes.index` is int.
-            All time-evolution types for variable if :paramref:`~Layout.MainWindow.TimeEvolutionTab.getTimeEvolutionTypes.index` is None.
+        :returns: Time-evolution type at index
+            if :paramref:`~Layout.MainWindow.TimeEvolutionTab.getTimeEvolutionTypes.index` is int.
+            All time-evolution types for variable
+            if :paramref:`~Layout.MainWindow.TimeEvolutionTab.getTimeEvolutionTypes.index` is None.
         """
         if isinstance(index, int):
             time_evolution_types = self.getTimeEvolutionTypes(name=name)
@@ -384,8 +388,10 @@ class ParameterRow(TabRow):
 
         :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve types from
         :param index: index of parameter type to retrieve within collection of parameter types
-        :returns: Parameter type at index if :paramref:`~Layout.MainWindow.ParameterRow.getParameterTypes.index` is int.
-            All parameter types for parameter if :paramref:`~Layout.MainWindow.ParameterRow.getParameterTypes.index` is None.
+        :returns: Parameter type at index
+            if :paramref:`~Layout.MainWindow.ParameterRow.getParameterTypes.index` is int.
+            All parameter types for parameter
+            if :paramref:`~Layout.MainWindow.ParameterRow.getParameterTypes.index` is None.
         """
         if isinstance(index, int):
             parameter_types = self.getParameterTypes()
@@ -467,7 +473,9 @@ class ParameterRow(TabRow):
         """
         kwargs = {
             "default_text": '',
-            "tooltip": "If 'Constant': enter new parameter value, then click button to update. " + "If 'Sweep': this input field will be ignored." + "Displayed units are preserved",
+            "tooltip": "If 'Constant': enter new parameter value, then click button to update. " +
+                       "If 'Sweep': this input field will be ignored." +
+                       "Displayed units are preserved",
             "size": self.getDimensions(name="parameter_value_input_field"),
             "key": self.getKey("parameter_field", self.getName())
         }
@@ -978,7 +986,7 @@ class MainWindow(TabbedWindow):
     Primary window to run program.
 
     This contains
-        #. :class:`~Layout.MainWindow.TimeEvolutionTabGroup` to allow user to set time-evolution properties for each variable
+        #. :class:`~Layout.MainWindow.TimeEvolutionTabGroup` to allow user to set time-evolution for each variable
         #. :class:`~Layout.MainWindow.ParameterTabGroup` to allow user to set properties for each parameter
     """
 
@@ -1472,12 +1480,35 @@ class MainWindowRunner(WindowRunner):
 
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve model from
         """
-        model = Model(functions=self.getFunctions(), parameters=self.getParameters())
-        for derivative in model.getDerivatives():
+        full_model = Model(functions=self.getFunctions(), parameters=self.getParameters())
+
+        # noinspection PyTypeChecker
+        core_function_objects: List[Function] = full_model.getDerivatives()
+        pre_length = -1
+        while pre_length != len(core_function_objects):
+            pre_length = len(core_function_objects)
+            children_function_objects = unique([
+                child_function_object
+                for function_object in core_function_objects
+                for child_function_object in function_object.getChildren()
+                if child_function_object not in core_function_objects
+            ])
+            core_function_objects.extend(children_function_objects)
+
+        getParameters = partial(Function.getFreeSymbols, generations="all", species="Parameter", return_type=str)
+        core_parameter_names = unique([
+            parameter_name
+            for function_object in core_function_objects
+            for parameter_name in getParameters(function_object)
+        ])
+        core_parameter_objects = full_model.getParameters(names=core_parameter_names)
+
+        core_model = Model(functions=core_function_objects, parameters=core_parameter_objects)
+        for derivative in core_model.getDerivatives():
             variable_name = derivative.getVariable(return_type=str)
             derivative.setTimeEvolutionType(self.getTimeEvolutionTypes(names=variable_name))
             derivative.setInitialCondition(self.getInitialConditions(names=variable_name))
-        return model
+        return core_model
 
     def setElementsWithPrefix(self, prefix: str, value: str) -> None:
         """
@@ -1585,7 +1616,8 @@ class MainWindowRunner(WindowRunner):
 
     def changeTimeEvolution(self, name: str) -> None:
         """
-        Disable input field for initial conditions if time-evolution type is set to "Equilibrium" or if initial condition is set to equilibrium.
+        Disable input field for initial conditions
+            if time-evolution type is set to "Equilibrium" or if initial condition is set to equilibrium.
         Disable checkbox if time-evolution type is set to "Equilibrium".
         Enable elements otherwise.
 
@@ -1851,10 +1883,12 @@ class MainWindowRunner(WindowRunner):
             "unit": retrieve only unit
             "value": retrieve only value
             "base" prefix or suffix: convert to base units (SI)
-
-        :returns: Quantity for single parameter if :paramref:`~Layout.MainWindow.MainWindowRunner.getQuantities.names` is str
-            List of quantities if :paramref:`~Layout.MainWindow.MainWindowRunner.getQuantities.names` is list.
-            None if parameter is not included in window.
+        :returns: Quantity for single parameter
+            if :paramref:`~Layout.MainWindow.MainWindowRunner.getQuantities.names` is str
+            List of quantities
+            if :paramref:`~Layout.MainWindow.MainWindowRunner.getQuantities.names` is list.
+            None
+            if parameter is not included in window.
         """
 
         def get(name: str) -> Parameter:
@@ -2126,7 +2160,7 @@ class MainWindowRunner(WindowRunner):
         derivatives: List[Union[Derivative, Function]] = self.getModel().getDerivatives()
         der2vars = {
             der.getVariable(return_type=str):
-                der.getFreeSymbols(species="Variable", generations="all", return_type=str)
+            der.getFreeSymbols(species="Variable", generations="all", return_type=str)
             for der in derivatives
         }
         variable_names = sorted(der2vars.keys(), key=lambda k: len(der2vars[k]))

@@ -940,19 +940,35 @@ class Parent:
         :param self: parent to retrieve child name(s) from
         """
         self: Function
+        model = self.getModel()
+
         free_symbol_names = self.getFreeSymbols(generations=0, substitute_dependents=False, return_type=str)
         dependent_children_names = list(self.instance_arguments.keys())
+        instance_argument_function_names = []
+        for instance_argument in self.instance_arguments.values():
+            try:
+                function_names = list(map(str, instance_argument["functions"]))
+                independent_function_names = [
+                    function_name
+                    for function_name in function_names
+                    if isinstance(model.getFunctions(names=function_name), Independent)
+                ]
+                instance_argument_function_names.extend(independent_function_names)
+            except KeyError:
+                pass
 
-        children_names = dependent_children_names
+        children_names = dependent_children_names + instance_argument_function_names
         if isinstance(self, Independent):
             self: Function
-            model_function_names = self.getModel().getFunctionNames()
+            model_function_names = model.getFunctionNames()
             model_children_names = [
                 name
                 for name in free_symbol_names
                 if name in model_function_names
             ]
             children_names.extend(model_children_names)
+
+        children_names = unique(children_names)
         return unique(children_names)
 
     def getInstanceArgumentSpecies(self, name: str) -> List[str]:
