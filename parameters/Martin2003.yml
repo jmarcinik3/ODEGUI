@@ -45,6 +45,9 @@ kes: # stiffness for extent spring
 xes: # reference position for extent spring
   value: 0
   unit: nanometer
+ETCa:
+  value: 0
+  unit: millivolt
 PTCa: # permeability for transduction channels
   value: 1e-18
   unit: meter**3/second

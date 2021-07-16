@@ -54,6 +54,7 @@ IL:
   variables: Vm
   parameters: [gL,EL]
   form: gL * (Vm-EL)
+
 gCa: # conductance for Ca2+ current
   properties: [Independent]
   variables: mCa
