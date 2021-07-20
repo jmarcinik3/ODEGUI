@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from collections.abc import KeysView
 from functools import partial
 from pathlib import Path
@@ -113,11 +114,12 @@ class Parameter(PaperQuantity):
         """
         return self.quantity
 
-    def getFunctions(self) -> List[Function]:
+    def getFunctions(self, **kwargs) -> List[Function]:
         """
         Get functions that rely on parameter.
 
         :param self: :class:`~Function.Parameter` that :class:`~Function.Function` rely on
+        :param kwargs: additional arguments to pass into :meth:`~Function.Function.getFreeSymbols`
         """
         model = self.getModel()
         model_functions = model.getFunctions()
@@ -125,7 +127,7 @@ class Parameter(PaperQuantity):
         functions = [
             function_object
             for function_object in model_functions
-            if symbol in function_object.getFreeSymbols(generations="all", species="Parameter")
+            if symbol in function_object.getFreeSymbols(species="Parameter", **kwargs)
         ]
         return functions
 
@@ -1613,7 +1615,7 @@ class NonPiecewise:
         self.expression = expression
 
     def getExpression(
-            self, parent: Function = None, substitute_dependents: bool = True, generations: Union[int, str] = 0
+            self, parent: Function = None, substitute_dependents: bool = None, generations: Union[int, str] = 0
     ) -> Expr:
         """
         Get symbol expression for function.
@@ -1622,8 +1624,9 @@ class NonPiecewise:
         :param parent: function to retrieve input arguments from.
             Only called if self is Dependent function.
         :param substitute_dependents: set True to substitute all dependents into expression.
-            Set false to substitute in accordance with :paramref:`~Function.Function.getExpression.generations`.
-            Only called if :paramref:`~Function.Function.getExpression.generations`>0.
+            Set False to substitute in accordance with :paramref:`~Function.Function.getExpression.generations`.
+            Defaults to False if :paramref:`~Function.Function.getExpression.generations`==0.
+            Defaults to True otherwise.
         :param generations: number of generations for children to substitute into expression.
             Set to 0 to retrieve original expression without substitutions.
             Set to positive integer n to substitute n generations of children.
@@ -1633,11 +1636,27 @@ class NonPiecewise:
             parent: Function
             return self.getInstanceArgumentForm(parent)
 
-        expression = self.expression
-        if generations == 0:
-            return expression
+        if substitute_dependents is None:
+            if generations == "all":
+                substitute_dependents = True
+            elif generations >= 1:
+                substitute_dependents = True
+            elif generations == 0:
+                substitute_dependents = False
 
+        expression = self.expression
         self: Function
+        if generations == 0:
+            has_model = isinstance(self.getModel(), Model)
+            if substitute_dependents:
+                if has_model:
+                    pass
+                else:
+                    warnings.warn(f"cannot substitute dependents without associated model for {self.getName():s}")
+                    return expression
+            else:
+                return expression
+
         for child in self.getChildren():
             child_symbol = child.getName(return_type=Symbol)
             if isinstance(child, Dependent):
