@@ -1480,7 +1480,11 @@ class MainWindowRunner(WindowRunner):
 
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve model from
         """
-        full_model = Model(functions=self.getFunctions(), parameters=self.getParameters())
+        # noinspection PyTypeChecker
+        function_objects: List[Function] = self.getFunctions()
+        # noinspection PyTypeChecker
+        parameters: List[Parameter] = self.getParameters()
+        full_model = Model(functions=function_objects, parameters=parameters)
 
         # noinspection PyTypeChecker
         core_function_objects: List[Function] = full_model.getDerivatives()
@@ -1781,7 +1785,7 @@ class MainWindowRunner(WindowRunner):
             "base_method": get,
             "args": names,
             "valid_input_types": str,
-            "output_type": list,
+            "output_type": dict,
             "default_args": list(self.custom_param.keys())
         }
         return recursiveMethod(**kwargs)
@@ -1811,8 +1815,12 @@ class MainWindowRunner(WindowRunner):
 
         def get(name: str) -> Parameter:
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getParameters`."""
-            filestem = self.getChosenParameterStem(name)
-            parameter = self.stem2name2param[filestem][name]
+            if self.isCustomParameter(name):
+                quantity = self.getParameterQuantities(names=name)
+                parameter = Parameter(name, quantity)
+            else:
+                filestem = self.getChosenParameterStem(name)
+                parameter = self.stem2name2param[filestem][name]
             return parameter
 
         kwargs = {
