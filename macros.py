@@ -189,16 +189,17 @@ def expression2tex(expression: Expr, var2tex: str) -> str:
         if f"\\{var:s}" in expression_str and f"\\\\{var:s}" not in expression_str:
             continue
 
-        if var[-1].isdigit():
+        last_character = var[-1]
+        if not last_character.isdigit() or last_character in var[:-2]:
+            sympy_var = var
+        else:
             first_digit_index = 0
-            for index in range(len(var)):
-                if not var[-index].isdigit():
+            for index in reversed(range(len(var))):
+                if not var[index].isdigit():
                     first_digit_index = index + 1
                     break
-            digits = var[-first_digit_index:]
-            sympy_var = var.replace(digits, f"_{{{digits:s}}}")
-        else:
-            sympy_var = var
+            digits = var[first_digit_index:]
+            sympy_var = ''.join((var[:first_digit_index], f"_{{{digits:s}}}"))
 
         tex = var2tex[var].replace('$', '')
         var_subscript = f"_{{{var:s}}}"
