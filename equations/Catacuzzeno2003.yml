@@ -1,3 +1,5 @@
+# Appends Hudspeth1988 (10.1113/jphysiol.1988.sp017119, 10.1113/jphysiol.1988.sp017120)
+
 mhsinf: # (in)activation parameter equilibrium
   properties: [Dependent]
   variables: Vm
@@ -21,12 +23,6 @@ dmhs: # (in)activation parameter derivative
     mhstau:
       parameters: [Vtau,dVtau,tauVtau,tauinf,tauorder]
   form: (mhsinf-mhs) / mhstau
-
-IL:
-  properties: [Independent]
-  variables: Vm
-  parameters: [gL,EL]
-  form: gL * (Vm-EL)
 
 alphaDRK: # basis mDRK characteristic frequency scale
   properties: [Independent]
@@ -60,37 +56,6 @@ IDRK: # current for DRK channel
     I:
       parameters: EDRK
       functions: gDRK
-  form: I
-
-gh: # conductance for h channel
-  properties: [Independent]
-  variables: mh
-  parameters: gh1
-  form: gh1 * (3*mh**3*(1-mh)+mh**3)
-Ih: # current for h channel
-  properties: [Independent]
-  parameters: Eh
-  children:
-    gh:
-    I:
-      parameters: Eh
-      functions: gh
-  form: I
-
-gCa: # conductance for Ca2+ current
-  properties: [Independent]
-  variables: mCa
-  parameters: gCa1
-  form: gCa1 * mCa**3
-ICa: # Ca2+ current
-  properties: [Independent]
-  variables: Vm
-  parameters: ECa
-  children:
-    gCa:
-    I:
-      parameters: ECa
-      functions: gCa
   form: I
 
 gA1: # conductance for A1 channel
@@ -140,6 +105,21 @@ IA: # current for A channel
     IA2:
   form: aA1*IA1 + (1-aA1)*IA2
 
+gh: # conductance for h channel
+  properties: [Independent]
+  variables: mh
+  parameters: gh1
+  form: gh1 * (3*mh**3*(1-mh)+mh**3)
+Ih: # current for h channel
+  properties: [Independent]
+  parameters: Eh
+  children:
+    gh:
+    I:
+      parameters: Eh
+      functions: gh
+  form: I
+
 dmDRK: # DRK channel activation
   properties: [Derivative, Independent]
   variable: mDRK
@@ -150,16 +130,6 @@ dmDRK: # DRK channel activation
       parameters: [VhalfDRK,dVDRK,mhminDRK,mhmaxDRK,deltaDRK]
     tauDRK:
   form: (mhsinf-mDRK) / tauDRK
-dmh: # h channel activation
-  properties: [Derivative, Independent]
-  variable: mh
-  variables: mh
-  parameters: [Vhalfh,dVh,mhminh,mhmaxh,deltah,Vtauh,dVtauh,tauVtauh,tauinfh,deltatauh]
-  children:
-    dmhs:
-      variables: mh
-      parameters: [Vhalfh,dVh,mhminh,mhmaxh,deltah,Vtauh,dVtauh,tauVtauh,tauinfh,deltatauh]
-  form: dmhs
 dmCa: # Ca channel activation
   properties: [Derivative, Independent]
   variable: mCa
@@ -170,6 +140,7 @@ dmCa: # Ca channel activation
       variables: mCa
       parameters: [VhalfCa,dVCa,mhminCa,mhmaxCa,deltaCa,VtauCa,dVtauCa,tauVtauCa,tauinfCa,deltatauCa]
   form: dmhs
+
 dhA1: # A1 channel inactivation
   properties: [Derivative, Independent]
   variable: hA1
@@ -216,17 +187,65 @@ dmA: # A channel activation
   pieces: [dmAlt, dmAgt]
   conditions: [Vm<VmhA, Vm>=VmhA]
 
-dVm: # soma membrane potential
-  properties: [Derivative, Independent]
-  variable: Vm
-  parameters: Cm
+dmK1lt: # K1 channel activation for small soma potential
+  properties: [Independent]
+  variable: mK1
+  parameters: [VhalfK1,dVK1,mhminK1,mhmaxK1,deltaK1,VtauK1lt,dVtauK1lt,tauVtauK1lt,tauinfK1lt,deltatauK1]
   children:
-    IL:
+    dmhs:
+      variables: mK1
+      parameters: [VhalfK1,dVK1,mhminK1,mhmaxK1,deltaK1,VtauK1lt,dVtauK1lt,tauVtauK1lt,tauinfK1lt,deltatauK1]
+  form: dmhs
+dmK1gt: # K1 channel activation for large soma potential
+  properties: [Independent]
+  variable: mK1
+  parameters: [VhalfK1,dVK1,mhminK1,mhmaxK1,deltaK1,VtauK1gt,dVtauK1gt,tauVtauK1gt,tauinfK1gt,deltatauK1]
+  children:
+    dmhs:
+      variables: mK1
+      parameters: [VhalfK1,dVK1,mhminK1,mhmaxK1,deltaK1,VtauK1gt,dVtauK1gt,tauVtauK1gt,tauinfK1gt,deltatauK1]
+  form: dmhs
+dmK1: # K1 channel activation
+  properties: [Piecewise, Derivative, Independent]
+  variable: mK1
+  variables: Vm
+  parameters: EK1
+  pieces: [dmK1lt, dmK1gt]
+  conditions: [Vm<EK1, Vm>=EK1]
+
+dmhlt: # h channel activation for small soma potential
+  properties: [Independent]
+  variable: mh
+  parameters: [Vhalfh,dVh,mhminh,mhmaxh,deltah,Vtauhlt,dVtauhlt,tauVtauhlt,tauinfhlt,deltatauh]
+  children:
+    dmhs:
+      variables: mh
+      parameters: [Vhalfh,dVh,mhminh,mhmaxh,deltah,Vtauhlt,dVtauhlt,tauVtauhlt,tauinfhlt,deltatauh]
+  form: dmhs
+dmhgt: # h channel activation for large soma potential
+  properties: [Independent]
+  variable: mh
+  parameters: [Vhalfh,dVh,mhminh,mhmaxh,deltah,Vtauhgt,dVtauhgt,tauVtauhgt,tauinfhgt,deltatauh]
+  children:
+    dmhs:
+      variables: mh
+      parameters: [Vhalfh,dVh,mhminh,mhmaxh,deltah,Vtauhgt,dVtauhgt,tauVtauhgt,tauinfhgt,deltatauh]
+  form: dmhs
+dmh: # h channel activation
+  properties: [Piecewise, Derivative, Independent]
+  variable: mh
+  variables: Vm
+  parameters: Vmmh
+  pieces: [dmhlt, dmhgt]
+  conditions: [Vm<Vmmh, Vm>=Vmmh]
+
+Im:
+  properties: [Independent]
+  children:
+    IA:
+    IDRK:
     ICa:
-    IT:
     IK1:
     Ih:
-    IBK:
-    IDRK:
-    IA:
-  form: -(IA+IDRK+ICa+IK1+Ih+IL) / Cm
+    IL:
+  form: IA + IDRK + ICa + IK1 + Ih + IL

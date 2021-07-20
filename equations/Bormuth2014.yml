@@ -1,3 +1,5 @@
+# Appends Barral2018 (10.1016/j.bpj.2017.11.019)
+
 lambdahb:
   properties: [Independent]
   parameters: [lambdaH]

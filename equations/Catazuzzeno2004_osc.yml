@@ -1,0 +1,10 @@
+# Appends Catacuzzeno2004 (10.1113/jphysiol.2004.072652)
+
+Im:
+  properties: [Independent]
+  children:
+    IA:
+    IK1:
+    Ih:
+    IL:
+  form: IK1 + Ih + IA + IL

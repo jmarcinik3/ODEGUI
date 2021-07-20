@@ -1,26 +1,4 @@
-CpT: # basis Boltzmann factor for transduction channel
-  properties: [Independent]
-  parameters: [dE0,kB,T]
-  form: exp(dE0/(kB*T))
-dxpT: # characteristic length scale for transduction channel
-  properties: [Independent]
-  variables: pr
-  parameters: [kB,T,d]
-  children:
-    kgsinf:
-  form: kB*T / (kgsinf*d)
-xpT: # characteristic length for transduction channel
-  properties: [Independent]
-  variables: [Xhb,xa]
-  parameters: [gamma,xc,d]
-  form: gamma*Xhb-xa+xc-d/2
-pTinf: # pT equilibrium
-  properties: [Independent]
-  children:
-    CpT:
-    xpT:
-    dxpT:
-  form: 1 / (1+CpT*exp(-xpT/dxpT))
+# Appends Martin2003 (10.1523/jneurosci.23-11-04533.2003)
 
 tauT: # MET-channel time constant
   properties: [Independent]

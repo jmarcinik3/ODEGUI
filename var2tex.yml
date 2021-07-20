@@ -76,6 +76,8 @@ Fmmax: $F_{m,max}$
 Sm: $S_m$
 
 ## soma
+Im: $I_m$
+
 alphaDRK: $\alpha_{DRK}$
 betaDRK: $\beta_{DRK}$
 tauDRK: $\tau_{DRK}$
@@ -113,20 +115,27 @@ dpT: $\frac{dp_T}{dt}$
 dVm: $\frac{dVm}{dt}$
 dCa: $\frac{d[Ca^{2+}]_{soma}}{dt}$
 dmCa: $\frac{dm_{Ca}}{dt}$
-dmh: $\frac{dm_h}{dt}$
+
 dhBKT: $\frac{dh_{BKT}}{dt}$
+dmDRK: $\frac{dm_{DRK}}{dt}$
+
+dmhlt: $\frac{dm_{h<}}{dt}$
+dmhgt: $\frac{dm_{h>}}{dt}$
+dmh: $\frac{dm_h}{dt}$
+
 dhA1: $\frac{dh_{A1}}{dt}$
 dhA2: $\frac{dh_{A2}}{dt}$
-dmDRK: $\frac{dm_{DRK}}{dt}$
+dmAlt: $\frac{dm_{A<}}{dt}$
+dmAgt: $\frac{dm_{A>}}{dt}$
+dmA: $\frac{dm_A}{dt}$
+
 dmK1flt: $\frac{dm_{K1f<}}{dt}$
 dmK1fgt: $\frac{dm_{K1f>}}{dt}$
 dmK1f: $\frac{dm_{K1f}}{dt}$
 dmK1slt: $\frac{dm_{K1s<}}{dt}$
 dmK1sgt: $\frac{dm_{K1s>}}{dt}$
 dmK1s: $\frac{dm_{K1s}}{dt}$
-dmAlt: $\frac{dm_{A<}}{dt}$
-dmAgt: $\frac{dm_{A>}}{dt}$
-dmA: $\frac{dm_A}{dt}$
+
 dpC0: $\frac{dp_{C_0}}{dt}$
 dpC1: $\frac{dp_{C_1}}{dt}$
 dpC2: $\frac{dp_{C_2}}{dt}$
@@ -342,6 +351,7 @@ deltatauBKT: $\delta_{\tau_{BKT}}$
 ### h
 Eh: $E_h$
 gh1: $g_h(1)$
+Vmmh: $V_{m,m_h}$
 tauinfh: $\tau_h(\pm\infty)$
 tauVtauh: $\tau_h(V_{\tau_h})$
 Vtauh: $V_{\tau_h}$
@@ -351,10 +361,34 @@ Vhalfh: $V_{1/2h}$
 mhmaxh: $m_{h,max}$
 mhminh: $m_{h,min}$
 deltah: $\delta_h$
-deltatauh: $\delta_{\tau_h}$
+deltatauh: $\delta_{\tau_{h<}}$
+tauinfhlt: $\tau_{h<}(\pm\infty)$
+tauVtauhlt: $\tau_h(V_{\tau_{h<}})$
+Vtauhlt: $V_{\tau_{h<}}$
+dVtauhlt: $\Delta{V_{\tau_{h<}}}$
+tauinfhgt: $\tau_{h>}(\pm\infty)$
+tauVtauhgt: $\tau_{h>}(V_{\tau_h})$
+Vtauhgt: $V_{\tau_{h>}}$
+dVtauhgt: $\Delta{V_{\tau_{h>}}}$
 
 ### K1
 aK1f: $a_{K1f}$
+gK11: $g_{K1}(1)$
+VhalfK1: $V_{1/2K1}$
+dVK1: $\Delta{V_{K1}}$
+mhmaxK1: $m_{K1,max}$
+mhminK1: $m_{K1,min}$
+tauinfK1lt: $\tau_{K1<}(\infty)$
+tauVtauK1lt: $\tau_{K1}(V_{\tau_{K1<}})$
+VtauK1lt: $V_{\tau_{K1<}}$
+dVtauK1lt: $\Delta{V_{\tau_{K1<}}}$
+tauinfK1gt: $\tau_{K1>}(\infty)$
+tauVtauK1gt: $\tau_{K1}(V_{\tau_{K1>}})$
+VtauK1gt: $V_{\tau_{K1>}}$
+dVtauK1gt: $\Delta{V_{\tau_{K1>}}}$
+deltaK1: $\delta_{K1}$
+deltatauK1: $\delta-{\tau_{K1}}$
+EK1: $E_{K1}$
 
 #### K1f
 tauinfK1fgt: $\tau_{K1f>}(\pm\infty)$

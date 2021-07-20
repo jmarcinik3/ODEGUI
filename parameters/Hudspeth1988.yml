@@ -19,12 +19,14 @@ Cvol:
 KS:
   value: 2800
   unit: hertz
+
 gBK11: # \bar{g}_{K(Ca)}
   value: 16.8
   unit: nanosiemens
 EBK: # E_K
   value: -80
   unit: millivolt
+
 KC10: # K_1(0)
   value: 6
   unit: micromolar

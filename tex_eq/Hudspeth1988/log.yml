@@ -16,19 +16,25 @@ IL:
 IT:
   expression: $I$
   filename: IT.png
+Im:
+  expression: $I_{BK} + I_{Ca} + I_L$
+  filename: Im.png
 KpC1:
-  expression: $\varepsilon_X^{\delta_{C_1}} KC_{10}$
+  expression: $\varepsilon_X^{\delta_{C_1}} K_{C_1}(0)$
   filename: KpC1.png
 KpC2:
-  expression: $\varepsilon_X^{\delta_{C_2}} KC_{20}$
+  expression: $\varepsilon_X^{\delta_{C_2}} K_{C_2}(0)$
   filename: KpC2.png
 KpO3:
-  expression: $\varepsilon_X^{\delta_{O_2}} KO_{20}$
+  expression: $\varepsilon_X^{\delta_{O_2}} K_{O_2}(0)$
   filename: KpO3.png
 dCa:
   expression: $- [Ca^{2+}] K_S - \frac{I_{Ca} U}{C_{vol} F \xi_{[[Ca^{2+}]^{2+}]}
     z_{Ca}}$
   filename: dCa.png
+dVm:
+  expression: $- \frac{I_m}{C_m}$
+  filename: dVm.png
 dpC0:
   expression: $- k_{C_1}^+ p_{C0} + k^-_{C_1} p_{C1}$
   filename: dpC0.png
@@ -45,7 +51,7 @@ dpO3:
   expression: $k_{O_3}^+ p_{O2} - k^-_{O_3} p_{O3}$
   filename: dpO3.png
 gBK:
-  expression: $gBK_{11} \left(p_{O2} + p_{O3}\right)$
+  expression: $g_{BK}(1,1) \left(p_{O2} + p_{O3}\right)$
   filename: gBK.png
 gCa:
   expression: $g_{Ca}(1) m_{Ca}^{3}$
@@ -63,5 +69,5 @@ kaO3:
   expression: $\frac{[Ca^{2+}] k^-_{O_3}}{K_{p_{O_3}}}$
   filename: kaO3.png
 kdO2:
-  expression: $\varepsilon_X^{\tilde{d}_K - 1} kdO_{20}$
+  expression: $\varepsilon_X^{\tilde{d}_K - 1} k^-_{O_2}(0)$
   filename: kdO2.png
