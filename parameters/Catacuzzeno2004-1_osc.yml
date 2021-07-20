@@ -1,0 +1,17 @@
+# Appends Catacuzzeno2004 core
+
+PA1:
+  value: 3e-14
+  unit: liter/second
+PA2:
+  value: 3e-14
+  unit: liter/second
+gK1f1:
+  value: 28
+  unit: nanosiemens
+gK1s1:
+  value: 28
+  unit: nanosiemens
+gh1:
+  value: 2.2
+  unit: nanosiemens

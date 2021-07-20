@@ -19,6 +19,9 @@ IL:
 Ih:
   expression: $I$
   filename: Ih.png
+Im:
+  expression: $I_A + I_{Ca} + I_{DRK} + I_{K1} + I_L + I_h$
+  filename: Im.png
 aA1:
   expression: $a_{A1}(\pm\infty) - \frac{1 - a_{A1}(\pm\infty)}{e^{\frac{V_{1/2a_{A1}}
     - V_m}{\Delta{V_{a_{A1}}}}} + 1}$
@@ -57,8 +60,15 @@ dmDRK:
   expression: $\frac{- m_{DRK} + m_s(\infty)}{\tau_{DRK}}$
   filename: dmDRK.png
 dmh:
-  expression: $\frac{dm_s}{dt}$
+  expression: '$\begin{cases} \frac{dm_{h<}}{dt} & \text{for}\: V_m < V_{m,m_h} \\\frac{dm_{h>}}{dt}
+    & \text{otherwise} \end{cases}$'
   filename: dmh.png
+dmhgt:
+  expression: $\frac{dm_s}{dt}$
+  filename: dmhgt.png
+dmhlt:
+  expression: $\frac{dm_s}{dt}$
+  filename: dmhlt.png
 dmhs:
   expression: $\frac{- m_s + m_s(\infty)}{\tau_{m_s}}$
   filename: dmhs.png

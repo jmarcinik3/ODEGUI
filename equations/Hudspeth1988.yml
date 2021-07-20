@@ -164,3 +164,20 @@ dpO3: # proportion of BK channels in O3 state
   children:
     kaO3:
   form: kaO3*pO2 - kdO3*pO3
+
+dVm: # soma membrane potential
+  properties: [Derivative, Independent]
+  variable: Vm
+  parameters: Cm
+  children:
+    Im:
+  form: -Im / Cm
+
+
+Im:
+  properties: [Independent]
+  children:
+    ICa:
+    IBK:
+    IL:
+  form: ICa + IBK + IL

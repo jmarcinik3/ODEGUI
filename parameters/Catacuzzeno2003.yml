@@ -31,9 +31,6 @@ mhminDRK:
 deltaDRK:
   value: 0.5
   unit:
-PDRK:
-  value: 0.064
-  unit: picoliter/second
 EDRK:
   value: 0
   unit: millivolt
@@ -154,10 +151,6 @@ deltaA1:
 deltatauA1:
   value: 2
   unit:
-PA1:
-  value: 0.03
-  unit: picoliter/second
-  
 EA1:
   value: 0
   unit: millivolt
@@ -192,11 +185,103 @@ deltaA2:
 deltatauA2:
   value: 2
   unit:
-PA2:
-  value: 0.03
-  unit: picoliter/second
 EA2:
   value: 0
+  unit: millivolt
+
+VhalfK1:
+  value: -102
+  unit: millivolt
+dVK1:
+  value: -6.96
+  unit: millivolt
+mhmaxK1:
+  value: 1.00
+  unit: dimensionless
+mhminK1:
+  value: 0.01
+  unit: dimensionless
+tauinfK1lt:
+  value: 0.42
+  unit: millisecond
+tauVtauK1lt:
+  value: 0.42
+  unit: millisecond
+VtauK1lt:
+  value: -145
+  unit: millivolt
+dVtauK1lt:
+  value: -24
+  unit: millivolt
+tauinfK1gt:
+  value: 0.42
+  unit: millisecond
+tauVtauK1gt:
+  value: 0.66
+  unit: millisecond
+VtauK1gt:
+  value: -70
+  unit: millivolt
+dVtauK1gt:
+  value: 7
+  unit: millivolt
+deltaK1:
+  value: 1
+  unit: dimensionless
+deltatauK1:
+  value: 1
+  unit: dimensionless
+EK1:
+  value: -102
+  unit: millivolt
+
+Vhalfh:
+  value: -87
+  unit: millivolt
+dVh:
+  value: -9.60
+  unit: millivolt
+mhmaxh:
+  value: 1
+  unit: dimensionless
+mhminh:
+  value: 0.18
+  unit: dimensionless
+tauinfhlt:
+  value: 80
+  unit: millisecond
+tauVtauhlt:
+  value: 219.5
+  unit: millisecond
+Vtauhlt:
+  value: -123
+  unit: millivolt
+dVtauhlt:
+  value: -62
+  unit: millivolt
+tauinfhgt:
+  value: 80
+  unit: millisecond
+tauVtauhgt:
+  value: 219.5
+  unit: millisecond
+Vtauhgt:
+  value: -63
+  unit: millivolt
+dVtauhgt:
+  value: 62
+  unit: millivolt
+deltah:
+  value: 1
+  unit:
+deltatauh:
+  value: 1
+  unit:
+Eh:
+  value: -40
+  unit: millivolt
+Vmmh:
+  value: -90
   unit: millivolt
 
 gL: # g_L under I_L
@@ -205,9 +290,4 @@ gL: # g_L under I_L
 EL: # E_L under I_L
   value: 0
   unit: millivolt
-
-
- # to do Ih, IK1
-
-
 

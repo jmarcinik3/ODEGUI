@@ -7,12 +7,10 @@ Function:
 
 Refactor:
   Martin: [msf, xisf, ksf, mhb, pT0]
-  Barral: [kgstot, ksptot, Fmmax, Sm, Dgs]
-  Bormuth: [kestot]
-  Hudspeth1988: [dVkdO2, gBK11, EBK]
 
 Hair Bundle:
-  Xhb: [lambdaH, lambdaC, xsp, ksp]
+  Xhb_M2003: [lambdaH, xsp, ksp]
+  Xhb_~M2018: [lambdaC, kgstot, ksptot, kestot, Fmmax, Sm, Dgs]
   xa: [S0, S1, C0, C1, lambdaa, xes, kes]
   pm: [rm, kam, kdm]
   pr: [rr, kar, kdr]
@@ -25,25 +23,35 @@ Soma:
   Temporal: [Cm, Ksomain, Ksomaex, U, xiCa, Cvol, KS]
 
 Current:
-  IT: [ET, gTmax, GT1, ZT1, GT2, ZT2]
+  IT: [ET]
+  IT_H1988: [gTmax, GT1, ZT1, GT2, ZT2]
   IL: [EL, gL]
   ICa: [ECa, gCa1, tauinfCa, tauVtauCa, VtauCa, dVtauCa, dVCa, VhalfCa, mhmaxCa,  mhminCa, deltaCa, deltatauCa]
-  IBKS: [EBKS, PBKS]
-  IBKT: [EBKT, PBKT, tauinfBKT, tauVtauBKT, VtauBKT, dVtauBKT, dVBKT, VhalfBKT, mhmaxBKT,  mhminBKT, deltaBKT, deltatauBKT]
-  Ih: [Eh, gh1, tauinfh, tauVtauh, Vtauh, dVtauh, dVh, Vhalfh, mhmaxh,  mhminh, deltah, deltatauh]
+  IBK_H1988: [gBK11, EBK]
+  IBKS_C2004: [EBKS, PBKS]
+  IBKT_C2004: [EBKT, PBKT, tauinfBKT, tauVtauBKT, VtauBKT, dVtauBKT, dVBKT, VhalfBKT, mhmaxBKT,  mhminBKT, deltaBKT, deltatauBKT]
+  Ih_C2004: [Eh, gh1, tauinfh, tauVtauh, Vtauh, dVtauh, dVh, Vhalfh, mhmaxh,  mhminh, deltah, deltatauh]
+  Ih_C2003: [Vmmh,
+    tauinfhlt, tauVtauhlt, Vtauhlt, dVtauhlt,
+    tauinfhgt, tauVtauhgt, Vtauhgt, dVtauhgt]
   IDRK: [EDRK, PDRK, alphainf, alpha0, dValpha, betainf, beta0, dVbeta, dVDRK, VhalfDRK, mhmaxDRK, mhminDRK, deltaDRK]
   IA: [VmhA, aA1inf, dVaA1, VhalfaA1,
     tauinfAlt, tauVtauAlt, VtauAlt, dVtauAlt, tauinfAgt, tauVtauAgt, VtauAgt, dVtauAgt,
     dVA, VhalfA, mhmaxA, mhminA, deltaA, deltatauA]
   IA1: [EA1, PA1, tauinfA1, tauVtauA1, VtauA1, dVtauA1, dVA1, VhalfA1, mhmaxA1, mhminA1, deltaA1, deltatauA1]
   IA2: [EA2, PA2, tauinfA2, tauVtauA2, VtauA2, dVtauA2, dVA2, VhalfA2, mhmaxA2, mhminA2, deltaA2, deltatauA2]
-  IK1: [aK1f]
-  IK1f: [tauinfK1fgt, tauVtauK1fgt, VtauK1fgt, dVtauK1fgt, tauinfK1flt, tauVtauK1flt, VtauK1flt, dVtauK1flt,
+  IK1_C2004: [aK1f]
+  IK1_C2003: [gK11, VhalfK1, dVK1, mhmaxK1, mhminK1,
+    tauinfK1lt, tauVtauK1lt, VtauK1lt, dVtauK1lt,
+    tauinfK1gt, tauVtauK1gt, VtauK1gt, dVtauK1gt,
+    deltaK1, deltatauK1, EK1]
+  IK1f_C2004: [tauinfK1fgt, tauVtauK1fgt, VtauK1fgt, dVtauK1fgt, tauinfK1flt, tauVtauK1flt, VtauK1flt, dVtauK1flt,
     EK1f, gK1f1, dVK1f, VhalfK1f, mhmaxK1f, mhminK1f, deltaK1f, deltatauK1f]
-  IK1s: [tauinfK1sgt, tauVtauK1sgt, VtauK1sgt, dVtauK1sgt, tauinfK1slt, tauVtauK1slt, VtauK1slt, dVtauK1slt,
+  IK1s_C2004: [tauinfK1sgt, tauVtauK1sgt, VtauK1sgt, dVtauK1sgt, tauinfK1slt, tauVtauK1slt, VtauK1slt, dVtauK1slt,
     EK1s, gK1s1, dVK1s, VhalfK1s, mhmaxK1s, mhminK1s, deltaK1s, deltatauK1s]
 
-BK Scheme: [KC10, KC20, KO20,
+BK Scheme:
+  General: [KC10, KC20, KO20,
   deltaC1, deltaC2, deltaO2,
   kdC1, kdC2, kdO3, kaO2,
   kdO20, dVkdO2]

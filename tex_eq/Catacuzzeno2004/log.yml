@@ -1,0 +1,36 @@
+IBK:
+  expression: $I_{BKS} + I_{BKT}$
+  filename: IBK.png
+IBKS:
+  expression: $I$
+  filename: IBKS.png
+IBKT:
+  expression: $I$
+  filename: IBKT.png
+IK1:
+  expression: $I_{K1f} a_{K1f} + I_{K1s} \left(1 - a_{K1f}\right)$
+  filename: IK1.png
+IK1f:
+  expression: $I$
+  filename: IK1f.png
+IK1s:
+  expression: $I$
+  filename: IK1s.png
+dhBKT:
+  expression: $\frac{dm_s}{dt}$
+  filename: dhBKT.png
+dmh:
+  expression: $\frac{dm_s}{dt}$
+  filename: dmh.png
+gBKS:
+  expression: $g_{GHK} \left(p_{O2} + p_{O3}\right)$
+  filename: gBKS.png
+gBKT:
+  expression: $g_{GHK} \left(p_{O2} + p_{O3}\right)$
+  filename: gBKT.png
+gK1f:
+  expression: $g_{K1f}(1) m_{K1f}$
+  filename: gK1f.png
+gK1s:
+  expression: $g_{K1s}(1) m_{K1s}$
+  filename: gK1s.png
