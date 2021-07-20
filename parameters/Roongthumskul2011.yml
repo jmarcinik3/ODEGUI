@@ -1,3 +1,5 @@
+# Appends Martin2003 (10.1523/jneurosci.23-11-04533.2003)
+
 rm: # distance from adaptation motor to transduction channel
   value: 20
   unit: nanometer
