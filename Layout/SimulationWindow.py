@@ -1555,7 +1555,11 @@ class SimulationWindow(TabbedWindow):
             [
                 "Save",
                 [
-                    "Parameters::Save",
+                    "Model",
+                    [
+                        "Parameters::Save",
+                        "Functions::Save"
+                    ],
                     "Time-Evolution Types::Save",
                     "Figure",
                     [
@@ -1993,6 +1997,8 @@ class SimulationWindowRunner(WindowRunner):
             if menu_value is not None:
                 if menu_value == "Parameters::Save":
                     self.saveModelParameters()
+                elif menu_value == "Functions::Save":
+                    self.saveModelFunctions()
                 elif menu_value == "Time-Evolution Types::Save":
                     self.saveModelTimeEvolutionTypes()
                 elif menu_value == "Static::Save Figure":
@@ -2461,6 +2467,23 @@ class SimulationWindowRunner(WindowRunner):
         filename = sg.PopupGetFile(**kwargs)
         if isinstance(filename, str):
             self.getModel().saveParametersToFile(filename)
+
+    def saveModelFunctions(self) -> None:
+        """
+        Save functions from model into file.
+
+        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from
+        """
+        file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
+        kwargs = {
+            "message": "Enter Filename",
+            "title": "Save Functions",
+            "save_as": True,
+            "file_types": file_types
+        }
+        filename = sg.PopupGetFile(**kwargs)
+        if isinstance(filename, str):
+            self.getModel().saveFunctionsToFile(filename)
 
     def saveModelTimeEvolutionTypes(self) -> None:
         """
