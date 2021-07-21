@@ -1,3 +1,6 @@
 Im:
-  expression: $I_A + I_{BK} + I_{Ca} + I_{DRK} + I_{K1} + I_L + I_h$
+  expression: $I_{soma}$
   filename: Im.png
+Isoma:
+  expression: $I_A + I_{BK} + I_{Ca} + I_{DRK} + I_{K1} + I_L + I_h$
+  filename: Isoma.png

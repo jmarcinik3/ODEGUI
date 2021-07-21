@@ -77,10 +77,8 @@ Sm: $S_m$
 
 ## soma
 Im: $I_m$
+Isoma: $I_{soma}$
 
-alphaDRK: $\alpha_{DRK}$
-betaDRK: $\beta_{DRK}$
-tauDRK: $\tau_{DRK}$
 gT: $g_T$
 gTCa: $g_{T,Ca}$
 gCa: $g_{Ca}$
@@ -264,6 +262,9 @@ deltatauCa: $\delta_{\tau_{Ca}}$
 ### DRK
 EDRK: $E_{DRK}$
 PDRK: $P_{DRK}$
+alphaDRK: $\alpha_{DRK}$
+betaDRK: $\beta_{DRK}$
+tauDRK: $\tau_{DRK}$
 alphainf: $\alpha(\infty)$
 alpha0: $\alpha(0)$
 dValpha: $\Delta{V_\alpha}$

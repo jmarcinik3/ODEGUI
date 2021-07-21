@@ -17,8 +17,11 @@ IT:
   expression: $I$
   filename: IT.png
 Im:
-  expression: $I_{BK} + I_{Ca} + I_L$
+  expression: $I_T + I_{soma}$
   filename: Im.png
+Isoma:
+  expression: $I_{BK} + I_{Ca} + I_L$
+  filename: Isoma.png
 KpC1:
   expression: $\varepsilon_X^{\delta_{C_1}} K_{C_1}(0)$
   filename: KpC1.png

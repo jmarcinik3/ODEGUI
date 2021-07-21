@@ -1,6 +1,6 @@
 # Appends Catacuzzeno2004 (10.1113/jphysiol.2004.072652)
 
-Im:
+Isoma:
   properties: [Independent]
   children:
     IA:
@@ -8,3 +8,8 @@ Im:
     Ih:
     IL:
   form: IK1 + Ih + IA + IL
+Im:
+  properties: [Independent]
+  children:
+    Isoma:
+  form: Isoma

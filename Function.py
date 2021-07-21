@@ -102,7 +102,6 @@ class Parameter(PaperQuantity):
         :param kwargs: additional arguments to pass into :class:`~Function.PaperQuantity`
         """
         super().__init__(name, **kwargs)
-        self.name = name
         self.quantity = quantity
 
     def getQuantity(self) -> Quantity:
