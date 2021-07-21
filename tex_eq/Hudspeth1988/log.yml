@@ -62,6 +62,9 @@ gCa:
 gT:
   expression: $\frac{g_{T,max}}{\left(e^{A_T} + 1\right) e^{B_T} + 1}$
   filename: gT.png
+gTmax:
+  expression: $g_{T,max}$
+  filename: gTmax.png
 kaC1:
   expression: $\frac{[Ca^{2+}] k^-_{C_1}}{K_{p_{C_1}}}$
   filename: kaC1.png

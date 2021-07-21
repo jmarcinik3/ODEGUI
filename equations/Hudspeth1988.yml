@@ -187,3 +187,9 @@ Im:
     Isoma:
     IT:
   form: Isoma + IT
+
+gTmax:
+  properties: [Independent, Parameter]
+  parameters: gTmax
+  form: gTmax
+  
