@@ -20,8 +20,11 @@ Ih:
   expression: $I$
   filename: Ih.png
 Im:
-  expression: $I_A + I_{Ca} + I_{DRK} + I_{K1} + I_L + I_h$
+  expression: $I_{soma}$
   filename: Im.png
+Isoma:
+  expression: $I_A + I_{Ca} + I_{DRK} + I_{K1} + I_L + I_h$
+  filename: Isoma.png
 aA1:
   expression: $a_{A1}(\pm\infty) - \frac{1 - a_{A1}(\pm\infty)}{e^{\frac{V_{1/2a_{A1}}
     - V_m}{\Delta{V_{a_{A1}}}}} + 1}$

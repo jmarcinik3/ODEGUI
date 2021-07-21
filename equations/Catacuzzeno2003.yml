@@ -239,7 +239,7 @@ dmh: # h channel activation
   pieces: [dmhlt, dmhgt]
   conditions: [Vm<Vmmh, Vm>=Vmmh]
 
-Im:
+Isoma:
   properties: [Independent]
   children:
     IA:
@@ -249,3 +249,8 @@ Im:
     Ih:
     IL:
   form: IA + IDRK + ICa + IK1 + Ih + IL
+Im:
+  properties: [Independent]
+  children:
+    Isoma:
+  form: Isoma

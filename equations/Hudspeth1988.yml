@@ -174,10 +174,16 @@ dVm: # soma membrane potential
   form: -Im / Cm
 
 
-Im:
+Isoma:
   properties: [Independent]
   children:
     ICa:
     IBK:
     IL:
   form: ICa + IBK + IL
+Im:
+  properties: [Independent]
+  children:
+    Isoma:
+    IT:
+  form: Isoma + IT
