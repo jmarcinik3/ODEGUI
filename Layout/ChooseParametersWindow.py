@@ -4,12 +4,13 @@ This file contains classes relating to the choose-parameters window.
 from __future__ import annotations
 
 from os.path import basename
-from typing import Dict, Iterable, List, Union
+from typing import Iterable, List, Union
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
 from pint import Quantity
 
+from Function import Parameter
 from Layout.Layout import Layout, Row, Window, WindowRunner
 from macros import formatQuantity, getTexImage, recursiveMethod
 
@@ -21,19 +22,18 @@ class ChooseParameterRow(Row):
         #. Label to indicate value and unit for parameter.
         #. Checkbox allow user to overwrite (or not) parameter into model.
 
-    :ivar quantity: quantity containing value and unit for parameter
+    :ivar parameter: parameter object for parameter associated with row
     """
 
-    def __init__(self, name: str, quantity: Quantity, window: ChooseParametersWindow):
+    def __init__(self, parameter: Parameter, window: ChooseParametersWindow):
         """
         Constructor for :class:`~Layout.ChooseParametersWindow.ChooseParameterRow`.
 
-        :param name: name of parameter
-        :param quantity: quantity containing value and unit
+        :param parameter: parameter object associated with row
         :param window: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` that row is stored in
         """
-        super().__init__(name, window=window)
-        self.quantity = quantity
+        super().__init__(parameter.getName(), window=window)
+        self.parameter = parameter
 
         elements = [
             self.getParameterLabel(),
@@ -42,13 +42,21 @@ class ChooseParameterRow(Row):
         ]
         self.addElements(elements)
 
+    def getParameter(self) -> Parameter:
+        """
+        Get parameter object associated with row.
+
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParameterRow` to retrieve parameter from
+        """
+        return self.parameter
+
     def getQuantity(self) -> Quantity:
         """
         Get parameter quantity associated with row.
 
         :param self: :class:`~Layout.ChooseParametersWindow.ChooseParameterRow` to retrieve quantity from
         """
-        return self.quantity
+        return self.getParameter().getQuantity()
 
     def getParameterLabel(self) -> Union[sg.Image, sg.Text]:
         """
@@ -96,17 +104,17 @@ class ChooseParametersWindow(Window):
         #. Footer with submit and cancel buttons.
         #. Row for each parameter, allowing user to choose whether (or not) to overwrite in model.
 
-    :ivar quantites: dictionary of parameter quantities.
+    :ivar parameters: dictionary of parameter objects.
         Key is name of parameter.
-        Value is quantity containing value and unit for parameter.
+        Value is parameter object for parameter.
     :ivar filename: name of file that parameters were loaded from (optional)
     """
 
     def __init__(
             self,
             name: str,
+            parameters: List[Parameter],
             runner: ChooseParametersWindowRunner,
-            quantities: Dict[str, Quantity],
             filename: str = ''
     ):
         """
@@ -114,16 +122,16 @@ class ChooseParametersWindow(Window):
 
         :param name: name of window
         :param runner: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindowRunner` that window is stored in
-        :param quantities: dictionary of parameter quantities.
+        :param parameters: dictionary of parameter objects.
             Key is name of parameter.
-            Value is quantity containing value and unit for parameter.
+            Value is parameter object for parameter.
         :param filename: name of file that parameters were loaded from
         """
         dimensions = {
             "window": (None, None)  # dim
         }
         super().__init__(name, runner, dimensions=dimensions)
-        self.quantities = quantities
+        self.parameters = parameters
         self.filename = filename
 
     def getFilename(self) -> str:
@@ -134,16 +142,16 @@ class ChooseParametersWindow(Window):
         """
         return self.filename
 
-    def getParameters(self) -> Dict[str, Quantity]:
+    def getParameters(self) -> List[Parameter]:
         """
         Get parameters stored in window.
 
         :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve parameters from
         :returns: Dictionary of parameter info.
             Key is name of parameter.
-            Value is quantity containing value and unit for parameter.
+            Value is parameter object for parameter.
         """
-        return self.quantities
+        return self.parameters
 
     def getParameterRows(self) -> List[ChooseParameterRow]:
         """
@@ -152,8 +160,8 @@ class ChooseParametersWindow(Window):
         :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve rows from
         """
         rows = [
-            ChooseParameterRow(name, quantity, self)
-            for name, quantity in self.getParameters().items()
+            ChooseParameterRow(parameter, self)
+            for parameter in self.getParameters()
         ]
         return rows
 
@@ -240,16 +248,21 @@ class ChooseParametersWindowRunner(WindowRunner):
     This window allows the user to...
         #. Choose which parameter(s) to overwrite into model.
 
+    :ivar getParameters: pointer to :meth:`~Layout.ChooseParametersWindow.ChooseParametersWindow.getParameters`
     """
 
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, *args, **kwargs):
         """
         Constructor for :class:`~Layout.ChooseParametersWindow.ChooseParametersWindowRunner`.
 
-        :param name: name of window
+        :param args: required arguments for :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow`,
+            excluding runner
+        :param kwargs: additional arguments for :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow`
         """
-        window_object = ChooseParametersWindow(name, self, **kwargs)
+        window_object = ChooseParametersWindow(*args, runner=self, **kwargs)
         super().__init__(window_object)
+
+        self.getParameters = window_object.getParameters
 
     def getParameterNames(self) -> List[str]:
         """
@@ -257,10 +270,7 @@ class ChooseParametersWindowRunner(WindowRunner):
 
         :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindowRunner` to retrieve names from
         """
-        # noinspection PyTypeChecker
-        window_object: ChooseParametersWindow = self.getWindowObject()
-        quantites = window_object.getParameters()
-        parameter_names = list(quantites.keys())
+        parameter_names = list(map(Parameter.getName, self.getParameters()))
         return parameter_names
     
     def setChecks(self, names: Union[str, Iterable[str]], overwrite: bool) -> None:

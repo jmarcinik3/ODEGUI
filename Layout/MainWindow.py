@@ -7,13 +7,14 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
+import yaml
 from colour import Color
 from igraph import Graph, plot
 from numpy import ndarray
 from pint import Quantity
 
 from CustomErrors import RecursiveTypeError
-from Function import Derivative, Function, Independent, Model, readFunctions, readParameters
+from Function import Derivative, Function, Independent, Model, generateParameter, readFunctionsFromFiles, readParametersFromFiles
 from Function import Parameter
 from Layout.ChooseGraphLayoutWindow import ChooseGraphLayoutWindowRunner
 from Layout.ChooseParametersWindow import ChooseParametersWindowRunner
@@ -370,7 +371,7 @@ class ParameterRow(TabRow):
         """
         Get parameters for row.
 
-        :param self: `~Layout.MainWindow.ParameterRow` to retrieve parameters from
+        :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve parameters from
         """
         return self.parameters
 
@@ -1375,15 +1376,20 @@ class MainWindowRunner(WindowRunner):
         :param parameter_layout: name of file containing layout for parameter-input tab
         :param function_layout: name of file containing layout for function tab
         """
-        self.custom_param = {}
-        self.stem2name2param = {
-            Path(filepath).stem: readParameters(filepath)
-            for filepath in parameter_filepaths
-        }
-        self.stem2name2func = {
-            Path(filepath).stem: readFunctions(filepath)
-            for filepath in function_filepaths
-        }
+        self.custom_parameters = {}
+        self.stem2path_param = {}
+        self.stem2name2param = {}
+        for filepath in parameter_filepaths:
+            filestem = Path(filepath).stem
+            self.stem2path_param[filestem] = filepath
+            self.stem2name2param[filestem] = readParametersFromFiles(filepath)
+
+        self.stem2path_func = {}
+        self.stem2name2func = {}
+        for filepath in function_filepaths:
+            filestem = Path(filepath).stem
+            self.stem2path_func[filestem] = filepath
+            self.stem2name2func[filestem] = readFunctionsFromFiles(filepath)
 
         blueprints = {
             "time_evolution": readLayout(time_evolution_layout),
@@ -1677,7 +1683,7 @@ class MainWindowRunner(WindowRunner):
             Defaults to all loaded functions.
         """
 
-        def get(name: str) -> str:
+        def get(name: str) -> Function:
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getFunctions`."""
             filestem = self.getChosenFunctionStem(name)
             function = self.stem2name2func[filestem][name]
@@ -1733,6 +1739,35 @@ class MainWindowRunner(WindowRunner):
         }
         return recursiveMethod(**kwargs)
 
+    def getPathsFromParameterStems(self, filestems: str = None) -> str:
+        """
+        Get filepaths for original loaded parameters.
+
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve path from
+        :param filestems: stem(s) of file(s) to retrieve path(s) for
+        """
+
+        def get(filestem: str) -> str:
+            """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getPathsFromParameterStems`"""
+            return self.stem2path_param[filestem]
+
+        kwargs = {
+            "base_method": get,
+            "args": filestems,
+            "valid_input_types": str,
+            "output_type": list,
+            "default_args": self.getParameterStems()
+        }
+        return recursiveMethod(**kwargs)
+
+    def getParameterStems(self) -> List[str]:
+        """
+        Get filestems for original loaded parameters.
+
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve stems from
+        """
+        return list(self.stem2path_param)
+
     def getChosenParameterStem(self, name: str) -> str:
         """
         Get stem of file to load parameter from.
@@ -1767,26 +1802,34 @@ class MainWindowRunner(WindowRunner):
         parameter_type = self.getValue(combobox_key)
         return parameter_type
 
+    def getCustomParameterNames(self) -> List[str]:
+        """
+        Get names of custom parameters stored in window.
+
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve names from
+        """
+        return list(self.custom_parameters.keys())
+
     def getCustomParameterQuantities(
             self, names: Union[str, Iterable[str]] = None
     ) -> Union[Quantity, Dict[str, Quantity]]:
         """
         Get custom value for parameter.
 
-        :param self: `~Layout.MainWindow.MainWindowRunner` to retrieve value from
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve value from
         :param names: name(s) of parameter(s) to retrieve quantity(s) for
         """
 
         def get(name: str) -> str:
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getCustomParameterQuantities`."""
-            return self.custom_param[name]
+            return self.custom_parameters[name].getQuantity()
 
         kwargs = {
             "base_method": get,
             "args": names,
             "valid_input_types": str,
             "output_type": dict,
-            "default_args": list(self.custom_param.keys())
+            "default_args": list(self.custom_parameters.keys())
         }
         return recursiveMethod(**kwargs)
 
@@ -1794,12 +1837,12 @@ class MainWindowRunner(WindowRunner):
         """
         Determine whether or not parameter should use custom value.
 
-        :param self: `~Layout.MainWindow.MainWindowRunner` to retrieve parameter property from
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve parameter property from
         :param name: name of parameter
         :returns: True if parameter is custom.
             False if parameter is not custom.
         """
-        custom_parameter_names = self.custom_param.keys()
+        custom_parameter_names = self.getCustomParameterNames()
         is_custom = name in custom_parameter_names
         return is_custom
 
@@ -1926,23 +1969,72 @@ class MainWindowRunner(WindowRunner):
         }
         return recursiveMethod(**kwargs)
 
-    def setParameter(self, name: str, quantity: Quantity, custom: bool) -> None:
+    def setParameter(self, parameter: Parameter) -> None:
         """
-        Set or overwrite custom parameter quantity stored in window.
+        Set or overwrite parameter stored in window.
 
-        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store quantity in
-        :param name: name of parameter to set/overwrite
-        :param quantity: quantity to set parameter as
-        :param custom: set True to make parameter custom.
-            Set False to make parameter noncustom.
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store parameter in
+        :param parameter: parameter to set/overwrite
         """
-        old_quantity = self.getParameterQuantities(names=name)
-        if isinstance(quantity, type(old_quantity)):
-            self.custom_param[name] = quantity
-            self.setParameterAsCustom(name, custom)
+        filestem = parameter.getStem()
+        if isinstance(filestem, str):
+            self.setParameterWithStem(parameter)
+        else:
+            self.setParameterWithoutStem(parameter)
+
+    def setParameterAsCustom(self, name: str, custom: bool) -> None:
+        """
+        Set whether or not parameter should be treat as a custom parameter.
+
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store parameter in
+        :param name: name of parameter
+        :param custom: set True to treat parameter as custom.
+            Set False otherwise.
+        """
+        checkbox_key = self.getKey("custom_parameter", name)
+        checkbox = self.getElements(checkbox_key)
+        checkbox.update(custom)
+        self.getWindow().write_event_value(checkbox_key, custom)
+
+    def setParameterWithoutStem(self, parameter: Parameter) -> None:
+        """
+        Set parameter without associated filestem.
+
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store parameter in
+        :param parameter: parameter to set/overwrite
+        """
+        name = parameter.getName()
+        print('1cust', name, parameter.getQuantity(), name.__class__)
+        self.custom_parameters[name] = parameter
+        self.setParameterAsCustom(name, True)
+        self.updateParameterLabels(name)
+
+    def setParameterWithStem(self, parameter: Parameter) -> None:
+        """
+        Set parameter from filestem.
+
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve filestem info from
+        :param parameter: parameter to set/overwrite
+        """
+        name = parameter.getName()
+
+        if self.isCustomParameter(name):
+            del self.custom_parameters[name]
+            self.setParameterAsCustom(name, False)
+
+        new_filestem = parameter.getStem()
+
+        combobox_key = self.getKey("parameter_filestem", name)
+        old_filestem = self.getValue(combobox_key)
+        combobox_stem = self.getElements(combobox_key)
+        combobox_stems = vars(combobox_stem)["Values"]
+        if new_filestem in combobox_stems:
+            if old_filestem != new_filestem:
+                combobox_stem.update(new_filestem)
+                self.getWindow().write_event_value(combobox_key, new_filestem)
             self.updateParameterLabels(name)
         else:
-            raise TypeError("new quantity must be same class as old quantity")
+            sg.PopupError(f"Filestem {new_filestem:s} not found for parameter {name:s}")
 
     def getInputParameterValues(self, names: Union[str, Iterable[str]] = None) -> Union[str, Iterable[str]]:
         """
@@ -1972,20 +2064,6 @@ class MainWindowRunner(WindowRunner):
         }
         return recursiveMethod(**kwargs)
 
-    def setParameterAsCustom(self, name: str, custom: bool) -> None:
-        """
-        Visually display whether or not parameter is custom.
-
-        :param self: `~Layout.MainWindow.MainWindowRunner` to display in
-        :param name: name of parameter to display for
-        :param custom: set True to display parameter as custom.
-            Set False to display parameter as noncustom.
-        """
-        checkbox_key = self.getKey("custom_parameter", name)
-        checkbox = self.getElements(checkbox_key)
-        checkbox.update(value=custom)
-        self.getWindow().write_event_value(checkbox_key, custom)
-
     def updateParametersFromStems(self, names: Union[str, Iterable[str]] = None):
         """
         Update parameter quantity(s) stored in window from chosen filestems.
@@ -2002,8 +2080,8 @@ class MainWindowRunner(WindowRunner):
         def update(name: str) -> None:
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.updateParameterFromStems`."""
             filestem = self.getChosenParameterStem(name)
-            quantity = self.getParameterFromStem(name, filestem).getQuantity()
-            self.setParameter(name=name, quantity=quantity, custom=False)
+            parameter = self.getParameterFromStem(name, filestem)
+            self.setParameterWithStem(parameter)
 
         kwargs = {
             "base_method": update,
@@ -2033,7 +2111,8 @@ class MainWindowRunner(WindowRunner):
             if field_value != '':
                 old_unit, new_value = self.getParameterQuantities(names=name, form="unit"), float(field_value)
                 new_quantity = new_value * old_unit
-                self.setParameter(name=name, quantity=new_quantity, custom=True)
+                new_parameter = Parameter(name, new_quantity)
+                self.setParameter(new_parameter)
 
         kwargs = {
             "base_method": update,
@@ -2072,46 +2151,48 @@ class MainWindowRunner(WindowRunner):
         }
         return recursiveMethod(**kwargs)
 
-    def loadParametersFromFile(self, filenames: str = None, choose_parameters: bool = True) -> None:
+    def loadParametersFromFile(self, filepath: str = None, choose_parameters: bool = True) -> None:
         """
-        Load and stored parameter quantities from file.
+        Load and store parameter quantities from file.
         
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store quantities in
-        :param filenames: name(s) of file(s) to load parameters from
+        :param filepath: name of file to load parameters from
         :param choose_parameters: set True to allow user to choose which parameters to actually load.
-            Set False to automatically load all parameters from file(s)
+            Set False to automatically load all parameters from file.
         """
-        if filenames is None:
+        if filepath is None:
             file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
             kwargs = {
                 "message": "Enter Filename to Load",
                 "title": "Load Parameters",
                 "file_types": file_types,
-                "multiple_files": True
+                "multiple_files": False
             }
-            filenames = sg.PopupGetFile(**kwargs)
-            if filenames is None:
+            filepath = sg.PopupGetFile(**kwargs)
+            if filepath is None:
                 return None
-            elif filenames is not None:
-                filenames = filenames.split(';')
-        elif isinstance(filenames, str):
-            filenames = [filenames]
 
-        load_quantities = {
-            name: quantity
-            for filename in filenames
-            for name, quantity in readParameters(filename).items()
-        }
+        info = yaml.load(open(filepath, 'r'), Loader=yaml.Loader)
+        print(info)
+        filestems = self.getParameterStems()
+        loaded_parameters = []
+        for key, value in info.items():
+            if key in filestems:
+                path_from_stem = self.getPathsFromParameterStems(key)
+                loaded_parameters.extend(readParametersFromFiles(path_from_stem).values())
+            else:
+                loaded_parameters.append(generateParameter(key, value))
 
         if choose_parameters:
-            runner = ChooseParametersWindowRunner("Choose Parameters to Load", quantities=load_quantities)
+            runner = ChooseParametersWindowRunner("Choose Parameters to Load", parameters=loaded_parameters)
             parameter_names = runner.getChosenParameters()
         else:
             parameter_names = self.getParameterNames()
 
-        for name, quantity in load_quantities.items():
+        for parameter in loaded_parameters:
+            name = parameter.getName()
             if name in parameter_names:
-                self.setParameter(name=name, quantity=quantity, custom=True)
+                self.setParameter(parameter)
 
     def getFreeParameterValues(self) -> Tuple[str, Dict[str, Tuple[float, float, int, Quantity]]]:
         """
@@ -2197,7 +2278,7 @@ class MainWindowRunner(WindowRunner):
         """
         Open plot showing function-to-argument directional graph.
 
-        :param self: `~Layout.Layout.MainWindowRunner` to retrieve functions from
+        :param self: :class:`~Layout.Layout.MainWindowRunner` to retrieve functions from
         """
         choose_graph_layout_window = ChooseGraphLayoutWindowRunner("Choose Graph Layout")
         event, layout_code = choose_graph_layout_window.getLayoutCode()
