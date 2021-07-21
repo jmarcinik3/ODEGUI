@@ -12,7 +12,11 @@ Current: [BoltzX, gGHK, I,
   gK1f, IK1f, gK1s, IK1s, IK1,
   gA1, IA1, gA2, IA2, aA1, IA]
 
-Hair Bundle: [kr, kgsinf, dxgs, Fgs, Fsp, Fes, S, C, lambdaC, lambdahb, CpT, dxpT, xpT, pTinf, tauT, cX, cCar, cCam]
+Hair Bundle: [kr, kgsinf, dxgs, Fgs,
+    Fsp, Fes, Fm, S, C, Fhb, Fa,
+    lambdaC, lambdahb,
+    CpT, dxpT, xpT, pTinf, tauT,
+    cX, cCar, cCam]
 
 Soma: [alphaDRK, betaDRK, tauDRK]
 

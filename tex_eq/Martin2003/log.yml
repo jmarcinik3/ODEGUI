@@ -4,12 +4,18 @@ C:
 CpT:
   expression: $e^{\frac{\Delta{E}^\varnothing}{T k_B}}$
   filename: CpT.png
+Fa:
+  expression: $- F_{es} + F_{gs}$
+  filename: Fa.png
 Fes:
   expression: $k_{es} \left(x_a - x_{es}\right)$
   filename: Fes.png
 Fgs:
   expression: $\Delta{x_{gs}} k_{gs}$
   filename: Fgs.png
+Fhb:
+  expression: $F_{gs} N \gamma + F_{sp}$
+  filename: Fhb.png
 Fsp:
   expression: $k_{sp} \left(X_{hb} - x_{sp}\right)$
   filename: Fsp.png
@@ -32,7 +38,7 @@ cX:
   expression: $- \frac{I}{2 \pi D F r z}$
   filename: cX.png
 dXhb:
-  expression: $- \frac{F_{gs} N \gamma + F_{sp}}{\lambda_{hb}}$
+  expression: $- \frac{F_{hb}}{\lambda_{hb}}$
   filename: dXhb.png
 dpm:
   expression: $[Ca^{2+}]_m k_m^+ \left(1 - p_m\right) - k_m^- p_m$
@@ -41,7 +47,7 @@ dpr:
   expression: $[Ca^{2+}]_r k_r^+ \left(1 - p_r\right) - k_r^- p_r$
   filename: dpr.png
 dxa:
-  expression: $- C + S \left(- F_{es} + F_{gs}\right)$
+  expression: $- C + F_a S$
   filename: dxa.png
 dxgs:
   expression: $X_{hb} \gamma - d p_T - x_a + x_c$

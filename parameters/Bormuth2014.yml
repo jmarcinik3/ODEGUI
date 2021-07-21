@@ -4,6 +4,9 @@ pT0: # Channel open probability at steady state with no external force
 N: # Number of transduction elements
   value: 50
   unit:
+d: # Reduction of gating-spring extension upon channel opening
+  value: 7
+  unit: nanometer
 dE0: # Intrinsic energy difference between open and closed states of the channels
   value: 40
   unit: zeptojoule
@@ -27,4 +30,11 @@ kestot: # Combined stiffness of extent springs
   unit: millinewton/meter
 Sm: # Ca2+-feedback strength
   value: 0.8
+  unit: dimensionless
+
+C0:
+  value: 0
+  unit: dimensionless
+C1:
+  value: 0
   unit: dimensionless
