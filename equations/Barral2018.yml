@@ -1,27 +1,5 @@
-# Appends Martin2003 (10.1523/jneurosci.23-11-04533.2003)
+# Appends Bormuth2014 (10.1073/pnas.1402556111)
 
-tauT: # MET-channel time constant
-  properties: [Independent]
-  parameters: tauT0
-  children:
-    xpT:
-    dxpT:
-    CpT:
-  form: tauT0 / cosh(xpT/(2*dxpT) - ln(CpT)/2 )
-
-dpT: # MET open-channel probability
-  properties: [Derivative, Independent]
-  variable: pT
-  variables: pT
-  children:
-    pTinf:
-    tauT:
-  form: (pTinf-pT) / tauT
-
-lambdahb:
-  properties: [Independent]
-  parameters: [lambdaH, lambdaC]
-  form: lambdaH + lambdaC
 lambdaC:
   properties: [Independent, Parameter]
   parameters: lambdaC

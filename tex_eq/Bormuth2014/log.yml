@@ -1,3 +1,9 @@
+dpT:
+  expression: $\frac{- p_T + p_T(\infty)}{\tau_T}$
+  filename: dpT.png
+dxa:
+  expression: $\frac{- F_{es} + F_{gs} - Fm}{\lambda_a}$
+  filename: dxa.png
 lambdaC:
   expression: $\frac{N d^{2} \gamma^{2} k_{gs}^{2} p_T \tau_T \left(1 - p_T\right)}{T
     k_B}$
@@ -6,5 +12,6 @@ lambdahb:
   expression: $\lambda_C + \lambda_H$
   filename: lambdahb.png
 tauT:
-  expression: $\tau_T^\varnothing$
+  expression: $\frac{\tau_T^\varnothing}{\cosh{\left(- \frac{\log{\left(C_{p_T} \right)}}{2}
+    + \frac{x_{p_T}}{2 \Delta{x_{p_T}}} \right)}}$
   filename: tauT.png
