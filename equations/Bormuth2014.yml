@@ -1,10 +1,17 @@
-# Appends Barral2018 (10.1016/j.bpj.2017.11.019)
+# Appends Martin2003 (10.1523/jneurosci.23-11-04533.2003)
+
+tauT: # MET-channel time constant
+  properties: [Independent]
+  parameters: tauT0
+  children:
+    xpT:
+    dxpT:
+    CpT:
+  form: tauT0 / cosh(xpT/(2*dxpT) - ln(CpT)/2 )
 
 lambdahb:
   properties: [Independent]
-  parameters: [lambdaH]
-  children:
-    lambdaC:
+  parameters: [lambdaH, lambdaC]
   form: lambdaH + lambdaC
 lambdaC: # MET-channel coefficient of friction
   properties: [Independent]
@@ -15,7 +22,26 @@ lambdaC: # MET-channel coefficient of friction
     tauT:
   form: N * (gamma*kgsinf*d)**2 * pT*(1-pT) * tauT / (kB*T)
 
-tauT: # MET-channel time constant
+Fm:
   properties: [Independent]
-  parameters: tauT0
-  form: tauT0
+  parameters: [Fmmax, Sm]
+  variables: pT
+  form: Fmmax * (1-Sm*pT)
+
+dxa:
+  properties: [Derivative, Independent]
+  variable: xa
+  parameters: lambdaa
+  children:
+    Fgs:
+    Fes:
+    Fm:
+  form: (Fgs-Fes-Fm) / lambdaa
+dpT: # MET open-channel probability
+  properties: [Derivative, Independent]
+  variable: pT
+  variables: pT
+  children:
+    pTinf:
+    tauT:
+  form: (pTinf-pT) / tauT

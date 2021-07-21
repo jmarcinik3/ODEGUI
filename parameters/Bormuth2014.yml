@@ -25,3 +25,6 @@ lambdaa: # Slope of the force-velocity relation of the adaptation motor
 kestot: # Combined stiffness of extent springs
   value: 1.6
   unit: millinewton/meter
+Sm: # Ca2+-feedback strength
+  value: 0.8
+  unit: dimensionless
