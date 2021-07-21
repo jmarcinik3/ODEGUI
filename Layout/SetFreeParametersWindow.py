@@ -143,22 +143,11 @@ class SetFreeParametersWindow(Window):
 
 class SetFreeParametersWindowRunner(WindowRunner):
     def __init__(self, name: str, **kwargs):
-        window = SetFreeParametersWindow(name, self, **kwargs)
-        super().__init__(window)
+        window_object = SetFreeParametersWindow(name, self, **kwargs)
+        super().__init__(window_object)
 
         self.values = None
-
-    def getFreeParameterNames(self, **kwargs) -> List[str]:
-        """
-        Get stored name(s) for free parameter(s).
-        The user may change the values of these parameters during simulation.
-    
-        :param self: :class:`~Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner` to retrieve names from
-        :param kwargs: additional arguments to pass into `~Layout.SetFreeParametersWindow.SetFreeParametersWindow.getFreeParameterNames`
-        """
-        # noinspection PyTypeChecker
-        window_object: SetFreeParametersWindow = self.getWindowObject()
-        return window_object.getFreeParameterNames(**kwargs)
+        self.getFreeParameterNames = window_object.getFreeParameterNames
 
     def getFreeParameterValues(
             self, names: Union[str, Iterable[str]] = None

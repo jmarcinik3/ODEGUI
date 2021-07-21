@@ -4,7 +4,7 @@ import warnings
 from collections.abc import KeysView
 from functools import partial
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Type, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import numpy as np
 import yaml
@@ -48,7 +48,7 @@ class PaperQuantity:
         """
         Get name of object.
 
-        :param self: `~Function.PaperQuantity` to retrieve name from
+        :param self: :class:`~Function.PaperQuantity` to retrieve name from
         :param return_type: return type of output.
             Must be str or Symbol.
         """
@@ -63,7 +63,7 @@ class PaperQuantity:
         """
         Get filestem for file that generated object.
 
-        :param self: `~Function.PaperQuantity` to retrieve filestem from
+        :param self: :class:`~Function.PaperQuantity` to retrieve filestem from
         """
         return self.filestem
 
@@ -71,7 +71,7 @@ class PaperQuantity:
         """
         Get :class:`~Function.Model` that contains object.
 
-        :param self: `~Function.PaperQuantity` to retrieve model from
+        :param self: :class:`~Function.PaperQuantity` to retrieve model from
         """
         return self.model
 
@@ -79,7 +79,7 @@ class PaperQuantity:
         """
         Set :class:`~Function.Model` that contains object.
 
-        :param self: `~Function.PaperQuantity` to set model for
+        :param self: :class:`~Function.PaperQuantity` to set model for
         :param model: model to set for object
         """
         self.model = model
@@ -129,6 +129,18 @@ class Parameter(PaperQuantity):
             if symbol in function_object.getFreeSymbols(species="Parameter", **kwargs)
         ]
         return functions
+
+    def getSaveInfo(self) -> dict:
+        """
+        Get sufficient info from parameter for future recreation.
+
+        :param self: :class:`~Function.Parameter` to retrieve info from
+        """
+        info = {}
+        quantity = self.getQuantity()
+        info["value"] = quantity.magnitude
+        info["unit"] = str(quantity.units)
+        return info
 
 
 class Model:
@@ -331,79 +343,55 @@ class Model:
         for yml in ymls:
             generateParametersFromFile(yml, model=self)
 
-    def saveParametersToFile(self, filename: str) -> None:
+    def saveQuantitiesToFile(self, filename: str, specie: str) -> None:
+        """
+        Save quantity object stored in model into YML file for future retrieval.
+
+        :param self: :class:`~Function.Model` to retrieve parameters from
+        :param filename: name of file to save parameters into
+        :param specie: specie of quantity object to save info for.
+            Must be "Parameter" or "Function".
+        """
+        if specie == "Parameter":
+            quantity_objects: Iterable[Parameter] = self.getParameters()
+        elif specie == "Function":
+            quantity_objects: Iterable[Function] = self.getFunctions()
+        else:
+            raise ValueError("invalid value for specie")
+
+        save_info = {}
+        for quantity_object in quantity_objects:
+            name = quantity_object.getName()
+            filestem = quantity_object.getStem()
+            if isinstance(filestem, str):
+                if filestem not in save_info.keys():
+                    save_info[filestem] = []
+                save_info[filestem].append(name)
+            else:
+                save_info[name] = quantity_object.getSaveInfo()
+
+        file = open(filename, 'w')
+        yaml.dump(save_info, file)
+
+    def saveFunctionsToFile(self, *args, **kwargs) -> None:
+        """
+        Save functions stored in model into YML file for future retrieval.
+
+        :param self: :class:`~Function.Model` to retrieve functions from
+        :param args: required arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
+        :param kwargs: additional arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
+        """
+        self.saveQuantitiesToFile(*args, **kwargs, specie="Function")
+
+    def saveParametersToFile(self, *args, **kwargs) -> None:
         """
         Save parameters stored in model into YML file for future retrieval.
         
         :param self: :class:`~Function.Model` to retrieve parameters from
-        :param filename: name of file to save parameters into
+        :param args: required arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
+        :param kwargs: additional arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
         """
-
-        def getInfo(parameter: Parameter) -> Union[str, Dict[str, Union[float, str]]]:
-            """
-            Get info as dictionary for single parameter.
-
-            :param parameter: parameter to retrieve info from
-            """
-            filestem = parameter.getStem()
-            if filestem is not None:
-                info = filestem
-            else:
-                info = {}
-                quantity = parameter.getQuantity()
-                info["value"] = quantity.magnitude
-                info["unit"] = str(quantity.units)
-            return info
-
-        info = {
-            parameter.getName(): getInfo(parameter)
-            for parameter in self.getParameters()
-        }
-        file = open(filename, 'w')
-        yaml.dump(info, file)
-
-    def saveFunctionsToFile(self, filename: str) -> None:
-        """
-        Save functions stored in model into YML file for future retrieval.
-
-        :param self: `~Function.Model` to retrieve functions from
-        :param filename: name of file to save functions into
-        """
-
-        def getInfo(function_object: Function) -> Dict[str, Union[float, str]]:
-            """
-            Get info as dictionary for single function.
-
-            :param function_object: function to retrieve info from
-            """
-            info = {}
-            info["filestem"] = function_object.getStem()
-
-            for child in function_object.getChildren():
-                if isinstance(child, Dependent):
-                    child: Function
-                    child_name = child.getName()
-                    child_info = {}
-                    instance_arguments = function_object.getInstanceArguments(child_name)
-                    for specie, arguments in instance_arguments.items():
-                        child_info[specie] = list(map(str, arguments))
-                    info[child_name] = child_info
-
-            if isinstance(function_object, NonPiecewise):
-                info["form"] = str(function_object.getExpression(generations=0, substitute_dependents=False))
-            elif isinstance(function_object, Piecewise):
-                info["pieces"] = function_object.getPieces(return_type=str)
-                info["conditions"] = list(map(str, function_object.getConditions()))
-            else:
-                raise TypeError(f"function {function_object.getName():s} must be of type NonPiecewise or Piecewise")
-            return info
-
-        functions_info = {
-            function_object.getName(): function_object.getStem()
-            for function_object in self.getFunctions()
-        }
-        file = open(filename, 'w')
-        yaml.dump(functions_info, file)
+        self.saveQuantitiesToFile(*args, **kwargs, specie="Parameter")
 
     def saveTimeEvolutionTypesToFile(self, filename: str) -> None:
         """
@@ -2043,44 +2031,65 @@ def createModel(function_ymls: Union[str, List[str]], parameter_ymls: Union[str,
     return model
 
 
-def readParameters(filepaths: Union[str, List[str]]) -> Dict[str, Parameter]:
+def readQuantitiesFromFiles(
+        filepaths: Union[str, List[str]], specie: str, names: Iterable[str] = None
+) -> Dict[str, PaperQuantity]:
     """
-    Read file containing information about parameters
+    Read file containing information about paper quantities.
 
     :param filepaths: name(s) of file(s) containing information
-    :returns: Dictionary of parameter quantities.
-        Key is name of parameter.
-        Value is Quantity containg value and unit.
+    :param names: only retrieve quantity objects in this collection of names, acts as filter.
+        Defaults to a retrieve all quantity objects.
+    :param specie: specie of paper quantity that file(s) contains info for.
+        Must be "Parameter" or "Function".
+    :returns: Dictionary of paper quantities.
+        Key is name of paper quantity.
+        Value is quantity object for paper quantity.
     """
+    load_all = names is None
     if isinstance(filepaths, str):
         filepaths = [filepaths]
 
-    parameters = {}
+    if specie == "Parameter":
+        generate = generateParameter
+    elif specie == "Function":
+        generate = generateFunction
+    else:
+        raise ValueError("invalid value for specie")
+
+    quantity_objects = {}
     for filepath in filepaths:
-        parameters = yaml.load(open(filepath, 'r'), Loader=yaml.Loader)
+        objects_info = yaml.load(open(filepath, 'r'), Loader=yaml.Loader)
         filestem = Path(filepath).stem
-        for name, info in parameters.items():
-            parameters[name] = generateParameter(name, info, filestem=filestem)
-    return parameters
+        for name, info in objects_info.items():
+            if load_all or name in names:
+                quantity_objects[name] = generate(name, info, filestem=filestem)
+    return quantity_objects
 
 
-def readFunctions(filepath: Union[str, List[str]]) -> Dict[str, Function]:
+def readParametersFromFiles(*args, **kwargs) -> Dict[str, Parameter]:
     """
-    Read file containing information about parameters
+    Read file containing information about parameters.
 
-    :param filepath: name(s) of file(s) containing information
-    :returns: Dictionary of parameter quantities.
+    :param args: required arguments to pass into :meth:`~Function.readQuantitiesFromFiles`
+    :param kwargs: additional arguments to pass into :meth:`~Function.readQuantitiesFromFiles`
+    :returns: Dictionary of parameter objects.
         Key is name of parameter.
-        Value is Quantity containg value and unit.
+        Value is parameter object for parameter.
     """
+    # noinspection PyTypeChecker
+    return readQuantitiesFromFiles(*args, **kwargs, specie="Parameter")
 
-    if isinstance(filepath, str):
-        filepath = [filepath]
 
-    functions = {}
-    for filepath in filepath:
-        function_info = yaml.load(open(filepath, 'r'), Loader=yaml.Loader)
-        filestem = Path(filepath).stem
-        for name, info in function_info.items():
-            functions[name] = generateFunction(name, info, filestem=filestem)
-    return functions
+def readFunctionsFromFiles(*args, **kwargs) -> Dict[str, Function]:
+    """
+    Read file containing information about parameters.
+
+    :param args: required arguments to pass into :meth:`~Function.readQuantitiesFromFiles`
+    :param kwargs: additional arguments to pass into :meth:`~Function.readQuantitiesFromFiles`
+    :returns: Dictionary of function objects.
+        Key is name of function.
+        Value is function object for function.
+    """
+    # noinspection PyTypeChecker
+    return readQuantitiesFromFiles(*args, **kwargs, specie="Function")
