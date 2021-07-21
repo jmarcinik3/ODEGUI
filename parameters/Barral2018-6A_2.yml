@@ -13,8 +13,8 @@ kgstot: # Combined stiffness of the gating springs
 ksptot: # Combined stiffness of the stereociliary pivots
   value: 0.3
   unit: piconewton/nanometer
-Dgs: # Reduction of gating-spring extension upon channel opening [in direction of hair bundle]
-  value: 60
+d: # Reduction of gating-spring extension upon channel opening [in direction of hair bundle]
+  value: 8.4
   unit: nanometer
 Fmmax: # Maximal motor force
   value: 53

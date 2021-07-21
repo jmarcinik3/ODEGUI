@@ -26,17 +26,23 @@ Fm:
   properties: [Independent]
   parameters: [Fmmax, Sm]
   variables: pT
-  form: Fmmax * (1-Sm*pT)
-
-dxa:
-  properties: [Derivative, Independent]
-  variable: xa
-  parameters: lambdaa
+  form: gamma * Fmmax * (1-Sm*pT)
+Fa:
+  properties: [Independent]
   children:
     Fgs:
     Fes:
     Fm:
-  form: (Fgs-Fes-Fm) / lambdaa
+  form: Fgs - Fes - Fm
+S:
+  properties: [Independent]
+  parameters: lambdaa
+  form: 1 / lambdaa
+C:
+  properties: [Independent]
+  parameters: C1
+  form: C1
+
 dpT: # MET open-channel probability
   properties: [Derivative, Independent]
   variable: pT

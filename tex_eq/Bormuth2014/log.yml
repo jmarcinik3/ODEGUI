@@ -1,8 +1,20 @@
+C:
+  expression: $C(1)$
+  filename: C.png
+Fa:
+  expression: $- F_{es} + F_{gs} - F_m$
+  filename: Fa.png
+Fm:
+  expression: $F_{m,max} \gamma \left(- S_m p_T + 1\right)$
+  filename: Fm.png
+S:
+  expression: $\frac{1}{\lambda_a}$
+  filename: S.png
 dpT:
   expression: $\frac{- p_T + p_T(\infty)}{\tau_T}$
   filename: dpT.png
 dxa:
-  expression: $\frac{- F_{es} + F_{gs} - Fm}{\lambda_a}$
+  expression: $\frac{- F_{es} + F_{gs} - F_m}{\gamma \lambda_a}$
   filename: dxa.png
 lambdaC:
   expression: $\frac{N d^{2} \gamma^{2} k_{gs}^{2} p_T \tau_T \left(1 - p_T\right)}{T

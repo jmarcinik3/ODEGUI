@@ -30,6 +30,21 @@ Fes: # extent spring force
   variables: xa
   parameters: [kes,xes]
   form: kes * (xa-xes)
+
+Fhb: # force on hair bundle
+  properties: [Independent]
+  parameters: [N,gamma]
+  children:
+    Fgs:
+    Fsp:
+  form: N*gamma*Fgs+Fsp
+Fa: # force on adaptation motor
+  properties: [Independent]
+  children:
+    Fgs:
+    Fes:
+  form: Fgs - Fes
+
 S: # adaptation motor slippage
   properties: [Independent]
   variables: pm
@@ -117,21 +132,18 @@ cCam: # Ca2+ concentration at reclosure element
 dXhb: # hair bundle position
   properties: [Derivative, Independent]
   variable: Xhb
-  parameters: [N,gamma]
   children:
     lambdahb:
-    Fgs:
-    Fsp:
-  form: -1/lambdahb * (N*gamma*Fgs+Fsp)
+    Fhb:
+  form: -Fhb / lambdahb
 dxa: # adaptation motor position
   properties: [Derivative, Independent]
   variable: xa
   children:
     C:
     S:
-    Fgs:
-    Fes:
-  form: -C + S*( Fgs - Fes )
+    Fa:
+  form: -C + S*Fa
 dpr: # reclosure-element open-channel probability
   properties: [Derivative, Independent]
   variable: pr

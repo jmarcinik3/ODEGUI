@@ -10,7 +10,7 @@ Refactor:
 
 Hair Bundle:
   Xhb_M2003: [lambdaH, xsp, ksp]
-  Xhb_~M2018: [lambdaC, kgstot, ksptot, kestot, Fmmax, Sm, Dgs]
+  Xhb_~M2018: [lambdaC, kgstot, ksptot, kestot, Fmmax, Sm]
   xa: [S0, S1, C0, C1, lambdaa, xes, kes]
   pm: [rm, kam, kdm]
   pr: [rr, kar, kdr]
