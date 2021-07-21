@@ -1250,6 +1250,7 @@ class MainWindow(TabbedWindow):
                 "Import",
                 [
                     "Parameters::import",
+                    "Functions::import",
                     "Time-Evolution Types::import"
                 ]
             ], [
@@ -1424,6 +1425,8 @@ class MainWindowRunner(WindowRunner):
             if menu_value is not None:
                 if event == "Parameters::import":
                     self.loadParametersFromFile()
+                elif event == "Functions::import":
+                    self.loadFunctionsFromFile()
                 elif "::set_time_evolution_types_to" in event:
                     time_evolution_type = event.replace("::set_time_evolution_types_to", '')
                     self.setElementsWithPrefix("time_evolution_type", time_evolution_type)
@@ -1647,6 +1650,35 @@ class MainWindowRunner(WindowRunner):
         input_field.update(disabled=is_either_equilibrium)
         checkbox.update(disabled=is_equilibrium)
 
+    def getPathsFromFunctionStems(self, filestems: Union[str, Iterable[str]] = None) -> Union[str, List[str]]:
+        """
+        Get filepaths for original loaded functions.
+
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve path from
+        :param filestems: stem(s) of file(s) to retrieve path(s) for
+        """
+
+        def get(filestem: str) -> str:
+            """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getPathsFromFunctionStems`"""
+            return self.stem2path_func[filestem]
+
+        kwargs = {
+            "base_method": get,
+            "args": filestems,
+            "valid_input_types": str,
+            "output_type": list,
+            "default_args": self.getFunctionStems()
+        }
+        return recursiveMethod(**kwargs)
+
+    def getFunctionStems(self) -> List[str]:
+        """
+        Get filestems for original loaded functions.
+
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve stems from
+        """
+        return list(self.stem2path_func.keys())
+
     def getFunctionNames(self, filestem: str = None) -> List[str]:
         """
         Get name(s) of function(s) stored in window.
@@ -1710,7 +1742,54 @@ class MainWindowRunner(WindowRunner):
         filestem = self.getValue(combobox_key)
         return filestem
 
-    def updateFunctionExpressions(self, names: Union[str, Iterable[str]]) -> None:
+    def setFunctions(self, function_objects: Union[Function, Iterable[Function]]) -> None:
+        """
+        Set or overwrite parameter stored in window.
+
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store parameter in
+        :param function_objects: parameter(s) to set/overwrite.
+            Overwrites based on parameter name stored in parameter object.
+        """
+
+        def set(function_object: Function) -> None:
+            """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.setFunctions`"""
+            filestem = function_object.getStem()
+            if isinstance(filestem, str):
+                self.setFunctionWithStem(function_object)
+            else:
+                self.setFunctionWithoutStem(function_object)
+
+        kwargs = {
+            "base_method": set,
+            "args": function_objects,
+            "valid_input_types": Function,
+            "output_type": list
+        }
+        return recursiveMethod(**kwargs)
+
+    def setFunctionWithStem(self, function_object: Function) -> None:
+        """
+        Set function from filestem.
+
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve filestem info from
+        :param function_object: function to set/overwrite
+        """
+        name = function_object.getName()
+        new_filestem = function_object.getStem()
+
+        combobox_key = self.getKey("function_filestem", name)
+        old_filestem = self.getValue(combobox_key)
+        combobox_stem = self.getElements(combobox_key)
+        combobox_stems = vars(combobox_stem)["Values"]
+        if new_filestem in combobox_stems:
+            if old_filestem != new_filestem:
+                combobox_stem.update(new_filestem)
+                self.getWindow().write_event_value(combobox_key, new_filestem)
+            self.updateFunctionExpressions(name)
+        else:
+            sg.PopupError(f"Filestem {new_filestem:s} not found for function {name:s}")
+
+    def updateFunctionExpressions(self, names: Union[str, Iterable[str]] = None) -> None:
         """
         Update function expression from selected file.
 
@@ -1739,7 +1818,7 @@ class MainWindowRunner(WindowRunner):
         }
         return recursiveMethod(**kwargs)
 
-    def getPathsFromParameterStems(self, filestems: str = None) -> str:
+    def getPathsFromParameterStems(self, filestems: Union[str, Iterable[str]] = None) -> Union[str, List[str]]:
         """
         Get filepaths for original loaded parameters.
 
@@ -1766,7 +1845,7 @@ class MainWindowRunner(WindowRunner):
 
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve stems from
         """
-        return list(self.stem2path_param)
+        return list(self.stem2path_param.keys())
 
     def getChosenParameterStem(self, name: str) -> str:
         """
@@ -1969,18 +2048,30 @@ class MainWindowRunner(WindowRunner):
         }
         return recursiveMethod(**kwargs)
 
-    def setParameter(self, parameter: Parameter) -> None:
+    def setParameters(self, parameters: Union[Parameter, Iterable[Parameter]]) -> None:
         """
         Set or overwrite parameter stored in window.
 
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store parameter in
-        :param parameter: parameter to set/overwrite
+        :param parameters: parameter(s) to set/overwrite.
+            Overwrites based on parameter name stored in parameter object.
         """
-        filestem = parameter.getStem()
-        if isinstance(filestem, str):
-            self.setParameterWithStem(parameter)
-        else:
-            self.setParameterWithoutStem(parameter)
+
+        def set(parameter: Parameter) -> None:
+            """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.setParameters`"""
+            filestem = parameter.getStem()
+            if isinstance(filestem, str):
+                self.setParameterWithStem(parameter)
+            else:
+                self.setParameterWithoutStem(parameter)
+
+        kwargs = {
+            "base_method": set,
+            "args": parameters,
+            "valid_input_types": Parameter,
+            "output_type": list
+        }
+        return recursiveMethod(**kwargs)
 
     def setParameterAsCustom(self, name: str, custom: bool) -> None:
         """
@@ -2112,7 +2203,7 @@ class MainWindowRunner(WindowRunner):
                 old_unit, new_value = self.getParameterQuantities(names=name, form="unit"), float(field_value)
                 new_quantity = new_value * old_unit
                 new_parameter = Parameter(name, new_quantity)
-                self.setParameter(new_parameter)
+                self.setParameters(new_parameter)
 
         kwargs = {
             "base_method": update,
@@ -2151,12 +2242,13 @@ class MainWindowRunner(WindowRunner):
         }
         return recursiveMethod(**kwargs)
 
-    def loadParametersFromFile(self, filepath: str = None, choose_parameters: bool = True) -> None:
+    def loadParametersFromFile(self, filepath: str = None, choose_parameters: bool = True) -> List[Parameter]:
         """
         Load and store parameter quantities from file.
         
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store quantities in
-        :param filepath: name of file to load parameters from
+        :param filepath: path of file to load parameters from.
+            Defaults to letting user choose file.
         :param choose_parameters: set True to allow user to choose which parameters to actually load.
             Set False to automatically load all parameters from file.
         """
@@ -2173,7 +2265,6 @@ class MainWindowRunner(WindowRunner):
                 return None
 
         info = yaml.load(open(filepath, 'r'), Loader=yaml.Loader)
-        print(info)
         filestems = self.getParameterStems()
         loaded_parameters = []
         for key, value in info.items():
@@ -2189,10 +2280,61 @@ class MainWindowRunner(WindowRunner):
         else:
             parameter_names = self.getParameterNames()
 
-        for parameter in loaded_parameters:
-            name = parameter.getName()
-            if name in parameter_names:
-                self.setParameter(parameter)
+        chosen_parameters = [
+            parameter
+            for parameter in loaded_parameters
+            if parameter.getName() in parameter_names
+        ]
+
+        for parameter in chosen_parameters:
+            self.setParameters(parameter)
+
+    def loadFunctionsFromFile(self, filepath: str = None, choose_functions: bool = False) -> List[Function]:
+        """
+        Load and store function objects from file.
+
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store objects in
+        :param filepath: path of file to load functions from.
+            Defaults to letting user choose file.
+        :param choose_functions: set True to allow user to choose which functions to actually load.
+            Set False to automatically load all functions from file.
+        """
+        if filepath is None:
+            file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
+            kwargs = {
+                "message": "Enter Filename to Load",
+                "title": "Load Function",
+                "file_types": file_types,
+                "multiple_files": False
+            }
+            filepath = sg.PopupGetFile(**kwargs)
+            if filepath is None:
+                return None
+
+        info = yaml.load(open(filepath, 'r'), Loader=yaml.Loader)
+        filestems = self.getFunctionStems()
+        loaded_functions = []
+        for key, value in info.items():
+            if key in filestems:
+                path_from_stem = self.getPathsFromFunctionStems(key)
+                loaded_functions.extend(readFunctionsFromFiles(path_from_stem).values())
+            else:
+                loaded_functions.append(generateParameter(key, value))
+
+        if choose_functions:
+            runner = ChooseFunctionsWindowRunner("Choose Functions to Load", function_objects=loaded_functions)
+            function_names = runner.getChosenFunctions()
+        else:
+            function_names = self.getFunctionNames()
+
+        chosen_functions = [
+            function_object
+            for function_object in loaded_functions
+            if function_object.getName() in function_names
+        ]
+
+        for function_object in chosen_functions:
+            self.setFunctions(function_object)
 
     def getFreeParameterValues(self) -> Tuple[str, Dict[str, Tuple[float, float, int, Quantity]]]:
         """
