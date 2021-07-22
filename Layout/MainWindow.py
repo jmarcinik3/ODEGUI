@@ -2095,7 +2095,6 @@ class MainWindowRunner(WindowRunner):
         :param parameter: parameter to set/overwrite
         """
         name = parameter.getName()
-        print('1cust', name, parameter.getQuantity(), name.__class__)
         self.custom_parameters[name] = parameter
         self.setParameterAsCustom(name, True)
         self.updateParameterLabels(name)
@@ -2270,7 +2269,8 @@ class MainWindowRunner(WindowRunner):
         for key, value in info.items():
             if key in filestems:
                 path_from_stem = self.getPathsFromParameterStems(key)
-                loaded_parameters.extend(readParametersFromFiles(path_from_stem).values())
+                parameters_from_file = readParametersFromFiles(path_from_stem, names=value).values()
+                loaded_parameters.extend(parameters_from_file)
             else:
                 loaded_parameters.append(generateParameter(key, value))
 
@@ -2317,7 +2317,8 @@ class MainWindowRunner(WindowRunner):
         for key, value in info.items():
             if key in filestems:
                 path_from_stem = self.getPathsFromFunctionStems(key)
-                loaded_functions.extend(readFunctionsFromFiles(path_from_stem).values())
+                functions_from_file = readFunctionsFromFiles(path_from_stem, names=value).values()
+                loaded_functions.extend(functions_from_file)
             else:
                 loaded_functions.append(generateParameter(key, value))
 
@@ -2352,7 +2353,6 @@ class MainWindowRunner(WindowRunner):
         }
         set_free_parameters_window = SetFreeParametersWindowRunner(**kwargs)
         event, free_parameter_values = set_free_parameters_window.runWindow()
-        print(event, free_parameter_values)
         if event == "Submit":
             free_parameter_values = {free_parameter_name: tuple(
                 [*free_parameter_values[free_parameter_name], free_parameter_quantities[free_parameter_name]]
