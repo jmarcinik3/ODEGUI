@@ -1557,6 +1557,7 @@ class SimulationWindow(TabbedWindow):
                 [
                     "Model",
                     [
+                        "Results::Save",
                         "Parameters::Save",
                         "Functions::Save"
                     ],
@@ -1989,7 +1990,6 @@ class SimulationWindowRunner(WindowRunner):
         while True:
             event, self.values = window.read()
             print(event)
-
             if event == sg.WIN_CLOSED or event == 'Exit':
                 break
             menu_value = self.getValue(self.getKey("toolbar_menu"))
@@ -1999,6 +1999,8 @@ class SimulationWindowRunner(WindowRunner):
                     self.saveModelParameters()
                 elif menu_value == "Functions::Save":
                     self.saveModelFunctions()
+                elif menu_value == "Results::Save":
+                    self.saveResults()
                 elif menu_value == "Time-Evolution Types::Save":
                     self.saveModelTimeEvolutionTypes()
                 elif menu_value == "Static::Save Figure":
@@ -2450,6 +2452,23 @@ class SimulationWindowRunner(WindowRunner):
             self.updatePlotChoices(names=self.getAxisNames())
         else:
             raise RecursiveTypeError(names)
+
+    def saveResults(self) -> None:
+        """
+        Save :class:`~Results.Results` stored by simulation into file.
+
+        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve results from
+        """
+        file_types = (("Pickle", ".pkl"),)
+        kwargs = {
+            "message": "Enter Filename",
+            "title": "Save Results",
+            "save_as": True,
+            "file_types": file_types
+        }
+        filename = sg.PopupGetFile(**kwargs)
+        if isinstance(filename, str):
+            self.getResultsObject().saveToFile(filename)
 
     def saveModelParameters(self) -> None:
         """
