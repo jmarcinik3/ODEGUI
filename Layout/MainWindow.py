@@ -18,7 +18,7 @@ from Function import Derivative, Function, Independent, Model, generateParameter
 from Function import Parameter
 from Layout.ChooseGraphLayoutWindow import ChooseGraphLayoutWindowRunner
 from Layout.ChooseParametersWindow import ChooseParametersWindowRunner
-from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabRow, TabbedWindow, WindowRunner, generateCollapsableSection
+from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabRow, TabbedWindow, WindowRunner, generateCollapsableSection, getKey, storeElement
 from Layout.SetFreeParametersWindow import SetFreeParametersWindowRunner
 from Layout.SimulationWindow import SimulationWindowRunner
 from YML import getDimensions, getStates, readLayout, readStates
@@ -58,6 +58,7 @@ class TimeEvolutionVariableRow(TabRow):
             self.getInitialConditionElement(),
             self.getInitialEquilibriumElement()
         ]
+
         # if "Equilibrium" in self.getTimeEvolutionTypes(): elements.append(self.getCheckbox())
         self.addElements(elements)
 
@@ -80,21 +81,6 @@ class TimeEvolutionVariableRow(TabRow):
         tab: TimeEvolutionTab = self.getTab()
         return tab.getTimeEvolutionTypes(self.getName(), **kwargs)
 
-    def getTimeEvolutionTypeElement(self) -> sg.InputCombo:
-        """
-        Get element allowing user to set time-evolution type.
-        
-        :param self: :class:`~Layout.MainWindow.TimeEvolutionVariableRow` to retrieve element from
-        """
-        kwargs = {
-            "values": self.getTimeEvolutionTypes(),
-            "default_value": self.getTimeEvolutionTypes(index=0),
-            "enable_events": True,
-            "size": self.getDimensions(name="evolution_type_combobox"),
-            "key": self.getKey("time_evolution_type", self.getName())
-        }
-        return sg.InputCombo(**kwargs)
-
     def getRowLabel(self) -> Union[sg.Text, sg.Image]:
         """
         Get element to label time-evolution row by variable.
@@ -107,6 +93,23 @@ class TimeEvolutionVariableRow(TabRow):
         }
         return getTexImage(**kwargs)
 
+    @storeElement
+    def getTimeEvolutionTypeElement(self) -> sg.InputCombo:
+        """
+        Get element allowing user to set time-evolution type.
+
+        :param self: :class:`~Layout.MainWindow.TimeEvolutionVariableRow` to retrieve element from
+        """
+        kwargs = {
+            "values": self.getTimeEvolutionTypes(),
+            "default_value": self.getTimeEvolutionTypes(index=0),
+            "enable_events": True,
+            "size": self.getDimensions(name="evolution_type_combobox"),
+            "key": self.getKey("time_evolution_type", self.getName())
+        }
+        return sg.InputCombo(**kwargs)
+
+    @storeElement
     def getInitialConditionElement(self) -> sg.InputText:
         """
         Get element allowing user to input initial value.
@@ -120,6 +123,7 @@ class TimeEvolutionVariableRow(TabRow):
         }
         return sg.InputText(**kwargs)
 
+    @storeElement
     def getInitialEquilibriumElement(self) -> sg.Checkbox:
         """
         Get element allowing user to choose whether or not variable begins simulation in equilibrium.
@@ -402,6 +406,7 @@ class ParameterRow(TabRow):
         else:
             raise TypeError("index must be int")
 
+    @storeElement
     def getCustomCheckbox(self) -> sg.Checkbox:
         """
         Get checkbox allowing user to use custom value for parameter.
@@ -420,6 +425,7 @@ class ParameterRow(TabRow):
         }
         return sg.Checkbox(**kwargs)
 
+    @storeElement
     def getChooseFileElement(self) -> sg.Combo:
         """
         Get element allowing user to choose which file to load parameter from.
@@ -451,6 +457,7 @@ class ParameterRow(TabRow):
         }
         return getTexImage(**kwargs)
 
+    @storeElement
     def getQuantityLabel(self) -> sg.Text:
         """
         Get label to indicate quantity value and unit.
@@ -466,6 +473,7 @@ class ParameterRow(TabRow):
         }
         return sg.Text(**kwargs)
 
+    @storeElement
     def getValueInputElement(self) -> sg.InputText:
         """
         Get field to allow user to set parameter value.
@@ -482,6 +490,7 @@ class ParameterRow(TabRow):
         }
         return sg.InputText(**kwargs)
 
+    @storeElement
     def getParameterTypeElement(self) -> sg.InputCombo:
         """
         Get field to allow user input to set parameter type.
@@ -821,6 +830,7 @@ class FunctionRow(TabRow):
         """
         return self.functions
 
+    @storeElement
     def getChooseFileElement(self) -> sg.Combo:
         """
         Get element allowing user to choose which file to load function.
@@ -840,6 +850,7 @@ class FunctionRow(TabRow):
         }
         return sg.Combo(**kwargs)
 
+    @storeElement
     def getExpressionLabel(self) -> Union[sg.Text, sg.Image]:
         """
         Get element to display expression of function.
@@ -1221,6 +1232,7 @@ class MainWindow(TabbedWindow):
         else:
             return self.blueprint[tab_name]
 
+    @storeElement
     def getMenu(self) -> sg.Menu:
         """
         Get toolbar menu for window.
@@ -1276,6 +1288,7 @@ class MainWindow(TabbedWindow):
         }
         return sg.Menu(**kwargs)
 
+    @storeElement
     def getOpenSimulationButton(self) -> sg.Button:
         """
         Get button to open :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
@@ -1288,6 +1301,7 @@ class MainWindow(TabbedWindow):
         }
         return sg.Button(**kwargs)
 
+    @storeElement
     def getGenerateGraphButton(self) -> sg.Button:
         """
         Get button to generate function-to-argument directional graph.
@@ -1409,7 +1423,9 @@ class MainWindowRunner(WindowRunner):
         # self.getParameterNames = window.getParameterNames
 
     def runWindow(self) -> None:
-        window = self.getWindow()
+        # noinspection PyTypeChecker
+        window_object: MainWindow = self.getWindowObject()
+        window = window_object.getWindow()
         while True:
             event, self.values = window.read()
             print(event)
@@ -1420,7 +1436,7 @@ class MainWindowRunner(WindowRunner):
             ice_pre = self.getPrefix("initial_condition_equilibrium")
             ff_pre = self.getPrefix("function_filestem")
             pf_pre = self.getPrefix("parameter_filestem")
-            menu_value = self.getValue(self.getKey("toolbar_menu"))
+            menu_value = self.getValue(getKey(window_object.getMenu()))
 
             if menu_value is not None:
                 if event == "Parameters::import":
@@ -1429,7 +1445,11 @@ class MainWindowRunner(WindowRunner):
                     self.loadFunctionsFromFile()
                 elif "::set_time_evolution_types_to" in event:
                     time_evolution_type = event.replace("::set_time_evolution_types_to", '')
-                    self.setElementsWithPrefix("time_evolution_type", time_evolution_type)
+                    comboboxes_time_evolution_types = [
+                        row.getTimeEvolutionTypeElement()
+                        for row in TimeEvolutionVariableRow.getInstances()
+                    ]
+                    self.setElementsAsValue(comboboxes_time_evolution_types, time_evolution_type)
                 elif "::set_parameter_types_to" in event:
                     parameter_type = event.replace("::set_parameter_types_to", '')
                     self.setElementsWithPrefix("parameter_type", parameter_type)
@@ -1456,9 +1476,9 @@ class MainWindowRunner(WindowRunner):
                 self.updateParametersFromStems(names=parameter_name)
             elif event == "Update Parameters":
                 self.updateParametersFromFields()
-            elif event == self.getKey("open_simulation"):
+            elif event == getKey(window_object.getOpenSimulationButton()):
                 self.openSimulationWindow()
-            elif event == self.getKey("generate_graph"):
+            elif event == getKey(window_object.getGenerateGraphButton()):
                 self.openFunction2ArgumentGraph()
         window.close()
 
@@ -1500,20 +1520,24 @@ class MainWindowRunner(WindowRunner):
         pre_length = -1
         while pre_length != len(core_function_objects):
             pre_length = len(core_function_objects)
-            children_function_objects = unique([
-                child_function_object
-                for function_object in core_function_objects
-                for child_function_object in function_object.getChildren()
-                if child_function_object not in core_function_objects
-            ])
+            children_function_objects = unique(
+                [
+                    child_function_object
+                    for function_object in core_function_objects
+                    for child_function_object in function_object.getChildren()
+                    if child_function_object not in core_function_objects
+                ]
+            )
             core_function_objects.extend(children_function_objects)
 
         getParameters = partial(Function.getFreeSymbols, generations="all", species="Parameter", return_type=str)
-        core_parameter_names = unique([
-            parameter_name
-            for function_object in core_function_objects
-            for parameter_name in getParameters(function_object)
-        ])
+        core_parameter_names = unique(
+            [
+                parameter_name
+                for function_object in core_function_objects
+                for parameter_name in getParameters(function_object)
+            ]
+        )
         core_parameter_objects = full_model.getParameters(names=core_parameter_names)
 
         core_model = Model(functions=core_function_objects, parameters=core_parameter_objects)
@@ -1522,6 +1546,29 @@ class MainWindowRunner(WindowRunner):
             derivative.setTimeEvolutionType(self.getTimeEvolutionTypes(names=variable_name))
             derivative.setInitialCondition(self.getInitialConditions(names=variable_name))
         return core_model
+
+    def setElementsAsValue(self, elements: Union[sg.Element, Iterable[sg.Element]], value: str) -> None:
+        """
+        Set values for collection of elements.
+
+        :param elements: element(s) to set value for
+        :param value: value to set in element(s)
+        """
+        window = self.getWindow()
+
+        def set(element: sg.Element) -> None:
+            """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.setElementAsValue`"""
+            if value in vars(element)["Values"]:
+                element.update(value)
+                key = getKey(element)
+                window.write_event_value(key, value)
+
+        kwargs = {
+            "args": elements,
+            "base_method": set,
+            "valid_input_types": sg.Element,
+        }
+        return recursiveMethod(**kwargs)
 
     def setElementsWithPrefix(self, prefix: str, value: str) -> None:
         """
@@ -1557,14 +1604,17 @@ class MainWindowRunner(WindowRunner):
 
         def get(name: str) -> Union[float, str]:
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getInitialConditions`."""
-            time_evolution_type = self.getValue(self.getKey("time_evolution_type", name))
+            time_evolution_type_row = TimeEvolutionVariableRow.getInstances(names=name)
+
+            time_evolution_type = self.getValue(getKey(time_evolution_type_row.getTimeEvolutionTypeElement))
             is_equilibrium = time_evolution_type == "Equilibrium"
-            is_initial_equilibrium = self.getValue(self.getKey("initial_condition_equilibrium", name)) or is_equilibrium
+            is_initial_equilibrium_checked = self.getValue(getKey(time_evolution_type_row.getInitialEquilibriumElement))
+            is_initial_equilibrium = is_initial_equilibrium_checked or is_equilibrium
 
             if is_initial_equilibrium:
                 return "Equilibrium"
             else:
-                input_field_key = self.getKey("initial_condition_value", name)
+                input_field_key = getKey(time_evolution_type_row.getInitialConditionElement())
                 try:
                     value = float(self.getValue(input_field_key))
                 except AttributeError:
@@ -1596,7 +1646,7 @@ class MainWindowRunner(WindowRunner):
 
         def get(name: str) -> str:
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getTimeEvolutionTypes`."""
-            key = self.getKey("time_evolution_type", name)
+            key = getKey(TimeEvolutionVariableRow.getInstances(names=name).getTimeEvolutionTypeElement())
             try:
                 return self.getValue(key)
             except AttributeError:
@@ -1637,17 +1687,16 @@ class MainWindowRunner(WindowRunner):
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve elements from
         :param name: name of variable associated with elements
         """
-        time_evolution_type = self.getValue(self.getKey("time_evolution_type", name))
-        is_equilibrium = time_evolution_type == "Equilibrium"
-        input_field_key = self.getKey("initial_condition_value", name)
-        input_field = self.getElements(input_field_key)
+        time_evolution_row = TimeEvolutionVariableRow.getInstances(names=name)
 
-        checkbox_key = self.getKey("initial_condition_equilibrium", name)
-        checkbox = self.getElements(checkbox_key)
-        is_initial_equilibrium = self.getValue(checkbox_key)
+        time_evolution_type = self.getValue(getKey(time_evolution_row.getTimeEvolutionTypeElement()))
+        is_equilibrium = time_evolution_type == "Equilibrium"
+
+        checkbox = time_evolution_row.getInitialEquilibriumElement()
+        is_initial_equilibrium = self.getValue(getKey(checkbox))
 
         is_either_equilibrium = is_equilibrium or is_initial_equilibrium
-        input_field.update(disabled=is_either_equilibrium)
+        time_evolution_row.getInitialConditionElement().update(disabled=is_either_equilibrium)
         checkbox.update(disabled=is_equilibrium)
 
     def getPathsFromFunctionStems(self, filestems: Union[str, Iterable[str]] = None) -> Union[str, List[str]]:
@@ -1738,7 +1787,7 @@ class MainWindowRunner(WindowRunner):
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve filename from
         :param name: name of function to retrieve filename for
         """
-        combobox_key = self.getKey("function_filestem", name)
+        combobox_key = getKey(FunctionRow.getInstances(names=name).getChooseFileElement())
         filestem = self.getValue(combobox_key)
         return filestem
 
@@ -1777,13 +1826,14 @@ class MainWindowRunner(WindowRunner):
         name = function_object.getName()
         new_filestem = function_object.getStem()
 
-        combobox_key = self.getKey("function_filestem", name)
+        combobox_filestem = FunctionRow.getInstances(names=name).getChooseFileElement()
+        combobox_key = getKey(combobox_filestem)
         old_filestem = self.getValue(combobox_key)
-        combobox_stem = self.getElements(combobox_key)
-        combobox_stems = vars(combobox_stem)["Values"]
+        combobox_stems = vars(combobox_filestem)["Values"]
+
         if new_filestem in combobox_stems:
             if old_filestem != new_filestem:
-                combobox_stem.update(new_filestem)
+                combobox_filestem.update(new_filestem)
                 self.getWindow().write_event_value(combobox_key, new_filestem)
             self.updateFunctionExpressions(name)
         else:
@@ -1805,7 +1855,7 @@ class MainWindowRunner(WindowRunner):
             image_filename = '.'.join((name, "png"))
             image_filepath = join(image_folder, image_filename)
             image_data = open(image_filepath, 'rb').read()
-            image_expression = self.getElements(self.getKey("function_expression", name))
+            image_expression = FunctionRow.getInstances(names=name).getExpressionLabel()
             image_size = vars(image_expression)["Size"]
             image_expression.update(data=image_data, size=image_size)
 
@@ -1855,7 +1905,7 @@ class MainWindowRunner(WindowRunner):
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve filestem from
         :param name: name of parameter to retrieve filestem for
         """
-        combobox_key = self.getKey("parameter_filestem", name)
+        combobox_key = getKey(ParameterRow.getInstances(names=name).getChooseFileElement())
         filestem = self.getValue(combobox_key)
         return filestem
 
@@ -1877,7 +1927,7 @@ class MainWindowRunner(WindowRunner):
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve type from
         :param name: name of parameter to retrieve type for
         """
-        combobox_key = self.getKey("parameter_type", name)
+        combobox_key = getKey(ParameterRow.getInstances(names=name).getParameterTypeElement())
         parameter_type = self.getValue(combobox_key)
         return parameter_type
 
@@ -2082,8 +2132,8 @@ class MainWindowRunner(WindowRunner):
         :param custom: set True to treat parameter as custom.
             Set False otherwise.
         """
-        checkbox_key = self.getKey("custom_parameter", name)
-        checkbox = self.getElements(checkbox_key)
+        checkbox = ParameterRow.getInstances(names=name).getCustomCheckbox()
+        checkbox_key = getKey(checkbox)
         checkbox.update(custom)
         self.getWindow().write_event_value(checkbox_key, custom)
 
@@ -2114,13 +2164,13 @@ class MainWindowRunner(WindowRunner):
 
         new_filestem = parameter.getStem()
 
-        combobox_key = self.getKey("parameter_filestem", name)
+        combobox_filestem = ParameterRow.getInstances(names=name).getChooseFileElement()
+        combobox_key = getKey(combobox_filestem)
         old_filestem = self.getValue(combobox_key)
-        combobox_stem = self.getElements(combobox_key)
-        combobox_stems = vars(combobox_stem)["Values"]
+        combobox_stems = vars(combobox_filestem)["Values"]
         if new_filestem in combobox_stems:
             if old_filestem != new_filestem:
-                combobox_stem.update(new_filestem)
+                combobox_filestem.update(new_filestem)
                 self.getWindow().write_event_value(combobox_key, new_filestem)
             self.updateParameterLabels(name)
         else:
@@ -2141,8 +2191,8 @@ class MainWindowRunner(WindowRunner):
 
         def get(name: str) -> str:
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getInputParameterValues`."""
-            key = self.getKey("parameter_field", name)
-            field_value = self.getValue(key)
+            input_field_key = getKey(ParameterRow.getInstances(names=name).getValueInputElement())
+            field_value = self.getValue(input_field_key)
             return field_value
 
         kwargs = {
@@ -2227,8 +2277,7 @@ class MainWindowRunner(WindowRunner):
 
         def update(name: str) -> None:
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.updateParameterLabels`."""
-            label_key = self.getKey("quantity_label", name)
-            label_element = self.getElements(label_key)
+            label_element = ParameterRow.getInstances(names=name).getQuantityLabel()
             new_label = formatQuantity(self.getParameterQuantities(names=name))
             label_element.update(new_label)
 
@@ -2391,7 +2440,7 @@ class MainWindowRunner(WindowRunner):
         derivatives: List[Union[Derivative, Function]] = self.getModel().getDerivatives()
         der2vars = {
             der.getVariable(return_type=str):
-            der.getFreeSymbols(species="Variable", generations="all", return_type=str)
+                der.getFreeSymbols(species="Variable", generations="all", return_type=str)
             for der in derivatives
         }
         variable_names = sorted(der2vars.keys(), key=lambda k: len(der2vars[k]))
