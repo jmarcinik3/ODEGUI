@@ -4,7 +4,7 @@ This modules contains wrapper and containers for PySimpleGUI elements.
 
 from __future__ import annotations
 
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Type, Union
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
@@ -32,6 +32,32 @@ def generateEmptySpace(layout: List[List[sg.Element]]) -> sg.pin:
     :returns: collapsable section of elements.
     """
     return sg.pin(sg.Column(layout, visible=False, expand_x=True), expand_x=True)
+
+
+def storeElement(instantiateElement):
+    def wrapper(self, *args, **kwargs):
+        method_name = instantiateElement.__name__
+        try:
+            self.stored_elements
+        except AttributeError:
+            self.stored_elements = {}
+        try:
+            element = self.stored_elements[method_name]
+        except KeyError:
+            element = instantiateElement(self, *args, **kwargs)
+            self.stored_elements[method_name] = element
+        return element
+
+    return wrapper
+
+
+def getKey(element: sg.Element) -> str:
+    """
+    Get key associated with element.
+
+    :param element: element to retrieve key from
+    """
+    return vars(element)["Key"]
 
 
 class Element:
@@ -240,6 +266,9 @@ class TabRow(Row):
     :class:`~Layout.Layout.Row` contained in :class:`~Layout.Layout.Tab`.
 
     :ivar tab: :class:`~Layout.Layout.Tab` that contains row
+    :ivar instances: dictionary of all :class:`~Layout.Layout.TabRow` by subclass.
+        Key is name of instance.
+        Value is instance of class for name.
     """
 
     def __init__(self, name: str, tab: Tab, **kwargs) -> None:
@@ -253,6 +282,11 @@ class TabRow(Row):
         self.tab = tab
         super().__init__(name, window=tab.getWindowObject(), **kwargs)
 
+        sub_class = self.__class__
+        if not hasattr(sub_class, "instances"):
+            sub_class.instances = {}
+        sub_class.instances[name] = self
+
     def getTab(self):
         """
         Get :class:`~Layout.Layout.Tab` that contains row.
@@ -260,6 +294,27 @@ class TabRow(Row):
         :param self: :class:`~Layout.Layout.TabRow` to retrieve tab from
         """
         return self.tab
+
+    @classmethod
+    def getInstances(cls: Type[TabRow], names: str = None) -> Union[TabRow, List[TabRow]]:
+        """
+        Get row object in subclass of :class:`~Layout.Layout.TabRow`.
+
+        :param names: name(s) of row(s) to retrieve from :class:`~Layout.Layout.TabRow`
+        """
+
+        def get(name: str):
+            """Base method for :meth:`~Layout.Layout.TabRow.getInstance`"""
+            return cls.instances[name]
+
+        kwargs = {
+            "args": names,
+            "base_method": get,
+            "valid_input_types": str,
+            "output_type": list,
+            "default_args": cls.instances.keys()
+        }
+        return recursiveMethod(**kwargs)
 
 
 class Tab:
@@ -327,7 +382,10 @@ class TabGroup:
     """
 
     def __init__(
-            self, tabs: Union[Union[sg.Tab, Tab], Iterable[Union[sg.Tab, Tab]]], name: str = None, suffix_layout: Layout = None
+            self,
+            tabs: Union[Union[sg.Tab, Tab], Iterable[Union[sg.Tab, Tab]]],
+            name: str = None,
+            suffix_layout: Layout = None
     ) -> None:
         """
         Constructor for :class:`~Layout.Layout.Tabgroup`.
@@ -484,6 +542,7 @@ class Window:
         else:
             raise TypeError("column must be str")
 
+    @storeElement
     def getWindow(self) -> sg.Window:
         """
         Get PySimpleGUI Window for window.
@@ -590,9 +649,7 @@ class WindowRunner:
 
         :param self: :class:`~Layout.Layout.WindowRunner` to retrieve window from
         """
-        if self.window is None:
-            self.window = self.getWindowObject().getWindow()
-        return self.window
+        return self.getWindowObject().getWindow()
 
     def getWindowObject(self) -> Window:
         """
