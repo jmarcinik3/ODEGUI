@@ -1,5 +1,7 @@
+import pickle
 from typing import Dict, List, Tuple, Union
 
+import dill
 import numpy as np
 from numpy import ndarray
 from scipy import fft, signal
@@ -49,7 +51,7 @@ class Results:
 
     def getModel(self) -> Model:
         """
-        Get associated :class:`Function.Model`.
+        Get associated :class:`~Function.Model`.
         
         :param self: :class:`~Results.Results` to retrieve associated :class:`~Function.Model` from
         """
@@ -509,7 +511,11 @@ class Results:
             raise TypeError("names input must be str or list")
 
     def getResultsOverTimePerParameter(
-            self, index: Union[tuple, Tuple[int]], parameter_name: str, quantity_names: Union[str, List[str]], **kwargs
+            self,
+            index: Union[tuple, Tuple[int]],
+            parameter_name: str,
+            quantity_names: Union[str, List[str]],
+            **kwargs
     ) -> Tuple[ndarray, ...]:
         """
         Get free-parameter values and "averaged" quantity values.
@@ -565,3 +571,31 @@ class Results:
             self.results[index][name] = results
         elif name is None:
             self.results[index] = results
+
+    def saveToFile(self, filename: str) -> None:
+        """
+        Save results object (self) into file.
+
+        :param self: :class:`~Results.Results` to save into file
+        :param filename: name of file to save object into
+        """
+        file = open(filename, 'wb')
+        model = self.getModel()
+        save_info = {
+            "results": self.results,
+            "free_parameter_values": self.getFreeParameterValues(),
+            "model_parameters": {
+                parameter.getName(): parameter.getQuantity()
+                for parameter in model.getParameters()
+            },
+            "model_functions": {
+                function_object.getName():
+                    (
+                        function_object.getExpression(),
+                        function_object.getFreeSymbols(),
+                        function_object.instance_arguments
+                    )
+                for function_object in model.getFunctions()
+            }
+        }
+        dill.dump(save_info, file)
