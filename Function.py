@@ -44,6 +44,7 @@ class PaperQuantity:
         self.filestem = filestem
         self.model = model
 
+
     def getName(self, return_type: Type[Union[str, Symbol]] = str) -> str:
         """
         Get name of object.
@@ -1147,7 +1148,6 @@ class Function(Child, Parent, PaperQuantity):
             "expression": Expr
         }
         self.is_parameter = "Parameter" in properties
-        self.setModel(model)
 
     @staticmethod
     def setUseMemory(use: bool) -> None:
@@ -1748,62 +1748,36 @@ def FunctionMaster(
         **kwargs
 ) -> Function:
     """
-    Get Function object with desired properties/inheritance.
-    
-    :ivar name: name of function
-    :ivar function: symbolic expression for function
-        if :class:`~Function.NonPiecewise`.
-        Symbols for pieces
-        if :class:`~Function.Piecewise`.
-    :ivar inheritance: classes for Function object to inherit
-    :ivar kwargs: arguments to pass into inheritance classes.
+    Generate function object with desired inheritance and properties.
+
+    :param name: name of function
+    :param expression: symbol expression/pieces for function
+    :param inheritance: classes for Function object to inherit
+    :param kwargs: arguments to pass into inheritance classes.
         Key is string name of class.
         Value is dictionary of arguments/parameters to pass into class.
+    :returns: Generated function object
     """
+    self = type("FunctionCore", (Function, *inheritance), {})(name, **kwargs)
 
-    class FunctionCore(Function, *inheritance):
-        """
-        Stores info pertinent to generate/simulate function.
-        """
+    if Derivative in inheritance:
+        Derivative.__init__(self, **kwargs["Derivative"])
 
-        # noinspection PyShadowingNames
-        def __init__(
-                self,
-                name: str,
-                expression: Union[Expr, List[Function]],
-                inheritance: Tuple[Type[Union[Derivative, Dependent, Independent, Piecewise, NonPiecewise]]] = (),
-                **kwargs
-        ) -> None:
-            """
-            Constructor for :class:`~Function.FunctionMaster.FunctionCore`.
-            
-            :param name: name of function
-            :param expression: symbol expression/pieces for function
-            :param inheritance: classes for Function object to inherit
-            :param kwargs: arguments to pass into inheritance classes.
-                Key is string name of class.
-                Value is dictionary of arguments/parameters to pass into class.
-            """
-            if Derivative in inheritance:
-                Derivative.__init__(self, **kwargs["Derivative"])
+    if Dependent in inheritance:
+        Dependent.__init__(self, **kwargs["Dependent"])
+    elif Independent in inheritance:
+        Independent.__init__(self)
+    else:
+        raise ValueError("Function must inherit either Dependent or Independent")
 
-            if Dependent in inheritance:
-                Dependent.__init__(self, **kwargs["Dependent"])
-            elif Independent in inheritance:
-                Independent.__init__(self)
-            else:
-                raise ValueError("Function must inherit either Dependent or Independent")
+    if Piecewise in inheritance:
+        Piecewise.__init__(self, expression, **kwargs["Piecewise"])
+    elif NonPiecewise in inheritance:
+        NonPiecewise.__init__(self, expression)
+    else:
+        raise ValueError("Function must inherit either Piecewise of NonPiecewise")
 
-            if Piecewise in inheritance:
-                Piecewise.__init__(self, expression, **kwargs["Piecewise"])
-            elif NonPiecewise in inheritance:
-                NonPiecewise.__init__(self, expression)
-            else:
-                raise ValueError("Function must inherit either Piecewise of NonPiecewise")
-
-            Function.__init__(self, name, **kwargs)
-
-    return FunctionCore(name, expression, inheritance, **kwargs)
+    return self
 
 
 def getFunctionInfo(info: dict, model: Model = None) -> dict:

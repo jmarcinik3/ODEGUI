@@ -343,7 +343,13 @@ def recursiveMethod(
         else:
             raise ValueError("invalid output type specified")
     elif args is None:
-        partialGet = partial(recursiveMethod, base_method=base_method, valid_input_types=valid_input_types, output_type=output_type)
+        partialGet = partial(
+            recursiveMethod,
+            base_method=base_method,
+            valid_input_types=valid_input_types,
+            output_type=output_type
+        )
         return partialGet(args=default_args)
     else:
         raise TypeError("invalid type for args")
+
