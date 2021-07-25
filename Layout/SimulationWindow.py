@@ -2505,6 +2505,23 @@ class SimulationWindowRunner(WindowRunner):
         if isinstance(filename, str):
             self.getResultsObject().saveToFile(filename)
 
+    def saveResults(self) -> None:
+        """
+        Save :class:`~Results.Results` stored by simulation into file.
+
+        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve results from
+        """
+        file_types = (("Pickle", ".pkl"),)
+        kwargs = {
+            "message": "Enter Filename",
+            "title": "Save Results",
+            "save_as": True,
+            "file_types": file_types
+        }
+        filename = sg.PopupGetFile(**kwargs)
+        if isinstance(filename, str):
+            self.getResultsObject().saveToFile(filename)
+
     def saveModelParameters(self) -> None:
         """
         Save parameter values from model into file.
