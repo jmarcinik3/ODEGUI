@@ -330,7 +330,7 @@ class ParameterRow(TabRow, StoredObject):
             name: str,
             section: ParameterSection,
             parameters: List[Parameter],
-            parameter_types: Tuple[str] = ("Constant", "Free")
+            parameter_types: Tuple[str] = p_types
     ) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.ParameterRow`.
@@ -747,7 +747,11 @@ class FunctionRow(TabRow, StoredObject):
         #. Label for name of function
         #. Label for expression of function
         #. Combobox to choose filestem to load function from
+
+    :ivar functions: :class:`~Function.Function`s displayed by row
     """
+
+    image_folder = "tex_eq"
 
     def __init__(self, name: str, tab: FunctionTab, functions: List[Function]) -> None:
         """
@@ -762,7 +766,6 @@ class FunctionRow(TabRow, StoredObject):
         TabRow.__init__(self, name, tab)
         StoredObject.__init__(self, name)
 
-        self.image_folder = "tex_eq"
         self.functions = functions
 
         # noinspection PyTypeChecker
@@ -776,14 +779,15 @@ class FunctionRow(TabRow, StoredObject):
         ]
         self.addElements(elements)
 
-    def getImageFoldername(self, filestem: str) -> str:
+    @staticmethod
+    def getImageFoldername(filestem: str) -> str:
         """
         Get folderpath to save or load image from.
 
         :param self: :class:`~Layout.MainWindow.FunctionRow` to retrieve folderpath from
         :param filestem: stem of file to retrieve folderpath for
         """
-        top_folder = self.image_folder
+        top_folder = FunctionRow.image_folder
         folderpath = join(top_folder, filestem)
         return folderpath
 
@@ -1011,6 +1015,19 @@ class MainWindow(TabbedWindow):
     This contains
         #. :class:`~Layout.MainWindow.TimeEvolutionTabGroup` to allow user to set time-evolution for each variable
         #. :class:`~Layout.MainWindow.ParameterTabGroup` to allow user to set properties for each parameter
+
+    :ivar stem2name2param: 2-level dictionary.
+        First key is filestems for parameter files.
+        Second key is name of parameter.
+        Value is :class:`~Function.Parameter`.
+    :ivar stem2name2func: 2-level dictionary.
+        First key is filestem for function files.
+        Second key is name of function.
+        Value is :class:`~Function.Function`.
+    :ivar variable_names: names of variable included in window
+    :ivar parameter_names: names of parameters included in window
+    :ivar function_names: names of function icnluded in window
+    :ivar blueprint: dictionary indiciated how to set up elements in window
     """
 
     def __init__(
@@ -1085,12 +1102,12 @@ class MainWindow(TabbedWindow):
         }
         super().__init__(name, runner, dimensions=dimensions)
 
-        self.stem2name2func = stem2name2obj["functions"]
         self.stem2name2param = stem2name2obj["parameters"]
+        self.stem2name2func = stem2name2obj["functions"]
 
         self.variable_names = []
-        self.function_names = []
         self.parameter_names = []
+        self.function_names = []
         self.blueprint = blueprint
 
         tabs = [
@@ -1379,10 +1396,21 @@ class MainWindowRunner(WindowRunner):
     """
     Runner for :class:`~Layout.MainWindow.MainWindow`.
 
-    :ivar function_ymls: filename(s) of YML files, containing info about functions for model
-    :ivar parameters: dictionary of parameter quantities.
-        Key is name of parameter.
-        Value is quantity containing value and unit for parameter.
+    :ivar custom_parameters: dictionary of custom parameters.
+        Key is name for parameter.
+        Value is custom-set value and unit for parameter.
+    :ivar stem2path_param: dictionary from filestems to filepaths for files with parameters.
+    :ivar stem2path_func: dictionary from filestems to filepaths for files with functions.
+    :ivar stem2name2param: 2-level dictionary.
+        First key is filestems for parameter files.
+        Second key is name of parameter.
+        Value is :class:`~Function.Parameter`.
+    :ivar stem2name2func: 2-level dictionary.
+        First key is filestem for function files.
+        Second key is name of function.
+        Value is :class:`~Function.Function`.
+    :ivar getVariableNames: pointer to :meth:`~Layout.MainWindow.MainWindow.getVariableNames`
+    :ivar getFunctionNames: pointer to :meth:`~Layout.MainWindow.MainWindow.getFunctionNames`
     """
 
     def __init__(
@@ -1433,7 +1461,6 @@ class MainWindowRunner(WindowRunner):
 
         self.getVariableNames = window.getVariableNames
         self.getFunctionNames = window.getFunctionNames
-        # self.getParameterNames = window.getParameterNames
 
     def runWindow(self) -> None:
         # noinspection PyTypeChecker

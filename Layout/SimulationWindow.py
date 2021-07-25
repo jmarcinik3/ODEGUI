@@ -958,6 +958,8 @@ class PlottingTab(Tab):
         #. Combobox to input quantity species for each axis
         #. Combobox to input quantity for each axis
         #. Combobox to input transform type for each axis
+
+    :ivar getPlotChoices: pointer to :meth:`~Layout.SimulationWindow.SimulationWindow.getPlotChoices`
     """
 
     def __init__(self, name: str, window: SimulationWindow) -> None:
@@ -1689,13 +1691,17 @@ class SimulationWindowRunner(WindowRunner):
         #. Choose which value of free parameters to assume for present plot
     
     :ivar values: present values for all elements in window
-        Second index is name of variable/function that the result is stored for.
     :ivar figure_canvas: object storing (1) canvas on which figure is plotted and (2) figure containing plot data
     :ivar model: :class:`~Function.Model` to simulate
-    :ivar results: object to store results from most recent simulation.
-        This attribute greatly speeds up grabbing previously-calculated results.
     :ivar general_derivative_vector: partially-simplified, symbolic derivative vector.
         Simplified as much as possible, except leave free parameters and variables as symbolic.
+    :ivar results: object to store results from most recent simulation.
+        This attribute greatly speeds up grabbing previously-calculated results.
+
+    :ivar getPlotChoices: pointer to :meth:`~Layout.SimulationWindow.SimulationWindow.getPlotChoices`
+    :ivar getFreeParameterNames: pointer to :meth:`~Layout.SimulationWindow.SimulationWindow.getFreeParameterNames`
+    :ivar resetResults: pointer to :meth:`~Results.Results.resetResults`
+    :ivar setResults: pointer to :meth:`~Results.Results.setResults`
     """
 
     def __init__(self, name: str, model: Model, **kwargs) -> None:
