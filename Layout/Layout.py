@@ -597,21 +597,36 @@ class TabbedWindow(Window):
         }
         return recursiveMethod(**kwargs)
 
-    def getTabs(self) -> List[sg.Tab]:
+    def getTabs(self, names: Union[str, Iterable[str]] = None) -> List[sg.Tab]:
         """
         Get tabs contained in window as PySimpleGUI Tab.
 
         :param self: :class:`~Layout.Layout.TabbedWindow` to retrieve tabs from
+        :param names: name(s) of tab(s) to retrieve.
+            Defaults to all tabs.
         """
-        tabs = []
-        for tab in self.tabs:
-            if isinstance(tab, Tab):
-                tabs.append(tab.getTab())
-            elif isinstance(tab, sg.Tab):
-                tabs.append(tab)
-            else:
-                raise TypeError("tab must be Tab or sg.Tab")
-        return tabs
+
+        if names is None:
+            return self.tabs
+
+        def get(name: str):
+            """Base method for :meth:`~Layout.Layout.TabbedWindow.getTabs`"""
+            for tab in self.tabs:
+                if isinstance(tab, Tab):
+                    if tab.getName() == name:
+                        return tab
+                elif isinstance(tab, sg.Tab):
+                    if vars(tab)["Title"] == name:
+                        return tab
+            raise ValueError(f"tab {name:s} not found in {self.__class__.__name__:s}")
+
+        kwargs = {
+            "args": names,
+            "base_method": get,
+            "valid_input_types": str,
+            "output_type": list
+        }
+        return recursiveMethod(**kwargs)
 
 
 class WindowRunner:
@@ -658,18 +673,21 @@ class WindowRunner:
         """
         return self.window_object
 
-    def getValue(self, key: str) -> Union[str, float]:
+    def getValue(self, key: str, combo_error: bool = True) -> Union[str, float]:
         """
         Get value of element at most recent event.
 
         :param self: :class:`~Layout.Layout.WindowRunner` to retrieve value from
         :param key: key for element
+        :param combo_error: display popup error message if combobox value is not in default values.
+            Set True to display message.
+            Set False otherwise.
+            Only called if element is sg.InputCombo.
         """
         element = self.getElements(key)
         value = self.values[key]
         if isinstance(element, sg.InputCombo):
-            if value not in element.Values:
-                print('pass1', value, vars(element)["Values"])
+            if combo_error and value not in element.Values:
                 sg.PopupError(f"{value:s} not found in combobox ({key:s})")
         return value
 

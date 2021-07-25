@@ -111,7 +111,6 @@ class ChooseGraphLayoutWindowRunner(WindowRunner):
 
             if event == "Submit":
                 layout_code = self.getChosenLayoutCode()
-                print(layout_code)
                 if layout_code is not None:
                     window.close()
                     return event, layout_code

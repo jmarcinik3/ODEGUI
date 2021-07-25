@@ -39,6 +39,7 @@ cc_pre = "CANVAS CHOICE"
 ccs_pre = ' '.join((cc_pre, "SPECIE"))
 fps_pre = "FREE_PARAMETER SLIDER"
 
+
 def drawFigure(canvas: tk.Canvas, figure: Figure) -> FigureCanvasTkAgg:
     """
     Draw figure on canvas.
@@ -421,7 +422,7 @@ class ParameterSlider(Element, StoredObject):
         return layout.getLayout()
 
 
-class SimulationTab(Tab, StoredObject):
+class SimulationTab(Tab):
     """
     This class contains the layout for the simulation tab in the simulation window.
         #. Input fields to set time steps. This allows the user to set the minimum, maximum, and number of steps for time in the simulation.
@@ -435,8 +436,7 @@ class SimulationTab(Tab, StoredObject):
         :param name: name of tab
         :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab is stored in.
         """
-        Tab.__init__(self, name, window)
-        StoredObject.__init__(self, name)
+        super().__init__(name, window)
 
     @storeElement
     def getInitialTimeInputElement(self) -> sg.InputText:
@@ -969,16 +969,7 @@ class PlottingTab(Tab):
         """
         super().__init__(name, window)
 
-    def getPlotChoices(self, **kwargs) -> List[str]:
-        """
-        Get stored names for quantities that user may choose to plot.
-
-        :param self: :class:`~Layout.SimulationWindow.PlottingTab` to retrieve choices from
-        :param kwargs: additional arguments to pass into :meth:`~Layout.SimulationWindow.SimulationWindow.getPlotChoices`
-        """
-        # noinspection PyTypeChecker
-        window: SimulationWindow = self.getWindowObject()
-        return window.getPlotChoices(**kwargs)
+        self.getPlotChoices = window.getPlotChoices
 
     def getHeaderRows(self) -> List[Row]:
         """
@@ -1008,6 +999,7 @@ class PlottingTab(Tab):
         rows[1].addElements(sg.Text(**kwargs))
         return rows
 
+    @storeElement
     def getTransformElement(self) -> sg.InputCombo:
         """
         Get element to take user input for tranform.
@@ -1022,10 +1014,11 @@ class PlottingTab(Tab):
             "tooltip": "Choose transform to perform on plot quantities",
             "enable_events": True,
             "size": self.getDimensions(name="transform_type_combobox"),
-            "key": self.getKey("canvas_choice", "transform")
+            "key": f"{cc_pre:s} TRANSFORM"
         }
         return sg.InputCombo(**kwargs)
 
+    @storeElement
     def getAxisCondensorElement(self, name: str) -> sg.InputCombo:
         """
         Get element to take user input for an axis condensor.
@@ -1041,10 +1034,11 @@ class PlottingTab(Tab):
             "tooltip": f"Choose condensor for quantity on {name:s}-axis of plot",
             "enable_events": True,
             "size": self.getDimensions(name="axis_condensor_combobox"),
-            "key": self.getKey("canvas_choice", f"{name:s}_axis_condensor")
+            "key": f"-{cc_pre:s} CONDENSOR {name.upper():s}_AXIS-"
         }
         return sg.InputCombo(**kwargs)
 
+    @storeElement
     def getAxisQuantityElement(self, name: str, **kwargs) -> sg.InputCombo:
         """
         Get element to take user input for an axis quantity.
@@ -1058,18 +1052,18 @@ class PlottingTab(Tab):
             "tooltip": f"Choose quantity to display on {name:s}-axis of plot",
             "enable_events": True,
             "size": self.getDimensions(name="axis_quantity_combobox"),
-            "key": self.getKey("canvas_choice", f"{name:s}_axis_quantity")
+            "key": f"-{cc_pre:s} QUANTITY {name.upper():s}_AXIS-"
         }
+        sg_kwargs.update(kwargs)
 
-        for key, value in kwargs.items():
-            sg_kwargs[key] = value
         if "values" not in sg_kwargs:
             sg_kwargs["values"] = self.getPlotChoices(species="Variable")
         if "default_value" not in sg_kwargs:
             sg_kwargs["default_value"] = sg_kwargs["values"][0]
+        elem = sg.InputCombo(**sg_kwargs)
+        return elem
 
-        return sg.InputCombo(**sg_kwargs)
-
+    @storeElement
     def getAxisQuantitySpeciesElement(self, name: str, include_none: bool = False) -> sg.InputCombo:
         """
         Get element to take user input for an axis quantity type.
@@ -1092,7 +1086,7 @@ class PlottingTab(Tab):
             "tooltip": f"Choose quantity type to display on {name:s}-axis of plot",
             "enable_events": True,
             "size": self.getDimensions(name="axis_quantity_species_combobox"),
-            "key": self.getKey("canvas_choice", f"{name:s}_axis_quantity_specie")
+            "key": f"-{ccs_pre:s} {name.upper():s}_AXIS-"
         }
         return sg.InputCombo(**kwargs)
 
@@ -1507,9 +1501,16 @@ class SimulationWindow(TabbedWindow):
         self.plot_choices = plot_choices
         self.free_parameter_values = free_parameter_values
 
-        self.addTabs(SimulationTab("Simulation", self))
+        simulation_tab_name = "Simulation"
+        plotting_tab_name = "Plotting"
+        simulation_tab = SimulationTab(simulation_tab_name, self)
+        plotting_tab = PlottingTab(plotting_tab_name, self)
+        self.getSimulationTab = partial(self.getTabs, names=simulation_tab_name)
+        self.getPlottingTab = partial(self.getTabs, names=plotting_tab_name)
+
+        self.addTabs(simulation_tab)
         self.addTabs(AestheticsTabGroup("Aesthetics", self).getAsTab())
-        self.addTabs(PlottingTab("Plotting", self))
+        self.addTabs(plotting_tab)
         self.addTabs(AnalysisTabGroup("Analysis", self).getAsTab())
 
     def getFreeParameterNames(self, indicies: Union[int, List[int]] = None) -> Union[str, List[str]]:
@@ -1838,30 +1839,35 @@ class SimulationWindowRunner(WindowRunner):
         else:
             raise ValueError("like must be 'timelike' or 'parameterlike'")
 
-    def getAxisQuantity(self, name: str) -> Tuple[str, str, str]:
+    def getAxisQuantity(self, axis_name: str) -> Tuple[str, str, str]:
         """
         Get selected quantity name, specie, and condensor for desired axis.
         
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve quantity name from
-        :param name: name axis to retrieve quantity name from
+        :param axis_name: name of axis to retrieve quantity name from
         :returns: Tuple of quantity info.
             First index gives quantity name.
             Second index gives quantity type.
             Third index gives condensor name.
         """
-        quantity_name_key = self.getKey("canvas_choice", f"{name:s}_axis_quantity")
-        quantity_name = self.getComboboxValue(quantity_name_key)
 
-        quantity_specie_key = self.getKey("canvas_choice", f"{name:s}_axis_quantity_specie")
-        quantity_specie = self.getComboboxValue(quantity_specie_key)
+        # noinspection PyTypeChecker
+        window_object: SimulationWindow = self.getWindowObject()
+        # noinspection PyTypeChecker
+        plotting_tab: PlottingTab = window_object.getPlottingTab()
 
-        quantity_condensor_key = self.getKey("canvas_choice", f"{name:s}_axis_condensor")
+        quantity_name_key = getKeys(plotting_tab.getAxisQuantityElement(axis_name))
+        quantity_name = self.getValue(quantity_name_key)
+        specie_key = getKeys(plotting_tab.getAxisQuantitySpeciesElement(axis_name))
+        specie = self.getValue(specie_key)
+
+        condensor_key = getKeys(plotting_tab.getAxisCondensorElement(axis_name))
         try:
-            quantity_condensor = self.getComboboxValue(quantity_condensor_key)
+            condensor = self.getValue(condensor_key)
         except KeyError:
-            quantity_condensor = "None"
+            condensor = "None"
 
-        quantity = (quantity_name, quantity_specie, quantity_condensor)
+        quantity = (quantity_name, specie, condensor)
         return quantity
 
     def getFrequencyMethod(self) -> str:
@@ -1915,7 +1921,10 @@ class SimulationWindowRunner(WindowRunner):
             Third element is number of time steps for simulation.
         """
         # noinspection PyTypeChecker
-        simulation_tab_object: SimulationTab = SimulationTab.getInstances()[0]
+        window_object: SimulationWindow = self.getWindowObject()
+        # noinspection PyTypeChecker
+        simulation_tab_object: SimulationTab = window_object.getSimulationTab()
+
         initial_time_key = getKeys(simulation_tab_object.getInitialTimeInputElement())
         final_time_key = getKeys(simulation_tab_object.getFinalTimeInputElement())
         timestep_count_key = getKeys(simulation_tab_object.getTimeStepCountInputElement())
@@ -1985,7 +1994,7 @@ class SimulationWindowRunner(WindowRunner):
         window = window_object.getWindow()
 
         # noinspection PyTypeChecker
-        simulation_tab_object: SimulationTab = SimulationTab.getInstances()[0]
+        simulation_tab_object: SimulationTab = window_object.getSimulationTab()
         run_simulation_key = getKeys(simulation_tab_object.getRunButton())
 
         toolbar_menu_key = getKeys(window_object.getMenu())
@@ -1996,7 +2005,7 @@ class SimulationWindowRunner(WindowRunner):
             print(event)
             if event == sg.WIN_CLOSED or event == 'Exit':
                 break
-            menu_value = self.getValue(self.getKey("toolbar_menu"))
+            menu_value = self.getValue(toolbar_menu_key)
 
             if menu_value is not None:
                 if menu_value == "Parameters::Save":
@@ -2016,10 +2025,12 @@ class SimulationWindowRunner(WindowRunner):
                 self.runSimulations()
             elif fps_pre in event:
                 self.updatePlot()
-            elif self.getPrefix("canvas_choice") in event:
-                if "axis_quantity_specie" in event:
-                    self.updatePlotChoices(self.getAxisNameFromComboboxKey(event))
-                self.updatePlot()
+            elif cc_pre in event:
+                if ccs_pre in event:
+                    axis_name = event.split(' ')[-1].replace("_AXIS", '').replace('-', '').lower()
+                    self.updatePlotChoices(axis_name)
+                else:
+                    window.write_event_value(update_plot_key, None)
             elif event == update_plot_key:
                 self.updatePlot()
         window.close()
@@ -2221,7 +2232,7 @@ class SimulationWindowRunner(WindowRunner):
             },
             "colorbar_kwargs": {
                 "label": getValues(getKeys(colorbar_tab.getTitleInputElement())),
-                "cmap": getValues(getKeys(colorbar_tab.getColormapInputElement()))
+                "colormap": getValues(getKeys(colorbar_tab.getColormapInputElement()))
             }
         }
         return aesthetics_kwargs
@@ -2315,7 +2326,10 @@ class SimulationWindowRunner(WindowRunner):
 
         if transform_name is None:
             # noinspection PyTypeChecker
-            plotting_tab: PlottingTab = PlottingTab.getInstances()[0]
+            window_object: SimulationWindow = self.getWindowObject()
+            # noinspection PyTypeChecker
+            plotting_tab: PlottingTab = window_object.getPlottingTab()
+
             combobox_key = getKeys(plotting_tab.getTransformElement())
             transform_name = self.getValue(combobox_key)
             if transform_name is None:
@@ -2402,6 +2416,8 @@ class SimulationWindowRunner(WindowRunner):
                         figure = self.getFigure(x_results, y_results, plot_type="xy", **figure_kwargs)
         except KeyError:
             return None
+        except ValueError:
+            return None
 
         try:
             self.updateFigureCanvas(figure)
@@ -2410,7 +2426,7 @@ class SimulationWindowRunner(WindowRunner):
             print('todo plots:', plot_quantities)
             return None
 
-    def updatePlotChoices(self, names: Union[str, List[str]] = None, choices: List[str] = None) -> None:
+    def updatePlotChoices(self, names: Union[str, List[str]] = None) -> None:
         """
         Update plot choices for desired axis(es).
         This allows user to select new set of quantities to plot.
@@ -2418,48 +2434,53 @@ class SimulationWindowRunner(WindowRunner):
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to change plot choices in
         :param names: name(s) of axis(es) to update choices for.
             Updates all axes by default.
-        :param choices: names of updated choices for axis.
-            Only called if :paramref:`~Layout.SimulationWindow.SimulationWindowRunner.updatePlotChoices.names` if str.
         """
-        if isinstance(names, str):
-            quantity_specie = self.getValue(self.getKey("canvas_choice", f"{names:s}_axis_quantity_specie"))
-            if choices is None:
-                if quantity_specie == "None":
-                    choices = ['']
-                else:
-                    choices = self.getPlotChoices(species=quantity_specie)
-            elif isinstance(choices, list):
-                pass
-            else:
-                raise TypeError("choices must be list")
 
-            quantity_combobox_key = self.getKey("canvas_choice", f"{names:s}_axis_quantity")
+        def update(name: str) -> None:
+            """Base method for :meth:`~Layout.SimulationWindow.SimulationWindowRunner.updatePlotChoices`"""
+            # noinspection PyTypeChecker
+            window_object: SimulationWindow = self.getWindowObject()
+            # noinspection PyTypeChecker
+            plotting_tab: PlottingTab = window_object.getPlottingTab()
+
+            specie = self.getValue(getKeys(plotting_tab.getAxisQuantitySpeciesElement(name)))
+            choices = self.getPlotChoices(species=specie) if specie != "None" else ['']
+            quantity_combobox = plotting_tab.getAxisQuantityElement(name)
+
+            quantity_combobox_key = getKeys(quantity_combobox)
             quantity_combobox = self.getElements(quantity_combobox_key)
-            default_choice = choices[0]
-            axis_quantity_combobox_size = vars(quantity_combobox)["Size"]
-            kwargs = {
-                "values": choices,
-                "value": default_choice,
-                "disabled": quantity_specie == "None",
-                "size": axis_quantity_combobox_size
-            }
-            # noinspection PyUnboundLocalVariable
-            quantity_combobox.update(**kwargs)
 
-            condensor_combobox_key = self.getKey("canvas_choice", f"{names:s}_axis_condensor")
             try:
-                condensor_combobox = self.getElements(condensor_combobox_key)
-                is_over_time_quantity_specie = quantity_specie in ["Variable", "Function"]
+                condensor_combobox = plotting_tab.getAxisCondensorElement(name)
+                is_over_time_quantity_specie = specie in ["Variable", "Function"]
                 condensor_combobox.update(visible=is_over_time_quantity_specie)
             except KeyError:
                 pass
-        elif isinstance(names, list):
-            for name in names:
-                self.updatePlotChoices(names=name)
-        elif names is None:
-            self.updatePlotChoices(names=self.getAxisNames())
-        else:
-            raise RecursiveTypeError(names)
+
+            if choices != vars(quantity_combobox)["Values"]:
+                kwargs = {
+                    "values": choices,
+                    "disabled": specie == "None",
+                    "size": vars(quantity_combobox)["Size"]
+                }
+
+                old_chosen_quantity = self.getValue(quantity_combobox_key)
+                change_quantity = old_chosen_quantity not in choices
+                if change_quantity:
+                    new_chosen_quantity = choices[0]
+                    kwargs["value"] = new_chosen_quantity
+                    quantity_combobox.update(**kwargs)
+                    window_object.getWindow().write_event_value(quantity_combobox_key, new_chosen_quantity)
+                else:
+                    quantity_combobox.update(**kwargs)
+
+        kwargs = {
+            "args": names,
+            "base_method": update,
+            "valid_input_types": str,
+            "default_args": self.getAxisNames()
+        }
+        return recursiveMethod(**kwargs)
 
     def saveResults(self) -> None:
         """
