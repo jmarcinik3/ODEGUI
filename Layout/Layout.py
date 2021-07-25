@@ -4,7 +4,7 @@ This modules contains wrapper and containers for PySimpleGUI elements.
 
 from __future__ import annotations
 
-from typing import Dict, Iterable, List, Optional, Tuple, Type, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
@@ -42,22 +42,44 @@ def storeElement(instantiateElement):
         except AttributeError:
             self.stored_elements = {}
         try:
-            element = self.stored_elements[method_name]
+            element = self.stored_elements[(method_name, *args)]
         except KeyError:
             element = instantiateElement(self, *args, **kwargs)
-            self.stored_elements[method_name] = element
+            self.stored_elements[(method_name, *args)] = element
         return element
 
     return wrapper
 
 
-def getKey(element: sg.Element) -> str:
+def getKeys(elements: Union[sg.Element, Iterable[sg.Element]]) -> Union[str, Tuple[str]]:
     """
-    Get key associated with element.
+    Get key associated from element.
 
-    :param element: element to retrieve key from
+    :param elements: element(s) to retrieve key(s) from
     """
-    return vars(element)["Key"]
+
+    def get(element: sg.Element) -> str:
+        """Base method for :meth:`~Layout.Layout.getKey`"""
+        return vars(element)["Key"]
+
+    kwargs = {
+        "args": elements,
+        "base_method": get,
+        "valid_input_types": sg.Element,
+        "output_type": tuple
+    }
+    return recursiveMethod(**kwargs)
+
+
+def getNameFromElementKey(key: str) -> Optional[str]:
+    """
+    Get name of symbol associated with element.
+
+    :param key: key for element
+    """
+    splits = key.split(' ')
+    name = splits[-1].replace('-', '')
+    return name
 
 
 class Element:
@@ -165,6 +187,7 @@ class Row:
         """
 
         def add(element: sg.Element) -> None:
+            """Base method for :meth:`~Layout.Layout.Row.addElements`"""
             self.elements.append(element)
 
         kwargs = {
@@ -231,6 +254,7 @@ class Layout:
         """
 
         def add(row: Row) -> None:
+            """Base method for :meth:`~Layout.Layout.Layout.addRows`"""
             self.rows.append(row)
 
         kwargs = {
@@ -282,11 +306,6 @@ class TabRow(Row):
         self.tab = tab
         super().__init__(name, window=tab.getWindowObject(), **kwargs)
 
-        sub_class = self.__class__
-        if not hasattr(sub_class, "instances"):
-            sub_class.instances = {}
-        sub_class.instances[name] = self
-
     def getTab(self):
         """
         Get :class:`~Layout.Layout.Tab` that contains row.
@@ -294,27 +313,6 @@ class TabRow(Row):
         :param self: :class:`~Layout.Layout.TabRow` to retrieve tab from
         """
         return self.tab
-
-    @classmethod
-    def getInstances(cls: Type[TabRow], names: str = None) -> Union[TabRow, List[TabRow]]:
-        """
-        Get row object in subclass of :class:`~Layout.Layout.TabRow`.
-
-        :param names: name(s) of row(s) to retrieve from :class:`~Layout.Layout.TabRow`
-        """
-
-        def get(name: str):
-            """Base method for :meth:`~Layout.Layout.TabRow.getInstance`"""
-            return cls.instances[name]
-
-        kwargs = {
-            "args": names,
-            "base_method": get,
-            "valid_input_types": str,
-            "output_type": list,
-            "default_args": cls.instances.keys()
-        }
-        return recursiveMethod(**kwargs)
 
 
 class Tab:
@@ -588,6 +586,7 @@ class TabbedWindow(Window):
         """
 
         def add(tab: Union[sg.Tab, Tab]) -> None:
+            """Base method for Layout.Layout.TabbedWindow.addTabs"""
             self.tabs.append(tab)
 
         kwargs = {
@@ -666,7 +665,13 @@ class WindowRunner:
         :param self: :class:`~Layout.Layout.WindowRunner` to retrieve value from
         :param key: key for element
         """
-        return self.values[key]
+        element = self.getElements(key)
+        value = self.values[key]
+        if isinstance(element, sg.InputCombo):
+            if value not in element.Values:
+                print('pass1', value, vars(element)["Values"])
+                sg.PopupError(f"{value:s} not found in combobox ({key:s})")
+        return value
 
     def getElements(self, keys: Union[str, Iterable[str]]) -> Union[sg.Element, Iterable[Element]]:
         """
@@ -677,6 +682,7 @@ class WindowRunner:
         """
 
         def get(key: str) -> sg.Element:
+            """Base method for :meth:`~Layout.Layout.WindowRunner.getElements`"""
             return self.getWindow()[key]
 
         kwargs = {
