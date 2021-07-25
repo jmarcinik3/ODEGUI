@@ -64,6 +64,7 @@ def getFigure(
         segment_count: int = 100,
         clim: Tuple[Optional[float], Optional[float]] = (None, None),
         autoscalec_on: bool = True,
+        colormap: str = None,
         colorbar_kwargs: Dict[str, Any] = None,
         axes_kwargs: Dict[str, Any] = None,
         inset_parameters: Dict[str, float] = None
@@ -85,6 +86,7 @@ def getFigure(
     :param autoscalec_on: set True to autoscale colorbar axis.
         Set False otherwise.
         Overrides :paramref:`~SimulationWindow.getFigure.clim` when set True.
+    :param colormap: colormap to use for colorbar.
     :param plot_type: type of plot to display.
         This could include a single curve, multiple curves, scatter plot.
     :param segment_count: number of segments for colorbar.
@@ -123,13 +125,11 @@ def getFigure(
         }
         norm = colors.Normalize(**kwargs)
         # noinspection PyUnresolvedReferences
-        cmap = cm.ScalarMappable(norm=norm, cmap=colorbar_kwargs["cmap"])
+        cmap = cm.ScalarMappable(norm=norm, cmap=colormap)
         figure.colorbar(cmap, **colorbar_kwargs)
         if plot_type == "xyc":
             for index in range(x_length):
-                axes.plot(
-                    x_scaled[index], y_scaled[index], color=cmap.to_rgba(c_scaled[index])
-                )
+                axes.plot(x_scaled[index], y_scaled[index], color=cmap.to_rgba(c_scaled[index]))
         elif plot_type == "xyt":
             if segment_count is None:
                 segment_count = 250
@@ -2219,6 +2219,7 @@ class SimulationWindowRunner(WindowRunner):
             "clim": clim,
             "autoscalec_on": colorbar_autoscale,
             "segment_count": getValues(getKeys(colorbar_tab.getSegmentCountElement())),
+            "colormap": getValues(getKeys(colorbar_tab.getColormapInputElement())),
             "axes_kwargs": {
                 "xlim": xlim,
                 "xlabel": getValues(getKeys(axis_tab.getTitleInputElement('x'))),
@@ -2232,7 +2233,6 @@ class SimulationWindowRunner(WindowRunner):
             },
             "colorbar_kwargs": {
                 "label": getValues(getKeys(colorbar_tab.getTitleInputElement())),
-                "colormap": getValues(getKeys(colorbar_tab.getColormapInputElement()))
             }
         }
         return aesthetics_kwargs
