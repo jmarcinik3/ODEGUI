@@ -44,7 +44,6 @@ class PaperQuantity:
         self.filestem = filestem
         self.model = model
 
-
     def getName(self, return_type: Type[Union[str, Symbol]] = str) -> str:
         """
         Get name of object.

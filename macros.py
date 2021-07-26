@@ -1,6 +1,8 @@
 """
 This file contains miscellaneous functions that are used often throughout the project.
 """
+from __future__ import annotations
+
 import os
 from functools import partial
 from typing import Any, Callable, Iterable, List, Type, Union
@@ -15,6 +17,40 @@ from sympy import Expr, latex
 from sympy.printing.preview import preview
 
 import YML
+
+
+class StoredObject:
+
+    def __init__(self, name: str, sub_class: type = None) -> None:
+        self.name = name
+
+        if sub_class is None:
+            sub_class = self.__class__
+
+        if not hasattr(sub_class, "instances"):
+            sub_class.instances = {}
+        sub_class.instances[name] = self
+
+    @classmethod
+    def getInstances(cls: Type[StoredObject], names: str = None) -> Union[StoredObject, List[StoredObject]]:
+        """
+        Get row object in subclass of :class:`~macros.StoredObject`.
+
+        :param names: name(s) of row(s) to retrieve from :class:`~macros.StoredObject`
+        """
+
+        def get(name: str):
+            """Base method for :meth:`~macros.StoredObject.getInstance`"""
+            return cls.instances[name]
+
+        kwargs = {
+            "args": names,
+            "base_method": get,
+            "valid_input_types": str,
+            "output_type": list,
+            "default_args": cls.instances.keys()
+        }
+        return recursiveMethod(**kwargs)
 
 
 def unique(nonunique: List[Any]) -> List[Any]:
@@ -352,4 +388,3 @@ def recursiveMethod(
         return partialGet(args=default_args)
     else:
         raise TypeError("invalid type for args")
-
