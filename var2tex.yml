@@ -1,4 +1,7 @@
 # variable functions
+AVm: $A_{V_m}$
+omegaVm: $\omega_{V_m}$
+phiVm: $\phi_{V_m}$
 Vmin: $V_{m,in}$
 Vmout: $V_{m,out}$
 

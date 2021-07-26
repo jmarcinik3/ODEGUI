@@ -3,6 +3,7 @@
 # each list gives variables displayed within section
 
 Function:
+  Oscillating: [AVm, omegaVm, phiVm]
   Vm: [Vm0, Vmout, Vmin]
 
 Refactor:

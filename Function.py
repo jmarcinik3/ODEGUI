@@ -15,7 +15,7 @@ from scipy import optimize
 from sympy import Expr
 from sympy import Piecewise as spPiecewise
 # noinspection PyUnresolvedReferences
-from sympy import Symbol, cosh, exp, ln, pi, solve, symbols, var
+from sympy import Symbol, cosh, exp, ln, pi, sin, solve, symbols, var
 from sympy.core import function
 from sympy.utilities.lambdify import lambdify
 

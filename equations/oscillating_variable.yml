@@ -1,0 +1,5 @@
+Vm:
+ properties: [Independent]
+ variables: t
+ parameters: [AVm, omegaVm, phiVm]
+ form: AVm * sin(omegaVm*t + phiVm)
