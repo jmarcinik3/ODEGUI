@@ -67,6 +67,7 @@ def getFigure(
         colormap: str = None,
         colorbar_kwargs: Dict[str, Any] = None,
         axes_kwargs: Dict[str, Any] = None,
+        plot_kwargs: Dict[str, Any] = None,
         inset_parameters: Dict[str, float] = None
 ) -> Figure:
     """
@@ -99,14 +100,15 @@ def getFigure(
     :param colorbar_kwargs: additional arguments to pass into :class:`matplotlib.pyplot.colorbar`
     :param axes_kwargs: additional arguments to pass into :class:`matplotlib.axes.Axes'
     """
+    if plot_kwargs is None:
+        plot_kwargs = {}
+
     figure, axes = plt.subplots()
     axes.set(**axes_kwargs)
     if inset_parameters is not None:
         free_parameter_ranges = {name: inset_parameters[name]["range"] for name in inset_parameters.keys()}
         inset_axes, inset_axes_plot = getParameterInsetAxes(axes, free_parameter_ranges)
-        free_parameter_values = tuple(
-            inset_parameters[name]["value"] for name in inset_parameters.keys()
-        )
+        free_parameter_values = tuple(inset_parameters[name]["value"] for name in inset_parameters.keys())
         inset_axes_plot(*free_parameter_values)
 
     x_scaled = x / x_scale_factor
@@ -114,7 +116,7 @@ def getFigure(
 
     x_length = len(x_scaled)
     if plot_type == "xy":
-        axes.plot(x_scaled, y_scaled)
+        axes.plot(x_scaled, y_scaled, **plot_kwargs)
     elif plot_type in ["xyc", "xyt"]:
         if colorbar_kwargs is None:
             colorbar_kwargs = {}
@@ -129,7 +131,9 @@ def getFigure(
         figure.colorbar(cmap, **colorbar_kwargs)
         if plot_type == "xyc":
             for index in range(x_length):
-                axes.plot(x_scaled[index], y_scaled[index], color=cmap.to_rgba(c_scaled[index]))
+                x_data = x_scaled[index]
+                y_data = y_scaled[index]
+                axes.plot(x_data, y_data, color=cmap.to_rgba(c_scaled[index]), **plot_kwargs)
         elif plot_type == "xyt":
             if segment_count is None:
                 segment_count = 250
@@ -141,7 +145,7 @@ def getFigure(
                 x_segment = x_scaled[index:index + segment_length + 1]
                 y_segment = y_scaled[index:index + segment_length + 1]
                 segment_color = segment_colors[index]
-                axes.plot(x_segment, y_segment, color=segment_color)
+                axes.plot(x_segment, y_segment, color=segment_color, **plot_kwargs)
     return figure
 
 
@@ -1126,9 +1130,8 @@ class PlottingTab(Tab):
             axis_quantity_combobox = self.getAxisQuantityElement(name, values=[''], disabled=True)
         row.addElements(axis_quantity_combobox)
 
-        if is_cartesian:
-            axis_condensor_combobox = self.getAxisCondensorElement(name)
-            row.addElements(axis_condensor_combobox)
+        axis_condensor_combobox = self.getAxisCondensorElement(name)
+        row.addElements(axis_condensor_combobox)
 
         return row
 
@@ -2420,6 +2423,35 @@ class SimulationWindowRunner(WindowRunner):
                             **name_kwargs, **results_kwargs, **condensor_kwargs
                         )
                         figure = self.getFigure(x_results, y_results, plot_type="xy", **figure_kwargs)
+                elif y_specie in parameterlike_species:
+                    if c_specie in timelike_species and c_condensor != "None":
+                        if c_condensor == "Frequency":
+                            condensor_kwargs = {
+                                "calculation_method": self.getFrequencyMethod(),
+                                "condensing_method": self.getFrequencyCondensor()
+                            }
+                        elif c_condensor == "Mean":
+                            condensor_kwargs = {
+                                "order": self.getMeanOrder()
+                            }
+
+                        name_kwargs = {
+                            "quantity_names": c_name,
+                            "parameter_name": (x_name, y_name),
+                            "condensor_name": c_condensor
+                        }
+
+                        x_results, y_results, c_results = results_object.getResultsOverTimePerParameter(
+                            **name_kwargs, **results_kwargs, **condensor_kwargs
+                        )
+
+                        plot_kwargs = {
+                            "plot_type": "xyc",
+                            "plot_kwargs": {
+                                "marker": 'o'
+                            }
+                        }
+                        figure = self.getFigure(x_results, y_results, c_results, **plot_kwargs, **figure_kwargs)
         except KeyError:
             return None
         except ValueError:
@@ -2487,23 +2519,6 @@ class SimulationWindowRunner(WindowRunner):
             "default_args": self.getAxisNames()
         }
         return recursiveMethod(**kwargs)
-
-    def saveResults(self) -> None:
-        """
-        Save :class:`~Results.Results` stored by simulation into file.
-
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve results from
-        """
-        file_types = (("Pickle", ".pkl"),)
-        kwargs = {
-            "message": "Enter Filename",
-            "title": "Save Results",
-            "save_as": True,
-            "file_types": file_types
-        }
-        filename = sg.PopupGetFile(**kwargs)
-        if isinstance(filename, str):
-            self.getResultsObject().saveToFile(filename)
 
     def saveResults(self) -> None:
         """

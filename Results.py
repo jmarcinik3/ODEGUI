@@ -1,5 +1,4 @@
-import pickle
-from typing import Dict, List, Tuple, Union
+from typing import Dict, Iterable, List, Tuple, Union
 
 import dill
 import numpy as np
@@ -11,7 +10,7 @@ from sympy import Symbol
 from sympy.utilities.lambdify import lambdify
 
 from Function import Model
-from macros import commonElement
+from macros import commonElement, recursiveMethod
 
 
 class Results:
@@ -76,22 +75,26 @@ class Results:
         """
         return list(self.free_parameter_values.keys())
 
-    def getFreeParameterValues(self, names: Union[str, List[str]] = None) -> Union[ndarray, Dict[str, ndarray]]:
+    def getFreeParameterValues(self, names: Union[str, Iterable[str]] = None) -> Union[ndarray, Dict[str, ndarray]]:
         """
         Get values for a free parameter.
         
         :param self: :class:`~Results.Results` to retreive value from
         :param names: name(s) of parameter to retreive values for
         """
-        if isinstance(names, str):
-            free_parameter_values = self.getFreeParameterValues()
-            return free_parameter_values[names]
-        elif isinstance(names, list):
-            return {name: self.getFreeParameterValues(names=name) for name in names}
-        elif names is None:
-            return self.free_parameter_values
-        else:
-            raise TypeError("names must be str or list")
+
+        def get(name: str) -> ndarray:
+            """Base method for :meth:`~Results.Results.getFreeParameterValues`"""
+            return self.free_parameter_values[name]
+
+        kwargs = {
+            "args": names,
+            "base_method": get,
+            "valid_input_types": str,
+            "output_type": dict,
+            "default_args": self.getFreeParameterNames()
+        }
+        return recursiveMethod(**kwargs)
 
     def getFreeParameterSubstitutions(self, index: Union[tuple, Tuple[int, ...]]) -> Dict[Symbol, float]:
         """
@@ -400,7 +403,7 @@ class Results:
 
         return mean
 
-    def getFourierTransform(self, index: Union[tuple, Tuple[int, ...]], name: str):
+    def getFourierTransform(self, index: Union[tuple, Tuple[int, ...]], name: str) -> ndarray:
         """
         Get Fourier transform of results.
         
@@ -535,22 +538,48 @@ class Results:
         if isinstance(quantity_names, str):
             quantity_names = [quantity_names]
 
-        parameter_index = self.getFreeParameterIndex(parameter_name)
-        parameter_values = self.getFreeParameterValues(names=parameter_name)
-        parameter_stepcount = len(parameter_values)
-        list_index = list(index)
-        new_index = lambda i: tuple(list_index[:parameter_index] + [i] + list_index[parameter_index + 1:])
+        if isinstance(parameter_name, str):
+            parameter_index = self.getFreeParameterIndex(parameter_name)
+            parameter_base_values = self.getFreeParameterValues(names=parameter_name)
+            parameter_stepcount = len(parameter_base_values)
+            default_index_list = list(index)
+            new_index = lambda i: tuple(
+                default_index_list[:parameter_index] + [i] + default_index_list[parameter_index + 1:]
+                )
 
-        results = []
-        for quantity_name in quantity_names:
-            new_results = np.array(
-                [
+            results = []
+            for quantity_name in quantity_names:
+                new_results = [
                     self.getResultsOverTime(index=new_index(i), names=quantity_name, **kwargs)
                     for i in range(parameter_stepcount)
                 ]
-            )
-            results.append(new_results)
-        return parameter_values, *tuple(results)
+                results.append(np.array(new_results))
+            return parameter_base_values, *tuple(results)
+        elif isinstance(parameter_name, tuple):
+            print('0.1', kwargs)
+            parameter_indicies = list(map(self.getFreeParameterIndex, parameter_name))
+            parameter_base_values = list(self.getFreeParameterValues(names=parameter_name).values())
+            parameter_stepcounts = list(map(len, parameter_base_values))
+
+            default_index_list = list(index)
+
+            results = []
+            parameter_values = [[], []]
+            for quantity_name in quantity_names:
+                result = []
+                for i in range(parameter_stepcounts[0]):
+                    for j in range(parameter_stepcounts[1]):
+                        new_index = default_index_list
+                        new_index[parameter_indicies[0]] = i
+                        new_index[parameter_indicies[1]] = j
+                        parameter_values[0].append(parameter_base_values[0][i])
+                        parameter_values[1].append(parameter_base_values[1][j])
+                        new_results = self.getResultsOverTime(index=tuple(new_index), names=quantity_name, **kwargs)
+                        result.append(new_results)
+                results.append(np.array(result))
+
+            parameter_values = list(map(np.array, parameter_values))
+            return *tuple(parameter_values), *tuple(results)
 
     def setResults(
             self, index: Union[tuple, Tuple[int]], results: Union[ndarray, Dict[str, ndarray]], name: str = None
