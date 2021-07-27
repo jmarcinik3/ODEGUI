@@ -1,3 +1,4 @@
+import math
 from typing import Dict, Iterable, List, Tuple, Union
 
 import dill
@@ -110,7 +111,6 @@ class Results:
             parameter_values = self.getFreeParameterValues(names=free_parameter_name)
             parameter_value = parameter_values[parameter_index]
             free_parameter_substitutions[Symbol(free_parameter_name)] = parameter_value
-        print(free_parameter_substitutions)
         return free_parameter_substitutions
 
     def getParameterSubstitutions(self, index: Union[tuple, Tuple[int, ...]], name: str = None) -> Dict[Symbol, float]:
@@ -200,7 +200,7 @@ class Results:
         expression_sub = expression.subs(self.getParameterSubstitutions(index=index, name=name))
 
         variables = self.getModel().getVariables(time_evolution_types="Temporal")
-        function_lambda = lambdify((Symbol('t'), tuple(variables)), expression_sub, "numpy")
+        function_lambda = lambdify((Symbol('t'), tuple(variables)), expression_sub, modules=["math"])
         variable_names = [str(variable) for variable in variables]
         temporal_results = self.getResultsOverTime(index, names=variable_names)
         times = self.getResultsOverTime(index, names='t')
@@ -319,7 +319,6 @@ class Results:
             )
         elif "max" in calculation_method and "fourier" in calculation_method:
             harmonic_count = int(calculation_method.split('_')[-1])
-            print('1', harmonic_count)
             time_count = len(times)
             time_resolution = (times[-1] - times[0]) / (time_count - 1)
             fourier_results, frequencies = abs(fft.rfft(results)), fft.rfftfreq(time_count, time_resolution)
@@ -370,9 +369,26 @@ class Results:
             frequency = 0
         return frequency
 
-    def getHolderMean(
-            self, index: Union[tuple, Tuple[int]], name: str, order: int = 1, **kwargs
-    ) -> float:
+    def getStandardDeviation(self, index: Union[tuple, Tuple[int]], name: str, **kwargs) -> float:
+        """
+        Get RMS of deviation for results.
+
+        :param self: :class:`~Results.Results` to retrieve results from
+        :param index: index of results.
+            This is a tuple of indicies.
+            The index of the tuple corresponds to the parameter in free parameters.
+            The index within the tuple corresponds to the value of the parameter in its set of possible values.
+        :param name: name of quantity to retrieve mean for
+        :param kwargs: additional arguments to pass into :meth:`~Results.Results.getHolderMean`
+        """
+        results = self.getResultsOverTime(index=index, names=name, **kwargs)
+
+        mean_of_square = np.mean(results ** 2)
+        square_of_mean = np.mean(results) ** 2
+        rms_of_deviation = math.sqrt(mean_of_square - square_of_mean)
+        return rms_of_deviation
+
+    def getHolderMean(self, index: Union[tuple, Tuple[int]], name: str, order: int = 1, **kwargs) -> float:
         """
         Get Holder mean for results.
         
@@ -390,7 +406,7 @@ class Results:
         if order == 1:
             mean = np.mean(results)
         elif order == 2:
-            mean = np.sqrt(np.mean(results) ** 2)
+            mean = np.sqrt(np.mean(results ** 2))
         elif order == 0:
             mean = stats.gmean(results)
         # elif order == -1: mean = stats.hmean(results)
@@ -467,6 +483,8 @@ class Results:
                     return self.getOscillationFrequency(**kwargs, **condensor_kwargs)
                 elif condensor_name == "Mean":
                     return self.getHolderMean(**kwargs, **condensor_kwargs)
+                elif condensor_name == "Standard Deviation":
+                    return self.getStandardDeviation(**kwargs, **condensor_kwargs)
                 else:
                     raise ValueError("invalid condensor name")
 
@@ -556,7 +574,6 @@ class Results:
                 results.append(np.array(new_results))
             return parameter_base_values, *tuple(results)
         elif isinstance(parameter_name, tuple):
-            print('0.1', kwargs)
             parameter_indicies = list(map(self.getFreeParameterIndex, parameter_name))
             parameter_base_values = list(self.getFreeParameterValues(names=parameter_name).values())
             parameter_stepcounts = list(map(len, parameter_base_values))

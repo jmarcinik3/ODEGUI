@@ -745,7 +745,7 @@ class Model:
 
         Function.setUseMemory(use_memory)
         if lambdified:
-            derivative_vector = lambdify((Symbol('t'), tuple(names)), derivative_vector)
+            derivative_vector = lambdify((Symbol('t'), tuple(names)), derivative_vector, modules=["math"])
         if substitute_equilibria:
             return derivative_vector, equilibrium_solutions
         else:
@@ -803,7 +803,7 @@ class Model:
                     equations_append(derivative.getExpression(generations="all").subs(substitutions))
 
             variable_count = len(equilibrium_variables)
-            equations_lambda = lambdify((tuple(equilibrium_variables),), equilibrium_equations)
+            equations_lambda = lambdify((tuple(equilibrium_variables),), equilibrium_equations, modules=["math"])
             initial_guess = np.repeat(0.5, variable_count)
             roots = optimize.root(equations_lambda, initial_guess)
             solutions = {equilibrium_variables[i]: roots.x[i] for i in range(variable_count)}
