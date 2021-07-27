@@ -2378,20 +2378,37 @@ class SimulationWindowRunner(WindowRunner):
         y_name, y_specie, y_condensor = tuple(plot_quantities['y'])
         c_name, c_specie, c_condensor = tuple(plot_quantities['c'])
 
+        is_timelike = {
+            key: plot_quantities[key][1] in timelike_species and plot_quantities[key][2] == "None"
+            for key in plot_quantities.keys()
+        }
+        is_condensed = {
+            key: plot_quantities[key][1] in timelike_species and plot_quantities[key][2] != "None"
+            for key in plot_quantities.keys()
+        }
+        is_parameterlike = {
+            key: plot_quantities[key][1] in parameterlike_species
+            for key in plot_quantities.keys()
+        }
+        is_nonelike = {
+            key: not is_timelike[key] and not is_condensed[key] and not is_parameterlike[key]
+            for key in plot_quantities.keys()
+        }
+
         try:
-            if x_specie in timelike_species and x_condensor == "None":
-                if y_specie in timelike_species and y_condensor == "None":
-                    if c_specie == "None":
+            if is_timelike['x']:
+                if is_timelike['y']:
+                    if is_nonelike['c']:
                         x_results = results_object.getResultsOverTime(names=x_name, **results_kwargs)
                         y_results = results_object.getResultsOverTime(names=y_name, **results_kwargs)
                         figure = self.getFigure(x_results, y_results, plot_type="xy", **figure_kwargs)
-                    elif c_specie in timelike_species:
+                    elif is_timelike['c']:
                         x_results, y_results, c_results = tuple(
                             results_object.getResultsOverTime(names=name, **results_kwargs)
                                 for name in [x_name, y_name, c_name]
                         )
                         figure = self.getFigure(x_results, y_results, c_results, plot_type="xyt", **figure_kwargs)
-                    elif c_specie in parameterlike_species:
+                    elif is_parameterlike['c']:
                         name_kwargs = {
                             "quantity_names": (x_name, y_name),
                             "parameter_name": c_name
@@ -2400,13 +2417,21 @@ class SimulationWindowRunner(WindowRunner):
                             **name_kwargs, **results_kwargs
                         )
                         figure = self.getFigure(x_results, y_results, c_results, plot_type="xyc", **figure_kwargs)
-                    else:
-                        raise ValueError(f"invalid value for c-axis species")
-            elif x_specie in timelike_species and x_condensor != "None":
+            elif is_condensed['x']:
                 condensor_kwargs = self.getCondensorKwargs(x_condensor)
 
-                if y_specie in parameterlike_species:
-                    if c_specie in parameterlike_species:
+                if is_parameterlike['y']:
+                    if is_nonelike['c']:
+                        name_kwargs = {
+                            "quantity_names": x_name,
+                            "parameter_name": y_name,
+                            "condensor_name": x_condensor
+                        }
+                        y_results, x_results = results_object.getResultsOverTimePerParameter(
+                            **name_kwargs, **results_kwargs, **condensor_kwargs
+                        )
+                        figure = self.getFigure(x_results, y_results, plot_type="xy", **figure_kwargs)
+                    elif is_parameterlike['c']:
                         name_kwargs = {
                             "quantity_names": x_name,
                             "parameter_name": (y_name, c_name),
@@ -2423,21 +2448,21 @@ class SimulationWindowRunner(WindowRunner):
                             }
                         }
                         figure = self.getFigure(x_results, y_results, c_results, **plot_kwargs, **figure_kwargs)
-                    elif c_specie == "None":
+            elif is_parameterlike['x']:
+                if is_condensed['y']:
+                    condensor_kwargs = self.getCondensorKwargs(y_condensor)
+
+                    if is_nonelike['c']:
                         name_kwargs = {
-                            "quantity_names": x_name,
-                            "parameter_name": y_name,
-                            "condensor_name": x_condensor
+                            "quantity_names": y_name,
+                            "parameter_name": x_name,
+                            "condensor_name": y_condensor
                         }
-                        y_results, x_results = results_object.getResultsOverTimePerParameter(
+                        x_results, y_results = results_object.getResultsOverTimePerParameter(
                             **name_kwargs, **results_kwargs, **condensor_kwargs
                         )
                         figure = self.getFigure(x_results, y_results, plot_type="xy", **figure_kwargs)
-            elif x_specie in parameterlike_species:
-                if y_specie in timelike_species and y_condensor != "None":
-                    condensor_kwargs = self.getCondensorKwargs(y_condensor)
-
-                    if c_specie in parameterlike_species:
+                    elif is_parameterlike['c']:
                         name_kwargs = {
                             "quantity_names": y_name,
                             "parameter_name": (x_name, c_name),
@@ -2454,18 +2479,8 @@ class SimulationWindowRunner(WindowRunner):
                             }
                         }
                         figure = self.getFigure(x_results, y_results, c_results, **plot_kwargs, **figure_kwargs)
-                    elif c_specie == "None":
-                        name_kwargs = {
-                            "quantity_names": y_name,
-                            "parameter_name": x_name,
-                            "condensor_name": y_condensor
-                        }
-                        x_results, y_results = results_object.getResultsOverTimePerParameter(
-                            **name_kwargs, **results_kwargs, **condensor_kwargs
-                        )
-                        figure = self.getFigure(x_results, y_results, plot_type="xy", **figure_kwargs)
-                elif y_specie in parameterlike_species:
-                    if c_specie in timelike_species and c_condensor != "None":
+                elif is_parameterlike['y']:
+                    if is_condensed['c']:
                         condensor_kwargs = self.getCondensorKwargs(c_condensor)
 
                         name_kwargs = {
