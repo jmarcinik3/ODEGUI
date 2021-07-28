@@ -102,6 +102,8 @@ def getFigure(
     """
     if plot_kwargs is None:
         plot_kwargs = {}
+    if axes_kwargs is None:
+        axes_kwargs = {}
 
     figure, axes = plt.subplots()
     axes.set(**axes_kwargs)
@@ -117,36 +119,52 @@ def getFigure(
     x_length = len(x_scaled)
     if plot_type == "xy":
         axes.plot(x_scaled, y_scaled, **plot_kwargs)
-    elif plot_type in ["xyc", "xyt"]:
+    elif plot_type in ["cxy", "ncxy", "cnxy", "cxny", "txy"]:
+        c_scaled = c / c_scale_factor
         if colorbar_kwargs is None:
             colorbar_kwargs = {}
-        c_scaled = c / c_scale_factor
-        kwargs = {
-            "vmin": c_scaled.min() if clim[0] is None or autoscalec_on else clim[0],
-            "vmax": c_scaled.max() if clim[1] is None or autoscalec_on else clim[1]
-        }
-        norm = colors.Normalize(**kwargs)
-        # noinspection PyUnresolvedReferences
-        cmap = cm.ScalarMappable(norm=norm, cmap=colormap)
-        figure.colorbar(cmap, **colorbar_kwargs)
 
-        if plot_type == "xyc":
-            for index in range(x_length):
-                x_data = x_scaled[index]
-                y_data = y_scaled[index]
-                axes.plot(x_data, y_data, color=cmap.to_rgba(c_scaled[index]), **plot_kwargs)
-        elif plot_type == "xyt":
-            if segment_count is None:
-                segment_count = 250
-            segment_length = round(x_length / segment_count)
+        if plot_type == "cxy":
+            norm = colors.Normalize(vmin=c_scaled.min(), vmax=c_scaled.max())
+            # noinspection PyUnresolvedReferences
+            cmap = cm.ScalarMappable(norm=norm, cmap=colormap)
+            figure.colorbar(cmap, **colorbar_kwargs)
 
-            segment_indicies = range(0, x_length - segment_length, segment_length)
-            segment_colors = cmap.to_rgba(c_scaled)
-            for index in segment_indicies:
-                x_segment = x_scaled[index:index + segment_length + 1]
-                y_segment = y_scaled[index:index + segment_length + 1]
-                segment_color = segment_colors[index]
-                axes.plot(x_segment, y_segment, color=segment_color, **plot_kwargs)
+            axes.contourf(x_scaled, y_scaled, c_scaled, levels=segment_count, cmap=colormap, **plot_kwargs)
+        elif plot_type in ["ncxy", "cnxy", "cxny", "txy"]:
+            kwargs = {
+                "vmin": c_scaled.min() if clim[0] is None or autoscalec_on else clim[0],
+                "vmax": c_scaled.max() if clim[1] is None or autoscalec_on else clim[1]
+            }
+            norm = colors.Normalize(**kwargs)
+            # noinspection PyUnresolvedReferences
+            cmap = cm.ScalarMappable(norm=norm, cmap=colormap)
+            figure.colorbar(cmap, **colorbar_kwargs)
+
+            if plot_type == "txy":
+                segment_length = round(x_length / segment_count)
+                segment_colors = cmap.to_rgba(c_scaled)
+
+                if segment_length == 0:
+                    axes.scatter(x_scaled, y_scaled, color=segment_colors)
+                else:
+                    segment_indicies = range(0, x_length - segment_length, segment_length)
+                    for index in segment_indicies:
+                        x_segment = x_scaled[index:index + segment_length + 1]
+                        y_segment = y_scaled[index:index + segment_length + 1]
+                        axes.plot(x_segment, y_segment, color=segment_colors[index], **plot_kwargs)
+            elif plot_type == "ncxy":
+                c_colors = cmap.to_rgba(c_scaled)
+                for index in range(c_scaled.shape[0]):
+                    axes.plot(x_scaled[index], y_scaled[index], color=c_colors[index], **plot_kwargs)
+            elif plot_type == "cnxy":
+                c_colors = cmap.to_rgba(c_scaled)
+                for index in range(x_scaled.shape[0]):
+                    axes.plot(x_scaled[index], y_scaled, color=c_colors[index], **plot_kwargs)
+            elif plot_type == "cxny":
+                c_colors = cmap.to_rgba(c_scaled)
+                for index in range(y_scaled.shape[0]):
+                    axes.plot(x_scaled, y_scaled[index], color=c_colors[index], **plot_kwargs)
     return figure
 
 
@@ -2228,7 +2246,7 @@ class SimulationWindowRunner(WindowRunner):
             "c_scale_factor": getValues(getKeys(colorbar_tab.getScaleFactorInputElement())),
             "clim": clim,
             "autoscalec_on": colorbar_autoscale,
-            "segment_count": getValues(getKeys(colorbar_tab.getSegmentCountElement())),
+            "segment_count": int(getValues(getKeys(colorbar_tab.getSegmentCountElement()))),
             "colormap": getValues(getKeys(colorbar_tab.getColormapInputElement())),
             "axes_kwargs": {
                 "xlim": xlim,
@@ -2374,143 +2392,156 @@ class SimulationWindowRunner(WindowRunner):
             "index": index,
             "transform_name": transform_name
         }
-        x_name, x_specie, x_condensor = tuple(plot_quantities['x'])
-        y_name, y_specie, y_condensor = tuple(plot_quantities['y'])
-        c_name, c_specie, c_condensor = tuple(plot_quantities['c'])
+
+        plot_choice_names = {axis: plot_quantities[axis][0] for axis in plot_quantities_keys}
+        species = {plot_quantities[axis][0]: plot_quantities[axis][1] for axis in plot_quantities_keys}
+        condensor_names = {plot_quantities[axis][0]: plot_quantities[axis][2] for axis in plot_quantities_keys}
 
         is_timelike = {
-            key: plot_quantities[key][1] in timelike_species and plot_quantities[key][2] == "None"
-            for key in plot_quantities.keys()
+            name: species[name] in timelike_species and condensor_names[name] == "None"
+            for name in plot_choice_names.values()
         }
         is_condensed = {
-            key: plot_quantities[key][1] in timelike_species and plot_quantities[key][2] != "None"
-            for key in plot_quantities.keys()
+            name: species[name] in timelike_species and condensor_names[name] != "None"
+            for name in plot_choice_names.values()
         }
         is_parameterlike = {
-            key: plot_quantities[key][1] in parameterlike_species
-            for key in plot_quantities.keys()
+            name: species[name] in parameterlike_species
+            for name in plot_choice_names.values()
         }
         is_nonelike = {
-            key: not is_timelike[key] and not is_condensed[key] and not is_parameterlike[key]
-            for key in plot_quantities.keys()
+            name: not is_timelike[name] and not is_condensed[name] and not is_parameterlike[name]
+            for name in plot_choice_names.values()
         }
 
-        try:
-            if is_timelike['x']:
-                if is_timelike['y']:
-                    if is_nonelike['c']:
-                        x_results = results_object.getResultsOverTime(names=x_name, **results_kwargs)
-                        y_results = results_object.getResultsOverTime(names=y_name, **results_kwargs)
-                        figure = self.getFigure(x_results, y_results, plot_type="xy", **figure_kwargs)
-                    elif is_timelike['c']:
-                        x_results, y_results, c_results = tuple(
-                            results_object.getResultsOverTime(names=name, **results_kwargs)
-                                for name in [x_name, y_name, c_name]
-                        )
-                        figure = self.getFigure(x_results, y_results, c_results, plot_type="xyt", **figure_kwargs)
-                    elif is_parameterlike['c']:
-                        name_kwargs = {
-                            "quantity_names": (x_name, y_name),
-                            "parameter_name": c_name
-                        }
-                        c_results, x_results, y_results = results_object.getResultsOverTimePerParameter(
-                            **name_kwargs, **results_kwargs
-                        )
-                        figure = self.getFigure(x_results, y_results, c_results, plot_type="xyc", **figure_kwargs)
-            elif is_condensed['x']:
-                condensor_kwargs = self.getCondensorKwargs(x_condensor)
+        timelike_count = sum(is_timelike.values())
+        parameterlike_count = sum(is_parameterlike.values())
+        condensed_count = sum(is_condensed.values())
+        none_count = sum(is_nonelike.values())
 
-                if is_parameterlike['y']:
-                    if is_nonelike['c']:
-                        name_kwargs = {
-                            "quantity_names": x_name,
-                            "parameter_name": y_name,
-                            "condensor_name": x_condensor
-                        }
-                        y_results, x_results = results_object.getResultsOverTimePerParameter(
-                            **name_kwargs, **results_kwargs, **condensor_kwargs
-                        )
-                        figure = self.getFigure(x_results, y_results, plot_type="xy", **figure_kwargs)
-                    elif is_parameterlike['c']:
-                        name_kwargs = {
-                            "quantity_names": x_name,
-                            "parameter_name": (y_name, c_name),
-                            "condensor_name": x_condensor
-                        }
-                        y_results, c_results, x_results = results_object.getResultsOverTimePerParameter(
-                            **name_kwargs, **results_kwargs, **condensor_kwargs
-                        )
+        results = {}
 
-                        plot_kwargs = {
-                            "plot_type": "xyc",
-                            "plot_kwargs": {
-                                "marker": 'o'
-                            }
-                        }
-                        figure = self.getFigure(x_results, y_results, c_results, **plot_kwargs, **figure_kwargs)
-            elif is_parameterlike['x']:
-                if is_condensed['y']:
-                    condensor_kwargs = self.getCondensorKwargs(y_condensor)
-
-                    if is_nonelike['c']:
-                        name_kwargs = {
-                            "quantity_names": y_name,
-                            "parameter_name": x_name,
-                            "condensor_name": y_condensor
-                        }
-                        x_results, y_results = results_object.getResultsOverTimePerParameter(
-                            **name_kwargs, **results_kwargs, **condensor_kwargs
-                        )
-                        figure = self.getFigure(x_results, y_results, plot_type="xy", **figure_kwargs)
-                    elif is_parameterlike['c']:
-                        name_kwargs = {
-                            "quantity_names": y_name,
-                            "parameter_name": (x_name, c_name),
-                            "condensor_name": y_condensor
-                        }
-                        x_results, c_results, y_results = results_object.getResultsOverTimePerParameter(
-                            **name_kwargs, **results_kwargs, **condensor_kwargs
-                        )
-
-                        plot_kwargs = {
-                            "plot_type": "xyc",
-                            "plot_kwargs": {
-                                "marker": 'o'
-                            }
-                        }
-                        figure = self.getFigure(x_results, y_results, c_results, **plot_kwargs, **figure_kwargs)
-                elif is_parameterlike['y']:
-                    if is_condensed['c']:
-                        condensor_kwargs = self.getCondensorKwargs(c_condensor)
-
-                        name_kwargs = {
-                            "quantity_names": c_name,
-                            "parameter_name": (x_name, y_name),
-                            "condensor_name": c_condensor
-                        }
-
-                        x_results, y_results, c_results = results_object.getResultsOverTimePerParameter(
-                            **name_kwargs, **results_kwargs, **condensor_kwargs
-                        )
-
-                        plot_kwargs = {
-                            "plot_type": "xyc",
-                            "plot_kwargs": {
-                                "marker": 'o'
-                            }
-                        }
-                        figure = self.getFigure(x_results, y_results, c_results, **plot_kwargs, **figure_kwargs)
-        except KeyError:
-            return None
-        except ValueError:
-            return None
+        parameter_names = [name for name in plot_choice_names.values() if is_parameterlike[name]]
+        quantity_names = [name for name in plot_choice_names.values() if is_timelike[name]]
+        condensed_names = [name for name in plot_choice_names.values() if is_condensed[name]]
 
         try:
-            self.updateFigureCanvas(figure)
-            return figure
-        except UnboundLocalError:
-            print('todo plots:', plot_quantities)
-            return None
+            results = {}
+            if parameterlike_count == 0:
+                getResultsOverTime = partial(results_object.getResultsOverTime, **results_kwargs)
+
+                for quantity_name in quantity_names:
+                    results[quantity_name] = getResultsOverTime(quantity_names=quantity_name)
+
+                for condensed_name in condensed_names:
+                    condensor_name = condensor_names[condensed_name]
+                    results[condensed_name] = getResultsOverTime(
+                        names=condensed_name,
+                        condensor_name=condensor_name,
+                        **self.getCondensorKwargs(condensor_name)
+                    )
+            else:
+                getResultsOverTimePerParameter = partial(
+                    results_object.getResultsOverTimePerParameter,
+                    parameter_names=parameter_names,
+                    **results_kwargs
+                )
+
+                if len(quantity_names) >= 1:
+                    parameter_results, quantity_results = getResultsOverTimePerParameter(quantity_names=quantity_names)
+
+                for i in range(len(quantity_names)):
+                    results[quantity_names[i]] = quantity_results[i]
+
+                for condensed_name in condensed_names:
+                    condensor_name = condensor_names[condensed_name]
+                    parameter_results, result = getResultsOverTimePerParameter(
+                        quantity_names=condensed_name,
+                        condensor_name=condensor_name,
+                        **self.getCondensorKwargs(condensor_name)
+                    )
+                    results[condensed_name] = result[0]
+
+                for i in range(len(parameter_names)):
+                    results[parameter_names[i]] = parameter_results[i]
+        except (UnboundLocalError, KeyError, IndexError, AttributeError, ValueError) as error:
+            print('data:', error)
+
+        try:
+            is_timelike_axis = lambda axis: is_timelike[plot_choice_names[axis]]
+            is_parameterlike_axis = lambda axis: is_parameterlike[plot_choice_names[axis]]
+            is_condensed_axis = lambda axis: is_condensed[plot_choice_names[axis]]
+            is_nonelike_axis = lambda axis: is_nonelike[plot_choice_names[axis]]
+
+            axis_results = []
+
+            x_results = results[plot_choice_names['x']]
+            y_results = results[plot_choice_names['y']]
+            if not is_nonelike_axis('c'):
+                c_results = results[plot_choice_names['c']]
+
+            if is_timelike_axis('x'):
+                if is_timelike_axis('y'):
+                    if is_timelike_axis('c'):
+                        axis_results = (x_results, y_results, c_results)
+                        plot_type = "txy"
+                    elif is_parameterlike_axis('c'):
+                        axis_results = (x_results, y_results, c_results)
+                        plot_type = "ncxy"
+                    elif is_nonelike_axis('c'):
+                        axis_results = (x_results, y_results)
+                        plot_type = "xy"
+            elif is_condensed_axis('x'):
+                if is_parameterlike_axis('y'):
+                    if is_parameterlike_axis('c'):
+                        axis_results = (
+                            x_results.reshape((c_results.size, y_results.size)),
+                            y_results,
+                            c_results
+                        )
+                        plot_type = "cnxy"
+                    elif is_condensed_axis('c'):
+                        axis_results = (x_results, y_results, c_results)
+                        plot_type = "txy"
+                    elif is_nonelike_axis('c'):
+                        axis_results = (x_results, y_results)
+                        plot_type = "xy"
+                elif is_condensed_axis('y'):
+                    if is_parameterlike_axis('c'):
+                        axis_results = (x_results, y_results, c_results)
+                        plot_type = "txy"
+            elif is_parameterlike_axis('x'):
+                if is_parameterlike_axis('y'):
+                    if is_condensed_axis('c'):
+                        axis_results = (
+                            results[plot_choice_names['x']],
+                            results[plot_choice_names['y']],
+                            results[plot_choice_names['c']].T
+                        )
+                        plot_type = "cxy"
+                elif is_condensed_axis('y'):
+                    if is_parameterlike_axis('c'):
+                        axis_results = (
+                            x_results,
+                            y_results.reshape((c_results.size, x_results.size)),
+                            c_results
+                        )
+                        plot_type = "cxny"
+                    elif is_condensed_axis('c'):
+                        axis_results = (x_results, y_results, c_results)
+                        plot_type = "txy"
+                    elif is_nonelike_axis('c'):
+                        axis_results = (x_results, y_results)
+                        plot_type = "xy"
+
+            try:
+                figure = self.getFigure(*axis_results, plot_type=plot_type, **figure_kwargs)
+                self.updateFigureCanvas(figure)
+                return figure
+            except UnboundLocalError:
+                print('todo plots:', plot_quantities)
+        except (KeyError, AttributeError, ValueError) as error:
+            print('plot:', error, error.__class__)
 
     def updatePlotChoices(self, names: Union[str, List[str]] = None) -> None:
         """
@@ -2658,9 +2689,12 @@ class SimulationWindowRunner(WindowRunner):
                 "save_as": True,
                 "file_types": tuple(file_types)
             }
-            filename = sg.PopupGetFile(**kwargs)
-            if isinstance(filename, str):
-                figure.savefig(filename)
+            filepath = sg.PopupGetFile(**kwargs)
+            if isinstance(filepath, str):
+                try:
+                    figure.savefig(filepath)
+                except OSError:
+                    sg.PopupError(f"cannot save figure as {filepath:s}")
         elif isinstance(name, str):
             parameter_index = self.getFreeParameterIndex(name)
             default_index = list(self.getClosestSliderIndex())
@@ -2692,12 +2726,12 @@ class SimulationWindowRunner(WindowRunner):
                 "save_as": True,
                 "file_types": tuple(file_types)
             }
-            filename = sg.PopupGetFile(**kwargs)
-            if isinstance(filename, str):
+            filepath = sg.PopupGetFile(**kwargs)
+            if isinstance(filepath, str):
                 kwargs = {
                     "save_all": True,
                     "append_images": images[1:],
                     "duration": round(4000 / len(images)),
                     "loop": 0
                 }
-                images[0].save(filename, **kwargs)
+                images[0].save(filepath, **kwargs)
