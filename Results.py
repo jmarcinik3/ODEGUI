@@ -35,7 +35,7 @@ class Results:
         They are reused after their initial calculation.
     """
 
-    def __init__(self, model: Model, free_parameter_values: Dict[str, ndarray]):
+    def __init__(self, model: Model, free_parameter_values: Dict[str, ndarray], results: dict = None):
         """
         Constructor for :class:`~Results.Results`
 
@@ -44,7 +44,7 @@ class Results:
             Key is name of free parameter.
             Value is possible values for free parameter.
         """
-        self.results = {}
+        self.results = {} if results is None else results
         self.model = model
         self.free_parameter_values = free_parameter_values
         self.general_equilibrium_expressions = {}
