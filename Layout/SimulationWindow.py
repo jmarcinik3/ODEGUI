@@ -2421,17 +2421,17 @@ class SimulationWindowRunner(WindowRunner):
 
         results = {}
 
-        parameter_names = [name for name in plot_choice_names.values() if is_parameterlike[name]]
-        quantity_names = [name for name in plot_choice_names.values() if is_timelike[name]]
-        condensed_names = [name for name in plot_choice_names.values() if is_condensed[name]]
+        parameter_names = tuple([name for name in plot_choice_names.values() if is_parameterlike[name]])
+        timelike_names = tuple([name for name in plot_choice_names.values() if is_timelike[name]])
+        condensed_names = tuple([name for name in plot_choice_names.values() if is_condensed[name]])
 
         try:
             results = {}
             if parameterlike_count == 0:
                 getResultsOverTime = partial(results_object.getResultsOverTime, **results_kwargs)
 
-                for quantity_name in quantity_names:
-                    results[quantity_name] = getResultsOverTime(quantity_names=quantity_name)
+                for timelike_name in timelike_names:
+                    results[timelike_name] = getResultsOverTime(quantity_names=timelike_name)
 
                 for condensed_name in condensed_names:
                     condensor_name = condensor_names[condensed_name]
@@ -2447,11 +2447,11 @@ class SimulationWindowRunner(WindowRunner):
                     **results_kwargs
                 )
 
-                if len(quantity_names) >= 1:
-                    parameter_results, quantity_results = getResultsOverTimePerParameter(quantity_names=quantity_names)
+                if len(timelike_names) >= 1:
+                    parameter_results, quantity_results = getResultsOverTimePerParameter(quantity_names=timelike_names)
 
-                for i in range(len(quantity_names)):
-                    results[quantity_names[i]] = quantity_results[i]
+                for i in range(len(timelike_names)):
+                    results[timelike_names[i]] = quantity_results[i]
 
                 for condensed_name in condensed_names:
                     condensor_name = condensor_names[condensed_name]
@@ -2465,7 +2465,7 @@ class SimulationWindowRunner(WindowRunner):
                 for i in range(len(parameter_names)):
                     results[parameter_names[i]] = parameter_results[i]
         except (UnboundLocalError, KeyError, IndexError, AttributeError, ValueError) as error:
-            print('data:', error)
+            print("data:", error, error.__class__)
 
         try:
             is_timelike_axis = lambda axis: is_timelike[plot_choice_names[axis]]
@@ -2539,9 +2539,9 @@ class SimulationWindowRunner(WindowRunner):
                 self.updateFigureCanvas(figure)
                 return figure
             except UnboundLocalError:
-                print('todo plots:', plot_quantities)
+                print("todo plots:", plot_quantities)
         except (KeyError, AttributeError, ValueError) as error:
-            print('plot:', error, error.__class__)
+            print("plot:", error, error.__class__)
 
     def updatePlotChoices(self, names: Union[str, List[str]] = None) -> None:
         """

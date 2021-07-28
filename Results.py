@@ -77,12 +77,16 @@ class Results:
         """
         return list(self.free_parameter_values.keys())
 
-    def getFreeParameterValues(self, names: Union[str, Iterable[str]] = None) -> Union[ndarray, Dict[str, ndarray]]:
+    def getFreeParameterValues(
+            self, names: Union[str, Iterable[str]] = None, output_type: type = list
+    ) -> Union[ ndarray, Dict[str, ndarray]]:
         """
         Get values for a free parameter.
         
         :param self: :class:`~Results.Results` to retreive value from
         :param names: name(s) of parameter to retreive values for
+        :param output_type: iterable to output as
+            if :paramref:`~Results.Results.getFreeParameterValues.names` is iterable
         """
 
         def get(name: str) -> ndarray:
@@ -93,7 +97,7 @@ class Results:
             "args": names,
             "base_method": get,
             "valid_input_types": str,
-            "output_type": dict,
+            "output_type": output_type,
             "default_args": self.getFreeParameterNames()
         }
         return recursiveMethod(**kwargs)
@@ -554,7 +558,7 @@ class Results:
             parameter_names = [parameter_names]
 
         per_parameter_locations = np.array(list(map(self.getFreeParameterIndex, parameter_names)))
-        per_parameter_base_values = tuple(list(self.getFreeParameterValues(names=parameter_names).values()))
+        per_parameter_base_values = tuple(list(self.getFreeParameterValues(names=parameter_names)))
         per_parameter_stepcounts = tuple(map(len, per_parameter_base_values))
         per_parameter_partial_indicies = list(itertools.product(*map(range, per_parameter_stepcounts)))
 
@@ -571,6 +575,7 @@ class Results:
             for partial_index in per_parameter_partial_indicies:
                 new_index = default_index
                 new_index[per_parameter_locations] = partial_index
+
                 single_result = self.getResultsOverTime(index=tuple(new_index), quantity_names=quantity_name, **kwargs)
                 single_results[partial_index] = single_result
             results[quantity_location] = single_results
@@ -607,7 +612,7 @@ class Results:
         model = self.getModel()
         save_info = {
             "results": self.results,
-            "free_parameter_values": self.getFreeParameterValues(),
+            "free_parameter_values": self.getFreeParameterValues(output_type=dict),
             "model_parameters": {
                 parameter.getName(): parameter.getQuantity()
                 for parameter in model.getParameters()
