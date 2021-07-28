@@ -1,3 +1,4 @@
+import itertools
 import math
 from typing import Dict, Iterable, List, Tuple, Union
 
@@ -524,7 +525,7 @@ class Results:
     def getResultsOverTimePerParameter(
             self,
             index: Union[tuple, Tuple[int]],
-            parameter_name: str,
+            parameter_names: str,
             quantity_names: Union[str, List[str]],
             **kwargs
     ) -> Tuple[ndarray, ...]:
@@ -536,57 +537,44 @@ class Results:
             This is a tuple of indicies.
             The index of the tuple corresponds to the parameter in free parameters.
             The index within the tuple corresponds to the value of the parameter in its set of possible values.
-        :param parameter_name: name of free parameter to average quantity results over.
-        :param quantity_names: name of quantity to average results over
+        :param parameter_names: name(s) of free parameter(s) to retrieve quantity results over.
+        :param quantity_names: name(s) of quantity(s) to average results over
         :param kwargs: additional arguments to pass into :meth:`~Results.Results.getResultsOverTime`
         :returns: tuple of results.
-            First index gives parameter values.
-            Second-last index gives quantity results; one set of quantity results per index.
+            First index gives array of parameter base values.
+                nth index of this array gives values for nth parameter in
+                :paramref:`~Results.Results.getResultsOverTimePerParameter.parameter_names`.
+            Second index gives matrix quantity results.
+                nth index of this matrix gives values for nth quantity in
+                :paramref:`~Results.Results.getResultsOverTimePerParameter.quantity_names`.
         """
         if isinstance(quantity_names, str):
             quantity_names = [quantity_names]
+        if isinstance(parameter_names, str):
+            parameter_names = [parameter_names]
 
-        if isinstance(parameter_name, str):
-            parameter_index = self.getFreeParameterIndex(parameter_name)
-            parameter_base_values = self.getFreeParameterValues(names=parameter_name)
-            parameter_stepcount = len(parameter_base_values)
-            default_index_list = list(index)
-            new_index = lambda i: tuple(
-                default_index_list[:parameter_index] + [i] + default_index_list[parameter_index + 1:]
-                )
+        per_parameter_locations = np.array(list(map(self.getFreeParameterIndex, parameter_names)))
+        per_parameter_base_values = tuple(list(self.getFreeParameterValues(names=parameter_names).values()))
+        per_parameter_stepcounts = tuple(map(len, per_parameter_base_values))
+        per_parameter_partial_indicies = list(itertools.product(*map(range, per_parameter_stepcounts)))
 
-            results = []
-            for quantity_name in quantity_names:
-                new_results = [
-                    self.getResultsOverTime(index=new_index(i), names=quantity_name, **kwargs)
-                    for i in range(parameter_stepcount)
-                ]
-                results.append(np.array(new_results))
-            return parameter_base_values, *tuple(results)
-        elif isinstance(parameter_name, tuple):
-            parameter_indicies = list(map(self.getFreeParameterIndex, parameter_name))
-            parameter_base_values = list(self.getFreeParameterValues(names=parameter_name).values())
-            parameter_stepcounts = list(map(len, parameter_base_values))
+        default_index = np.array(index)
+        times = self.getResultsOverTime(index=index, quantity_names='t', **kwargs)
+        if isinstance(times, (float, int)):
+            single_result_size = per_parameter_stepcounts
+        elif isinstance(times, ndarray):
+            single_result_size = (*per_parameter_stepcounts, *times.shape)
 
-            default_index_list = list(index)
-
-            results = []
-            parameter_values = [[], []]
-            for quantity_name in quantity_names:
-                result = []
-                for i in range(parameter_stepcounts[0]):
-                    for j in range(parameter_stepcounts[1]):
-                        new_index = default_index_list
-                        new_index[parameter_indicies[0]] = i
-                        new_index[parameter_indicies[1]] = j
-                        parameter_values[0].append(parameter_base_values[0][i])
-                        parameter_values[1].append(parameter_base_values[1][j])
-                        new_results = self.getResultsOverTime(index=tuple(new_index), names=quantity_name, **kwargs)
-                        result.append(new_results)
-                results.append(np.array(result))
-
-            parameter_values = list(map(np.array, parameter_values))
-            return *tuple(parameter_values), *tuple(results)
+        results = np.zeros((len(quantity_names), *single_result_size))
+        for quantity_location, quantity_name in enumerate(quantity_names):
+            single_results = np.zeros(single_result_size)
+            for partial_index in per_parameter_partial_indicies:
+                new_index = default_index
+                new_index[per_parameter_locations] = partial_index
+                single_result = self.getResultsOverTime(index=tuple(new_index), quantity_names=quantity_name, **kwargs)
+                single_results[partial_index] = single_result
+            results[quantity_location] = single_results
+        return per_parameter_base_values, results
 
     def setResults(
             self, index: Union[tuple, Tuple[int]], results: Union[ndarray, Dict[str, ndarray]], name: str = None
