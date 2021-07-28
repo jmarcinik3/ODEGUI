@@ -153,7 +153,6 @@ class Results:
         """
         if equilibrium_expressions is None:
             solutions = self.getModel().getEquilibriumSolutions(skip_parameters=self.getFreeParameterNames())
-            solutions = {variable: solution for variable, solution in solutions.items()}
             self.general_equilibrium_expressions = solutions
         else:
             self.general_equilibrium_expressions = equilibrium_expressions
@@ -176,7 +175,7 @@ class Results:
         else:
             raise TypeError("name must be sp.Symbol or str")
 
-        parameter_substitutions = self.getParameterSubstitutions(index=index, name=name)
+        parameter_substitutions = self.getParameterSubstitutions(index=index)
         simplified_expression = general_expression.subs(parameter_substitutions)
         return simplified_expression
 
@@ -201,9 +200,9 @@ class Results:
 
         variables = self.getModel().getVariables(time_evolution_types="Temporal")
         function_lambda = lambdify((Symbol('t'), tuple(variables)), expression_sub, modules=["math"])
-        variable_names = [str(variable) for variable in variables]
-        temporal_results = self.getResultsOverTime(index, names=variable_names)
-        times = self.getResultsOverTime(index, names='t')
+        variable_names = list(map(str, variables))
+        temporal_results = self.getResultsOverTime(index, quantity_names=variable_names)
+        times = self.getResultsOverTime(index, quantity_names='t')
         results = [function_lambda(times[i], temporal_results[i]) for i in range(len(times))]
         return np.array(results)
 
@@ -257,7 +256,7 @@ class Results:
         :param name: name of variable to retrieve results of
         """
         initial_condition = self.getModel().getDerivativesFromVariableNames(names=name).getInitialCondition()
-        results = np.repeat(initial_condition, len(self.getResultsOverTime(index, 't')))
+        results = np.repeat(initial_condition, self.getResultsOverTime(index, 't').size)
         return results
 
     def getOscillationFrequency(
@@ -295,8 +294,8 @@ class Results:
         """
         calculation_method = calculation_method.lower()
         condensing_method = condensing_method.lower()
-        results = self.getResultsOverTime(index=index, names=name, **kwargs)
-        times = self.getResultsOverTime(index=index, names='t', **kwargs)
+        results = self.getResultsOverTime(index=index, quantity_names=name, **kwargs)
+        times = self.getResultsOverTime(index=index, quantity_names='t', **kwargs)
 
         if "separation" in calculation_method:
             if "max" in calculation_method or "min" in calculation_method:
@@ -314,24 +313,19 @@ class Results:
                 minima_indicies = signal.find_peaks(-results)[0]
                 extrema_indicies = np.append(extrema_indicies, minima_indicies)
             extrema_times = times[extrema_indicies]
-            frequencies = np.array(
-                [time_to_frequency(extrema_times[i], extrema_times[i + 1]) for i in range(len(extrema_times) - 1)]
-            )
+            frequencies = time_to_frequency(extrema_times[0:-1], extrema_times[1:])
         elif "max" in calculation_method and "fourier" in calculation_method:
             harmonic_count = int(calculation_method.split('_')[-1])
-            time_count = len(times)
+            time_count = times.size
             time_resolution = (times[-1] - times[0]) / (time_count - 1)
             fourier_results, frequencies = abs(fft.rfft(results)), fft.rfftfreq(time_count, time_resolution)
 
             maxima_indicies = signal.find_peaks(fourier_results)[0]
-            if len(maxima_indicies) >= 1:
+            if maxima_indicies.size >= 1:
                 harmonic_frequencies = frequencies[maxima_indicies]
                 harmonic_frequencies = np.insert(harmonic_frequencies, 0, 0)
                 n_harmonic_frequencies = harmonic_frequencies[:harmonic_count]
-                frequencies = np.array(
-                    [n_harmonic_frequencies[i + 1] - n_harmonic_frequencies[i] for i in
-                        range(len(n_harmonic_frequencies) - 1)]
-                )
+                frequencies = n_harmonic_frequencies[1:] - n_harmonic_frequencies[0:-1]
             else:
                 frequencies = np.array([])
         elif "autocorrelation" in calculation_method:
@@ -379,14 +373,10 @@ class Results:
             The index of the tuple corresponds to the parameter in free parameters.
             The index within the tuple corresponds to the value of the parameter in its set of possible values.
         :param name: name of quantity to retrieve mean for
-        :param kwargs: additional arguments to pass into :meth:`~Results.Results.getHolderMean`
+        :param kwargs: additional arguments to pass into :meth:`~Results.Results.getResultsOverTime`
         """
-        results = self.getResultsOverTime(index=index, names=name, **kwargs)
-
-        mean_of_square = np.mean(results ** 2)
-        square_of_mean = np.mean(results) ** 2
-        rms_of_deviation = math.sqrt(mean_of_square - square_of_mean)
-        return rms_of_deviation
+        results = self.getResultsOverTime(index=index, quantity_names=name, **kwargs)
+        return np.std(results)
 
     def getHolderMean(self, index: Union[tuple, Tuple[int]], name: str, order: int = 1, **kwargs) -> float:
         """
@@ -401,7 +391,7 @@ class Results:
         :param order: order of Holder mean
         :param kwargs: additional arguments to pass into :meth:`~Results.Results.getResultsOverTime`
         """
-        results = self.getResultsOverTime(index=index, names=name, **kwargs)
+        results = self.getResultsOverTime(index=index, quantity_names=name, **kwargs)
 
         if order == 1:
             mean = np.mean(results)
@@ -419,7 +409,7 @@ class Results:
 
         return mean
 
-    def getFourierTransform(self, index: Union[tuple, Tuple[int, ...]], name: str) -> ndarray:
+    def getFourierTransform(self, index: Union[tuple, Tuple[int, ...]], quantity_name: str) -> ndarray:
         """
         Get Fourier transform of results.
         
@@ -428,13 +418,13 @@ class Results:
             This is a tuple of indicies.
             The index of the tuple corresponds to the parameter in free parameters.
             The index within the tuple corresponds to the value of the parameter in its set of possible values.
-        :param name: name of quantity to retreive Fourier transform of
+        :param quantity_name: name of quantity to retreive Fourier transform of
         """
-        original_results = self.getResultsOverTime(index, names=name)
+        original_results = self.getResultsOverTime(index, quantity_names=quantity_name)
         # noinspection PyPep8Naming
-        N = len(original_results)
+        N = original_results.size
 
-        if name == 't':
+        if quantity_name == 't':
             initial_time, final_time = original_results[0], original_results[-1]
             time_resolution = (final_time - initial_time) / (N - 1)
             fourier_results = fft.rfftfreq(N, time_resolution)
@@ -446,7 +436,7 @@ class Results:
     def getResultsOverTime(
             self,
             index: Union[tuple, Tuple[int, ...]],
-            names: Union[str, List[str]] = None,
+            quantity_names: Union[str, List[str]] = None,
             transform_name: str = "None",
             condensor_name: str = "None",
             **condensor_kwargs
@@ -465,18 +455,18 @@ class Results:
             This is a tuple of indicies.
             The index of the tuple corresponds to the parameter in free parameters.
             The index within the tuple corresponds to the value of the parameter in its set of possible values.
-        :param names: name(s) of variable/function(s) to retrieve results for
+        :param quantity_names: name(s) of variable/function(s) to retrieve results for
         :param transform_name: transform to perform on results.
             "Fourier" - Fourier transform.
         :param condensor_name: analysis to perform on results to reduce into one (or few) floats.
             "Frequency" - calculate frequency of oscillation
         """
         results = self.results[index]
-        if isinstance(names, str):
+        if isinstance(quantity_names, str):
             if condensor_name != "None":
                 kwargs = {
                     "index": index,
-                    "name": names,
+                    "name": quantity_names,
                     "transform_name": transform_name
                 }
                 if condensor_name == "Frequency":
@@ -486,48 +476,48 @@ class Results:
                 elif condensor_name == "Standard Deviation":
                     return self.getStandardDeviation(**kwargs, **condensor_kwargs)
                 else:
-                    raise ValueError("invalid condensor name")
+                    raise ValueError(f"invalid condensor name ({condensor_name:s})")
 
             if transform_name != "None":
                 if transform_name == "Fourier":
-                    return self.getFourierTransform(index=index, name=names)
+                    return self.getFourierTransform(index=index, quantity_name=quantity_names)
                 else:
-                    raise ValueError("invalid transform name")
+                    raise ValueError(f"invalid transform name ({transform_name:s})")
 
             try:
-                return results[names]
+                return results[quantity_names]
             except KeyError:
                 pass
 
             model = self.getModel()
 
-            if names in model.getVariables(return_type=str):
-                time_evolution_type = model.getDerivativesFromVariableNames(names=names).getTimeEvolutionType()
+            if quantity_names in model.getVariables(return_type=str):
+                time_evolution_type = model.getDerivativesFromVariableNames(names=quantity_names).getTimeEvolutionType()
                 results_handles = {
                     "Equilibrium": self.getEquilibriumVariableResults,
                     "Constant": self.getConstantVariableResults,
                     "Function": self.getFunctionResults
                 }
                 # noinspection PyArgumentList
-                updated_results = results_handles[time_evolution_type](index, names)
-            elif names in model.getFunctionNames():
-                updated_results = self.getFunctionResults(index, names)
+                updated_results = results_handles[time_evolution_type](index, quantity_names)
+            elif quantity_names in model.getFunctionNames():
+                updated_results = self.getFunctionResults(index, quantity_names)
             else:
                 ValueError("names input must correspond to either variable or function when str ")
 
             # noinspection PyUnboundLocalVariable
-            self.setResults(index, updated_results, names)
+            self.setResults(index, updated_results, quantity_names)
             return updated_results
-        elif isinstance(names, list):
+        elif isinstance(quantity_names, list):
             kwargs = {
                 "index": index,
                 "transform_name": transform_name
             }
-            new_results = np.array([self.getResultsOverTime(names=name, **kwargs) for name in names])
+            new_results = np.array([self.getResultsOverTime(quantity_names=name, **kwargs) for name in quantity_names])
             transpose = new_results.T
             return transpose
-        elif names is None:
-            return self.getResultsOverTime(index, names=list(results.keys()))
+        elif quantity_names is None:
+            return self.getResultsOverTime(index, quantity_names=list(results.keys()))
         else:
             raise TypeError("names input must be str or list")
 
