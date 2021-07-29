@@ -124,23 +124,20 @@ def getFigure(
         if colorbar_kwargs is None:
             colorbar_kwargs = {}
 
+        if not autoscalec_on:
+            vmin = c_scaled.min() if clim[0] is None else clim[0]
+            vmax = c_scaled.max() if clim[1] is None else clim[1]
+        else:
+            vmin, vmax = c_scaled.min(), c_scaled.max()
+
+        norm = colors.Normalize(vmin=vmin, vmax=vmax)
+        # noinspection PyUnresolvedReferences
+        cmap = cm.ScalarMappable(norm=norm, cmap=colormap)
+        figure.colorbar(cmap, **colorbar_kwargs)
+
         if plot_type == "cxy":
-            norm = colors.Normalize(vmin=c_scaled.min(), vmax=c_scaled.max())
-            # noinspection PyUnresolvedReferences
-            cmap = cm.ScalarMappable(norm=norm, cmap=colormap)
-            figure.colorbar(cmap, **colorbar_kwargs)
-
-            axes.contourf(x_scaled, y_scaled, c_scaled, levels=segment_count, cmap=colormap, **plot_kwargs)
+            axes.contourf(x_scaled, y_scaled, c_scaled, levels=segment_count, cmap=colormap, norm=norm, **plot_kwargs)
         elif plot_type in ["ncxy", "cnxy", "cxny", "txy"]:
-            kwargs = {
-                "vmin": c_scaled.min() if clim[0] is None or autoscalec_on else clim[0],
-                "vmax": c_scaled.max() if clim[1] is None or autoscalec_on else clim[1]
-            }
-            norm = colors.Normalize(**kwargs)
-            # noinspection PyUnresolvedReferences
-            cmap = cm.ScalarMappable(norm=norm, cmap=colormap)
-            figure.colorbar(cmap, **colorbar_kwargs)
-
             if plot_type == "txy":
                 segment_length = round(x_length / segment_count)
                 segment_colors = cmap.to_rgba(c_scaled)
@@ -2522,9 +2519,9 @@ class SimulationWindowRunner(WindowRunner):
                 if is_parameterlike_axis('y'):
                     if is_condensed_axis('c'):
                         axis_results = (
-                            results[plot_choice_names['x']],
-                            results[plot_choice_names['y']],
-                            results[plot_choice_names['c']].T
+                            x_results,
+                            y_results,
+                            c_results.T
                         )
                         plot_type = "cxy"
                 elif is_condensed_axis('y'):
@@ -2543,7 +2540,10 @@ class SimulationWindowRunner(WindowRunner):
                         plot_type = "xy"
 
             try:
+                print(plot_type)
+                print(axis_results)
                 figure = self.getFigure(*axis_results, plot_type=plot_type, **figure_kwargs)
+                print('pass2', figure)
                 self.updateFigureCanvas(figure)
                 return figure
             except UnboundLocalError:
