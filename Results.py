@@ -1,9 +1,12 @@
 import itertools
-import math
+from os import remove
+from os.path import basename, dirname, join
 from typing import Dict, Iterable, List, Tuple, Union
+from zipfile import ZipFile
 
 import dill
 import numpy as np
+import yaml
 from numpy import ndarray
 from scipy import fft, signal
 from scipy.stats import stats
@@ -79,7 +82,7 @@ class Results:
 
     def getFreeParameterValues(
             self, names: Union[str, Iterable[str]] = None, output_type: type = list
-    ) -> Union[ ndarray, Dict[str, ndarray]]:
+    ) -> Union[ndarray, Dict[str, ndarray]]:
         """
         Get values for a free parameter.
         
@@ -601,30 +604,42 @@ class Results:
         elif name is None:
             self.results[index] = results
 
-    def saveToFile(self, filename: str) -> None:
+    def saveToFile(self, filepath: str) -> None:
         """
-        Save results object (self) into file.
+        Save results object (self) into *.zip file.
 
         :param self: :class:`~Results.Results` to save into file
-        :param filename: name of file to save object into
+        :param filepath: path of file to save object into
         """
-        file = open(filename, 'wb')
         model = self.getModel()
-        save_info = {
-            "results": self.results,
-            "free_parameter_values": self.getFreeParameterValues(output_type=dict),
-            "model_parameters": {
-                parameter.getName(): parameter.getQuantity()
-                for parameter in model.getParameters()
-            },
-            "model_functions": {
-                function_object.getName():
-                    (
-                        function_object.getExpression(),
-                        function_object.getFreeSymbols(),
-                        function_object.instance_arguments
-                    )
-                for function_object in model.getFunctions()
+
+        free_parameter_info = {}
+        for name, values in self.getFreeParameterValues(output_type=dict).items():
+            unit = str(model.getParameters(names=name).getQuantity().to_base_units().units)
+            free_parameter_info[name] = {
+                "values": str(values),
+                "unit": unit
             }
-        }
-        dill.dump(save_info, file)
+
+        path_directory = dirname(filepath)
+
+        function_file = model.saveFunctionsToFile(join(path_directory, "Function.yml"))
+        parameter_file = model.saveParametersToFile(join(path_directory, "Parameter.yml"))
+
+        free_parameter_file = open(join(path_directory, "FreeParameter.yml"), 'w')
+        yaml.dump(free_parameter_info, free_parameter_file, default_flow_style=None)
+        free_parameter_file.close()
+
+        results_file = open(join(path_directory, "Results.pkl"), 'wb')
+        dill.dump(self.results, results_file)
+        results_file.close()
+
+        files = [function_file, parameter_file, free_parameter_file, results_file]
+        with ZipFile(filepath, 'w') as zipfile:
+            for file in files:
+                filepath = file.name
+                filename = basename(filepath)
+                zipfile.write(filepath, filename)
+        zipfile.close()
+        for file in files:
+            remove(file.name)

@@ -1386,8 +1386,8 @@ class SimulationWindow(TabbedWindow):
         :param name: title of window
         :param runner: :class:`~Layout.SimulationWindow.SimulationWindowRunner` that window is stored in
         :param free_parameter_values: dictionary of free-parameter values.
-            Key is name of free parameter:
-            Value is tuple of (minimum, maximum, stepcount) for free parameter.
+            Key is name of free parameter.
+            Value is tuple of (minimum, maximum, stepcount, Quantity) for free parameter.
             Leave as empty dictionary if there exist zero free parameters.
         :param plot_choices: collection of quantities that may be plotted along each axis.
         """
@@ -1726,12 +1726,15 @@ class SimulationWindowRunner(WindowRunner):
     :ivar setResults: pointer to :meth:`~Results.Results.setResults`
     """
 
-    def __init__(self, name: str, model: Model, **kwargs) -> None:
+    def __init__(self, name: str, model: Model = None, results: Results = None, **kwargs) -> None:
         """
         Constructor for :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
         
         :param name: title of window
-        :param model: :class:`~Function.Model` to simulate
+        :param model: :class:`~Function.Model` to simulate.
+            Only called and required
+            if :paramref:`~Layout.SimulationWindow.SimulationWindowRunner.__init__.results` is None.
+        :param results: initial results to start simulation with
         :param **kwargs: additional arguments to pass into :class:`~Layout.SimulationWindow.SimulationWindow`
         """
         window_object = SimulationWindow(name, self, **kwargs)
@@ -1746,14 +1749,19 @@ class SimulationWindowRunner(WindowRunner):
         self.parameterlike_species = ["Parameter"]
         self.values = None
         self.figure_canvas = None
-        self.model = model
         self.general_derivative_vector = None
 
-        free_parameter_values = {
-            free_parameter_name: self.getFreeParameterValues(free_parameter_name)
-            for free_parameter_name in self.getFreeParameterNames()
-        }
-        results_object = Results(self.getModel(), free_parameter_values)
+        if results is None:
+            self.model = model
+            free_parameter_values = {
+                free_parameter_name: self.getFreeParameterValues(free_parameter_name)
+                for free_parameter_name in self.getFreeParameterNames()
+            }
+            results_object = Results(self.getModel(), free_parameter_values)
+        else:
+            self.model = results.getModel()
+            results_object = results
+
         self.results = results_object
         self.resetResults = results_object.resetResults
         self.setResults = results_object.setResults
@@ -2605,7 +2613,7 @@ class SimulationWindowRunner(WindowRunner):
 
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve results from
         """
-        file_types = (("Pickle", ".pkl"),)
+        file_types = (("Compressed File", "*.zip"), ("ALL files", "*.*"),)
         kwargs = {
             "message": "Enter Filename",
             "title": "Save Results",

@@ -3,8 +3,9 @@ from __future__ import annotations
 import warnings
 from collections.abc import KeysView
 from functools import partial
+from io import BytesIO
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple, Type, Union
+from typing import Dict, Iterable, List, Optional, TextIO, Tuple, Type, Union
 
 import numpy as np
 import yaml
@@ -342,12 +343,12 @@ class Model:
         for yml in ymls:
             generateParametersFromFile(yml, model=self)
 
-    def saveQuantitiesToFile(self, filename: str, specie: str) -> None:
+    def saveQuantitiesToFile(self, filepath: str, specie: str) -> TextIO:
         """
         Save quantity object stored in model into YML file for future retrieval.
 
         :param self: :class:`~Function.Model` to retrieve parameters from
-        :param filename: name of file to save parameters into
+        :param filepath: path of file to save parameters into
         :param specie: specie of quantity object to save info for.
             Must be "Parameter" or "Function".
         """
@@ -369,10 +370,13 @@ class Model:
             else:
                 save_info[name] = quantity_object.getSaveInfo()
 
-        file = open(filename, 'w')
-        yaml.dump(save_info, file)
+        with open(filepath, 'w') as file:
+            yaml.dump(save_info, file, default_flow_style=None)
+            file.close()
 
-    def saveFunctionsToFile(self, *args, **kwargs) -> None:
+        return file
+
+    def saveFunctionsToFile(self, *args, **kwargs) -> TextIO:
         """
         Save functions stored in model into YML file for future retrieval.
 
@@ -380,9 +384,9 @@ class Model:
         :param args: required arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
         :param kwargs: additional arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
         """
-        self.saveQuantitiesToFile(*args, **kwargs, specie="Function")
+        return self.saveQuantitiesToFile(*args, **kwargs, specie="Function")
 
-    def saveParametersToFile(self, *args, **kwargs) -> None:
+    def saveParametersToFile(self, *args, **kwargs) -> TextIO:
         """
         Save parameters stored in model into YML file for future retrieval.
         
@@ -390,22 +394,23 @@ class Model:
         :param args: required arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
         :param kwargs: additional arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
         """
-        self.saveQuantitiesToFile(*args, **kwargs, specie="Parameter")
+        return self.saveQuantitiesToFile(*args, **kwargs, specie="Parameter")
 
-    def saveTimeEvolutionTypesToFile(self, filename: str) -> None:
+    def saveTimeEvolutionTypesToFile(self, filepath: str) -> None:
         """
         Save time-evolution types stored in model into YML file for future retrieval.
 
         :param self: :class:`~Function.Model` to retrieve time-evolution types from
-        :param filename: name of file to save time-evolution types into
+        :param filepath: path of file to save time-evolution types into
         """
         derivatives = self.getDerivatives()
         time_evolution_types = {
             str(derivative.getVariable()): derivative.getTimeEvolutionType()
             for derivative in derivatives
         }
-        file = open(filename, 'w')
-        yaml.dump(time_evolution_types, file)
+        with open(filepath, 'w') as file:
+            yaml.dump(time_evolution_types, file, default_flow_style=None)
+            file.close()
 
     def getDerivatives(self, time_evolution_types: Union[str, List[str]] = None) -> List[Derivative]:
         """
@@ -1889,30 +1894,36 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
     return kwargs
 
 
-def generateFunctionsFromFile(filename: str, **kwargs) -> List[Function]:
+def generateFunctionsFromFile(file: Union[str, BytesIO], **kwargs) -> List[Function]:
     """
     Generate all functions from file.
     
-    :param filename: name of file to read functions from
+    :param file: path of file (or file itself) to read functions from
     :param kwargs: additional arguments to pass into :meth:`~Function.generateFunction`
     :returns: Generated functions
     """
-    file = yaml.load(open(filename), Loader=yaml.Loader)
-    filestem = Path(filename).stem
-    return [generateFunction(name, file[name], filestem=filestem, **kwargs) for name in file.keys()]
+    if isinstance(file, str):
+        file = open(file, 'r')
+
+    contents = yaml.load(file, Loader=yaml.Loader)
+    filestem = Path(file).stem
+    return [generateFunction(name, contents[name], filestem=filestem, **kwargs) for name in contents.keys()]
 
 
-def generateParametersFromFile(filename: str, **kwargs) -> List[Parameter]:
+def generateParametersFromFile(file: Union[str, BytesIO], **kwargs) -> List[Parameter]:
     """
     Generate all parameter from file.
 
-    :param filename: name of file to read parameters from
+    :param file: path of file (or file itself) to read parameters from
     :param kwargs: additional arguments to pass into :meth:`~Function.generateParameter`
     :returns: Generated parameters
     """
-    file = yaml.load(open(filename), Loader=yaml.Loader)
-    filestem = Path(filename).stem
-    return [generateParameter(name, file[name], filestem=filestem, **kwargs) for name in file.keys()]
+    if isinstance(file, str):
+        file = open(file, 'r')
+
+    contents = yaml.load(file, Loader=yaml.Loader)
+    filestem = Path(file).stem
+    return [generateParameter(name, contents[name], filestem=filestem, **kwargs) for name in contents.keys()]
 
 
 def getInheritance(
