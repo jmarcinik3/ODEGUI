@@ -653,6 +653,7 @@ class Results:
 
         function_file = model.saveFunctionsToFile(join(path_directory, "Function.yml"))
         parameter_file = model.saveParametersToFile(join(path_directory, "Parameter.yml"))
+        time_evolution_type_file = model.saveParametersToFile(join(path_directory, "TimeEvolutionType.yml"))
 
         free_parameter_file = open(join(path_directory, "FreeParameter.yml"), 'w')
         yaml.dump(free_parameter_info, free_parameter_file, default_flow_style=None)
@@ -662,12 +663,14 @@ class Results:
         dill.dump(self.results, results_file)
         results_file.close()
 
-        files = [function_file, parameter_file, free_parameter_file, results_file]
+        files = [function_file, parameter_file, free_parameter_file, results_file, time_evolution_type_file]
+
         with ZipFile(filepath, 'w') as zipfile:
             for file in files:
                 filepath = file.name
                 filename = basename(filepath)
                 zipfile.write(filepath, filename)
         zipfile.close()
+
         for file in files:
             remove(file.name)
