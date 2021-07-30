@@ -351,6 +351,7 @@ class Model:
         :param filepath: path of file to save parameters into
         :param specie: specie of quantity object to save info for.
             Must be "Parameter" or "Function".
+        :returns: new file
         """
         if specie == "Parameter":
             quantity_objects: Iterable[Parameter] = self.getParameters()
@@ -383,6 +384,7 @@ class Model:
         :param self: :class:`~Function.Model` to retrieve functions from
         :param args: required arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
         :param kwargs: additional arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
+        :returns: new file
         """
         return self.saveQuantitiesToFile(*args, **kwargs, specie="Function")
 
@@ -393,24 +395,32 @@ class Model:
         :param self: :class:`~Function.Model` to retrieve parameters from
         :param args: required arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
         :param kwargs: additional arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
+        :returns: new file
         """
         return self.saveQuantitiesToFile(*args, **kwargs, specie="Parameter")
 
-    def saveTimeEvolutionTypesToFile(self, filepath: str) -> None:
+    def saveTimeEvolutionTypesToFile(self, filepath: str) -> TextIO:
         """
         Save time-evolution types stored in model into YML file for future retrieval.
 
         :param self: :class:`~Function.Model` to retrieve time-evolution types from
         :param filepath: path of file to save time-evolution types into
+        :returns: new file
         """
-        derivatives = self.getDerivatives()
-        time_evolution_types = {
-            str(derivative.getVariable()): derivative.getTimeEvolutionType()
-            for derivative in derivatives
-        }
+        derivatives: List[Union[Function, Derivative]] = self.getDerivatives()
+
+        tet2vars = {}
+        for derivative in derivatives:
+            time_evolution_type = derivative.getTimeEvolutionType()
+            if time_evolution_type not in tet2vars.keys():
+                tet2vars[time_evolution_type] = []
+            tet2vars[time_evolution_type].append(derivative.getVariable(return_type=str))
+
         with open(filepath, 'w') as file:
-            yaml.dump(time_evolution_types, file, default_flow_style=None)
+            yaml.dump(tet2vars, file, default_flow_style=None)
             file.close()
+
+        return file
 
     def getDerivatives(self, time_evolution_types: Union[str, List[str]] = None) -> List[Derivative]:
         """
