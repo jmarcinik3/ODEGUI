@@ -50,6 +50,7 @@ class Results:
         """
         self.results = {} if results is None else results
         self.model = model
+        self.general_function_expressions = {}
         self.free_parameter_values = free_parameter_values
         self.general_equilibrium_expressions = {}
 
@@ -121,15 +122,26 @@ class Results:
             free_parameter_substitutions[Symbol(free_parameter_name)] = parameter_value
         return free_parameter_substitutions
 
-    def getParameterSubstitutions(self, index: Union[tuple, Tuple[int, ...]], name: str = None) -> Dict[Symbol, float]:
+    def getParameterSubstitutions(
+            self,
+            index: Union[tuple, Tuple[int, ...]] = None,
+            name: str = None,
+            include_nonfree: bool = True,
+            include_free: bool = False
+    ) -> Dict[Symbol, float]:
         """
-        Get substutitions from parameter symbol to parameter value.
+        Get substitutions from parameter symbol to parameter value.
 
         :param self: :class:`~Results.Results` to retrieve values from
         :param index: index of free parameters to retrieve free-parameter values from
         :param name: name of function to retrieve parameter names from.
             Returns substitutions for all parameters in model if None.
             Returns substitutions only for parameters in function if str.
+        :param include_free: set True to include substitutions for free parameters.
+            Set False to exclude them.
+            :paramref:`~Results.Results.getParameterSubstitutions.index` must be given if set to True.
+        :param include_nonfree: set True to include substitutions for non-free parameters.
+            Set False to exclude them.
         """
         model = self.getModel()
 
@@ -144,8 +156,16 @@ class Results:
             }
             parameter_names = function.getFreeSymbols(**kwargs)
 
-        substitutions = model.getParameterSubstitutions(parameter_names, skip_parameters=self.getFreeParameterNames())
-        substitutions.update(self.getFreeParameterSubstitutions(index))
+        substitutions = {}
+        if include_free:
+            substitutions.update(self.getFreeParameterSubstitutions(index))
+        if include_nonfree:
+            nonfree_substitutions = model.getParameterSubstitutions(
+                parameter_names,
+                skip_parameters=self.getFreeParameterNames()
+            )
+            substitutions.update(nonfree_substitutions)
+
         return substitutions
 
     def setEquilibriumExpressions(self, equilibrium_expressions: Dict[Symbol, Expr] = None) -> None:
@@ -187,6 +207,23 @@ class Results:
         simplified_expression = general_expression.subs(parameter_substitutions)
         return simplified_expression
 
+    def getGeneralFunctionExpression(self, name: str) -> Expr:
+        """
+        Get expression for function, with values for non-free parameter substituted in.
+
+        :param self: :class:`~Results.Results` to retrieve expression from
+        :param name: name of function to retrieve expression for
+        """
+        try:
+            expression = self.general_function_expressions[name]
+        except KeyError:
+            expression = self.getModel().getFunctions(names=name).getExpression(generations=0)
+            parameter_substitutions = self.getParameterSubstitutions(include_free=False)
+            expression = expression.subs(parameter_substitutions)
+            self.general_function_expressions[name] = expression
+
+        return expression
+
     def resetResults(self) -> None:
         """
         Reset results to store a new set of them.
@@ -207,11 +244,13 @@ class Results:
         expression_sub = expression.subs(self.getParameterSubstitutions(index=index, name=name))
 
         variables = self.getModel().getVariables(time_evolution_types="Temporal")
-        function_lambda = lambdify((Symbol('t'), tuple(variables)), expression_sub, modules=["math"])
+        expression_lambda = lambdify([[Symbol('t'), *variables]], expression_sub, modules=["numpy", "scipy"])
         variable_names = list(map(str, variables))
         temporal_results = self.getResultsOverTime(index, quantity_names=variable_names)
         times = self.getResultsOverTime(index, quantity_names='t')
-        results = [function_lambda(times[i], temporal_results[i]) for i in range(len(times))]
+        times = times.reshape((1, times.size))
+        arguments = np.append(times, temporal_results, axis=0)
+        results = expression_lambda(arguments)
         return np.array(results)
 
     def getFunctionResults(self, index: Union[tuple, Tuple[int]], name: str) -> ndarray:
@@ -222,26 +261,15 @@ class Results:
         :param index: index of parameter value for free parameter
         :param name: name of function to retrieve results ofZ
         """
-        model = self.getModel()
-        function = model.getFunctions(names=name)
-        expression = function.getExpression(generations="all")
+        expression = self.getGeneralFunctionExpression(name)
+        parameter_substitutions = self.getParameterSubstitutions(index, include_nonfree=False, include_free=True)
+        expression = expression.subs(parameter_substitutions)
 
-        substitutions = {}
-        function_variables = set(function.getFreeSymbols(species="Variable", generations="all"))
-        equilibrium_variables = set(model.getVariables(time_evolution_types="Equilibrium"))
-        if commonElement(function_variables, equilibrium_variables):
-            substitutions.update(model.getEquilibriumSolutions())
-
-        constant_variables = set(model.getVariables(time_evolution_types="Constant"))
-        if commonElement(function_variables, constant_variables):
-            substitutions.update(model.getConstantSubstitutions())
-
-        derivative_function_variables = set(model.getVariables(time_evolution_types="Function"))
-        if commonElement(function_variables, derivative_function_variables):
-            substitutions.update(model.getFunctionSubstitutions())
-
-        expression = expression.subs(substitutions)
-        updated_results = self.getSubstitutedResults(index, expression)
+        free_symbols = expression.free_symbols
+        free_symbol_names = list(map(str, free_symbols))
+        expression_lambda = lambdify([free_symbols], expression, modules=["numpy", "scipy"])
+        substitutions_results = self.getResultsOverTime(index=index, quantity_names=free_symbol_names)
+        updated_results = expression_lambda(substitutions_results)
         return updated_results
 
     def getEquilibriumVariableResults(self, index: Union[tuple, Tuple[int]], name: str) -> ndarray:
@@ -511,7 +539,7 @@ class Results:
             elif quantity_names in model.getFunctionNames():
                 updated_results = self.getFunctionResults(index, quantity_names)
             else:
-                ValueError("names input must correspond to either variable or function when str ")
+                raise ValueError("quantity_names input must correspond to either variable or function when str")
 
             # noinspection PyUnboundLocalVariable
             self.setResults(index, updated_results, quantity_names)
