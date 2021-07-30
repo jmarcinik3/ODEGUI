@@ -550,10 +550,7 @@ class Results:
                 "transform_name": transform_name
             }
             new_results = np.array([self.getResultsOverTime(quantity_names=name, **kwargs) for name in quantity_names])
-            transpose = new_results.T
-            return transpose
-        elif quantity_names is None:
-            return self.getResultsOverTime(index, quantity_names=list(results.keys()))
+            return new_results
         else:
             raise TypeError("names input must be str or list")
 
