@@ -25,6 +25,7 @@ from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from numpy import ndarray
 from pint import Quantity, Unit
+from scipy.interpolate import interp1d, interpn
 from sympy import Expr
 from sympy import Symbol
 from sympy.core import function
@@ -172,8 +173,10 @@ def getFigure(
         # noinspection PyUnresolvedReferences
         cmap = cm.ScalarMappable(norm=norm, cmap=colormap)
         figure.colorbar(cmap, **colorbar_kwargs)
-
-        c_colors = cmap.to_rgba(c)
+        try:
+            c_colors = cmap.to_rgba(c)
+        except ValueError:
+            pass
 
     if inset_parameters is not None:
         free_parameter_ranges = {name: inset_parameters[name]["range"] for name in inset_parameters.keys()}
@@ -205,19 +208,20 @@ def getFigure(
             elif plot_type in ["cnxy", "cxny"]:
                 if plot_type == "cnxy":
                     size = x.shape[0]
-                    x_lines = x
-                    y_lines = np.tile(y, (size, 1))
+                    x_rots = x
+                    y_rots = np.tile(y, (size, 1))
                 elif plot_type == "cxny":
                     size = y.shape[0]
-                    x_lines = np.tile(x, (size, 1))
-                    y_lines = y
+                    x_rots = np.tile(x, (size, 1))
+                    y_rots = y
 
                 for index in range(size):
-                    axes.plot(x_lines[index], y_lines[index], color=c_colors[index], **plot_kwargs)
+                    axes.plot(x_rots[index], y_rots[index], color=c_colors[index], **plot_kwargs)
     elif 'z' in plot_type:
         if plot_type == "xyz":
             axes.plot3D(x, y, z, **plot_kwargs)
         elif plot_type == "txyz":
+            segment_count = min(segment_count, c.shape[1])
             segment_length = round(x_length / segment_count)
 
             if segment_length == 0:
@@ -231,50 +235,104 @@ def getFigure(
         elif plot_type in ["nxyz", "xnyz", "xynz"]:
             if plot_type == "nxyz":
                 assert y.shape == z.shape and y.shape[0] == x.size
-                x_lines = np.tile(x, (y.shape[1], 1)).T
-                y_lines = y
+                x_rots = np.tile(x, (y.shape[1], 1)).T
+                y_rots = y
                 z_lines = z
                 size = x.size
             elif plot_type == "xnyz":
                 assert x.shape == z.shape and x.shape[0] == y.size
-                x_lines = x
-                y_lines = np.tile(y, (x.shape[1], 1)).T
+                x_rots = x
+                y_rots = np.tile(y, (x.shape[1], 1)).T
                 z_lines = z
                 size = y.size
             elif plot_type == "xynz":
                 assert x.shape == y.shape and x.shape[0] == z.size
-                x_lines = x
-                y_lines = y
+                x_rots = x
+                y_rots = y
                 z_lines = np.tile(z, (x.shape[1], 1)).T
                 size = z.size
 
             for index in range(size):
-                axes.plot3D(x_lines[index], y_lines[index], z_lines[index], **plot_kwargs)
+                axes.plot3D(x_rots[index], y_rots[index], z_lines[index], **plot_kwargs)
         elif plot_type == "ncxyz":
             assert x.shape == y.shape == z.shape and x.shape[0] == c.size
             for index in range(c.size):
                 axes.plot3D(x[index], y[index], z[index], color=c_colors[index], **plot_kwargs)
         elif plot_type in ["tnxyz", "txnyz", "txynz"]:
             if plot_type == "tnxyz":
-                assert y.shape == z.shape == c.shape and y.shape[0] == x.size
-                x_rot, y_rot, zs = y, z, x
+                assert c.shape == y.shape == z.shape and y.shape[0] == x.size
+                x_rots, y_rots, zs = y, z, x
                 zdir = 'x'
             elif plot_type == "txnyz":
-                assert x.shape == z.shape == c.shape and x.shape[0] == y.size
-                x_rot, y_rot, zs = x, z, y
+                assert c.shape == x.shape == z.shape and x.shape[0] == y.size
+                x_rots, y_rots, zs = x, z, y
                 zdir = 'y'
             elif plot_type == "txynz":
-                assert x.shape == y.shape == c.shape and x.shape[0] == z.size
-                x_rot, y_rot, zs = x, y, z
+                assert c.shape == x.shape == y.shape and x.shape[0] == z.size
+                x_rots, y_rots, zs = x, y, z
                 zdir = 'z'
 
             for index in range(zs.size):
-                points = np.array([x_rot[index], y_rot[index]]).T.reshape(-1, 1, 2)
+                points = np.array([x_rots[index], y_rots[index]]).T.reshape(-1, 1, 2)
                 segments = np.concatenate([points[:-1], points[1:]], axis=1)
                 line_collection = LineCollection(segments, cmap=colormap, norm=norm)
                 line_collection.set_array(c[index])
                 axes.add_collection3d(line_collection, zs=zs[index], zdir=zdir, **plot_kwargs)
+        elif plot_type in ["ncnxyz", "ncxnyz", "ncxynz"]:
+            if plot_type == "ncnxyz":
+                assert y.shape[0:2] == (c.size, x.size) and y.shape == z.shape
+                x_rots = np.transpose(np.tile(x, (c.size, y.shape[2], 1)), axes=(0, 2, 1))
+                y_rots, z_lines = y, z
+                zsize = x.size
+            elif plot_type == "ncxnyz":
+                assert x.shape[0:2] == (c.size, y.size) and x.shape == z.shape
+                x_rots, z_lines = x, z
+                y_rots = np.transpose(np.tile(y, (c.size, x.shape[2], 1)), axes=(0, 2, 1))
+                zsize = y.size
+            elif plot_type == "ncxynz":
+                assert x.shape[0:2] == (c.size, z.size) and x.shape == y.shape
+                x_rots, y_rots = x, y
+                z_lines = np.transpose(np.tile(z, (c.size, x.shape[2], 1)), axes=(0, 2, 1))
+                zsize = z.size
 
+            for z_index in range(zsize):
+                for c_index in range(c.size):
+                    index = (c_index, z_index)
+                    axes.plot3D(x_rots[index], y_rots[index], z_lines[index], color=c_colors[c_index], **plot_kwargs)
+        elif plot_type in ["tnxnyz", "tnxynz", "txnynz"]:
+            if plot_type == "tnxnyz":
+                assert c.shape[0:2] == (x.size, y.size) and c.shape == z.shape
+                ysize = x.size
+                x_rots = z
+                y_rots = np.tile(x, (c.shape[2], 1)).T
+                zs, zdir = y, 'y'
+                c_rots = c
+            elif plot_type == "tnxynz":
+                assert c.shape[0:2] == (x.size, z.size) and c.shape == y.shape
+                ysize = z.size
+                x_rots = np.transpose(y, axes=(1, 0, 2))
+                y_rots = np.tile(z, (c.shape[2], 1)).T
+                zs, zdir = x, 'x'
+                c_rots = np.transpose(c, axes=(1, 0, 2))
+            elif plot_type == "txnynz":
+                assert c.shape[0:2] == (y.size, z.size) and c.shape == x.shape
+                ysize = y.size
+                x_rots = x
+                y_rots = np.tile(y, (c.shape[2], 1)).T
+                zs, zdir = z, 'z'
+                c_rots = c
+
+            for y_index in range(ysize):
+                for z_index in range(zs.size):
+                    if plot_type == "tnxnyz":
+                        points = np.array([y_rots[y_index], x_rots[y_index, z_index]]).T.reshape(-1, 1, 2)
+                    else:
+                        points = np.array([x_rots[y_index, z_index], y_rots[y_index]]).T.reshape(-1, 1, 2)
+                    segments = np.concatenate([points[:-1], points[1:]], axis=1)
+
+                    line_collection = LineCollection(segments, cmap=colormap, norm=norm)
+                    line_collection.set_array(c_rots[y_index, z_index])
+                    axes.add_collection3d(line_collection, zs=zs[z_index], zdir=zdir, **plot_kwargs)
 
         axes.set_xlim3d(*axes_kwargs["xlim"])
         axes.set_ylim3d(*axes_kwargs["ylim"])
@@ -2590,22 +2648,21 @@ class SimulationWindowRunner(WindowRunner):
                 )
 
                 if len(timelike_names) >= 1:
-                    parameter_results, quantity_results = getResultsOverTimePerParameter(quantity_names=timelike_names)
-
-                    for i in range(len(timelike_names)):
-                        results[timelike_names[i]] = quantity_results[i]
+                    _, quantity_results = getResultsOverTimePerParameter(quantity_names=timelike_names)
+                    results.update(dict(zip(timelike_names, quantity_results)))
 
                 for condensed_name in condensed_names:
                     condensor_name = condensor_names[condensed_name]
-                    parameter_results, result = getResultsOverTimePerParameter(
+                    _, result = getResultsOverTimePerParameter(
                         quantity_names=condensed_name,
                         condensor_name=condensor_name,
                         **self.getCondensorKwargs(condensor_name)
                     )
                     results[condensed_name] = result[0]
 
-                for i in range(len(parameter_names)):
-                    results[parameter_names[i]] = parameter_results[i]
+                results_object = self.getResultsObject()
+                for parameter_name in parameter_names:
+                    results[parameter_name] = results_object.getFreeParameterValues(names=parameter_name)
         except (UnboundLocalError, KeyError, IndexError, AttributeError, ValueError):
             print("data:", traceback.print_exc())
 
@@ -2642,6 +2699,12 @@ class SimulationWindowRunner(WindowRunner):
                     elif is_parameterlike_axis('z'):
                         if is_timelike_axis('c'):
                             plot_type = "txynz"
+                        elif is_parameterlike_axis('c'):
+                            assert x.shape == y.shape
+                            if x.shape[0:2] != (c.size, z.size):
+                                axis_results['x'] = np.transpose(x, axes=(1, 0, 2))
+                                axis_results['y'] = np.transpose(y, axes=(1, 0, 2))
+                            plot_type = "ncxynz"
                         elif is_nonelike_axis('c'):
                             plot_type = "xynz"
                     elif is_nonelike_axis('z'):
@@ -2655,8 +2718,17 @@ class SimulationWindowRunner(WindowRunner):
                     if is_timelike_axis('z'):
                         if is_timelike_axis('c'):
                             plot_type = "txnyz"
+                        elif is_parameterlike_axis('c'):
+                            assert x.shape == z.shape
+                            if x.shape[0:2] != (c.size, y.size):
+                                axis_results['x'] = np.transpose(x, axes=(1, 0, 2))
+                                axis_results['z'] = np.transpose(z, axes=(1, 0, 2))
+                            plot_type = "ncxnyz"
                         elif is_nonelike_axis('c'):
                             plot_type = "xnyz"
+                    elif is_parameterlike_axis('z'):
+                        if is_timelike_axis('c'):
+                            plot_type = "txnynz"
             elif is_condensed_axis('x'):
                 if is_parameterlike_axis('y'):
                     if is_nonelike_axis('z'):
@@ -2676,10 +2748,21 @@ class SimulationWindowRunner(WindowRunner):
                     if is_timelike_axis('z'):
                         if is_timelike_axis('c'):
                             plot_type = "tnxyz"
+                        elif is_parameterlike_axis('c'):
+                            assert y.shape == z.shape
+                            if y.shape[0:2] != (c.size, x.size):
+                                axis_results['y'] = np.transpose(y, axes=(1, 0, 2))
+                                axis_results['z'] = np.transpose(z, axes=(1, 0, 2))
+                            plot_type = "ncnxyz"
                         elif is_nonelike_axis('c'):
                             plot_type = "nxyz"
+                    elif is_parameterlike_axis('z'):
+                        plot_type = "tnxynz"
                 elif is_parameterlike_axis('y'):
-                    if is_nonelike_axis('z'):
+                    if is_timelike_axis('z'):
+                        if is_timelike_axis('c'):
+                            plot_type = "tnxnyz"
+                    elif is_nonelike_axis('z'):
                         if is_condensed_axis('c'):
                             axis_results['c'] = c
                             plot_type = "cxy"
@@ -2694,13 +2777,12 @@ class SimulationWindowRunner(WindowRunner):
                             plot_type = "xy"
 
             try:
-                print({key: value.shape for key, value in axis_results.items()})
-                print(plot_type)
+                print(plot_type, {key: value.shape for key, value in axis_results.items()})
                 figure = self.getFigure(axis_results, plot_type=plot_type, **figure_kwargs)
                 self.updateFigureCanvas(figure)
                 return figure
             except UnboundLocalError:
-                print("todo plots:", plot_quantities)
+                print("todo plots:", plot_quantities, traceback.print_exc())
         except (KeyError, AttributeError, ValueError):
             print("plot:", traceback.print_exc())
 
