@@ -6,6 +6,7 @@ The simulation must be run once by hitting the button before the window function
 from __future__ import annotations
 
 import tkinter as tk
+import traceback
 from functools import partial
 from itertools import product
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
@@ -19,9 +20,12 @@ import numpy as np
 from matplotlib import cm, colors
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.collections import LineCollection
 from matplotlib.figure import Figure
+from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from numpy import ndarray
 from pint import Quantity, Unit
+from scipy.interpolate import interp1d, interpn
 from sympy import Expr
 from sympy import Symbol
 from sympy.core import function
@@ -53,13 +57,10 @@ def drawFigure(canvas: tk.Canvas, figure: Figure) -> FigureCanvasTkAgg:
     return figure_canvas
 
 
+# noinspection PyUnboundLocalVariable
 def getFigure(
-        x: ndarray,
-        y: ndarray,
-        c: ndarray = None,
-        x_scale_factor: float = 1,
-        y_scale_factor: float = 1,
-        c_scale_factor: float = 1,
+        results: Dict[str, ndarray],
+        scale_factor: Dict[str, float] = None,
         plot_type: str = "xy",
         segment_count: int = 100,
         clim: Tuple[Optional[float], Optional[float]] = (None, None),
@@ -67,17 +68,20 @@ def getFigure(
         colormap: str = None,
         colorbar_kwargs: Dict[str, Any] = None,
         axes_kwargs: Dict[str, Any] = None,
+        plot_kwargs: Dict[str, Any] = None,
         inset_parameters: Dict[str, float] = None
 ) -> Figure:
     """
     Get matplotlib figure from data.
 
-    :param x: data to plot on x-axis
-    :param y: data to plot on y-axis
-    :param c: data to plot on c-axis (colorbar)
-    :param x_scale_factor: factor to divide x by before plotting
-    :param y_scale_factor: factor to divide y by before plotting
-    :param c_scale_factor: factor to divide c by before plotting
+    :param results: dictionary of results.
+        Key is name of axis.
+        Value is values to to plot along axis.
+    :param scale_factor: dictionary of scale factor for each axis.
+        Key is name of axis.
+        Value is scale factor.
+        Result along corresponding axis is divided by this factor.
+        Defaults to 1 for each axis not given.
     :param clim: axis bounds for colorbar.
         First element gives lower limit.
         Defaults to minium of :paramref:`~SimulationWindow.getFigure.c`.
@@ -99,49 +103,241 @@ def getFigure(
     :param colorbar_kwargs: additional arguments to pass into :class:`matplotlib.pyplot.colorbar`
     :param axes_kwargs: additional arguments to pass into :class:`matplotlib.axes.Axes'
     """
-    figure, axes = plt.subplots()
+
+    def getLimits(data: ndarray, axis_name: str) -> Tuple[float, float]:
+        """
+        Get axis limits
+
+        :param data: data to retrieve limits for.
+        :param axis_name: name of axis to check for limits in axes_kwargs
+        :returns: Tuple of (minimum, maximum) range for plot axis.
+            Defaults to (data.min(), data.max())
+        """
+        try:
+            limits = list(axes_kwargs[f"{axis_name:s}lim"])
+            if limits[0] is None:
+                limits[0] = data.min()
+            if limits[1] is None:
+                limits[1] = data.max()
+            limits = tuple(limits)
+        except KeyError:
+            limits = (data.min(), data.max())
+
+        return limits
+
+    if plot_kwargs is None:
+        plot_kwargs = {}
+    if axes_kwargs is None:
+        axes_kwargs = {}
+
+    axis_names = results.keys()
+
+    if scale_factor is None:
+        scale_factor = {}
+    for axis_name in axis_names:
+        if axis_name not in scale_factor.keys():
+            scale_factor[axis_name] = 1
+
+    figure = plt.figure()
+
+    if 'x' in plot_type:
+        x = results['x'] / scale_factor['x']
+        axes_kwargs["xlim"] = getLimits(x, 'x')
+
+    if 'y' in plot_type:
+        y = results['y'] / scale_factor['y']
+        axes_kwargs["ylim"] = getLimits(y, 'y')
+
+    if 'z' in plot_type:
+        z = results['z'] / scale_factor['z']
+        axes_kwargs["zlim"] = getLimits(z, 'z')
+        axes = figure.add_subplot(projection="3d")
+    else:
+        axes = figure.add_subplot()
+
     axes.set(**axes_kwargs)
-    if inset_parameters is not None:
-        free_parameter_ranges = {name: inset_parameters[name]["range"] for name in inset_parameters.keys()}
-        inset_axes, inset_axes_plot = getParameterInsetAxes(axes, free_parameter_ranges)
-        free_parameter_values = tuple(
-            inset_parameters[name]["value"] for name in inset_parameters.keys()
-        )
-        inset_axes_plot(*free_parameter_values)
 
-    x_scaled = x / x_scale_factor
-    y_scaled = y / y_scale_factor
+    if 'c' in plot_type or 't' in plot_type:
+        c = results['c'] / scale_factor['c']
 
-    x_length = len(x_scaled)
-    if plot_type == "xy":
-        axes.plot(x_scaled, y_scaled)
-    elif plot_type in ["xyc", "xyt"]:
         if colorbar_kwargs is None:
             colorbar_kwargs = {}
-        c_scaled = c / c_scale_factor
-        kwargs = {
-            "vmin": c_scaled.min() if clim[0] is None or autoscalec_on else clim[0],
-            "vmax": c_scaled.max() if clim[1] is None or autoscalec_on else clim[1]
-        }
-        norm = colors.Normalize(**kwargs)
+
+        if not autoscalec_on:
+            vmin = c.min() if clim[0] is None else clim[0]
+            vmax = c.max() if clim[1] is None else clim[1]
+        else:
+            vmin, vmax = c.min(), c.max()
+
+        norm = colors.Normalize(vmin=vmin, vmax=vmax)
         # noinspection PyUnresolvedReferences
         cmap = cm.ScalarMappable(norm=norm, cmap=colormap)
         figure.colorbar(cmap, **colorbar_kwargs)
-        if plot_type == "xyc":
-            for index in range(x_length):
-                axes.plot(x_scaled[index], y_scaled[index], color=cmap.to_rgba(c_scaled[index]))
-        elif plot_type == "xyt":
-            if segment_count is None:
-                segment_count = 250
+        try:
+            c_colors = cmap.to_rgba(c)
+        except ValueError:
+            pass
+
+    if inset_parameters is not None:
+        free_parameter_ranges = {name: inset_parameters[name]["range"] for name in inset_parameters.keys()}
+        inset_axes, inset_axes_plot = getParameterInsetAxes(axes, free_parameter_ranges)
+        free_parameter_values = tuple(inset_parameters[name]["value"] for name in inset_parameters.keys())
+        inset_axes_plot(*free_parameter_values)
+
+    x_length = len(x)
+    if 'z' not in plot_type:
+        if plot_type == "xy":
+            axes.plot(x, y, **plot_kwargs)
+        elif plot_type in ["cxy", "ncxy", "cnxy", "cxny", "txy"]:
+            if plot_type == "cxy":
+                axes.contourf(x, y, c.T, levels=segment_count, cmap=colormap, norm=norm, **plot_kwargs)
+            elif plot_type == "txy":
+                segment_length = round(x_length / segment_count)
+
+                if segment_length == 0:
+                    axes.scatter(x, y, color=c_colors)
+                else:
+                    points = np.array([x, y]).T.reshape(-1, 1, 2)
+                    segments = np.concatenate([points[:-1], points[1:]], axis=1)
+                    line_collection = LineCollection(segments, cmap=colormap, norm=norm)
+                    line_collection.set_array(c)
+                    axes.add_collection(line_collection, **plot_kwargs)
+            elif plot_type == "ncxy":
+                for index in range(c.shape[0]):
+                    axes.plot(x[index], y[index], color=c_colors[index], **plot_kwargs)
+            elif plot_type in ["cnxy", "cxny"]:
+                if plot_type == "cnxy":
+                    size = x.shape[0]
+                    x_rots = x
+                    y_rots = np.tile(y, (size, 1))
+                elif plot_type == "cxny":
+                    size = y.shape[0]
+                    x_rots = np.tile(x, (size, 1))
+                    y_rots = y
+
+                for index in range(size):
+                    axes.plot(x_rots[index], y_rots[index], color=c_colors[index], **plot_kwargs)
+    elif 'z' in plot_type:
+        if plot_type == "xyz":
+            axes.plot3D(x, y, z, **plot_kwargs)
+        elif plot_type == "txyz":
+            segment_count = min(segment_count, c.shape[1])
             segment_length = round(x_length / segment_count)
 
-            segment_indicies = range(0, x_length - segment_length, segment_length)
-            segment_colors = cmap.to_rgba(c_scaled)
-            for index in segment_indicies:
-                x_segment = x_scaled[index:index + segment_length + 1]
-                y_segment = y_scaled[index:index + segment_length + 1]
-                segment_color = segment_colors[index]
-                axes.plot(x_segment, y_segment, color=segment_color)
+            if segment_length == 0:
+                axes.scatter3D(x, y, z, color=c_colors)
+            else:
+                points = np.array([x, y, z]).T.reshape(-1, 1, 3)
+                segments = np.concatenate([points[:-1], points[1:]], axis=1)
+                line_collection = Line3DCollection(segments, cmap=colormap, norm=norm)
+                line_collection.set_array(c)
+                axes.add_collection(line_collection, **plot_kwargs)
+        elif plot_type in ["nxyz", "xnyz", "xynz"]:
+            if plot_type == "nxyz":
+                assert y.shape == z.shape and y.shape[0] == x.size
+                x_rots = np.tile(x, (y.shape[1], 1)).T
+                y_rots = y
+                z_lines = z
+                size = x.size
+            elif plot_type == "xnyz":
+                assert x.shape == z.shape and x.shape[0] == y.size
+                x_rots = x
+                y_rots = np.tile(y, (x.shape[1], 1)).T
+                z_lines = z
+                size = y.size
+            elif plot_type == "xynz":
+                assert x.shape == y.shape and x.shape[0] == z.size
+                x_rots = x
+                y_rots = y
+                z_lines = np.tile(z, (x.shape[1], 1)).T
+                size = z.size
+
+            for index in range(size):
+                axes.plot3D(x_rots[index], y_rots[index], z_lines[index], **plot_kwargs)
+        elif plot_type == "ncxyz":
+            assert x.shape == y.shape == z.shape and x.shape[0] == c.size
+            for index in range(c.size):
+                axes.plot3D(x[index], y[index], z[index], color=c_colors[index], **plot_kwargs)
+        elif plot_type in ["tnxyz", "txnyz", "txynz"]:
+            if plot_type == "tnxyz":
+                assert c.shape == y.shape == z.shape and y.shape[0] == x.size
+                x_rots, y_rots, zs = y, z, x
+                zdir = 'x'
+            elif plot_type == "txnyz":
+                assert c.shape == x.shape == z.shape and x.shape[0] == y.size
+                x_rots, y_rots, zs = x, z, y
+                zdir = 'y'
+            elif plot_type == "txynz":
+                assert c.shape == x.shape == y.shape and x.shape[0] == z.size
+                x_rots, y_rots, zs = x, y, z
+                zdir = 'z'
+
+            for index in range(zs.size):
+                points = np.array([x_rots[index], y_rots[index]]).T.reshape(-1, 1, 2)
+                segments = np.concatenate([points[:-1], points[1:]], axis=1)
+                line_collection = LineCollection(segments, cmap=colormap, norm=norm)
+                line_collection.set_array(c[index])
+                axes.add_collection3d(line_collection, zs=zs[index], zdir=zdir, **plot_kwargs)
+        elif plot_type in ["ncnxyz", "ncxnyz", "ncxynz"]:
+            if plot_type == "ncnxyz":
+                assert y.shape[0:2] == (c.size, x.size) and y.shape == z.shape
+                x_rots = np.transpose(np.tile(x, (c.size, y.shape[2], 1)), axes=(0, 2, 1))
+                y_rots, z_lines = y, z
+                zsize = x.size
+            elif plot_type == "ncxnyz":
+                assert x.shape[0:2] == (c.size, y.size) and x.shape == z.shape
+                x_rots, z_lines = x, z
+                y_rots = np.transpose(np.tile(y, (c.size, x.shape[2], 1)), axes=(0, 2, 1))
+                zsize = y.size
+            elif plot_type == "ncxynz":
+                assert x.shape[0:2] == (c.size, z.size) and x.shape == y.shape
+                x_rots, y_rots = x, y
+                z_lines = np.transpose(np.tile(z, (c.size, x.shape[2], 1)), axes=(0, 2, 1))
+                zsize = z.size
+
+            for z_index in range(zsize):
+                for c_index in range(c.size):
+                    index = (c_index, z_index)
+                    axes.plot3D(x_rots[index], y_rots[index], z_lines[index], color=c_colors[c_index], **plot_kwargs)
+        elif plot_type in ["tnxnyz", "tnxynz", "txnynz"]:
+            if plot_type == "tnxnyz":
+                assert c.shape[0:2] == (x.size, y.size) and c.shape == z.shape
+                ysize = x.size
+                x_rots = z
+                y_rots = np.tile(x, (c.shape[2], 1)).T
+                zs, zdir = y, 'y'
+                c_rots = c
+            elif plot_type == "tnxynz":
+                assert c.shape[0:2] == (x.size, z.size) and c.shape == y.shape
+                ysize = z.size
+                x_rots = np.transpose(y, axes=(1, 0, 2))
+                y_rots = np.tile(z, (c.shape[2], 1)).T
+                zs, zdir = x, 'x'
+                c_rots = np.transpose(c, axes=(1, 0, 2))
+            elif plot_type == "txnynz":
+                assert c.shape[0:2] == (y.size, z.size) and c.shape == x.shape
+                ysize = y.size
+                x_rots = x
+                y_rots = np.tile(y, (c.shape[2], 1)).T
+                zs, zdir = z, 'z'
+                c_rots = c
+
+            for y_index in range(ysize):
+                for z_index in range(zs.size):
+                    if plot_type == "tnxnyz":
+                        points = np.array([y_rots[y_index], x_rots[y_index, z_index]]).T.reshape(-1, 1, 2)
+                    else:
+                        points = np.array([x_rots[y_index, z_index], y_rots[y_index]]).T.reshape(-1, 1, 2)
+                    segments = np.concatenate([points[:-1], points[1:]], axis=1)
+
+                    line_collection = LineCollection(segments, cmap=colormap, norm=norm)
+                    line_collection.set_array(c_rots[y_index, z_index])
+                    axes.add_collection3d(line_collection, zs=zs[z_index], zdir=zdir, **plot_kwargs)
+
+        axes.set_xlim3d(*axes_kwargs["xlim"])
+        axes.set_ylim3d(*axes_kwargs["ylim"])
+        axes.set_zlim3d(*axes_kwargs["zlim"])
+
     return figure
 
 
@@ -922,6 +1118,7 @@ class AxisTab(Tab, StoredObject):
             self.getInputRow("plot"),
             self.getInputRow('x', is_cartesian=True),
             self.getInputRow('y', is_cartesian=True),
+            self.getInputRow('z', is_cartesian=True),
         ]
 
         layout = Layout(rows=header_rows)
@@ -1029,7 +1226,7 @@ class PlottingTab(Tab):
         :param self: :class:`~Layout.SimulationWindow.PlottingTab` to retrieve element from
         :param name: name of axis to retrieve element from
         """
-        axis_condensor = ["None", "Mean", "Frequency"]
+        axis_condensor = ["None", "Mean", "Frequency", "Standard Deviation"]
         kwargs = {
             "values": axis_condensor,
             "default_value": axis_condensor[0],
@@ -1105,30 +1302,29 @@ class PlottingTab(Tab):
         }
         return sg.Text(**kwargs)
 
-    def getAxisInputRow(self, name: str, is_cartesian: bool = True) -> Row:
+    def getAxisInputRow(self, name: str, include_none: bool = True) -> Row:
         """
         Get row that allows user input for a single axis.
 
         :param self: :class:`~Layout.SimulationWindow.PlottingTab` to retrieve row for
         :param name: name of axis
-        :param is_cartesian: set True if input is for Cartesian-type axis.
-            Set False otherwise.
+        :param include_none: set True to include "None" as choice for quantity specie.
+            Set False to exclude "None" as a choice.
         """
         row = Row(window=self.getWindowObject())
 
         name_label = self.getAxisLabelElement(name)
-        axis_specie_combobox = self.getAxisQuantitySpeciesElement(name, include_none=not is_cartesian)
+        axis_specie_combobox = self.getAxisQuantitySpeciesElement(name, include_none=include_none)
         row.addElements([name_label, axis_specie_combobox])
 
-        if is_cartesian:
-            axis_quantity_combobox = self.getAxisQuantityElement(name)
-        else:
+        if include_none:
             axis_quantity_combobox = self.getAxisQuantityElement(name, values=[''], disabled=True)
+        else:
+            axis_quantity_combobox = self.getAxisQuantityElement(name)
         row.addElements(axis_quantity_combobox)
 
-        if is_cartesian:
-            axis_condensor_combobox = self.getAxisCondensorElement(name)
-            row.addElements(axis_condensor_combobox)
+        axis_condensor_combobox = self.getAxisCondensorElement(name)
+        row.addElements(axis_condensor_combobox)
 
         return row
 
@@ -1140,9 +1336,10 @@ class PlottingTab(Tab):
         """
         header_rows = self.getHeaderRows()
         axis_input_rows = [
-            self.getAxisInputRow('x', is_cartesian=True),
-            self.getAxisInputRow('y', is_cartesian=True),
-            self.getAxisInputRow('c', is_cartesian=False)
+            self.getAxisInputRow('x', include_none=False),
+            self.getAxisInputRow('y', include_none=False),
+            self.getAxisInputRow('z', include_none=True),
+            self.getAxisInputRow('c', include_none=True)
         ]
         transform_combobox = self.getTransformElement()
 
@@ -1364,8 +1561,8 @@ class SimulationWindow(TabbedWindow):
         :param name: title of window
         :param runner: :class:`~Layout.SimulationWindow.SimulationWindowRunner` that window is stored in
         :param free_parameter_values: dictionary of free-parameter values.
-            Key is name of free parameter:
-            Value is tuple of (minimum, maximum, stepcount) for free parameter.
+            Key is name of free parameter.
+            Value is tuple of (minimum, maximum, stepcount, Quantity) for free parameter.
             Leave as empty dictionary if there exist zero free parameters.
         :param plot_choices: collection of quantities that may be plotted along each axis.
         """
@@ -1704,12 +1901,15 @@ class SimulationWindowRunner(WindowRunner):
     :ivar setResults: pointer to :meth:`~Results.Results.setResults`
     """
 
-    def __init__(self, name: str, model: Model, **kwargs) -> None:
+    def __init__(self, name: str, model: Model = None, results: Results = None, **kwargs) -> None:
         """
         Constructor for :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
         
         :param name: title of window
-        :param model: :class:`~Function.Model` to simulate
+        :param model: :class:`~Function.Model` to simulate.
+            Only called and required
+            if :paramref:`~Layout.SimulationWindow.SimulationWindowRunner.__init__.results` is None.
+        :param results: initial results to start simulation with
         :param **kwargs: additional arguments to pass into :class:`~Layout.SimulationWindow.SimulationWindow`
         """
         window_object = SimulationWindow(name, self, **kwargs)
@@ -1719,19 +1919,24 @@ class SimulationWindowRunner(WindowRunner):
         self.getPlotChoices = window_object.getPlotChoices
         self.getFreeParameterNames = window_object.getFreeParameterNames
 
-        self.axis_names = ['x', 'y', 'c']
+        self.axis_names = ['x', 'y', 'z', 'c']
         self.timelike_species = ["Variable", "Function"]
         self.parameterlike_species = ["Parameter"]
         self.values = None
         self.figure_canvas = None
-        self.model = model
         self.general_derivative_vector = None
 
-        free_parameter_values = {
-            free_parameter_name: self.getFreeParameterValues(free_parameter_name)
-            for free_parameter_name in self.getFreeParameterNames()
-        }
-        results_object = Results(self.getModel(), free_parameter_values)
+        if results is None:
+            self.model = model
+            free_parameter_values = {
+                free_parameter_name: self.getFreeParameterValues(free_parameter_name)
+                for free_parameter_name in self.getFreeParameterNames()
+            }
+            results_object = Results(self.getModel(), free_parameter_values)
+        else:
+            self.model = results.getModel()
+            results_object = results
+
         self.results = results_object
         self.resetResults = results_object.resetResults
         self.setResults = results_object.setResults
@@ -2190,6 +2395,7 @@ class SimulationWindowRunner(WindowRunner):
             }
             return recursiveMethod(**kwargs)
 
+        cartesian_names = ('x', 'y', 'z')
         scale_type_dict = {
             "Linear": "linear",
             "Logarithmic": "log"
@@ -2200,68 +2406,82 @@ class SimulationWindowRunner(WindowRunner):
         # noinspection PyTypeChecker
         colorbar_tab: ColorbarTab = ColorbarTab.getInstances()[0]
 
-        x_autoscale = getValues(getKeys(axis_tab.getAutoscaleElement('x')))
-        if x_autoscale:
-            xlim = (None, None)
-        else:
-            xlim = getValues(getKeys(axis_tab.getLimitInputElements('x')))
+        scale_factor = {}
+        autoscale = {}
+        lim = {}
+        label = {}
+        scale_type = {}
+        for axis_name in cartesian_names:
+            scale_factor[axis_name] = getValues(getKeys(axis_tab.getScaleFactorInputElement(axis_name)))
+            label[axis_name] = getValues(getKeys(axis_tab.getTitleInputElement(axis_name)))
+            scale_type[axis_name] = scale_type_dict[getValues(getKeys(axis_tab.getScaleTypeInputElement('x')))]
 
-        y_autoscale = getValues(getKeys(axis_tab.getAutoscaleElement('y')))
-        if y_autoscale:
-            ylim = (None, None)
-        else:
-            ylim = getValues(getKeys(axis_tab.getLimitInputElements('y')))
+            autoscale[axis_name] = getValues(getKeys(axis_tab.getAutoscaleElement(axis_name)))
+            if autoscale[axis_name]:
+                lim[axis_name] = (None, None)
+            else:
+                lim[axis_name] = getValues(getKeys(axis_tab.getLimitInputElements(axis_name)))
 
-        colorbar_autoscale = getValues(getKeys(colorbar_tab.getAutoscaleElement()))
-        if colorbar_autoscale:
-            clim = (None, None)
+        autoscale['c'] = getValues(getKeys(colorbar_tab.getAutoscaleElement()))
+        if autoscale['c']:
+            lim['c'] = (None, None)
         else:
-            clim = getValues(getKeys(colorbar_tab.getLimitInputElements()))
+            lim['c'] = getValues(getKeys(colorbar_tab.getLimitInputElements()))
+        scale_factor['c'] = getValues(getKeys(colorbar_tab.getScaleFactorInputElement()))
 
         aesthetics_kwargs = {
-            "x_scale_factor": getValues(getKeys(axis_tab.getScaleFactorInputElement('x'))),
-            "y_scale_factor": getValues(getKeys(axis_tab.getScaleFactorInputElement('y'))),
-            "c_scale_factor": getValues(getKeys(colorbar_tab.getScaleFactorInputElement())),
-            "clim": clim,
-            "autoscalec_on": colorbar_autoscale,
-            "segment_count": getValues(getKeys(colorbar_tab.getSegmentCountElement())),
+            "scale_factor": scale_factor,
+
+            "clim": lim['c'],
+            "autoscalec_on": autoscale['c'],
+            "segment_count": int(getValues(getKeys(colorbar_tab.getSegmentCountElement()))),
             "colormap": getValues(getKeys(colorbar_tab.getColormapInputElement())),
+
             "axes_kwargs": {
-                "xlim": xlim,
-                "xlabel": getValues(getKeys(axis_tab.getTitleInputElement('x'))),
-                "autoscalex_on": getValues(getKeys(axis_tab.getAutoscaleElement('x'))),
-                "xscale": scale_type_dict[getValues(getKeys(axis_tab.getScaleTypeInputElement('x')))],
-                "ylim": ylim,
-                "ylabel": getValues(getKeys(axis_tab.getTitleInputElement('y'))),
-                "autoscaley_on": y_autoscale,
-                "yscale": scale_type_dict[getValues(getKeys(axis_tab.getScaleTypeInputElement('x')))],
+                "xlim": lim['x'],
+                "xlabel": label['x'],
+                "autoscalex_on": autoscale['x'],
+                "xscale": scale_type['x'],
+
+                "ylim": lim['y'],
+                "ylabel": label['y'],
+                "autoscaley_on": autoscale['y'],
+                "yscale": scale_type['y'],
+
+                # "zlim": lim['z'],
+                # "zlabel": label['z'],
+                # "autoscalez_on": autoscale['z'],
+                # "zscale": scale_type['z'],
+
                 "title": getValues(getKeys(axis_tab.getTitleInputElement("plot")))
             },
+
             "colorbar_kwargs": {
                 "label": getValues(getKeys(colorbar_tab.getTitleInputElement())),
             }
         }
         return aesthetics_kwargs
 
-    def getFigure(self, x: ndarray = None, y: ndarray = None, c: ndarray = None, **kwargs) -> Figure:
+    def getFigure(self, data: Dict[str, ndarray], **kwargs) -> Figure:
         """
         Get matplotlib figure for results.
         
-        :param x: data to plot along x-axis
-        :param y: data to plot along y-axis
-        :param c: data to plot along c-axis (colorbar)
+        :param data: data to plot.
+            Key is name of axis.
+            Value is data to plot along axis.
         :param kwargs: additional arguments to pass into :meth:`~SimulationWindow.getFigure`
-        :returns: Displayed figure if :paramref:`~Layout.SimulationWindow.SimulationWindowRunner.getFigure.x_data` or :paramref:`~Layout.SimulationWindow.SimulationWindowRunner.getFigure.y_data` are None.
+        :returns: Displayed figure
+            if any element in :paramref:`~Layout.SimulationWindow.SimulationWindowRunner.getFigure.data` is not ndarray.
             Figure with given data plotted if both are ndarray.
         """
-        if not isinstance(x, ndarray) or not isinstance(y, ndarray):
+        if any(not isinstance(x, ndarray) for x in data.values()):
             figure_canvas = self.getFigureCanvas()
             figure_canvas_attributes = vars(figure_canvas)
             figure = figure_canvas_attributes["figure"]
             return figure
         else:
             aesthetics = self.getPlotAesthetics()
-            return getFigure(x, y, c, **kwargs, **aesthetics)
+            return getFigure(data, **kwargs, **aesthetics)
 
     def getFigureCanvas(self) -> FigureCanvasTkAgg:
         """
@@ -2293,6 +2513,29 @@ class SimulationWindowRunner(WindowRunner):
         self.figure_canvas = drawFigure(canvas.TKCanvas, figure)
         window_object.getWindow().Refresh()
         return self.figure_canvas
+
+    def getCondensorKwargs(self, condensor_specie: str) -> Dict[str, Union[str, int]]:
+        """
+        Get condensor kwargs indicated how to calculate condensed variable.
+
+        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve arguments from
+        :param condensor_specie: specie of condensor to retrieve arguments for
+        """
+        if condensor_specie == "Frequency":
+            condensor_kwargs = {
+                "calculation_method": self.getFrequencyMethod(),
+                "condensing_method": self.getFrequencyCondensor()
+            }
+        elif condensor_specie == "Mean":
+            condensor_kwargs = {
+                "order": self.getMeanOrder()
+            }
+        elif condensor_specie == "Standard Deviation":
+            condensor_kwargs = {}
+        else:
+            raise TypeError(f"invalid value for condensor specie ({condensor_specie:s})")
+
+        return condensor_kwargs
 
     def updatePlot(
             self,
@@ -2349,88 +2592,199 @@ class SimulationWindowRunner(WindowRunner):
             "index": index,
             "transform_name": transform_name
         }
-        x_name, x_specie, x_condensor = tuple(plot_quantities['x'])
-        y_name, y_specie, y_condensor = tuple(plot_quantities['y'])
-        c_name, c_specie, c_condensor = tuple(plot_quantities['c'])
-        try:
-            if x_specie in timelike_species and x_condensor == "None":
-                if y_specie in timelike_species and y_condensor == "None":
-                    if c_specie == "None":
-                        x_results = results_object.getResultsOverTime(names=x_name, **results_kwargs)
-                        y_results = results_object.getResultsOverTime(names=y_name, **results_kwargs)
-                        figure = self.getFigure(x_results, y_results, plot_type="xy", **figure_kwargs)
-                    elif c_specie in timelike_species:
-                        x_results, y_results, c_results = tuple(
-                            results_object.getResultsOverTime(names=name, **results_kwargs)
-                                for name in [x_name, y_name, c_name]
-                        )
-                        figure = self.getFigure(x_results, y_results, c_results, plot_type="xyt", **figure_kwargs)
-                    elif c_specie in parameterlike_species:
-                        name_kwargs = {
-                            "quantity_names": (x_name, y_name),
-                            "parameter_name": c_name
-                        }
-                        c_results, x_results, y_results = results_object.getResultsOverTimePerParameter(
-                            **name_kwargs, **results_kwargs
-                        )
-                        figure = self.getFigure(x_results, y_results, c_results, plot_type="xyc", **figure_kwargs)
-                    else:
-                        raise ValueError(f"invalid value for c-axis species)")
-            elif x_specie in timelike_species and x_condensor != "None":
-                if x_condensor == "Frequency":
-                    condensor_kwargs = {
-                        "calculation_method": self.getFrequencyMethod(),
-                        "condensing_method": self.getFrequencyCondensor()
-                    }
-                elif x_condensor == "Mean":
-                    condensor_kwargs = {
-                        "order": self.getMeanOrder()
-                    }
 
-                if y_specie in parameterlike_species:
-                    if c_specie == "None":
-                        name_kwargs = {
-                            "quantity_names": x_name,
-                            "parameter_name": y_name,
-                            "condensor_name": x_condensor
-                        }
-                        y_results, x_results = results_object.getResultsOverTimePerParameter(
-                            **name_kwargs, **results_kwargs, **condensor_kwargs
-                        )
-                        figure = self.getFigure(x_results, y_results, plot_type="xy", **figure_kwargs)
-            elif x_specie in parameterlike_species:
-                if y_specie in timelike_species and y_condensor != "None":
-                    if y_condensor == "Frequency":
-                        condensor_kwargs = {
-                            "calculation_method": self.getFrequencyMethod(),
-                            "condensing_method": self.getFrequencyCondensor()
-                        }
-                    elif y_condensor == "Mean":
-                        condensor_kwargs = {
-                            "order": self.getMeanOrder()
-                        }
+        plot_choice_names = {axis: plot_quantities[axis][0] for axis in plot_quantities_keys}
+        species = {plot_quantities[axis][0]: plot_quantities[axis][1] for axis in plot_quantities_keys}
+        condensor_names = {plot_quantities[axis][0]: plot_quantities[axis][2] for axis in plot_quantities_keys}
 
-                    if c_specie == "None":
-                        name_kwargs = {
-                            "quantity_names": y_name,
-                            "parameter_name": x_name,
-                            "condensor_name": y_condensor
-                        }
-                        x_results, y_results = results_object.getResultsOverTimePerParameter(
-                            **name_kwargs, **results_kwargs, **condensor_kwargs
-                        )
-                        figure = self.getFigure(x_results, y_results, plot_type="xy", **figure_kwargs)
-        except KeyError:
-            return None
-        except ValueError:
-            return None
+        is_timelike = {
+            name: species[name] in timelike_species and condensor_names[name] == "None"
+            for name in plot_choice_names.values()
+        }
+        is_condensed = {
+            name: species[name] in timelike_species and condensor_names[name] != "None"
+            for name in plot_choice_names.values()
+        }
+        is_parameterlike = {
+            name: species[name] in parameterlike_species
+            for name in plot_choice_names.values()
+        }
+        is_nonelike = {
+            name: not is_timelike[name] and not is_condensed[name] and not is_parameterlike[name]
+            for name in plot_choice_names.values()
+        }
+
+        timelike_count = sum(is_timelike.values())
+        parameterlike_count = sum(is_parameterlike.values())
+        condensed_count = sum(is_condensed.values())
+        none_count = sum(is_nonelike.values())
+
+        results = {}
+
+        parameter_names = tuple([name for name in plot_choice_names.values() if is_parameterlike[name]])
+        timelike_names = tuple([name for name in plot_choice_names.values() if is_timelike[name]])
+        condensed_names = tuple([name for name in plot_choice_names.values() if is_condensed[name]])
 
         try:
-            self.updateFigureCanvas(figure)
-            return figure
-        except UnboundLocalError:
-            print('todo plots:', plot_quantities)
-            return None
+            results = {}
+            if parameterlike_count == 0:
+                getResultsOverTime = partial(results_object.getResultsOverTime, **results_kwargs)
+
+                for timelike_name in timelike_names:
+                    results[timelike_name] = getResultsOverTime(quantity_names=timelike_name)
+
+                for condensed_name in condensed_names:
+                    condensor_name = condensor_names[condensed_name]
+                    results[condensed_name] = getResultsOverTime(
+                        names=condensed_name,
+                        condensor_name=condensor_name,
+                        **self.getCondensorKwargs(condensor_name)
+                    )
+            else:
+                getResultsOverTimePerParameter = partial(
+                    results_object.getResultsOverTimePerParameter,
+                    parameter_names=parameter_names,
+                    **results_kwargs
+                )
+
+                if len(timelike_names) >= 1:
+                    _, quantity_results = getResultsOverTimePerParameter(quantity_names=timelike_names)
+                    results.update(dict(zip(timelike_names, quantity_results)))
+
+                for condensed_name in condensed_names:
+                    condensor_name = condensor_names[condensed_name]
+                    _, result = getResultsOverTimePerParameter(
+                        quantity_names=condensed_name,
+                        condensor_name=condensor_name,
+                        **self.getCondensorKwargs(condensor_name)
+                    )
+                    results[condensed_name] = result[0]
+
+                results_object = self.getResultsObject()
+                for parameter_name in parameter_names:
+                    results[parameter_name] = results_object.getFreeParameterValues(names=parameter_name)
+        except (UnboundLocalError, KeyError, IndexError, AttributeError, ValueError):
+            print("data:", traceback.print_exc())
+
+        try:
+            is_timelike_axis = lambda axis: is_timelike[plot_choice_names[axis]]
+            is_parameterlike_axis = lambda axis: is_parameterlike[plot_choice_names[axis]]
+            is_condensed_axis = lambda axis: is_condensed[plot_choice_names[axis]]
+            is_nonelike_axis = lambda axis: is_nonelike[plot_choice_names[axis]]
+
+            axis_results = {}
+
+            if not is_nonelike_axis('x'):
+                x = results[plot_choice_names['x']]
+                axis_results['x'] = x
+            if not is_nonelike_axis('y'):
+                y = results[plot_choice_names['y']]
+                axis_results['y'] = y
+            if not is_nonelike_axis('z'):
+                z = results[plot_choice_names['z']]
+                axis_results['z'] = z
+            if not is_nonelike_axis('c'):
+                c = results[plot_choice_names['c']]
+                axis_results['c'] = c
+
+            if is_timelike_axis('x'):
+                if is_timelike_axis('y'):
+                    if is_timelike_axis('z'):
+                        if is_timelike_axis('c'):
+                            plot_type = "txyz"
+                        elif is_parameterlike_axis('c'):
+                            plot_type = "ncxyz"
+                        elif is_nonelike_axis('c'):
+                            plot_type = "xyz"
+                    elif is_parameterlike_axis('z'):
+                        if is_timelike_axis('c'):
+                            plot_type = "txynz"
+                        elif is_parameterlike_axis('c'):
+                            assert x.shape == y.shape
+                            if x.shape[0:2] != (c.size, z.size):
+                                axis_results['x'] = np.transpose(x, axes=(1, 0, 2))
+                                axis_results['y'] = np.transpose(y, axes=(1, 0, 2))
+                            plot_type = "ncxynz"
+                        elif is_nonelike_axis('c'):
+                            plot_type = "xynz"
+                    elif is_nonelike_axis('z'):
+                        if is_timelike_axis('c'):
+                            plot_type = "txy"
+                        elif is_parameterlike_axis('c'):
+                            plot_type = "ncxy"
+                        elif is_nonelike_axis('c'):
+                            plot_type = "xy"
+                elif is_parameterlike_axis('y'):
+                    if is_timelike_axis('z'):
+                        if is_timelike_axis('c'):
+                            plot_type = "txnyz"
+                        elif is_parameterlike_axis('c'):
+                            assert x.shape == z.shape
+                            if x.shape[0:2] != (c.size, y.size):
+                                axis_results['x'] = np.transpose(x, axes=(1, 0, 2))
+                                axis_results['z'] = np.transpose(z, axes=(1, 0, 2))
+                            plot_type = "ncxnyz"
+                        elif is_nonelike_axis('c'):
+                            plot_type = "xnyz"
+                    elif is_parameterlike_axis('z'):
+                        if is_timelike_axis('c'):
+                            plot_type = "txnynz"
+            elif is_condensed_axis('x'):
+                if is_parameterlike_axis('y'):
+                    if is_nonelike_axis('z'):
+                        if is_parameterlike_axis('c'):
+                            axis_results['x'] = x if x.shape == (c.size, y.size) else x.T
+                            plot_type = "cnxy"
+                        elif is_condensed_axis('c'):
+                            plot_type = "txy"
+                        elif is_nonelike_axis('c'):
+                            plot_type = "xy"
+                elif is_condensed_axis('y'):
+                    if is_nonelike_axis('z'):
+                        if is_parameterlike_axis('c'):
+                            plot_type = "txy"
+            elif is_parameterlike_axis('x'):
+                if is_timelike_axis('y'):
+                    if is_timelike_axis('z'):
+                        if is_timelike_axis('c'):
+                            plot_type = "tnxyz"
+                        elif is_parameterlike_axis('c'):
+                            assert y.shape == z.shape
+                            if y.shape[0:2] != (c.size, x.size):
+                                axis_results['y'] = np.transpose(y, axes=(1, 0, 2))
+                                axis_results['z'] = np.transpose(z, axes=(1, 0, 2))
+                            plot_type = "ncnxyz"
+                        elif is_nonelike_axis('c'):
+                            plot_type = "nxyz"
+                    elif is_parameterlike_axis('z'):
+                        plot_type = "tnxynz"
+                elif is_parameterlike_axis('y'):
+                    if is_timelike_axis('z'):
+                        if is_timelike_axis('c'):
+                            plot_type = "tnxnyz"
+                    elif is_nonelike_axis('z'):
+                        if is_condensed_axis('c'):
+                            axis_results['c'] = c
+                            plot_type = "cxy"
+                elif is_condensed_axis('y'):
+                    if is_nonelike_axis('z'):
+                        if is_parameterlike_axis('c'):
+                            axis_results['y'] = y if y.shape == (c.size, x.size) else y.T
+                            plot_type = "cxny"
+                        elif is_condensed_axis('c'):
+                            plot_type = "txy"
+                        elif is_nonelike_axis('c'):
+                            plot_type = "xy"
+
+            try:
+                print(plot_type, {key: value.shape for key, value in axis_results.items()})
+                figure = self.getFigure(axis_results, plot_type=plot_type, **figure_kwargs)
+                self.updateFigureCanvas(figure)
+                return figure
+            except UnboundLocalError:
+                print("todo plots:", plot_quantities, traceback.print_exc())
+        except (KeyError, AttributeError, ValueError):
+            print("plot:", traceback.print_exc())
 
     def updatePlotChoices(self, names: Union[str, List[str]] = None) -> None:
         """
@@ -2494,24 +2848,7 @@ class SimulationWindowRunner(WindowRunner):
 
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve results from
         """
-        file_types = (("Pickle", ".pkl"),)
-        kwargs = {
-            "message": "Enter Filename",
-            "title": "Save Results",
-            "save_as": True,
-            "file_types": file_types
-        }
-        filename = sg.PopupGetFile(**kwargs)
-        if isinstance(filename, str):
-            self.getResultsObject().saveToFile(filename)
-
-    def saveResults(self) -> None:
-        """
-        Save :class:`~Results.Results` stored by simulation into file.
-
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve results from
-        """
-        file_types = (("Pickle", ".pkl"),)
+        file_types = (("Compressed File", "*.zip"), ("ALL files", "*.*"),)
         kwargs = {
             "message": "Enter Filename",
             "title": "Save Results",
@@ -2595,9 +2932,12 @@ class SimulationWindowRunner(WindowRunner):
                 "save_as": True,
                 "file_types": tuple(file_types)
             }
-            filename = sg.PopupGetFile(**kwargs)
-            if isinstance(filename, str):
-                figure.savefig(filename)
+            filepath = sg.PopupGetFile(**kwargs)
+            if isinstance(filepath, str):
+                try:
+                    figure.savefig(filepath)
+                except OSError:
+                    sg.PopupError(f"cannot save figure as {filepath:s}")
         elif isinstance(name, str):
             parameter_index = self.getFreeParameterIndex(name)
             default_index = list(self.getClosestSliderIndex())
@@ -2629,12 +2969,12 @@ class SimulationWindowRunner(WindowRunner):
                 "save_as": True,
                 "file_types": tuple(file_types)
             }
-            filename = sg.PopupGetFile(**kwargs)
-            if isinstance(filename, str):
+            filepath = sg.PopupGetFile(**kwargs)
+            if isinstance(filepath, str):
                 kwargs = {
                     "save_all": True,
                     "append_images": images[1:],
                     "duration": round(4000 / len(images)),
                     "loop": 0
                 }
-                images[0].save(filename, **kwargs)
+                images[0].save(filepath, **kwargs)

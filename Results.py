@@ -1,8 +1,12 @@
-import pickle
-from typing import Dict, List, Tuple, Union
+import itertools
+from os import remove
+from os.path import basename, dirname, join
+from typing import Dict, Iterable, List, Tuple, Union
+from zipfile import ZipFile
 
 import dill
 import numpy as np
+import yaml
 from numpy import ndarray
 from scipy import fft, signal
 from scipy.stats import stats
@@ -11,7 +15,7 @@ from sympy import Symbol
 from sympy.utilities.lambdify import lambdify
 
 from Function import Model
-from macros import commonElement
+from macros import commonElement, recursiveMethod
 
 
 class Results:
@@ -35,7 +39,7 @@ class Results:
         They are reused after their initial calculation.
     """
 
-    def __init__(self, model: Model, free_parameter_values: Dict[str, ndarray]):
+    def __init__(self, model: Model, free_parameter_values: Dict[str, ndarray], results: dict = None):
         """
         Constructor for :class:`~Results.Results`
 
@@ -44,8 +48,9 @@ class Results:
             Key is name of free parameter.
             Value is possible values for free parameter.
         """
-        self.results = {}
+        self.results = {} if results is None else results
         self.model = model
+        self.general_function_expressions = {}
         self.free_parameter_values = free_parameter_values
         self.general_equilibrium_expressions = {}
 
@@ -76,22 +81,30 @@ class Results:
         """
         return list(self.free_parameter_values.keys())
 
-    def getFreeParameterValues(self, names: Union[str, List[str]] = None) -> Union[ndarray, Dict[str, ndarray]]:
+    def getFreeParameterValues(
+            self, names: Union[str, Iterable[str]] = None, output_type: type = list
+    ) -> Union[ndarray, Dict[str, ndarray]]:
         """
         Get values for a free parameter.
         
         :param self: :class:`~Results.Results` to retreive value from
         :param names: name(s) of parameter to retreive values for
+        :param output_type: iterable to output as
+            if :paramref:`~Results.Results.getFreeParameterValues.names` is iterable
         """
-        if isinstance(names, str):
-            free_parameter_values = self.getFreeParameterValues()
-            return free_parameter_values[names]
-        elif isinstance(names, list):
-            return {name: self.getFreeParameterValues(names=name) for name in names}
-        elif names is None:
-            return self.free_parameter_values
-        else:
-            raise TypeError("names must be str or list")
+
+        def get(name: str) -> ndarray:
+            """Base method for :meth:`~Results.Results.getFreeParameterValues`"""
+            return self.free_parameter_values[name]
+
+        kwargs = {
+            "args": names,
+            "base_method": get,
+            "valid_input_types": str,
+            "output_type": output_type,
+            "default_args": self.getFreeParameterNames()
+        }
+        return recursiveMethod(**kwargs)
 
     def getFreeParameterSubstitutions(self, index: Union[tuple, Tuple[int, ...]]) -> Dict[Symbol, float]:
         """
@@ -107,18 +120,28 @@ class Results:
             parameter_values = self.getFreeParameterValues(names=free_parameter_name)
             parameter_value = parameter_values[parameter_index]
             free_parameter_substitutions[Symbol(free_parameter_name)] = parameter_value
-        print(free_parameter_substitutions)
         return free_parameter_substitutions
 
-    def getParameterSubstitutions(self, index: Union[tuple, Tuple[int, ...]], name: str = None) -> Dict[Symbol, float]:
+    def getParameterSubstitutions(
+            self,
+            index: Union[tuple, Tuple[int, ...]] = None,
+            name: str = None,
+            include_nonfree: bool = True,
+            include_free: bool = False
+    ) -> Dict[Symbol, float]:
         """
-        Get substutitions from parameter symbol to parameter value.
+        Get substitutions from parameter symbol to parameter value.
 
         :param self: :class:`~Results.Results` to retrieve values from
         :param index: index of free parameters to retrieve free-parameter values from
         :param name: name of function to retrieve parameter names from.
             Returns substitutions for all parameters in model if None.
             Returns substitutions only for parameters in function if str.
+        :param include_free: set True to include substitutions for free parameters.
+            Set False to exclude them.
+            :paramref:`~Results.Results.getParameterSubstitutions.index` must be given if set to True.
+        :param include_nonfree: set True to include substitutions for non-free parameters.
+            Set False to exclude them.
         """
         model = self.getModel()
 
@@ -133,8 +156,16 @@ class Results:
             }
             parameter_names = function.getFreeSymbols(**kwargs)
 
-        substitutions = model.getParameterSubstitutions(parameter_names, skip_parameters=self.getFreeParameterNames())
-        substitutions.update(self.getFreeParameterSubstitutions(index))
+        substitutions = {}
+        if include_free:
+            substitutions.update(self.getFreeParameterSubstitutions(index))
+        if include_nonfree:
+            nonfree_substitutions = model.getParameterSubstitutions(
+                parameter_names,
+                skip_parameters=self.getFreeParameterNames()
+            )
+            substitutions.update(nonfree_substitutions)
+
         return substitutions
 
     def setEquilibriumExpressions(self, equilibrium_expressions: Dict[Symbol, Expr] = None) -> None:
@@ -150,7 +181,6 @@ class Results:
         """
         if equilibrium_expressions is None:
             solutions = self.getModel().getEquilibriumSolutions(skip_parameters=self.getFreeParameterNames())
-            solutions = {variable: solution for variable, solution in solutions.items()}
             self.general_equilibrium_expressions = solutions
         else:
             self.general_equilibrium_expressions = equilibrium_expressions
@@ -173,9 +203,26 @@ class Results:
         else:
             raise TypeError("name must be sp.Symbol or str")
 
-        parameter_substitutions = self.getParameterSubstitutions(index=index, name=name)
+        parameter_substitutions = self.getParameterSubstitutions(index=index)
         simplified_expression = general_expression.subs(parameter_substitutions)
         return simplified_expression
+
+    def getGeneralFunctionExpression(self, name: str) -> Expr:
+        """
+        Get expression for function, with values for non-free parameter substituted in.
+
+        :param self: :class:`~Results.Results` to retrieve expression from
+        :param name: name of function to retrieve expression for
+        """
+        try:
+            expression = self.general_function_expressions[name]
+        except KeyError:
+            expression = self.getModel().getFunctions(names=name).getExpression(generations=0)
+            parameter_substitutions = self.getParameterSubstitutions(include_free=False)
+            expression = expression.subs(parameter_substitutions)
+            self.general_function_expressions[name] = expression
+
+        return expression
 
     def resetResults(self) -> None:
         """
@@ -197,11 +244,13 @@ class Results:
         expression_sub = expression.subs(self.getParameterSubstitutions(index=index, name=name))
 
         variables = self.getModel().getVariables(time_evolution_types="Temporal")
-        function_lambda = lambdify((Symbol('t'), tuple(variables)), expression_sub, "numpy")
-        variable_names = [str(variable) for variable in variables]
-        temporal_results = self.getResultsOverTime(index, names=variable_names)
-        times = self.getResultsOverTime(index, names='t')
-        results = [function_lambda(times[i], temporal_results[i]) for i in range(len(times))]
+        expression_lambda = lambdify([[Symbol('t'), *variables]], expression_sub, modules=["numpy", "scipy"])
+        variable_names = list(map(str, variables))
+        temporal_results = self.getResultsOverTime(index, quantity_names=variable_names)
+        times = self.getResultsOverTime(index, quantity_names='t')
+        times = times.reshape((1, times.size))
+        arguments = np.append(times, temporal_results, axis=0)
+        results = expression_lambda(arguments)
         return np.array(results)
 
     def getFunctionResults(self, index: Union[tuple, Tuple[int]], name: str) -> ndarray:
@@ -212,26 +261,15 @@ class Results:
         :param index: index of parameter value for free parameter
         :param name: name of function to retrieve results ofZ
         """
-        model = self.getModel()
-        function = model.getFunctions(names=name)
-        expression = function.getExpression(generations="all")
+        expression = self.getGeneralFunctionExpression(name)
+        parameter_substitutions = self.getParameterSubstitutions(index, include_nonfree=False, include_free=True)
+        expression = expression.subs(parameter_substitutions)
 
-        substitutions = {}
-        function_variables = set(function.getFreeSymbols(species="Variable", generations="all"))
-        equilibrium_variables = set(model.getVariables(time_evolution_types="Equilibrium"))
-        if commonElement(function_variables, equilibrium_variables):
-            substitutions.update(model.getEquilibriumSolutions())
-
-        constant_variables = set(model.getVariables(time_evolution_types="Constant"))
-        if commonElement(function_variables, constant_variables):
-            substitutions.update(model.getConstantSubstitutions())
-
-        derivative_function_variables = set(model.getVariables(time_evolution_types="Function"))
-        if commonElement(function_variables, derivative_function_variables):
-            substitutions.update(model.getFunctionSubstitutions())
-
-        expression = expression.subs(substitutions)
-        updated_results = self.getSubstitutedResults(index, expression)
+        free_symbols = expression.free_symbols
+        free_symbol_names = list(map(str, free_symbols))
+        expression_lambda = lambdify([free_symbols], expression, modules=["numpy", "scipy"])
+        substitutions_results = self.getResultsOverTime(index=index, quantity_names=free_symbol_names)
+        updated_results = expression_lambda(substitutions_results)
         return updated_results
 
     def getEquilibriumVariableResults(self, index: Union[tuple, Tuple[int]], name: str) -> ndarray:
@@ -254,7 +292,7 @@ class Results:
         :param name: name of variable to retrieve results of
         """
         initial_condition = self.getModel().getDerivativesFromVariableNames(names=name).getInitialCondition()
-        results = np.repeat(initial_condition, len(self.getResultsOverTime(index, 't')))
+        results = np.repeat(initial_condition, self.getResultsOverTime(index, 't').size)
         return results
 
     def getOscillationFrequency(
@@ -292,8 +330,8 @@ class Results:
         """
         calculation_method = calculation_method.lower()
         condensing_method = condensing_method.lower()
-        results = self.getResultsOverTime(index=index, names=name, **kwargs)
-        times = self.getResultsOverTime(index=index, names='t', **kwargs)
+        results = self.getResultsOverTime(index=index, quantity_names=name, **kwargs)
+        times = self.getResultsOverTime(index=index, quantity_names='t', **kwargs)
 
         if "separation" in calculation_method:
             if "max" in calculation_method or "min" in calculation_method:
@@ -311,25 +349,19 @@ class Results:
                 minima_indicies = signal.find_peaks(-results)[0]
                 extrema_indicies = np.append(extrema_indicies, minima_indicies)
             extrema_times = times[extrema_indicies]
-            frequencies = np.array(
-                [time_to_frequency(extrema_times[i], extrema_times[i + 1]) for i in range(len(extrema_times) - 1)]
-            )
+            frequencies = time_to_frequency(extrema_times[0:-1], extrema_times[1:])
         elif "max" in calculation_method and "fourier" in calculation_method:
             harmonic_count = int(calculation_method.split('_')[-1])
-            print('1', harmonic_count)
-            time_count = len(times)
+            time_count = times.size
             time_resolution = (times[-1] - times[0]) / (time_count - 1)
             fourier_results, frequencies = abs(fft.rfft(results)), fft.rfftfreq(time_count, time_resolution)
 
             maxima_indicies = signal.find_peaks(fourier_results)[0]
-            if len(maxima_indicies) >= 1:
+            if maxima_indicies.size >= 1:
                 harmonic_frequencies = frequencies[maxima_indicies]
                 harmonic_frequencies = np.insert(harmonic_frequencies, 0, 0)
                 n_harmonic_frequencies = harmonic_frequencies[:harmonic_count]
-                frequencies = np.array(
-                    [n_harmonic_frequencies[i + 1] - n_harmonic_frequencies[i] for i in
-                        range(len(n_harmonic_frequencies) - 1)]
-                )
+                frequencies = n_harmonic_frequencies[1:] - n_harmonic_frequencies[0:-1]
             else:
                 frequencies = np.array([])
         elif "autocorrelation" in calculation_method:
@@ -367,9 +399,22 @@ class Results:
             frequency = 0
         return frequency
 
-    def getHolderMean(
-            self, index: Union[tuple, Tuple[int]], name: str, order: int = 1, **kwargs
-    ) -> float:
+    def getStandardDeviation(self, index: Union[tuple, Tuple[int]], name: str, **kwargs) -> float:
+        """
+        Get RMS of deviation for results.
+
+        :param self: :class:`~Results.Results` to retrieve results from
+        :param index: index of results.
+            This is a tuple of indicies.
+            The index of the tuple corresponds to the parameter in free parameters.
+            The index within the tuple corresponds to the value of the parameter in its set of possible values.
+        :param name: name of quantity to retrieve mean for
+        :param kwargs: additional arguments to pass into :meth:`~Results.Results.getResultsOverTime`
+        """
+        results = self.getResultsOverTime(index=index, quantity_names=name, **kwargs)
+        return np.std(results)
+
+    def getHolderMean(self, index: Union[tuple, Tuple[int]], name: str, order: int = 1, **kwargs) -> float:
         """
         Get Holder mean for results.
         
@@ -382,12 +427,12 @@ class Results:
         :param order: order of Holder mean
         :param kwargs: additional arguments to pass into :meth:`~Results.Results.getResultsOverTime`
         """
-        results = self.getResultsOverTime(index=index, names=name, **kwargs)
+        results = self.getResultsOverTime(index=index, quantity_names=name, **kwargs)
 
         if order == 1:
             mean = np.mean(results)
         elif order == 2:
-            mean = np.sqrt(np.mean(results) ** 2)
+            mean = np.sqrt(np.mean(results ** 2))
         elif order == 0:
             mean = stats.gmean(results)
         # elif order == -1: mean = stats.hmean(results)
@@ -400,7 +445,7 @@ class Results:
 
         return mean
 
-    def getFourierTransform(self, index: Union[tuple, Tuple[int, ...]], name: str):
+    def getFourierTransform(self, index: Union[tuple, Tuple[int, ...]], quantity_name: str) -> ndarray:
         """
         Get Fourier transform of results.
         
@@ -409,13 +454,13 @@ class Results:
             This is a tuple of indicies.
             The index of the tuple corresponds to the parameter in free parameters.
             The index within the tuple corresponds to the value of the parameter in its set of possible values.
-        :param name: name of quantity to retreive Fourier transform of
+        :param quantity_name: name of quantity to retreive Fourier transform of
         """
-        original_results = self.getResultsOverTime(index, names=name)
+        original_results = self.getResultsOverTime(index, quantity_names=quantity_name)
         # noinspection PyPep8Naming
-        N = len(original_results)
+        N = original_results.size
 
-        if name == 't':
+        if quantity_name == 't':
             initial_time, final_time = original_results[0], original_results[-1]
             time_resolution = (final_time - initial_time) / (N - 1)
             fourier_results = fft.rfftfreq(N, time_resolution)
@@ -427,7 +472,7 @@ class Results:
     def getResultsOverTime(
             self,
             index: Union[tuple, Tuple[int, ...]],
-            names: Union[str, List[str]] = None,
+            quantity_names: Union[str, List[str]] = None,
             transform_name: str = "None",
             condensor_name: str = "None",
             **condensor_kwargs
@@ -446,74 +491,73 @@ class Results:
             This is a tuple of indicies.
             The index of the tuple corresponds to the parameter in free parameters.
             The index within the tuple corresponds to the value of the parameter in its set of possible values.
-        :param names: name(s) of variable/function(s) to retrieve results for
+        :param quantity_names: name(s) of variable/function(s) to retrieve results for
         :param transform_name: transform to perform on results.
             "Fourier" - Fourier transform.
         :param condensor_name: analysis to perform on results to reduce into one (or few) floats.
             "Frequency" - calculate frequency of oscillation
         """
         results = self.results[index]
-        if isinstance(names, str):
+        if isinstance(quantity_names, str):
             if condensor_name != "None":
                 kwargs = {
                     "index": index,
-                    "name": names,
+                    "name": quantity_names,
                     "transform_name": transform_name
                 }
                 if condensor_name == "Frequency":
                     return self.getOscillationFrequency(**kwargs, **condensor_kwargs)
                 elif condensor_name == "Mean":
                     return self.getHolderMean(**kwargs, **condensor_kwargs)
+                elif condensor_name == "Standard Deviation":
+                    return self.getStandardDeviation(**kwargs, **condensor_kwargs)
                 else:
-                    raise ValueError("invalid condensor name")
+                    raise ValueError(f"invalid condensor name ({condensor_name:s})")
 
             if transform_name != "None":
                 if transform_name == "Fourier":
-                    return self.getFourierTransform(index=index, name=names)
+                    return self.getFourierTransform(index=index, quantity_name=quantity_names)
                 else:
-                    raise ValueError("invalid transform name")
+                    raise ValueError(f"invalid transform name ({transform_name:s})")
 
             try:
-                return results[names]
+                return results[quantity_names]
             except KeyError:
                 pass
 
             model = self.getModel()
 
-            if names in model.getVariables(return_type=str):
-                time_evolution_type = model.getDerivativesFromVariableNames(names=names).getTimeEvolutionType()
+            if quantity_names in model.getVariables(return_type=str):
+                time_evolution_type = model.getDerivativesFromVariableNames(names=quantity_names).getTimeEvolutionType()
                 results_handles = {
                     "Equilibrium": self.getEquilibriumVariableResults,
                     "Constant": self.getConstantVariableResults,
                     "Function": self.getFunctionResults
                 }
                 # noinspection PyArgumentList
-                updated_results = results_handles[time_evolution_type](index, names)
-            elif names in model.getFunctionNames():
-                updated_results = self.getFunctionResults(index, names)
+                updated_results = results_handles[time_evolution_type](index, quantity_names)
+            elif quantity_names in model.getFunctionNames():
+                updated_results = self.getFunctionResults(index, quantity_names)
             else:
-                ValueError("names input must correspond to either variable or function when str ")
+                raise ValueError("quantity_names input must correspond to either variable or function when str")
 
             # noinspection PyUnboundLocalVariable
-            self.setResults(index, updated_results, names)
+            self.setResults(index, updated_results, quantity_names)
             return updated_results
-        elif isinstance(names, list):
+        elif isinstance(quantity_names, list):
             kwargs = {
                 "index": index,
                 "transform_name": transform_name
             }
-            new_results = np.array([self.getResultsOverTime(names=name, **kwargs) for name in names])
-            transpose = new_results.T
-            return transpose
-        elif names is None:
-            return self.getResultsOverTime(index, names=list(results.keys()))
+            new_results = np.array([self.getResultsOverTime(quantity_names=name, **kwargs) for name in quantity_names])
+            return new_results
         else:
             raise TypeError("names input must be str or list")
 
     def getResultsOverTimePerParameter(
             self,
             index: Union[tuple, Tuple[int]],
-            parameter_name: str,
+            parameter_names: str,
             quantity_names: Union[str, List[str]],
             **kwargs
     ) -> Tuple[ndarray, ...]:
@@ -525,32 +569,45 @@ class Results:
             This is a tuple of indicies.
             The index of the tuple corresponds to the parameter in free parameters.
             The index within the tuple corresponds to the value of the parameter in its set of possible values.
-        :param parameter_name: name of free parameter to average quantity results over.
-        :param quantity_names: name of quantity to average results over
+        :param parameter_names: name(s) of free parameter(s) to retrieve quantity results over.
+        :param quantity_names: name(s) of quantity(s) to average results over
         :param kwargs: additional arguments to pass into :meth:`~Results.Results.getResultsOverTime`
         :returns: tuple of results.
-            First index gives parameter values.
-            Second-last index gives quantity results; one set of quantity results per index.
+            First index gives array of parameter base values.
+                nth index of this array gives values for nth parameter in
+                :paramref:`~Results.Results.getResultsOverTimePerParameter.parameter_names`.
+            Second index gives matrix quantity results.
+                nth index of this matrix gives values for nth quantity in
+                :paramref:`~Results.Results.getResultsOverTimePerParameter.quantity_names`.
         """
         if isinstance(quantity_names, str):
             quantity_names = [quantity_names]
+        if isinstance(parameter_names, str):
+            parameter_names = [parameter_names]
 
-        parameter_index = self.getFreeParameterIndex(parameter_name)
-        parameter_values = self.getFreeParameterValues(names=parameter_name)
-        parameter_stepcount = len(parameter_values)
-        list_index = list(index)
-        new_index = lambda i: tuple(list_index[:parameter_index] + [i] + list_index[parameter_index + 1:])
+        per_parameter_locations = np.array(list(map(self.getFreeParameterIndex, parameter_names)))
+        per_parameter_base_values = tuple(list(self.getFreeParameterValues(names=parameter_names)))
+        per_parameter_stepcounts = tuple(map(len, per_parameter_base_values))
+        per_parameter_partial_indicies = list(itertools.product(*map(range, per_parameter_stepcounts)))
 
-        results = []
-        for quantity_name in quantity_names:
-            new_results = np.array(
-                [
-                    self.getResultsOverTime(index=new_index(i), names=quantity_name, **kwargs)
-                    for i in range(parameter_stepcount)
-                ]
-            )
-            results.append(new_results)
-        return parameter_values, *tuple(results)
+        default_index = np.array(index)
+        times = self.getResultsOverTime(index=index, quantity_names='t', **kwargs)
+        if isinstance(times, (float, int)):
+            single_result_size = per_parameter_stepcounts
+        elif isinstance(times, ndarray):
+            single_result_size = (*per_parameter_stepcounts, *times.shape)
+
+        results = np.zeros((len(quantity_names), *single_result_size))
+        for quantity_location, quantity_name in enumerate(quantity_names):
+            single_results = np.zeros(single_result_size)
+            for partial_index in per_parameter_partial_indicies:
+                new_index = default_index
+                new_index[per_parameter_locations] = partial_index
+
+                single_result = self.getResultsOverTime(index=tuple(new_index), quantity_names=quantity_name, **kwargs)
+                single_results[partial_index] = single_result
+            results[quantity_location] = single_results
+        return per_parameter_base_values, results
 
     def setResults(
             self, index: Union[tuple, Tuple[int]], results: Union[ndarray, Dict[str, ndarray]], name: str = None
@@ -572,30 +629,45 @@ class Results:
         elif name is None:
             self.results[index] = results
 
-    def saveToFile(self, filename: str) -> None:
+    def saveToFile(self, filepath: str) -> None:
         """
-        Save results object (self) into file.
+        Save results object (self) into *.zip file.
 
         :param self: :class:`~Results.Results` to save into file
-        :param filename: name of file to save object into
+        :param filepath: path of file to save object into
         """
-        file = open(filename, 'wb')
         model = self.getModel()
-        save_info = {
-            "results": self.results,
-            "free_parameter_values": self.getFreeParameterValues(),
-            "model_parameters": {
-                parameter.getName(): parameter.getQuantity()
-                for parameter in model.getParameters()
-            },
-            "model_functions": {
-                function_object.getName():
-                    (
-                        function_object.getExpression(),
-                        function_object.getFreeSymbols(),
-                        function_object.instance_arguments
-                    )
-                for function_object in model.getFunctions()
+
+        free_parameter_info = {}
+        for name, values in self.getFreeParameterValues(output_type=dict).items():
+            unit = str(model.getParameters(names=name).getQuantity().to_base_units().units)
+            free_parameter_info[name] = {
+                "values": list(map(str, values)),
+                "unit": unit
             }
-        }
-        dill.dump(save_info, file)
+
+        path_directory = dirname(filepath)
+
+        function_file = model.saveFunctionsToFile(join(path_directory, "Function.yml"))
+        parameter_file = model.saveParametersToFile(join(path_directory, "Parameter.yml"))
+        time_evolution_type_file = model.saveParametersToFile(join(path_directory, "TimeEvolutionType.yml"))
+
+        free_parameter_file = open(join(path_directory, "FreeParameter.yml"), 'w')
+        yaml.dump(free_parameter_info, free_parameter_file, default_flow_style=None)
+        free_parameter_file.close()
+
+        results_file = open(join(path_directory, "Results.pkl"), 'wb')
+        dill.dump(self.results, results_file)
+        results_file.close()
+
+        files = [function_file, parameter_file, free_parameter_file, results_file, time_evolution_type_file]
+
+        with ZipFile(filepath, 'w') as zipfile:
+            for file in files:
+                filepath = file.name
+                filename = basename(filepath)
+                zipfile.write(filepath, filename)
+        zipfile.close()
+
+        for file in files:
+            remove(file.name)

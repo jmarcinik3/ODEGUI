@@ -14,7 +14,7 @@ from numpy import ndarray
 from pint import Quantity
 
 from CustomErrors import RecursiveTypeError
-from Function import Derivative, Function, Independent, Model, generateParameter, readFunctionsFromFiles, readParametersFromFiles
+from Function import Derivative, Function, Independent, Model, generateFunction, generateParameter, readFunctionsFromFiles, readParametersFromFiles
 from Function import Parameter
 from Layout.ChooseGraphLayoutWindow import ChooseGraphLayoutWindowRunner
 from Layout.ChooseParametersWindow import ChooseParametersWindowRunner
@@ -2319,6 +2319,7 @@ class MainWindowRunner(WindowRunner):
             Defaults to letting user choose file.
         :param choose_parameters: set True to allow user to choose which parameters to actually load.
             Set False to automatically load all parameters from file.
+        :returns: parameter objects for chosen parameters
         """
         if filepath is None:
             file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
@@ -2337,9 +2338,12 @@ class MainWindowRunner(WindowRunner):
         loaded_parameters = []
         for key, value in info.items():
             if key in filestems:
-                path_from_stem = self.getPathsFromParameterStems(key)
-                parameters_from_file = readParametersFromFiles(path_from_stem, names=value).values()
-                loaded_parameters.extend(parameters_from_file)
+                if isinstance(value, Iterable):
+                    path_from_stem = self.getPathsFromParameterStems(key)
+                    parameters_from_file = readParametersFromFiles(path_from_stem, names=value).values()
+                    loaded_parameters.extend(parameters_from_file)
+                else:
+                    sg.PopupError(f"filestem {key:d} not found for parameters (skipping)")
             else:
                 loaded_parameters.append(generateParameter(key, value))
 
@@ -2358,6 +2362,8 @@ class MainWindowRunner(WindowRunner):
         for parameter in chosen_parameters:
             self.setParameters(parameter)
 
+        return chosen_parameters
+
     def loadFunctionsFromFile(self, filepath: str = None, choose_functions: bool = False) -> Optional[List[Function]]:
         """
         Load and store function objects from file.
@@ -2367,6 +2373,7 @@ class MainWindowRunner(WindowRunner):
             Defaults to letting user choose file.
         :param choose_functions: set True to allow user to choose which functions to actually load.
             Set False to automatically load all functions from file.
+        :returns: function objects for chosen functions
         """
         if filepath is None:
             file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
@@ -2385,11 +2392,14 @@ class MainWindowRunner(WindowRunner):
         loaded_functions = []
         for key, value in info.items():
             if key in filestems:
-                path_from_stem = self.getPathsFromFunctionStems(key)
-                functions_from_file = readFunctionsFromFiles(path_from_stem, names=value).values()
-                loaded_functions.extend(functions_from_file)
+                if isinstance(value, Iterable):
+                    path_from_stem = self.getPathsFromFunctionStems(key)
+                    functions_from_file = readFunctionsFromFiles(path_from_stem, names=value).values()
+                    loaded_functions.extend(functions_from_file)
+                else:
+                    sg.PopupError(f"filestem {key:d} not found for functions (skipping)")
             else:
-                loaded_functions.append(generateParameter(key, value))
+                loaded_functions.append(generateFunction(key, value))
 
         if choose_functions:
             runner = ChooseFunctionsWindowRunner("Choose Functions to Load", function_objects=loaded_functions)
@@ -2405,6 +2415,8 @@ class MainWindowRunner(WindowRunner):
 
         for function_object in chosen_functions:
             self.setFunctions(function_object)
+
+        return chosen_functions
 
     def getFreeParameterValues(self) -> Tuple[str, Dict[str, Tuple[float, float, int, Quantity]]]:
         """
