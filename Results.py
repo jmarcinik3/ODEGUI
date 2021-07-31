@@ -642,7 +642,7 @@ class Results:
         for name, values in self.getFreeParameterValues(output_type=dict).items():
             unit = str(model.getParameters(names=name).getQuantity().to_base_units().units)
             free_parameter_info[name] = {
-                "values": str(values),
+                "values": list(map(str, values)),
                 "unit": unit
             }
 
