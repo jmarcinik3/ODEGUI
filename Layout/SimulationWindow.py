@@ -195,7 +195,7 @@ def getFigure(
             if plot_type == "cnxny":
                 axes.contourf(x, y, c.T, levels=segment_count, cmap=colormap, norm=norm, **plot_kwargs)
             elif plot_type == "txy":
-                segment_count = min(segment_count, c.shape[-1])
+                segment_count = max(min(segment_count, c.shape[-1]), 1)
                 segment_length = round(x_length / segment_count)
 
                 if segment_length == 0:
@@ -206,20 +206,20 @@ def getFigure(
                     line_collection = LineCollection(segments, cmap=colormap, norm=norm)
                     line_collection.set_array(c)
                     axes.add_collection(line_collection, **plot_kwargs)
-            elif plot_type == "ncxy":
-                for index in range(c.shape[0]):
-                    axes.plot(x[index], y[index], color=c_colors[index], **plot_kwargs)
-            elif plot_type in ["ncxny", "ncnxy"]:
-                if plot_type == "ncxny":
-                    size = x.shape[0]
+            elif plot_type in ["ncxy", "ncxny", "ncnxy"]:
+                if plot_type == "ncxy":
+                    x_rots, y_rots = x, y
+                    rots_size = c.size
+                elif plot_type == "ncxny":
+                    rots_size = x.shape[0]
                     x_rots = x
-                    y_rots = np.tile(y, (size, 1))
+                    y_rots = np.tile(y, (rots_size, 1))
                 elif plot_type == "ncnxy":
-                    size = y.shape[0]
-                    x_rots = np.tile(x, (size, 1))
+                    rots_size = y.shape[0]
+                    x_rots = np.tile(x, (rots_size, 1))
                     y_rots = y
 
-                for index in range(size):
+                for index in range(rots_size):
                     axes.plot(x_rots[index], y_rots[index], color=c_colors[index], **plot_kwargs)
     elif 'z' in plot_type:
         if plot_type == "xyz":
@@ -258,10 +258,6 @@ def getFigure(
 
             for index in range(rot_size):
                 axes.plot3D(x_rots[index], y_rots[index], z_lines[index], **plot_kwargs)
-        elif plot_type == "ncxyz":
-            assert x.shape == y.shape == z.shape and x.shape[0] == csize
-            for index in range(c.size):
-                axes.plot3D(x[index], y[index], z[index], color=c_colors[index], **plot_kwargs)
         elif plot_type in ["tnxyz", "txnyz", "txynz"]:
             if plot_type == "tnxyz":
                 assert c.shape == y.shape == z.shape and y.shape[0] == xsize
@@ -282,41 +278,45 @@ def getFigure(
                 line_collection = LineCollection(segments, cmap=colormap, norm=norm)
                 line_collection.set_array(c[index])
                 axes.add_collection3d(line_collection, zs=zs[index], zdir=zdir, **plot_kwargs)
-        elif plot_type in ["ncnxyz", "ncxnyz", "ncxynz"]:
-            if plot_type == "ncnxyz":
+        elif plot_type in ["ncxyz", "ncnxyz", "ncxnyz", "ncxynz"]:
+            if plot_type == "ncxyz":
+                assert x.shape == y.shape == z.shape and x.shape[0] == csize
+                x_rots, y_rots, z_lines = x, y, z
+                extra_dimension = False
+            elif plot_type == "ncnxyz":
                 assert y.shape[0:2] == (csize, xsize) and y.shape == z.shape
                 try:
                     x_rots = np.transpose(np.tile(x, (csize, y.shape[2], 1)), axes=(0, 2, 1))
-                    timelike = True
+                    rot_size = xsize
+                    extra_dimension = True
                 except IndexError:
                     x_rots = np.tile(x, (csize, 1))
-                    timelike = False
+                    extra_dimension = False
                 y_rots, z_lines = y, z
-                rot_size = xsize
             elif plot_type == "ncxnyz":
                 assert x.shape[0:2] == (csize, ysize) and x.shape == z.shape
                 x_rots, z_lines = x, z
                 try:
                     y_rots = np.transpose(np.tile(y, (csize, x.shape[2], 1)), axes=(0, 2, 1))
-                    timelike = True
+                    rot_size = ysize
+                    extra_dimension = True
                 except IndexError:
                     y_rots = np.tile(y, (csize, 1))
-                    timelike = False
-                rot_size = ysize
+                    extra_dimension = False
             elif plot_type == "ncxynz":
                 assert x.shape[0:2] == (csize, zsize) and x.shape == y.shape
                 x_rots, y_rots = x, y
                 try:
                     z_lines = np.transpose(np.tile(z, (csize, x.shape[2], 1)), axes=(0, 2, 1))
-                    timelike = True
+                    rot_size = zsize
+                    extra_dimension = True
                 except IndexError:
                     z_lines = np.tile(z, (csize, 1))
-                    timelike = False
-                rot_size = zsize
+                    extra_dimension = False
 
             for c_index in range(csize):
                 c_color = c_colors[c_index]
-                if timelike:
+                if extra_dimension:
                     for z_index in range(rot_size):
                         index = (c_index, z_index)
                         axes.plot3D(
@@ -2536,7 +2536,7 @@ class SimulationWindowRunner(WindowRunner):
         }
         return aesthetics_kwargs
 
-    def getFigure(self, data: Dict[str, ndarray], **kwargs) -> Figure:
+    def getFigure(self, data: Dict[str, ndarray] = None, **kwargs) -> Figure:
         """
         Get matplotlib figure for results.
         
@@ -2548,7 +2548,7 @@ class SimulationWindowRunner(WindowRunner):
             if any element in :paramref:`~Layout.SimulationWindow.SimulationWindowRunner.getFigure.data` is not ndarray.
             Figure with given data plotted if both are ndarray.
         """
-        if any(not isinstance(x, ndarray) for x in data.values()):
+        if any(not isinstance(x, ndarray) for x in data.values()) or data is None:
             figure_canvas = self.getFigureCanvas()
             figure_canvas_attributes = vars(figure_canvas)
             figure = figure_canvas_attributes["figure"]
@@ -2691,7 +2691,6 @@ class SimulationWindowRunner(WindowRunner):
         timelike_count = sum(is_timelike.values())
         parameterlike_count = sum(is_parameterlike.values())
         condensed_count = sum(is_condensed.values())
-        nonelike_count = sum(is_nonelike.values())
 
         results = {}
         try:
@@ -2856,6 +2855,8 @@ class SimulationWindowRunner(WindowRunner):
         elif condensed_count >= 1 and parameterlike_count == 0:
             plot_type = ''
         elif timelike_count >= 1 and condensed_count >= 1:
+            plot_type = ''
+        elif is_nonelike['x'] or is_nonelike['y']:
             plot_type = ''
         else:
             if is_parameterlike['c']:
