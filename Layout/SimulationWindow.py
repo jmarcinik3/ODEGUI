@@ -2668,7 +2668,6 @@ class SimulationWindowRunner(WindowRunner):
         }
 
         axis2name = {axis: plot_quantities[axis][0] for axis in plot_quantities_keys}
-        name2axis = {name: axis for axis, name in axis2name.items()}
 
         axis2specie = {axis: plot_quantities[axis][1] for axis in plot_quantities_keys}
         axis2condensor_name = {axis: plot_quantities[axis][2] for axis in plot_quantities_keys}
@@ -2689,20 +2688,23 @@ class SimulationWindowRunner(WindowRunner):
             for axis in plot_quantities_keys
         }
 
+        timelike_count = sum(is_timelike.values())
         parameterlike_count = sum(is_parameterlike.values())
+        condensed_count = sum(is_condensed.values())
+        nonelike_count = sum(is_nonelike.values())
 
         results = {}
         try:
             if parameterlike_count == 0:
                 getResultsOverTime = partial(results_object.getResultsOverTime, **results_kwargs)
 
-                for axis_name, name in axis2name.items():
+                for axis_name, quantity_name in axis2name.items():
                     if is_timelike[axis_name]:
-                        results[axis_name] = getResultsOverTime(quantity_names=name)
+                        results[axis_name] = getResultsOverTime(quantity_names=quantity_name)
                     elif is_condensed[axis_name]:
                         condensor_name = axis2condensor_name[axis_name]
                         results[axis_name] = getResultsOverTime(
-                            quantity_names=name,
+                            quantity_names=quantity_name,
                             condensor_name=condensor_name,
                             **self.getCondensorKwargs(condensor_name)
                         )
@@ -2721,16 +2723,16 @@ class SimulationWindowRunner(WindowRunner):
                     **results_kwargs
                 )
 
-                for axis_name, name in axis2name.items():
+                for axis_name, quantity_name in axis2name.items():
                     if is_timelike[axis_name]:
-                        parameter_results, quantity_results = getResultsOverTimePerParameter(quantity_names=name)
+                        parameter_results, quantity_results = getResultsOverTimePerParameter(quantity_names=quantity_name)
                         results[axis_name] = quantity_results[0]
                     elif is_parameterlike[axis_name]:
-                        results[axis_name] = results_object.getFreeParameterValues(names=name)
+                        results[axis_name] = results_object.getFreeParameterValues(names=quantity_name)
                     elif is_condensed[axis_name]:
                         condensor_name = axis2condensor_name[axis_name]
                         parameter_results, quantity_results = getResultsOverTimePerParameter(
-                            quantity_names=name,
+                            quantity_names=quantity_name,
                             condensor_name=condensor_name,
                             **self.getCondensorKwargs(condensor_name)
                         )
@@ -2739,119 +2741,150 @@ class SimulationWindowRunner(WindowRunner):
         except (UnboundLocalError, KeyError, IndexError, AttributeError, ValueError):
             print("data:", traceback.print_exc())
 
-        try:
-            if is_timelike['x']:
-                if is_timelike['y']:
-                    if is_timelike['z']:
-                        if is_timelike['c']:
-                            plot_type = "txyz"
-                        elif is_parameterlike['c']:
-                            plot_type = "ncxyz"
-                        elif is_nonelike['c']:
-                            plot_type = "xyz"
-                    elif is_parameterlike['z']:
-                        if is_timelike['c']:
-                            plot_type = "txynz"
-                        elif is_parameterlike['c']:
-                            plot_type = "ncxynz"
-                        elif is_nonelike['c']:
-                            plot_type = "xynz"
-                    elif is_nonelike['z']:
-                        if is_timelike['c']:
-                            plot_type = "txy"
-                        elif is_parameterlike['c']:
-                            plot_type = "ncxy"
-                        elif is_nonelike['c']:
-                            plot_type = "xy"
-                elif is_parameterlike['y']:
-                    if is_timelike['z']:
-                        if is_timelike['c']:
-                            plot_type = "txnyz"
-                        elif is_parameterlike['c']:
-                            plot_type = "ncxnyz"
-                        elif is_nonelike['c']:
-                            plot_type = "xnyz"
-                    elif is_parameterlike['z']:
-                        if is_timelike['c']:
-                            plot_type = "txnynz"
-            elif is_condensed['x']:
-                if is_parameterlike['y']:
-                    if is_parameterlike['z']:
-                        if is_parameterlike['c']:
-                            plot_type = "ncxnynz"
-                        elif is_condensed['c']:
-                            plot_type = "cxnynz"
-                        elif is_nonelike['c']:
-                            plot_type = "xnynz"
-                    elif is_condensed['z']:
-                        if is_parameterlike['c']:
-                            plot_type = "ncxnyz"
-                        elif is_condensed['c']:
-                            plot_type = "cxnyz"
-                    elif is_nonelike['z']:
-                        if is_parameterlike['c']:
-                            plot_type = "ncxny"
-                        elif is_condensed['c']:
-                            plot_type = "txy"
-                        elif is_nonelike['c']:
-                            plot_type = "xy"
-                elif is_condensed['y']:
-                    if is_nonelike['z']:
-                        if is_parameterlike['c']:
-                            plot_type = "txy"
-                    elif is_condensed['z']:
-                        if is_parameterlike['c']:
-                            plot_type = "txyz"
-            elif is_parameterlike['x']:
-                if is_timelike['y']:
-                    if is_timelike['z']:
-                        if is_timelike['c']:
-                            plot_type = "tnxyz"
-                        elif is_parameterlike['c']:
-                            plot_type = "ncnxyz"
-                        elif is_nonelike['c']:
-                            plot_type = "nxyz"
-                    elif is_parameterlike['z']:
-                        if is_nonelike['c']:
-                            plot_type = "tnxynz"
-                elif is_parameterlike['y']:
-                    if is_timelike['z']:
-                        if is_timelike['c']:
-                            plot_type = "tnxnyz"
-                    elif is_parameterlike['z']:
-                        if is_condensed['c']:
-                            plot_type = "cnxnynz"
-                    elif is_condensed['z']:
-                        if is_parameterlike['c']:
-                            plot_type = "ncnxnyz"
-                        elif is_condensed['c']:
-                            plot_type = "cnxnyz"
-                    elif is_nonelike['z']:
-                        if is_condensed['c']:
-                            plot_type = "cnxny"
-                elif is_condensed['y']:
-                    if is_nonelike['z']:
-                        if is_parameterlike['c']:
-                            plot_type = "ncnxy"
-                        elif is_condensed['c']:
-                            plot_type = "txy"
-                        elif is_nonelike['c']:
-                            plot_type = "xy"
-                    elif is_parameterlike['z']:
-                        if is_parameterlike['c']:
-                            plot_type = "ncnxynz"
-                        elif is_condensed['c']:
-                            plot_type = "cnxynz"
+        """
+        if is_timelike['x']:
+            if is_timelike['y']:
+                if is_timelike['z']:
+                    if is_timelike['c']:
+                        plot_type = "txyz"
+                    elif is_parameterlike['c']:
+                        plot_type = "ncxyz"
+                    elif is_nonelike['c']:
+                        plot_type = "xyz"
+                elif is_parameterlike['z']:
+                    if is_timelike['c']:
+                        plot_type = "txynz"
+                    elif is_parameterlike['c']:
+                        plot_type = "ncxynz"
+                    elif is_nonelike['c']:
+                        plot_type = "xynz"
+                elif is_nonelike['z']:
+                    if is_timelike['c']:
+                        plot_type = "txy"
+                    elif is_parameterlike['c']:
+                        plot_type = "ncxy"
+                    elif is_nonelike['c']:
+                        plot_type = "xy"
+            elif is_parameterlike['y']:
+                if is_timelike['z']:
+                    if is_timelike['c']:
+                        plot_type = "txnyz"
+                    elif is_parameterlike['c']:
+                        plot_type = "ncxnyz"
+                    elif is_nonelike['c']:
+                        plot_type = "xnyz"
+                elif is_parameterlike['z']:
+                    if is_timelike['c']:
+                        plot_type = "txnynz"
+        elif is_condensed['x']:
+            if is_parameterlike['y']:
+                if is_parameterlike['z']:
+                    if is_parameterlike['c']:
+                        plot_type = "ncxnynz"
+                    elif is_condensed['c']:
+                        plot_type = "cxnynz"
+                    elif is_nonelike['c']:
+                        plot_type = "xnynz"
+                elif is_condensed['z']:
+                    if is_parameterlike['c']:
+                        plot_type = "ncxnyz"
+                    elif is_condensed['c']:
+                        plot_type = "cxnyz"
+                elif is_nonelike['z']:
+                    if is_parameterlike['c']:
+                        plot_type = "ncxny"
+                    elif is_condensed['c']:
+                        plot_type = "txy"
+                    elif is_nonelike['c']:
+                        plot_type = "xy"
+            elif is_condensed['y']:
+                if is_nonelike['z']:
+                    if is_parameterlike['c']:
+                        plot_type = "txy"
+                elif is_parameterlike['z']:
+                    if is_parameterlike['c']:
+                        plot_type = "ncxynz"
+                    elif is_condensed['c']:
+                        plot_type = "cxynz"
+                elif is_condensed['z']:
+                    if is_parameterlike['c']:
+                        plot_type = "txyz"
+        elif is_parameterlike['x']:
+            if is_timelike['y']:
+                if is_timelike['z']:
+                    if is_timelike['c']:
+                        plot_type = "tnxyz"
+                    elif is_parameterlike['c']:
+                        plot_type = "ncnxyz"
+                    elif is_nonelike['c']:
+                        plot_type = "nxyz"
+                elif is_parameterlike['z']:
+                    if is_nonelike['c']:
+                        plot_type = "tnxynz"
+            elif is_parameterlike['y']:
+                if is_timelike['z']:
+                    if is_timelike['c']:
+                        plot_type = "tnxnyz"
+                elif is_parameterlike['z']:
+                    if is_condensed['c']:
+                        plot_type = "cnxnynz"
+                elif is_condensed['z']:
+                    if is_parameterlike['c']:
+                        plot_type = "ncnxnyz"
+                    elif is_condensed['c']:
+                        plot_type = "cnxnyz"
+                elif is_nonelike['z']:
+                    if is_condensed['c']:
+                        plot_type = "cnxny"
+            elif is_condensed['y']:
+                if is_nonelike['z']:
+                    if is_parameterlike['c']:
+                        plot_type = "ncnxy"
+                    elif is_condensed['c']:
+                        plot_type = "txy"
+                    elif is_nonelike['c']:
+                        plot_type = "xy"
+                elif is_parameterlike['z']:
+                    if is_parameterlike['c']:
+                        plot_type = "ncnxynz"
+                    elif is_condensed['c']:
+                        plot_type = "cnxynz"
+                        """
 
-            try:
-                print(plot_type, {key: value.shape for key, value in results.items()})
+        if timelike_count == 1:
+            plot_type = ''
+        elif condensed_count >= 1 and parameterlike_count == 0:
+            plot_type = ''
+        elif timelike_count >= 1 and condensed_count >= 1:
+            plot_type = ''
+        else:
+            if is_parameterlike['c']:
+                plot_type = f"nc"
+            elif is_condensed['c']:
+                plot_type = 'c'
+            elif is_timelike['c']:
+                plot_type = 't'
+            elif is_nonelike['c']:
+                plot_type = ''
+            else:
+                plot_type = ''
+
+            for axis_name in ['x', 'y', 'z']:
+                if is_parameterlike[axis_name]:
+                    plot_type += f"n{axis_name:s}"
+                elif is_condensed[axis_name] or is_timelike[axis_name]:
+                    plot_type += axis_name
+                elif is_nonelike[axis_name]:
+                    pass
+
+        try:
+            print(plot_type, {key: value.shape for key, value in results.items()})
+            if plot_type != '':
                 figure = self.getFigure(results, plot_type=plot_type, **figure_kwargs)
-                self.updateFigureCanvas(figure)
-                return figure
-            except UnboundLocalError:
-                print("todo plots:", plot_quantities, traceback.print_exc())
-        except (KeyError, AttributeError, ValueError):
-            print("plot:", traceback.print_exc())
+            self.updateFigureCanvas(figure)
+            return figure
+        except UnboundLocalError:
+            print("todo plots:", plot_quantities, traceback.print_exc())
 
     def updatePlotChoices(self, names: Union[str, List[str]] = None) -> None:
         """
