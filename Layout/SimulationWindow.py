@@ -142,16 +142,19 @@ def getFigure(
     if 'x' in plot_type:
         x = results['x'] / scale_factor['x']
         xsize = x.size
+        xshape = x.shape
         axes_kwargs["xlim"] = getLimits(x, 'x')
 
     if 'y' in plot_type:
         y = results['y'] / scale_factor['y']
         ysize = y.size
+        yshape = y.shape
         axes_kwargs["ylim"] = getLimits(y, 'y')
 
     if 'z' in plot_type:
         z = results['z'] / scale_factor['z']
         zsize = z.size
+        zshape = z.shape
         axes_kwargs["zlim"] = getLimits(z, 'z')
         axes = figure.add_subplot(projection="3d")
     else:
@@ -162,6 +165,7 @@ def getFigure(
     if 'c' in plot_type or 't' in plot_type:
         c = results['c'] / scale_factor['c']
         csize = c.size
+        cshape = c.shape
 
         if colorbar_kwargs is None:
             colorbar_kwargs = {}
@@ -189,43 +193,67 @@ def getFigure(
 
     x_length = len(x)
     if 'z' not in plot_type:
-        if plot_type == "xy":
+        if plot_type in ["xy", "nxy", "xny"]:
+            assert xshape == yshape
             axes.plot(x, y, **plot_kwargs)
-        elif plot_type in ["cnxny", "ncxy", "ncxny", "ncnxy", "txy"]:
-            if plot_type == "cnxny":
-                axes.contourf(x, y, c.T, levels=segment_count, cmap=colormap, norm=norm, **plot_kwargs)
-            elif plot_type == "txy":
-                segment_count = max(min(segment_count, c.shape[-1]), 1)
-                segment_length = round(x_length / segment_count)
+        elif plot_type == "cnxny":
+            assert cshape == (xsize, ysize)
+            axes.contourf(x, y, c.T, levels=segment_count, cmap=colormap, norm=norm, **plot_kwargs)
+        elif plot_type in ["txy", "cnxy", "cxny"]:
+            assert cshape == xshape == yshape
+            
+            segment_count = max(min(segment_count, cshape[-1]), 1)
+            segment_length = round(x_length / segment_count)
 
-                if segment_length == 0:
-                    axes.scatter(x, y, color=c_colors)
-                else:
-                    points = np.array([x, y]).T.reshape(-1, 1, 2)
-                    segments = np.concatenate([points[:-1], points[1:]], axis=1)
-                    line_collection = LineCollection(segments, cmap=colormap, norm=norm)
-                    line_collection.set_array(c)
-                    axes.add_collection(line_collection, **plot_kwargs)
-            elif plot_type in ["ncxy", "ncxny", "ncnxy"]:
-                if plot_type == "ncxy":
-                    x_rots, y_rots = x, y
-                    rots_size = c.size
-                elif plot_type == "ncxny":
-                    rots_size = x.shape[0]
-                    x_rots = x
-                    y_rots = np.tile(y, (rots_size, 1))
-                elif plot_type == "ncnxy":
-                    rots_size = y.shape[0]
-                    x_rots = np.tile(x, (rots_size, 1))
-                    y_rots = y
+            if segment_length == 0:
+                axes.scatter(x, y, color=c_colors)
+            else:
+                points = np.array([x, y]).T.reshape(-1, 1, 2)
+                segments = np.concatenate([points[:-1], points[1:]], axis=1)
+                line_collection = LineCollection(segments, cmap=colormap, norm=norm)
+                line_collection.set_array(c)
+                axes.add_collection(line_collection, **plot_kwargs)
+        elif plot_type in ["ncxy", "ncxny", "ncnxy"]:
+            if plot_type == "ncxy":
+                assert xshape == yshape and xshape[0] == csize
+                x_lines, y_lines = x, y
+            elif plot_type == "ncxny":
+                assert xshape == (csize, ysize)
+                x_lines = x
+                y_lines = np.tile(y, (csize, 1))
+            elif plot_type == "ncnxy":
+                assert yshape == (csize, xsize)
+                x_lines = np.tile(x, (csize, 1))
+                y_lines = y
 
-                for index in range(rots_size):
-                    axes.plot(x_rots[index], y_rots[index], color=c_colors[index], **plot_kwargs)
+            for line_index in range(csize):
+                axes.plot(x_lines[line_index], y_lines[line_index], color=c_colors[line_index], **plot_kwargs)
+        elif plot_type in ["tnxy", "txny"]:
+            if plot_type == "txny":
+                assert cshape == xshape and cshape[0] == ysize
+                x_lines = x
+                y_lines = np.tile(y, (cshape[-1], 1)).T
+                line_count = ysize
+            elif plot_type == "tnxy":
+                assert cshape == yshape and cshape[0] == xsize
+                x_lines = np.tile(x, (cshape[-1], 1)).T
+                y_lines = y
+                line_count = xsize
+
+            for line_index in range(line_count):
+                points = np.array([x_lines[line_index], y_lines[line_index]]).T.reshape(-1, 1, 2)
+                segments = np.concatenate([points[:-1], points[1:]], axis=1)
+                line_collection = LineCollection(segments, cmap=colormap, norm=norm)
+                line_collection.set_array(c[line_index])
+                axes.add_collection(line_collection, **plot_kwargs)
     elif 'z' in plot_type:
         if plot_type == "xyz":
+            assert xshape == yshape == zshape
             axes.plot3D(x, y, z, **plot_kwargs)
         elif plot_type == "txyz":
-            segment_count = min(segment_count, c.shape[-1])
+            assert cshape == xshape == yshape == zshape
+
+            segment_count = max(min(segment_count, cshape[-1]), 1)
             segment_length = round(x_length / segment_count)
 
             if segment_length == 0:
@@ -238,55 +266,55 @@ def getFigure(
                 axes.add_collection(line_collection, **plot_kwargs)
         elif plot_type in ["nxyz", "xnyz", "xynz"]:
             if plot_type == "nxyz":
-                assert y.shape == z.shape and y.shape[0] == xsize
-                x_rots = np.tile(x, (y.shape[1], 1)).T
+                assert yshape == zshape and yshape[0] == xsize
+                x_rots = np.tile(x, (yshape[1], 1)).T
                 y_rots = y
                 z_lines = z
                 rot_size = xsize
             elif plot_type == "xnyz":
-                assert x.shape == z.shape and x.shape[0] == ysize
+                assert xshape == zshape and xshape[0] == ysize
                 x_rots = x
-                y_rots = np.tile(y, (x.shape[1], 1)).T
+                y_rots = np.tile(y, (xshape[1], 1)).T
                 z_lines = z
                 rot_size = ysize
             elif plot_type == "xynz":
-                assert x.shape == y.shape and x.shape[0] == zsize
+                assert xshape == yshape and xshape[0] == zsize
                 x_rots = x
                 y_rots = y
-                z_lines = np.tile(z, (x.shape[1], 1)).T
+                z_lines = np.tile(z, (xshape[1], 1)).T
                 rot_size = zsize
 
-            for index in range(rot_size):
-                axes.plot3D(x_rots[index], y_rots[index], z_lines[index], **plot_kwargs)
+            for line_index in range(rot_size):
+                axes.plot3D(x_rots[line_index], y_rots[line_index], z_lines[line_index], **plot_kwargs)
         elif plot_type in ["tnxyz", "txnyz", "txynz"]:
             if plot_type == "tnxyz":
-                assert c.shape == y.shape == z.shape and y.shape[0] == xsize
+                assert cshape == yshape == zshape and yshape[0] == xsize
                 x_rots, y_rots, zs = y, z, x
                 zdir = 'x'
             elif plot_type == "txnyz":
-                assert c.shape == x.shape == z.shape and x.shape[0] == ysize
+                assert cshape == xshape == zshape and xshape[0] == ysize
                 x_rots, y_rots, zs = x, z, y
                 zdir = 'y'
             elif plot_type == "txynz":
-                assert c.shape == x.shape == y.shape and x.shape[0] == zsize
+                assert cshape == xshape == yshape and xshape[0] == zsize
                 x_rots, y_rots, zs = x, y, z
                 zdir = 'z'
 
-            for index in range(zs.size):
-                points = np.array([x_rots[index], y_rots[index]]).T.reshape(-1, 1, 2)
+            for line_index in range(zs.size):
+                points = np.array([x_rots[line_index], y_rots[line_index]]).T.reshape(-1, 1, 2)
                 segments = np.concatenate([points[:-1], points[1:]], axis=1)
                 line_collection = LineCollection(segments, cmap=colormap, norm=norm)
-                line_collection.set_array(c[index])
-                axes.add_collection3d(line_collection, zs=zs[index], zdir=zdir, **plot_kwargs)
+                line_collection.set_array(c[line_index])
+                axes.add_collection3d(line_collection, zs=zs[line_index], zdir=zdir, **plot_kwargs)
         elif plot_type in ["ncxyz", "ncnxyz", "ncxnyz", "ncxynz"]:
             if plot_type == "ncxyz":
-                assert x.shape == y.shape == z.shape and x.shape[0] == csize
+                assert xshape == yshape == zshape and xshape[0] == csize
                 x_rots, y_rots, z_lines = x, y, z
                 extra_dimension = False
             elif plot_type == "ncnxyz":
-                assert y.shape[0:2] == (csize, xsize) and y.shape == z.shape
+                assert yshape[0:2] == (csize, xsize) and yshape == zshape
                 try:
-                    x_rots = np.transpose(np.tile(x, (csize, y.shape[2], 1)), axes=(0, 2, 1))
+                    x_rots = np.transpose(np.tile(x, (csize, yshape[2], 1)), axes=(0, 2, 1))
                     rot_size = xsize
                     extra_dimension = True
                 except IndexError:
@@ -294,20 +322,20 @@ def getFigure(
                     extra_dimension = False
                 y_rots, z_lines = y, z
             elif plot_type == "ncxnyz":
-                assert x.shape[0:2] == (csize, ysize) and x.shape == z.shape
+                assert xshape[0:2] == (csize, ysize) and xshape == zshape
                 x_rots, z_lines = x, z
                 try:
-                    y_rots = np.transpose(np.tile(y, (csize, x.shape[2], 1)), axes=(0, 2, 1))
+                    y_rots = np.transpose(np.tile(y, (csize, xshape[2], 1)), axes=(0, 2, 1))
                     rot_size = ysize
                     extra_dimension = True
                 except IndexError:
                     y_rots = np.tile(y, (csize, 1))
                     extra_dimension = False
             elif plot_type == "ncxynz":
-                assert x.shape[0:2] == (csize, zsize) and x.shape == y.shape
+                assert xshape[0:2] == (csize, zsize) and xshape == yshape
                 x_rots, y_rots = x, y
                 try:
-                    z_lines = np.transpose(np.tile(z, (csize, x.shape[2], 1)), axes=(0, 2, 1))
+                    z_lines = np.transpose(np.tile(z, (csize, xshape[2], 1)), axes=(0, 2, 1))
                     rot_size = zsize
                     extra_dimension = True
                 except IndexError:
@@ -318,9 +346,9 @@ def getFigure(
                 c_color = c_colors[c_index]
                 if extra_dimension:
                     for z_index in range(rot_size):
-                        index = (c_index, z_index)
+                        line_index = (c_index, z_index)
                         axes.plot3D(
-                            x_rots[index], y_rots[index], z_lines[index],
+                            x_rots[line_index], y_rots[line_index], z_lines[line_index],
                             color=c_color, **plot_kwargs
                         )
                 else:
@@ -330,24 +358,24 @@ def getFigure(
                     )
         elif plot_type in ["tnxnyz", "tnxynz", "txnynz"]:
             if plot_type == "tnxnyz":
-                assert c.shape[0:2] == (xsize, ysize) and c.shape == z.shape
+                assert cshape[0:2] == (xsize, ysize) and cshape == zshape
                 yrot_size = xsize
                 x_rots = z
-                y_rots = np.tile(x, (c.shape[2], 1)).T
+                y_rots = np.tile(x, (cshape[2], 1)).T
                 zs, zdir = y, 'y'
                 c_rots = c
             elif plot_type == "tnxynz":
-                assert c.shape[0:2] == (xsize, zsize) and c.shape == y.shape
+                assert cshape[0:2] == (xsize, zsize) and cshape == yshape
                 yrot_size = zsize
                 x_rots = np.transpose(y, axes=(1, 0, 2))
-                y_rots = np.tile(z, (c.shape[2], 1)).T
+                y_rots = np.tile(z, (cshape[2], 1)).T
                 zs, zdir = x, 'x'
                 c_rots = np.transpose(c, axes=(1, 0, 2))
             elif plot_type == "txnynz":
-                assert c.shape[0:2] == (ysize, zsize) and c.shape == x.shape
+                assert cshape[0:2] == (ysize, zsize) and cshape == xshape
                 yrot_size = ysize
                 x_rots = x
-                y_rots = np.tile(y, (c.shape[2], 1)).T
+                y_rots = np.tile(y, (cshape[2], 1)).T
                 zs, zdir = z, 'z'
                 c_rots = c
 
@@ -364,43 +392,43 @@ def getFigure(
                     axes.add_collection3d(line_collection, zs=zs[z_index], zdir=zdir, **plot_kwargs)
         elif plot_type in ["cnxnyz", "cnxynz", "cxnynz", "cnxnynz", "ncnxnyz", "ncnxynz", "ncxnynz"]:
             if plot_type == "cnxnyz":
-                assert c.shape == z.shape == (xsize, ysize)
+                assert cshape == zshape == (xsize, ysize)
                 c_shaped = c.reshape(csize)
                 x_shaped = np.tile(x, (ysize, 1)).T
                 y_shaped = np.tile(y, (xsize, 1))
                 z_shaped = z
             elif plot_type == "cnxynz":
-                assert c.shape == y.shape == (xsize, zsize)
+                assert cshape == yshape == (xsize, zsize)
                 c_shaped = c.reshape(csize)
                 x_shaped = np.tile(x, (zsize, 1)).T
                 y_shaped = y
                 z_shaped = np.tile(z, (xsize, 1))
             elif plot_type == "cxnynz":
-                assert c.shape == x.shape == (ysize, zsize)
+                assert cshape == xshape == (ysize, zsize)
                 c_shaped = c.reshape(csize)
                 x_shaped = x
                 y_shaped = np.transpose(np.tile(y, (zsize, 1)))
                 z_shaped = np.tile(z, (ysize, 1))
             elif plot_type == "cnxnynz":
-                assert c.shape == (xsize, ysize, zsize)
+                assert cshape == (xsize, ysize, zsize)
                 c_shaped = c.reshape(csize)
                 x_shaped = np.transpose(np.tile(x, (ysize, zsize, 1)), axes=(2, 0, 1))
                 y_shaped = np.transpose(np.tile(y, (zsize, xsize, 1)), axes=(1, 2, 0))
                 z_shaped = np.tile(z, (xsize, ysize, 1))
             elif plot_type == "ncnxnyz":
-                assert z.shape == (csize, xsize, ysize)
+                assert zshape == (csize, xsize, ysize)
                 c_shaped = np.transpose(np.tile(c, (xsize, ysize, 1)), axes=(2, 0, 1)).reshape(zsize)
                 x_shaped = np.transpose(np.tile(x, (ysize, csize, 1)), axes=(1, 2, 0))
                 y_shaped = np.tile(y, (csize, xsize, 1))
                 z_shaped = z
             elif plot_type == "ncnxynz":
-                assert y.shape == (csize, xsize, zsize)
+                assert yshape == (csize, xsize, zsize)
                 c_shaped = np.transpose(np.tile(c, (xsize, zsize, 1)), axes=(2, 0, 1)).reshape(ysize)
                 x_shaped = np.transpose(np.tile(x, (zsize, csize, 1)), axes=(1, 2, 0))
                 y_shaped = y
                 z_shaped = np.tile(z, (csize, xsize, 1))
             elif plot_type == "ncxnynz":
-                assert x.shape == (csize, ysize, zsize)
+                assert xshape == (csize, ysize, zsize)
                 c_shaped = np.transpose(np.tile(c, (ysize, zsize, 1)), axes=(2, 0, 1)).reshape(xsize)
                 x_shaped = x
                 y_shaped = np.transpose(np.tile(y, (zsize, csize, 1)), axes=(1, 2, 0))
