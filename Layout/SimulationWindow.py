@@ -311,6 +311,7 @@ def getFigure(
                     timelike = True
                 except IndexError:
                     z_lines = np.tile(z, (csize, 1))
+                    timelike = False
                 rot_size = zsize
 
             for c_index in range(csize):
