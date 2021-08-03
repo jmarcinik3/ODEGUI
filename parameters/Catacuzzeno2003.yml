@@ -65,6 +65,9 @@ deltaCa:
 deltatauCa:
   value: 2
   unit:
+ECa:
+  value: 42.5
+  unit: millivolt
 
 VmhA:
   value: -55
@@ -236,7 +239,7 @@ EK1:
   unit: millivolt
 
 Vhalfh:
-  value: -87
+  value: -90
   unit: millivolt
 dVh:
   value: -9.60
