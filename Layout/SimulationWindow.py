@@ -25,7 +25,6 @@ from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from numpy import ndarray
 from pint import Quantity, Unit
-from scipy.interpolate import interp1d, interpn
 from sympy import Expr
 from sympy import Symbol
 from sympy.core import function
@@ -142,14 +141,17 @@ def getFigure(
 
     if 'x' in plot_type:
         x = results['x'] / scale_factor['x']
+        xsize = x.size
         axes_kwargs["xlim"] = getLimits(x, 'x')
 
     if 'y' in plot_type:
         y = results['y'] / scale_factor['y']
+        ysize = y.size
         axes_kwargs["ylim"] = getLimits(y, 'y')
 
     if 'z' in plot_type:
         z = results['z'] / scale_factor['z']
+        zsize = z.size
         axes_kwargs["zlim"] = getLimits(z, 'z')
         axes = figure.add_subplot(projection="3d")
     else:
@@ -159,6 +161,7 @@ def getFigure(
 
     if 'c' in plot_type or 't' in plot_type:
         c = results['c'] / scale_factor['c']
+        csize = c.size
 
         if colorbar_kwargs is None:
             colorbar_kwargs = {}
@@ -188,10 +191,11 @@ def getFigure(
     if 'z' not in plot_type:
         if plot_type == "xy":
             axes.plot(x, y, **plot_kwargs)
-        elif plot_type in ["cxy", "ncxy", "cnxy", "cxny", "txy"]:
-            if plot_type == "cxy":
+        elif plot_type in ["cnxny", "ncxy", "ncxny", "ncnxy", "txy"]:
+            if plot_type == "cnxny":
                 axes.contourf(x, y, c.T, levels=segment_count, cmap=colormap, norm=norm, **plot_kwargs)
             elif plot_type == "txy":
+                segment_count = min(segment_count, c.shape[-1])
                 segment_length = round(x_length / segment_count)
 
                 if segment_length == 0:
@@ -205,12 +209,12 @@ def getFigure(
             elif plot_type == "ncxy":
                 for index in range(c.shape[0]):
                     axes.plot(x[index], y[index], color=c_colors[index], **plot_kwargs)
-            elif plot_type in ["cnxy", "cxny"]:
-                if plot_type == "cnxy":
+            elif plot_type in ["ncxny", "ncnxy"]:
+                if plot_type == "ncxny":
                     size = x.shape[0]
                     x_rots = x
                     y_rots = np.tile(y, (size, 1))
-                elif plot_type == "cxny":
+                elif plot_type == "ncnxy":
                     size = y.shape[0]
                     x_rots = np.tile(x, (size, 1))
                     y_rots = y
@@ -221,7 +225,7 @@ def getFigure(
         if plot_type == "xyz":
             axes.plot3D(x, y, z, **plot_kwargs)
         elif plot_type == "txyz":
-            segment_count = min(segment_count, c.shape[1])
+            segment_count = min(segment_count, c.shape[-1])
             segment_length = round(x_length / segment_count)
 
             if segment_length == 0:
@@ -234,41 +238,41 @@ def getFigure(
                 axes.add_collection(line_collection, **plot_kwargs)
         elif plot_type in ["nxyz", "xnyz", "xynz"]:
             if plot_type == "nxyz":
-                assert y.shape == z.shape and y.shape[0] == x.size
+                assert y.shape == z.shape and y.shape[0] == xsize
                 x_rots = np.tile(x, (y.shape[1], 1)).T
                 y_rots = y
                 z_lines = z
-                size = x.size
+                rot_size = xsize
             elif plot_type == "xnyz":
-                assert x.shape == z.shape and x.shape[0] == y.size
+                assert x.shape == z.shape and x.shape[0] == ysize
                 x_rots = x
                 y_rots = np.tile(y, (x.shape[1], 1)).T
                 z_lines = z
-                size = y.size
+                rot_size = ysize
             elif plot_type == "xynz":
-                assert x.shape == y.shape and x.shape[0] == z.size
+                assert x.shape == y.shape and x.shape[0] == zsize
                 x_rots = x
                 y_rots = y
                 z_lines = np.tile(z, (x.shape[1], 1)).T
-                size = z.size
+                rot_size = zsize
 
-            for index in range(size):
+            for index in range(rot_size):
                 axes.plot3D(x_rots[index], y_rots[index], z_lines[index], **plot_kwargs)
         elif plot_type == "ncxyz":
-            assert x.shape == y.shape == z.shape and x.shape[0] == c.size
+            assert x.shape == y.shape == z.shape and x.shape[0] == csize
             for index in range(c.size):
                 axes.plot3D(x[index], y[index], z[index], color=c_colors[index], **plot_kwargs)
         elif plot_type in ["tnxyz", "txnyz", "txynz"]:
             if plot_type == "tnxyz":
-                assert c.shape == y.shape == z.shape and y.shape[0] == x.size
+                assert c.shape == y.shape == z.shape and y.shape[0] == xsize
                 x_rots, y_rots, zs = y, z, x
                 zdir = 'x'
             elif plot_type == "txnyz":
-                assert c.shape == x.shape == z.shape and x.shape[0] == y.size
+                assert c.shape == x.shape == z.shape and x.shape[0] == ysize
                 x_rots, y_rots, zs = x, z, y
                 zdir = 'y'
             elif plot_type == "txynz":
-                assert c.shape == x.shape == y.shape and x.shape[0] == z.size
+                assert c.shape == x.shape == y.shape and x.shape[0] == zsize
                 x_rots, y_rots, zs = x, y, z
                 zdir = 'z'
 
@@ -280,49 +284,73 @@ def getFigure(
                 axes.add_collection3d(line_collection, zs=zs[index], zdir=zdir, **plot_kwargs)
         elif plot_type in ["ncnxyz", "ncxnyz", "ncxynz"]:
             if plot_type == "ncnxyz":
-                assert y.shape[0:2] == (c.size, x.size) and y.shape == z.shape
-                x_rots = np.transpose(np.tile(x, (c.size, y.shape[2], 1)), axes=(0, 2, 1))
+                assert y.shape[0:2] == (csize, xsize) and y.shape == z.shape
+                try:
+                    x_rots = np.transpose(np.tile(x, (csize, y.shape[2], 1)), axes=(0, 2, 1))
+                    timelike = True
+                except IndexError:
+                    x_rots = np.tile(x, (csize, 1))
+                    timelike = False
                 y_rots, z_lines = y, z
-                zsize = x.size
+                rot_size = xsize
             elif plot_type == "ncxnyz":
-                assert x.shape[0:2] == (c.size, y.size) and x.shape == z.shape
+                assert x.shape[0:2] == (csize, ysize) and x.shape == z.shape
                 x_rots, z_lines = x, z
-                y_rots = np.transpose(np.tile(y, (c.size, x.shape[2], 1)), axes=(0, 2, 1))
-                zsize = y.size
+                try:
+                    y_rots = np.transpose(np.tile(y, (csize, x.shape[2], 1)), axes=(0, 2, 1))
+                    timelike = True
+                except IndexError:
+                    y_rots = np.tile(y, (csize, 1))
+                    timelike = False
+                rot_size = ysize
             elif plot_type == "ncxynz":
-                assert x.shape[0:2] == (c.size, z.size) and x.shape == y.shape
+                assert x.shape[0:2] == (csize, zsize) and x.shape == y.shape
                 x_rots, y_rots = x, y
-                z_lines = np.transpose(np.tile(z, (c.size, x.shape[2], 1)), axes=(0, 2, 1))
-                zsize = z.size
+                try:
+                    z_lines = np.transpose(np.tile(z, (csize, x.shape[2], 1)), axes=(0, 2, 1))
+                    timelike = True
+                except IndexError:
+                    z_lines = np.tile(z, (csize, 1))
+                rot_size = zsize
 
-            for z_index in range(zsize):
-                for c_index in range(c.size):
-                    index = (c_index, z_index)
-                    axes.plot3D(x_rots[index], y_rots[index], z_lines[index], color=c_colors[c_index], **plot_kwargs)
+            for c_index in range(csize):
+                c_color = c_colors[c_index]
+                if timelike:
+                    for z_index in range(rot_size):
+                        index = (c_index, z_index)
+                        axes.plot3D(
+                            x_rots[index], y_rots[index], z_lines[index],
+                            color=c_color, **plot_kwargs
+                        )
+                else:
+                    axes.plot3D(
+                        x_rots[c_index], y_rots[c_index], z_lines[c_index],
+                        color=c_color, **plot_kwargs
+                    )
         elif plot_type in ["tnxnyz", "tnxynz", "txnynz"]:
             if plot_type == "tnxnyz":
-                assert c.shape[0:2] == (x.size, y.size) and c.shape == z.shape
-                ysize = x.size
+                assert c.shape[0:2] == (xsize, ysize) and c.shape == z.shape
+                yrot_size = xsize
                 x_rots = z
                 y_rots = np.tile(x, (c.shape[2], 1)).T
                 zs, zdir = y, 'y'
                 c_rots = c
             elif plot_type == "tnxynz":
-                assert c.shape[0:2] == (x.size, z.size) and c.shape == y.shape
-                ysize = z.size
+                assert c.shape[0:2] == (xsize, zsize) and c.shape == y.shape
+                yrot_size = zsize
                 x_rots = np.transpose(y, axes=(1, 0, 2))
                 y_rots = np.tile(z, (c.shape[2], 1)).T
                 zs, zdir = x, 'x'
                 c_rots = np.transpose(c, axes=(1, 0, 2))
             elif plot_type == "txnynz":
-                assert c.shape[0:2] == (y.size, z.size) and c.shape == x.shape
-                ysize = y.size
+                assert c.shape[0:2] == (ysize, zsize) and c.shape == x.shape
+                yrot_size = ysize
                 x_rots = x
                 y_rots = np.tile(y, (c.shape[2], 1)).T
                 zs, zdir = z, 'z'
                 c_rots = c
 
-            for y_index in range(ysize):
+            for y_index in range(yrot_size):
                 for z_index in range(zs.size):
                     if plot_type == "tnxnyz":
                         points = np.array([y_rots[y_index], x_rots[y_index, z_index]]).T.reshape(-1, 1, 2)
@@ -333,6 +361,51 @@ def getFigure(
                     line_collection = LineCollection(segments, cmap=colormap, norm=norm)
                     line_collection.set_array(c_rots[y_index, z_index])
                     axes.add_collection3d(line_collection, zs=zs[z_index], zdir=zdir, **plot_kwargs)
+        elif plot_type in ["cnxnyz", "cnxynz", "cxnynz", "cnxnynz", "ncnxnyz", "ncnxynz", "ncxnynz"]:
+            if plot_type == "cnxnyz":
+                assert c.shape == z.shape == (xsize, ysize)
+                c_shaped = c.reshape(csize)
+                x_shaped = np.tile(x, (ysize, 1)).T
+                y_shaped = np.tile(y, (xsize, 1))
+                z_shaped = z
+            elif plot_type == "cnxynz":
+                assert c.shape == y.shape == (xsize, zsize)
+                c_shaped = c.reshape(csize)
+                x_shaped = np.tile(x, (zsize, 1)).T
+                y_shaped = y
+                z_shaped = np.tile(z, (xsize, 1))
+            elif plot_type == "cxnynz":
+                assert c.shape == x.shape == (ysize, zsize)
+                c_shaped = c.reshape(csize)
+                x_shaped = x
+                y_shaped = np.transpose(np.tile(y, (zsize, 1)))
+                z_shaped = np.tile(z, (ysize, 1))
+            elif plot_type == "cnxnynz":
+                assert c.shape == (xsize, ysize, zsize)
+                c_shaped = c.reshape(csize)
+                x_shaped = np.transpose(np.tile(x, (ysize, zsize, 1)), axes=(2, 0, 1))
+                y_shaped = np.transpose(np.tile(y, (zsize, xsize, 1)), axes=(1, 2, 0))
+                z_shaped = np.tile(z, (xsize, ysize, 1))
+            elif plot_type == "ncnxnyz":
+                assert z.shape == (csize, xsize, ysize)
+                c_shaped = np.transpose(np.tile(c, (xsize, ysize, 1)), axes=(2, 0, 1)).reshape(zsize)
+                x_shaped = np.transpose(np.tile(x, (ysize, csize, 1)), axes=(1, 2, 0))
+                y_shaped = np.tile(y, (csize, xsize, 1))
+                z_shaped = z
+            elif plot_type == "ncnxynz":
+                assert y.shape == (csize, xsize, zsize)
+                c_shaped = np.transpose(np.tile(c, (xsize, zsize, 1)), axes=(2, 0, 1)).reshape(ysize)
+                x_shaped = np.transpose(np.tile(x, (zsize, csize, 1)), axes=(1, 2, 0))
+                y_shaped = y
+                z_shaped = np.tile(z, (csize, xsize, 1))
+            elif plot_type == "ncxnynz":
+                assert x.shape == (csize, ysize, zsize)
+                c_shaped = np.transpose(np.tile(c, (ysize, zsize, 1)), axes=(2, 0, 1)).reshape(xsize)
+                x_shaped = x
+                y_shaped = np.transpose(np.tile(y, (zsize, csize, 1)), axes=(1, 2, 0))
+                z_shaped = np.tile(z, (csize, ysize, 1))
+
+            axes.scatter3D(x_shaped, y_shaped, z_shaped, color=cmap.to_rgba(c_shaped))
 
         axes.set_xlim3d(*axes_kwargs["xlim"])
         axes.set_ylim3d(*axes_kwargs["ylim"])
@@ -1919,7 +1992,7 @@ class SimulationWindowRunner(WindowRunner):
         self.getPlotChoices = window_object.getPlotChoices
         self.getFreeParameterNames = window_object.getFreeParameterNames
 
-        self.axis_names = ['x', 'y', 'z', 'c']
+        self.axis_names = ['c', 'x', 'y', 'z']
         self.timelike_species = ["Variable", "Function"]
         self.parameterlike_species = ["Parameter"]
         self.values = None
@@ -2593,192 +2666,185 @@ class SimulationWindowRunner(WindowRunner):
             "transform_name": transform_name
         }
 
-        plot_choice_names = {axis: plot_quantities[axis][0] for axis in plot_quantities_keys}
-        species = {plot_quantities[axis][0]: plot_quantities[axis][1] for axis in plot_quantities_keys}
-        condensor_names = {plot_quantities[axis][0]: plot_quantities[axis][2] for axis in plot_quantities_keys}
+        axis2name = {axis: plot_quantities[axis][0] for axis in plot_quantities_keys}
+        name2axis = {name: axis for axis, name in axis2name.items()}
 
+        axis2specie = {axis: plot_quantities[axis][1] for axis in plot_quantities_keys}
+        axis2condensor_name = {axis: plot_quantities[axis][2] for axis in plot_quantities_keys}
         is_timelike = {
-            name: species[name] in timelike_species and condensor_names[name] == "None"
-            for name in plot_choice_names.values()
+            axis: axis2specie[axis] in timelike_species and axis2condensor_name[axis] == "None"
+            for axis in plot_quantities_keys
         }
         is_condensed = {
-            name: species[name] in timelike_species and condensor_names[name] != "None"
-            for name in plot_choice_names.values()
+            axis: axis2specie[axis] in timelike_species and axis2condensor_name[axis] != "None"
+            for axis in plot_quantities_keys
         }
         is_parameterlike = {
-            name: species[name] in parameterlike_species
-            for name in plot_choice_names.values()
+            axis: axis2specie[axis] in parameterlike_species
+            for axis in plot_quantities_keys
         }
         is_nonelike = {
-            name: not is_timelike[name] and not is_condensed[name] and not is_parameterlike[name]
-            for name in plot_choice_names.values()
+            axis: not is_timelike[axis] and not is_condensed[axis] and not is_parameterlike[axis]
+            for axis in plot_quantities_keys
         }
 
-        timelike_count = sum(is_timelike.values())
         parameterlike_count = sum(is_parameterlike.values())
-        condensed_count = sum(is_condensed.values())
-        none_count = sum(is_nonelike.values())
 
         results = {}
-
-        parameter_names = tuple([name for name in plot_choice_names.values() if is_parameterlike[name]])
-        timelike_names = tuple([name for name in plot_choice_names.values() if is_timelike[name]])
-        condensed_names = tuple([name for name in plot_choice_names.values() if is_condensed[name]])
-
         try:
-            results = {}
             if parameterlike_count == 0:
                 getResultsOverTime = partial(results_object.getResultsOverTime, **results_kwargs)
 
-                for timelike_name in timelike_names:
-                    results[timelike_name] = getResultsOverTime(quantity_names=timelike_name)
-
-                for condensed_name in condensed_names:
-                    condensor_name = condensor_names[condensed_name]
-                    results[condensed_name] = getResultsOverTime(
-                        names=condensed_name,
-                        condensor_name=condensor_name,
-                        **self.getCondensorKwargs(condensor_name)
-                    )
+                for axis_name, name in axis2name.items():
+                    if is_timelike[axis_name]:
+                        results[axis_name] = getResultsOverTime(quantity_names=name)
+                    elif is_condensed[axis_name]:
+                        condensor_name = axis2condensor_name[axis_name]
+                        results[axis_name] = getResultsOverTime(
+                            quantity_names=name,
+                            condensor_name=condensor_name,
+                            **self.getCondensorKwargs(condensor_name)
+                        )
             else:
+                parameter_names = tuple(
+                    [
+                        axis2name[axis]
+                        for axis in plot_quantities_keys
+                        if is_parameterlike[axis]
+                    ]
+                )
+
                 getResultsOverTimePerParameter = partial(
                     results_object.getResultsOverTimePerParameter,
                     parameter_names=parameter_names,
                     **results_kwargs
                 )
 
-                if len(timelike_names) >= 1:
-                    _, quantity_results = getResultsOverTimePerParameter(quantity_names=timelike_names)
-                    results.update(dict(zip(timelike_names, quantity_results)))
+                for axis_name, name in axis2name.items():
+                    if is_timelike[axis_name]:
+                        parameter_results, quantity_results = getResultsOverTimePerParameter(quantity_names=name)
+                        results[axis_name] = quantity_results[0]
+                    elif is_parameterlike[axis_name]:
+                        results[axis_name] = results_object.getFreeParameterValues(names=name)
+                    elif is_condensed[axis_name]:
+                        condensor_name = axis2condensor_name[axis_name]
+                        parameter_results, quantity_results = getResultsOverTimePerParameter(
+                            quantity_names=name,
+                            condensor_name=condensor_name,
+                            **self.getCondensorKwargs(condensor_name)
+                        )
+                        results[axis_name] = quantity_results[0]
 
-                for condensed_name in condensed_names:
-                    condensor_name = condensor_names[condensed_name]
-                    _, result = getResultsOverTimePerParameter(
-                        quantity_names=condensed_name,
-                        condensor_name=condensor_name,
-                        **self.getCondensorKwargs(condensor_name)
-                    )
-                    results[condensed_name] = result[0]
-
-                results_object = self.getResultsObject()
-                for parameter_name in parameter_names:
-                    results[parameter_name] = results_object.getFreeParameterValues(names=parameter_name)
         except (UnboundLocalError, KeyError, IndexError, AttributeError, ValueError):
             print("data:", traceback.print_exc())
 
         try:
-            is_timelike_axis = lambda axis: is_timelike[plot_choice_names[axis]]
-            is_parameterlike_axis = lambda axis: is_parameterlike[plot_choice_names[axis]]
-            is_condensed_axis = lambda axis: is_condensed[plot_choice_names[axis]]
-            is_nonelike_axis = lambda axis: is_nonelike[plot_choice_names[axis]]
-
-            axis_results = {}
-
-            if not is_nonelike_axis('x'):
-                x = results[plot_choice_names['x']]
-                axis_results['x'] = x
-            if not is_nonelike_axis('y'):
-                y = results[plot_choice_names['y']]
-                axis_results['y'] = y
-            if not is_nonelike_axis('z'):
-                z = results[plot_choice_names['z']]
-                axis_results['z'] = z
-            if not is_nonelike_axis('c'):
-                c = results[plot_choice_names['c']]
-                axis_results['c'] = c
-
-            if is_timelike_axis('x'):
-                if is_timelike_axis('y'):
-                    if is_timelike_axis('z'):
-                        if is_timelike_axis('c'):
+            if is_timelike['x']:
+                if is_timelike['y']:
+                    if is_timelike['z']:
+                        if is_timelike['c']:
                             plot_type = "txyz"
-                        elif is_parameterlike_axis('c'):
+                        elif is_parameterlike['c']:
                             plot_type = "ncxyz"
-                        elif is_nonelike_axis('c'):
+                        elif is_nonelike['c']:
                             plot_type = "xyz"
-                    elif is_parameterlike_axis('z'):
-                        if is_timelike_axis('c'):
+                    elif is_parameterlike['z']:
+                        if is_timelike['c']:
                             plot_type = "txynz"
-                        elif is_parameterlike_axis('c'):
-                            assert x.shape == y.shape
-                            if x.shape[0:2] != (c.size, z.size):
-                                axis_results['x'] = np.transpose(x, axes=(1, 0, 2))
-                                axis_results['y'] = np.transpose(y, axes=(1, 0, 2))
+                        elif is_parameterlike['c']:
                             plot_type = "ncxynz"
-                        elif is_nonelike_axis('c'):
+                        elif is_nonelike['c']:
                             plot_type = "xynz"
-                    elif is_nonelike_axis('z'):
-                        if is_timelike_axis('c'):
+                    elif is_nonelike['z']:
+                        if is_timelike['c']:
                             plot_type = "txy"
-                        elif is_parameterlike_axis('c'):
+                        elif is_parameterlike['c']:
                             plot_type = "ncxy"
-                        elif is_nonelike_axis('c'):
+                        elif is_nonelike['c']:
                             plot_type = "xy"
-                elif is_parameterlike_axis('y'):
-                    if is_timelike_axis('z'):
-                        if is_timelike_axis('c'):
+                elif is_parameterlike['y']:
+                    if is_timelike['z']:
+                        if is_timelike['c']:
                             plot_type = "txnyz"
-                        elif is_parameterlike_axis('c'):
-                            assert x.shape == z.shape
-                            if x.shape[0:2] != (c.size, y.size):
-                                axis_results['x'] = np.transpose(x, axes=(1, 0, 2))
-                                axis_results['z'] = np.transpose(z, axes=(1, 0, 2))
+                        elif is_parameterlike['c']:
                             plot_type = "ncxnyz"
-                        elif is_nonelike_axis('c'):
+                        elif is_nonelike['c']:
                             plot_type = "xnyz"
-                    elif is_parameterlike_axis('z'):
-                        if is_timelike_axis('c'):
+                    elif is_parameterlike['z']:
+                        if is_timelike['c']:
                             plot_type = "txnynz"
-            elif is_condensed_axis('x'):
-                if is_parameterlike_axis('y'):
-                    if is_nonelike_axis('z'):
-                        if is_parameterlike_axis('c'):
-                            axis_results['x'] = x if x.shape == (c.size, y.size) else x.T
-                            plot_type = "cnxy"
-                        elif is_condensed_axis('c'):
+            elif is_condensed['x']:
+                if is_parameterlike['y']:
+                    if is_parameterlike['z']:
+                        if is_parameterlike['c']:
+                            plot_type = "ncxnynz"
+                        elif is_condensed['c']:
+                            plot_type = "cxnynz"
+                        elif is_nonelike['c']:
+                            plot_type = "xnynz"
+                    elif is_condensed['z']:
+                        if is_parameterlike['c']:
+                            plot_type = "ncxnyz"
+                        elif is_condensed['c']:
+                            plot_type = "cxnyz"
+                    elif is_nonelike['z']:
+                        if is_parameterlike['c']:
+                            plot_type = "ncxny"
+                        elif is_condensed['c']:
                             plot_type = "txy"
-                        elif is_nonelike_axis('c'):
+                        elif is_nonelike['c']:
                             plot_type = "xy"
-                elif is_condensed_axis('y'):
-                    if is_nonelike_axis('z'):
-                        if is_parameterlike_axis('c'):
+                elif is_condensed['y']:
+                    if is_nonelike['z']:
+                        if is_parameterlike['c']:
                             plot_type = "txy"
-            elif is_parameterlike_axis('x'):
-                if is_timelike_axis('y'):
-                    if is_timelike_axis('z'):
-                        if is_timelike_axis('c'):
+                    elif is_condensed['z']:
+                        if is_parameterlike['c']:
+                            plot_type = "txyz"
+            elif is_parameterlike['x']:
+                if is_timelike['y']:
+                    if is_timelike['z']:
+                        if is_timelike['c']:
                             plot_type = "tnxyz"
-                        elif is_parameterlike_axis('c'):
-                            assert y.shape == z.shape
-                            if y.shape[0:2] != (c.size, x.size):
-                                axis_results['y'] = np.transpose(y, axes=(1, 0, 2))
-                                axis_results['z'] = np.transpose(z, axes=(1, 0, 2))
+                        elif is_parameterlike['c']:
                             plot_type = "ncnxyz"
-                        elif is_nonelike_axis('c'):
+                        elif is_nonelike['c']:
                             plot_type = "nxyz"
-                    elif is_parameterlike_axis('z'):
-                        plot_type = "tnxynz"
-                elif is_parameterlike_axis('y'):
-                    if is_timelike_axis('z'):
-                        if is_timelike_axis('c'):
+                    elif is_parameterlike['z']:
+                        if is_nonelike['c']:
+                            plot_type = "tnxynz"
+                elif is_parameterlike['y']:
+                    if is_timelike['z']:
+                        if is_timelike['c']:
                             plot_type = "tnxnyz"
-                    elif is_nonelike_axis('z'):
-                        if is_condensed_axis('c'):
-                            axis_results['c'] = c
-                            plot_type = "cxy"
-                elif is_condensed_axis('y'):
-                    if is_nonelike_axis('z'):
-                        if is_parameterlike_axis('c'):
-                            axis_results['y'] = y if y.shape == (c.size, x.size) else y.T
-                            plot_type = "cxny"
-                        elif is_condensed_axis('c'):
+                    elif is_parameterlike['z']:
+                        if is_condensed['c']:
+                            plot_type = "cnxnynz"
+                    elif is_condensed['z']:
+                        if is_parameterlike['c']:
+                            plot_type = "ncnxnyz"
+                        elif is_condensed['c']:
+                            plot_type = "cnxnyz"
+                    elif is_nonelike['z']:
+                        if is_condensed['c']:
+                            plot_type = "cnxny"
+                elif is_condensed['y']:
+                    if is_nonelike['z']:
+                        if is_parameterlike['c']:
+                            plot_type = "ncnxy"
+                        elif is_condensed['c']:
                             plot_type = "txy"
-                        elif is_nonelike_axis('c'):
+                        elif is_nonelike['c']:
                             plot_type = "xy"
+                    elif is_parameterlike['z']:
+                        if is_parameterlike['c']:
+                            plot_type = "ncnxynz"
+                        elif is_condensed['c']:
+                            plot_type = "cnxynz"
 
             try:
-                print(plot_type, {key: value.shape for key, value in axis_results.items()})
-                figure = self.getFigure(axis_results, plot_type=plot_type, **figure_kwargs)
+                print(plot_type, {key: value.shape for key, value in results.items()})
+                figure = self.getFigure(results, plot_type=plot_type, **figure_kwargs)
                 self.updateFigureCanvas(figure)
                 return figure
             except UnboundLocalError:
