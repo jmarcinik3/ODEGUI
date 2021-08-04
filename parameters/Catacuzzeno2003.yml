@@ -67,7 +67,7 @@ deltatauCa:
   unit:
 ECa:
   value: 42.5
-  unit: millinolt
+  unit: millivolt
 
 VmhA:
   value: -55

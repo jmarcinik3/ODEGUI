@@ -5,16 +5,18 @@ The simulation must be run once by hitting the button before the window function
 """
 from __future__ import annotations
 
+import os
 import tkinter as tk
 import traceback
 from functools import partial
 from itertools import product
+from os.path import dirname, join
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 # noinspection PyPep8Naming
-import PIL
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
+import imageio
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import cm, colors
@@ -30,7 +32,6 @@ from sympy import Symbol
 from sympy.core import function
 from sympy.utilities.lambdify import lambdify
 
-from CustomErrors import RecursiveTypeError
 from Function import Model
 from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabbedWindow, WindowRunner, getKeys, storeElement
 from Results import Results
@@ -201,7 +202,7 @@ def getFigure(
             axes.contourf(x, y, c.T, levels=segment_count, cmap=colormap, norm=norm, **plot_kwargs)
         elif plot_type in ["txy", "cnxy", "cxny"]:
             assert cshape == xshape == yshape
-            
+
             segment_count = max(min(segment_count, cshape[-1]), 1)
             segment_length = round(x_length / segment_count)
 
@@ -1822,15 +1823,21 @@ class SimulationWindow(TabbedWindow):
         :param self: :class:`~Layout.SimulationWindow.SimulationWindow` to retrieve names from
         :param indicies: location to retrieve parameter name from in collection of names
         """
-        if isinstance(indicies, int):
-            free_parameter_names = self.getFreeParameterNames()
-            return free_parameter_names[indicies]
-        elif isinstance(indicies, list):
-            return [self.getFreeParameterNames(indicies=index) for index in indicies]
-        elif indicies is None:
-            return list(self.free_parameter_values.keys())
-        else:
-            raise RecursiveTypeError(indicies)
+
+        free_parameter_names = list(self.free_parameter_values.keys())
+
+        def get(index: int) -> str:
+            """Base method for :meth:`~Layout.SimulationWindow.SimulationWindow.getFreeParameterNames`"""
+            return free_parameter_names[index]
+
+        kwargs = {
+            "args": indicies,
+            "base_method": get,
+            "valid_input_types": int,
+            "output_type": list,
+            "default_args": range(len(free_parameter_names))
+        }
+        return recursiveMethod(**kwargs)
 
     def getFreeParameterValues(
             self, name: str = None
@@ -2112,7 +2119,7 @@ class SimulationWindowRunner(WindowRunner):
         step_count = round((slider_max - slider_min) / slider_resolution + 1)
         return np.linspace(slider_min, slider_max, step_count)
 
-    def getClosestSliderIndex(self, names: Union[str, List[str]] = None) -> Union[int, Tuple[int]]:
+    def getClosestSliderIndex(self, names: Union[str, List[str]] = None) -> Union[int, Tuple[int, ...]]:
         """
         Get location/index of slider closest to value of free parameter.
         Location is discretized from zero to the number of free-parameter values.
@@ -2124,18 +2131,25 @@ class SimulationWindowRunner(WindowRunner):
         :returns: Slider index for free parameter if names is str.
             Tuple of slider indicies for all given free parameters if names is list or tuple.
         """
-        if isinstance(names, str):
-            slider_value = self.getSliderValue(names)
-            free_parameter_values = self.getFreeParameterValues(names)
-            index = min(range(len(free_parameter_values)), key=lambda i: abs(free_parameter_values[i] - slider_value))
-            return index
-        elif isinstance(names, list):
-            # noinspection PyTypeChecker
-            return tuple(self.getClosestSliderIndex(names=name) for name in names)
-        elif names is None:
-            return self.getClosestSliderIndex(names=self.getFreeParameterNames())
-        else:
-            raise RecursiveTypeError(names)
+
+        def get(name: str) -> int:
+            """Base method for :meth:`~Layout.SimulationWindow.SimulationWindowRunner.getClosestSliderIndex`"""
+            slider_value = self.getSliderValue(name)
+            free_parameter_values = self.getFreeParameterValues(name)
+            closest_index = min(
+                range(len(free_parameter_values)),
+                key=lambda i: abs(free_parameter_values[i] - slider_value)
+            )
+            return closest_index
+
+        kwargs = {
+            "args": names,
+            "base_method": get,
+            "valid_input_types": str,
+            "output_type": tuple,
+            "default_args": self.getFreeParameterNames()
+        }
+        return recursiveMethod(**kwargs)
 
     def getLikeSpecies(self, like: str):
         """
@@ -2752,7 +2766,9 @@ class SimulationWindowRunner(WindowRunner):
 
                 for axis_name, quantity_name in axis2name.items():
                     if is_timelike[axis_name]:
-                        parameter_results, quantity_results = getResultsOverTimePerParameter(quantity_names=quantity_name)
+                        parameter_results, quantity_results = getResultsOverTimePerParameter(
+                            quantity_names=quantity_name
+                        )
                         results[axis_name] = quantity_results[0]
                     elif is_parameterlike[axis_name]:
                         results[axis_name] = results_object.getFreeParameterValues(names=quantity_name)
@@ -2925,13 +2941,13 @@ class SimulationWindowRunner(WindowRunner):
             Updates all axes by default.
         """
 
+        # noinspection PyTypeChecker
+        window_object: SimulationWindow = self.getWindowObject()
+        # noinspection PyTypeChecker
+        plotting_tab: PlottingTab = window_object.getPlottingTab()
+
         def update(name: str) -> None:
             """Base method for :meth:`~Layout.SimulationWindow.SimulationWindowRunner.updatePlotChoices`"""
-            # noinspection PyTypeChecker
-            window_object: SimulationWindow = self.getWindowObject()
-            # noinspection PyTypeChecker
-            plotting_tab: PlottingTab = window_object.getPlottingTab()
-
             specie = self.getValue(getKeys(plotting_tab.getAxisQuantitySpeciesElement(name)))
             choices = self.getPlotChoices(species=specie) if specie != "None" else ['']
             quantity_combobox = plotting_tab.getAxisQuantityElement(name)
@@ -3068,29 +3084,6 @@ class SimulationWindowRunner(WindowRunner):
                 except OSError:
                     sg.PopupError(f"cannot save figure as {filepath:s}")
         elif isinstance(name, str):
-            parameter_index = self.getFreeParameterIndex(name)
-            default_index = list(self.getClosestSliderIndex())
-            new_index = lambda i: tuple(default_index[:parameter_index] + [i] + default_index[parameter_index + 1:])
-            parameter_values = self.getFreeParameterValues(name)
-            parameter_value_range = (np.min(parameter_values), np.max(parameter_values))
-
-            images = []
-            images_append = images.append
-            inset_parameters = {
-                name: {
-                    "range": parameter_value_range
-                }
-            }
-            image_count = len(parameter_values)
-            for i in range(image_count):
-                if not self.updateProgressMeter("Saving Animation", i, image_count):
-                    break
-                inset_parameters[name]["value"] = parameter_values[i]
-                figure = self.updatePlot(index=new_index(i), inset_parameters=inset_parameters)
-                image = PIL.Image.frombytes("RGB", figure.canvas.get_width_height(), figure.canvas.tostring_rgb())
-                images_append(image)
-            self.updateProgressMeter("Saving Animation", image_count, image_count)
-
             file_types = [("Graphics Interchange Format", "*.gif"), ("ALL Files", "*.*")]
             kwargs = {
                 "message": "Enter Filename",
@@ -3099,11 +3092,36 @@ class SimulationWindowRunner(WindowRunner):
                 "file_types": tuple(file_types)
             }
             filepath = sg.PopupGetFile(**kwargs)
+
             if isinstance(filepath, str):
-                kwargs = {
-                    "save_all": True,
-                    "append_images": images[1:],
-                    "duration": round(4000 / len(images)),
-                    "loop": 0
+                save_directory = dirname(filepath)
+
+                parameter_index = self.getFreeParameterIndex(name)
+                default_index = list(self.getClosestSliderIndex())
+                parameter_values = self.getFreeParameterValues(name)
+
+                inset_parameters = {
+                    name: {
+                        "range": (parameter_values.min(), parameter_values.max())
+                    }
                 }
-                images[0].save(filepath, **kwargs)
+                image_count = len(parameter_values)
+                with imageio.get_writer(filepath, mode='I') as writer:
+                    for i in range(image_count):
+                        if not self.updateProgressMeter("Saving Animation", i, image_count):
+                            break
+
+                        data_index = default_index
+                        data_index[parameter_index] = i
+                        parameter_value = parameter_values[i]
+                        inset_parameters[name]["value"] = parameter_value
+                        figure = self.updatePlot(index=tuple(data_index), inset_parameters=inset_parameters)
+
+                        png_filepath = join(save_directory, f"{name:s}_{parameter_value}.png")
+                        figure.savefig(png_filepath)
+                        writer.append_data(imageio.imread(png_filepath))
+                        os.remove(png_filepath)
+
+                self.updateProgressMeter("Saving Animation", image_count, image_count)
+            else:
+                sg.PopupError("invalid filepath")
