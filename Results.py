@@ -151,7 +151,7 @@ class Results:
             function = model.getFunctions(names=name)
             kwargs = {
                 "species": "Parameter",
-                "generations": "all",
+                "expanded": True,
                 "return_type": str
             }
             parameter_names = function.getFreeSymbols(**kwargs)
@@ -217,7 +217,7 @@ class Results:
         try:
             expression = self.general_function_expressions[name]
         except KeyError:
-            expression = self.getModel().getFunctions(names=name).getExpression(generations=0)
+            expression = self.getModel().getFunctions(names=name).getExpression(expanded=False)
             parameter_substitutions = self.getParameterSubstitutions(include_free=False)
             expression = expression.subs(parameter_substitutions)
             self.general_function_expressions[name] = expression
