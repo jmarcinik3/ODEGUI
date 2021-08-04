@@ -14,11 +14,13 @@ from numpy import ndarray
 from pint import Quantity
 
 from CustomErrors import RecursiveTypeError
-from Function import Derivative, Function, Independent, Model, generateFunction, generateParameter, readFunctionsFromFiles, readParametersFromFiles
+from Function import Derivative, Function, Independent, Model, \
+    generateFunction, generateParameter, readFunctionsFromFiles, readParametersFromFiles
 from Function import Parameter
 from Layout.ChooseGraphLayoutWindow import ChooseGraphLayoutWindowRunner
 from Layout.ChooseParametersWindow import ChooseParametersWindowRunner
-from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabRow, TabbedWindow, WindowRunner, generateCollapsableSection, getKeys, getNameFromElementKey, storeElement
+from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabRow, TabbedWindow, WindowRunner, \
+    generateCollapsableSection, getKeys, getNameFromElementKey, storeElement
 from Layout.SetFreeParametersWindow import SetFreeParametersWindowRunner
 from Layout.SimulationWindow import SimulationWindowRunner
 from YML import getDimensions, getStates, readLayout, readStates
@@ -785,7 +787,6 @@ class FunctionRow(TabRow, StoredObject):
         """
         Get folderpath to save or load image from.
 
-        :param self: :class:`~Layout.MainWindow.FunctionRow` to retrieve folderpath from
         :param filestem: stem of file to retrieve folderpath for
         """
         top_folder = FunctionRow.image_folder

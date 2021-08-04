@@ -159,10 +159,14 @@ class SetFreeParametersWindowRunner(WindowRunner):
         
         :param self: :class:`~Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner` to retrieve values from
         :param names: names of parameters to retrieve info for
-        :returns: Dictionary of info for free parameters if :paramref:`~Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner.getFreeParameterValues.names` is list.
+        :returns: Dictionary of info for free parameters
+            if :paramref:`~Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner.getFreeParameterValues.names`
+            is list.
             Key is name of parameter.
             Value is list of (minimum, maximum, stepcount) for parameter.
-            Returns only this list if :paramref:`~Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner.getFreeParameterValues.names` is str.
+            Returns only this list
+            if :paramref:`~Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner.getFreeParameterValues.names`
+            is str.
         """
         if isinstance(names, str):
             values = []
@@ -187,6 +191,7 @@ class SetFreeParametersWindowRunner(WindowRunner):
                     sg.PopupError(f"Input maximum for {names:s}")
 
             if valid:
+                # noinspection PyUnboundLocalVariable
                 if maximum <= minimum:
                     valid = False
                     sg.PopupError(f"Maximum must be greater than minimum for {names:s}")

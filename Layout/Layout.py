@@ -34,6 +34,7 @@ def generateEmptySpace(layout: List[List[sg.Element]]) -> sg.pin:
     return sg.pin(sg.Column(layout, visible=False, expand_x=True), expand_x=True)
 
 
+# noinspection PyPep8Naming
 def storeElement(instantiateElement):
     def wrapper(self, *args, **kwargs):
         method_name = instantiateElement.__name__

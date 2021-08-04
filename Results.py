@@ -15,7 +15,7 @@ from sympy import Symbol
 from sympy.utilities.lambdify import lambdify
 
 from Function import Model
-from macros import commonElement, recursiveMethod
+from macros import recursiveMethod
 
 
 class Results:
@@ -412,6 +412,7 @@ class Results:
         :param kwargs: additional arguments to pass into :meth:`~Results.Results.getResultsOverTime`
         """
         results = self.getResultsOverTime(index=index, quantity_names=name, **kwargs)
+        # noinspection PyTypeChecker
         return np.std(results)
 
     def getHolderMean(self, index: Union[tuple, Tuple[int]], name: str, order: int = 1, **kwargs) -> float:
@@ -560,7 +561,7 @@ class Results:
             parameter_names: str,
             quantity_names: Union[str, List[str]],
             **kwargs
-    ) -> Tuple[ndarray, ...]:
+    ) -> Tuple[tuple, ndarray]:
         """
         Get free-parameter values and "averaged" quantity values.
 
@@ -596,6 +597,8 @@ class Results:
             single_result_size = per_parameter_stepcounts
         elif isinstance(times, ndarray):
             single_result_size = (*per_parameter_stepcounts, *times.shape)
+        else:
+            raise TypeError(f"invalid type ({type(times):s})")
 
         results = np.zeros((len(quantity_names), *single_result_size))
         for quantity_location, quantity_name in enumerate(quantity_names):
@@ -607,6 +610,7 @@ class Results:
                 single_result = self.getResultsOverTime(index=tuple(new_index), quantity_names=quantity_name, **kwargs)
                 single_results[partial_index] = single_result
             results[quantity_location] = single_results
+
         return per_parameter_base_values, results
 
     def setResults(

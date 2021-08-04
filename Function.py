@@ -593,7 +593,9 @@ class Model:
         elif variable_count >= 1:
             functions = self.getFunctions(names=names)
             getExpression = partial(Function.getExpression, expanded=True)
-            expressions = list(map(getExpression, functions))
+
+            # noinspection PyTypeChecker
+            expressions: List[Expr] = list(map(getExpression, functions))
             variables = list(map(Symbol, names))
 
             substitutions = {}
@@ -1092,10 +1094,10 @@ class Child:
 
         self: Function
 
-        def get(name: str) -> Derivative:
+        def get(name: str) -> Function:
             """Base method for :meth:`~Function.Model.getParents`"""
-            parents = self.getModel().getFunctions(names=name)
-            return parents
+            parent = self.getModel().getFunctions(names=name)
+            return parent
 
         kwargs = {
             "base_method": get,

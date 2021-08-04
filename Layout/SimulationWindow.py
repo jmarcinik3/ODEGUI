@@ -69,7 +69,7 @@ def getFigure(
         colorbar_kwargs: Dict[str, Any] = None,
         axes_kwargs: Dict[str, Any] = None,
         plot_kwargs: Dict[str, Any] = None,
-        inset_parameters: Dict[str, float] = None
+        inset_parameters: Dict[str, Dict[str, Union[float, Tuple[float, float]]]] = None
 ) -> Figure:
     """
     Get matplotlib figure from data.
@@ -102,6 +102,7 @@ def getFigure(
             "value": value is value for parameter within range
     :param colorbar_kwargs: additional arguments to pass into :class:`matplotlib.pyplot.colorbar`
     :param axes_kwargs: additional arguments to pass into :class:`matplotlib.axes.Axes'
+    :param plot_kwargs: additional arguments to pass into axes plot method
     """
 
     def getLimits(data: ndarray, axis_name: str) -> Tuple[float, float]:
@@ -562,7 +563,8 @@ class ParameterSlider(Element, StoredObject):
     """
     Slider to choose value for free parameter.
     This contains
-        #. Four labels. One for parameter name. One for minimum parameter value. One for maximum parameter value. One for number of distinct parameter values
+        #. Four labels. One for parameter name. One for minimum parameter value. One for maximum parameter value.
+        One for number of distinct parameter values
         #. Slider. This allows the user to choose which parameter value to plot a simulation for.
     
     :ivar name: name of parameter
@@ -724,8 +726,10 @@ class ParameterSlider(Element, StoredObject):
 class SimulationTab(Tab):
     """
     This class contains the layout for the simulation tab in the simulation window.
-        #. Input fields to set time steps. This allows the user to set the minimum, maximum, and number of steps for time in the simulation.
-        #. Run button. This allows the user to run the simulation. This is particularly useful if the user wishes to run the simulation again with more precision.
+        #. Input fields to set time steps.
+        This allows the user to set the minimum, maximum, and number of steps for time in the simulation.
+        #. Run button. This allows the user to run the simulation.
+        This is particularly useful if the user wishes to run the simulation again with more precision.
     """
 
     def __init__(self, name: str, window: SimulationWindow) -> None:
@@ -2393,7 +2397,7 @@ class SimulationWindowRunner(WindowRunner):
         Run simulation for a single set of free-parameter values.
         Save results in :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
         
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from and save results in.
+        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from and save results in
         :param index: index for free-parameter values.
             Results are saved at this index.
         :param parameter_values: dictionary of free-parameter values.
@@ -2404,9 +2408,9 @@ class SimulationWindowRunner(WindowRunner):
             This gives the order for arguments in the lambdified derivative vector.
         :param general_derivative_vector: partially-simplified, symbolic derivative vector.
             Simplified as much as possible, except leave free parameters and variables as symbolic.
-        :param y0: initial condition vector for derivative vector.
-        :param times: vector of time steps to solve ODE at.
-        :param model: :class:`~Function.Model` to run simulation for.
+        :param y0: initial condition vector for derivative vector
+        :param times: vector of time steps to solve ODE at
+        :param model: :class:`~Function.Model` to run simulation for
         """
         if any(element is None for element in [variable_names, general_derivative_vector, y0, times]):
             if model is None:
@@ -2436,7 +2440,7 @@ class SimulationWindowRunner(WindowRunner):
         Run simulations for all possible combinations of free-parameter values.
         Save results in :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
         
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from and save results in.
+        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from and save results in
         """
         self.resetResults()
         free_parameter_names = self.getFreeParameterNames()
