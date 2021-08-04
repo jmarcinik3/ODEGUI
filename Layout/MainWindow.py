@@ -809,7 +809,7 @@ class FunctionRow(TabRow, StoredObject):
             filestem = filestems[index]
             kwargs = {
                 "name": name,
-                "expression": function.getExpression(generations=0),
+                "expression": function.getExpression(expanded=False),
                 "var2tex": "var2tex.yml",
                 "folder": self.getImageFoldername(filestem),
                 "filename": f"{name:s}.png"
@@ -1580,7 +1580,7 @@ class MainWindowRunner(WindowRunner):
             )
             core_function_objects.extend(children_function_objects)
 
-        getParameters = partial(Function.getFreeSymbols, generations="all", species="Parameter", return_type=str)
+        getParameters = partial(Function.getFreeSymbols, species="Parameter", expanded=True, return_type=str)
         core_parameter_names = unique(
             [
                 parameter_name
@@ -2478,7 +2478,7 @@ class MainWindowRunner(WindowRunner):
         derivatives: List[Union[Derivative, Function]] = self.getModel().getDerivatives()
         der2vars = {
             der.getVariable(return_type=str):
-                der.getFreeSymbols(species="Variable", generations="all", return_type=str)
+                der.getFreeSymbols(species="Variable", expanded=True, return_type=str)
             for der in derivatives
         }
         variable_names = sorted(der2vars.keys(), key=lambda k: len(der2vars[k]))
