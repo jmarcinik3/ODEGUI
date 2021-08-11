@@ -671,7 +671,6 @@ class Results:
                 filepath = file.name
                 filename = basename(filepath)
                 zipfile.write(filepath, filename)
-        zipfile.close()
 
         for file in files:
             remove(file.name)

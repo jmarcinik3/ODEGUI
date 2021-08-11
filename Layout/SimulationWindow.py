@@ -10,15 +10,18 @@ import tkinter as tk
 import traceback
 from functools import partial
 from itertools import product
-from os.path import dirname, join
+from os.path import basename, join
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+# noinspection PyPep8Naming
+# noinspection PyPep8Naming
+from zipfile import ZipFile
 
-# noinspection PyPep8Naming
-# noinspection PyPep8Naming
 import PySimpleGUI as sg
 import imageio
 import matplotlib.pyplot as plt
 import numpy as np
+import yaml
 from matplotlib import cm, colors
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -2594,7 +2597,7 @@ class SimulationWindowRunner(WindowRunner):
             if any element in :paramref:`~Layout.SimulationWindow.SimulationWindowRunner.getFigure.data` is not ndarray.
             Figure with given data plotted if both are ndarray.
         """
-        if any(not isinstance(x, ndarray) for x in data.values()) or data is None:
+        if data is None or any(not isinstance(x, ndarray) for x in data.values()):
             figure_canvas = self.getFigureCanvas()
             figure_canvas_attributes = vars(figure_canvas)
             figure = figure_canvas_attributes["figure"]
@@ -3098,7 +3101,9 @@ class SimulationWindowRunner(WindowRunner):
             filepath = sg.PopupGetFile(**kwargs)
 
             if isinstance(filepath, str):
-                save_directory = dirname(filepath)
+                save_directory = Path(filepath).parent
+                zip_filepath = filepath.replace(".gif", ".zip")
+                yaml_filepath = join(save_directory, "values.yml")
 
                 parameter_index = self.getFreeParameterIndex(name)
                 default_index = list(self.getClosestSliderIndex())
@@ -3110,7 +3115,8 @@ class SimulationWindowRunner(WindowRunner):
                     }
                 }
                 image_count = len(parameter_values)
-                with imageio.get_writer(filepath, mode='I') as writer:
+
+                with imageio.get_writer(filepath, mode='I') as writer, ZipFile(zip_filepath, 'w') as zipfile:
                     for i in range(image_count):
                         if not self.updateProgressMeter("Saving Animation", i, image_count):
                             break
@@ -3121,10 +3127,19 @@ class SimulationWindowRunner(WindowRunner):
                         inset_parameters[name]["value"] = parameter_value
                         figure = self.updatePlot(index=tuple(data_index), inset_parameters=inset_parameters)
 
-                        png_filepath = join(save_directory, f"{name:s}_{parameter_value}.png")
+                        png_filepath = join(save_directory, f"{name:s}_{i:d}.png")
                         figure.savefig(png_filepath)
                         writer.append_data(imageio.imread(png_filepath))
+                        zipfile.write(png_filepath, basename(png_filepath))
                         os.remove(png_filepath)
+
+                    with open(yaml_filepath, 'w') as yamlfile:
+                        yaml_parameter_values = list(map(float, parameter_values))
+                        yaml_parameter_indicies = list(range(len(parameter_values)))
+                        parameter_values_dict = dict(zip(yaml_parameter_indicies, yaml_parameter_values))
+                        yaml.dump(parameter_values_dict, yamlfile)
+                    zipfile.write(yaml_filepath, basename(yaml_filepath))
+                    os.remove(yaml_filepath)
 
                 self.updateProgressMeter("Saving Animation", image_count, image_count)
             else:
