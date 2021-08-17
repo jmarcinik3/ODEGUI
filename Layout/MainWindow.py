@@ -1485,6 +1485,8 @@ class MainWindowRunner(WindowRunner):
                     self.loadParametersFromFile()
                 elif event == "Functions::import":
                     self.loadFunctionsFromFile()
+                elif event == "Time-Evolution Types::import":
+                    self.loadTimeEvolutionTypesFromFile()
                 elif "::set_time_evolution_types_to" in event:
                     time_evolution_type = event.replace("::set_time_evolution_types_to", '')
                     comboboxes = map(
@@ -2316,6 +2318,47 @@ class MainWindowRunner(WindowRunner):
             "default_args": self.getParameterNames()
         }
         return recursiveMethod(**kwargs)
+
+    def setTimeEvolutionType(self, name: str, time_evolution_type: str) -> None:
+        """
+        Set time-evolution type for a variable in window.
+
+        :param self: '~Layout.MainWindow.MainWindowRunner' to set time evolution in
+        :param name: name of variable to set time-evolution type for
+        :param time_evolution_type: time-evolution type to set for variable
+        """
+        time_evolution_row: TimeEvolutionRow = TimeEvolutionRow.getInstances(names=name)
+        time_evolution_combobox = time_evolution_row.getTimeEvolutionTypeElement()
+        time_evolution_choices = vars(time_evolution_combobox)["Values"]
+        if time_evolution_type in time_evolution_choices:
+            combobox_key = getKeys(time_evolution_combobox)
+            time_evolution_combobox.update(time_evolution_type)
+            self.getWindow().write_event_value(combobox_key, time_evolution_type)
+
+    def loadTimeEvolutionTypesFromFile(self, filepath: str = None) -> None:
+        """
+        Load and store time-evolution types from file.
+        
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store time evolutions in
+        :param filepath: path of file to load time evolutions from.
+            Defaults to letting user choose file.
+        """
+        if filepath is None:
+            file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
+            kwargs = {
+                "message": "Enter Filename to Load",
+                "title": "Load Parameters",
+                "file_types": file_types,
+                "multiple_files": False
+            }
+            filepath = sg.PopupGetFile(**kwargs)
+            if filepath is None:
+                return None
+        
+        info = yaml.load(open(filepath, 'r'), Loader=yaml.Loader)
+        for time_evolution_type, variable_names in info.items():
+            for variable_name in variable_names:
+                self.setTimeEvolutionType(variable_name, time_evolution_type)
 
     def loadParametersFromFile(self, filepath: str = None, choose_parameters: bool = True) -> Optional[List[Parameter]]:
         """
