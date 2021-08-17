@@ -145,9 +145,7 @@ def loadResultsFromFile(
 
     values = {}
     for name, value in free_parameters.items():
-        mms = list(map(float, value["values"]))
-        mms[2] = int(mms[2])
-        values[name] = np.linspace(*mms)
+        values[name] = np.array(list(map(float, value["values"])))
 
     model = Model(functions=function_objects, parameters=parameters)
 
@@ -176,7 +174,9 @@ def getSimulationFromResults(
     free_parameter_values = {}
     for name, value in free_parameters.items():
         quantity = Quantity(0, value["unit"])
-        free_parameter_values[name] = (*value["values"], quantity)
+        values = list(map(float, value["values"]))
+        minimum, maximum, stepcount = min(values), max(values), len(values)
+        free_parameter_values[name] = (minimum, maximum, stepcount, quantity)
 
     plot_choices = {
         "Variable": model.getVariables(return_type=str) + ['t'],
@@ -210,7 +210,7 @@ if __name__ == "__main__":
         suppress_raise_key_errors=False
     )
 
-    res_path = "C:\\Users\\ByThePrinter\\Marcinik\\Recreation\\Arnold Tongue\\res.zip"
+    res_path = "D:\\Marcinik\\Recreation\\Arnold Tongue\\sim2\\res2.zip"
     simulation_window = getSimulationFromResults(
         res_path,
         parameter_directory="parameters",
