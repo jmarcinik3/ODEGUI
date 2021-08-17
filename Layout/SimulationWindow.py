@@ -30,8 +30,7 @@ from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from numpy import ndarray
 from pint import Quantity, Unit
-from sympy import Expr
-from sympy import Symbol
+from sympy import Expr, Symbol
 from sympy.core import function
 from sympy.utilities.lambdify import lambdify
 
@@ -203,7 +202,13 @@ def getFigure(
             axes.plot(x, y, **plot_kwargs)
         elif plot_type == "cnxny":
             assert cshape == (xsize, ysize)
-            axes.contourf(x, y, c.T, levels=segment_count, cmap=colormap, norm=norm, **plot_kwargs)
+            axes.contourf(
+                x, y, c.T, 
+                levels=segment_count, 
+                cmap=colormap, 
+                norm=norm, 
+                **plot_kwargs
+            )
         elif plot_type in ["txy", "cnxy", "cxny"]:
             assert cshape == xshape == yshape
 
@@ -232,7 +237,12 @@ def getFigure(
                 y_lines = y
 
             for line_index in range(csize):
-                axes.plot(x_lines[line_index], y_lines[line_index], color=c_colors[line_index], **plot_kwargs)
+                axes.plot(
+                    x_lines[line_index],
+                    y_lines[line_index], 
+                    color=c_colors[line_index], 
+                    **plot_kwargs
+                )
         elif plot_type in ["tnxy", "txny"]:
             if plot_type == "txny":
                 assert cshape == xshape and cshape[0] == ysize
@@ -290,7 +300,12 @@ def getFigure(
                 rot_size = zsize
 
             for line_index in range(rot_size):
-                axes.plot3D(x_rots[line_index], y_rots[line_index], z_lines[line_index], **plot_kwargs)
+                axes.plot3D(
+                    x_rots[line_index], 
+                    y_rots[line_index], 
+                    z_lines[line_index], 
+                    **plot_kwargs
+                )
         elif plot_type in ["tnxyz", "txnyz", "txynz"]:
             if plot_type == "tnxyz":
                 assert cshape == yshape == zshape and yshape[0] == xsize
@@ -310,7 +325,12 @@ def getFigure(
                 segments = np.concatenate([points[:-1], points[1:]], axis=1)
                 line_collection = LineCollection(segments, cmap=colormap, norm=norm)
                 line_collection.set_array(c[line_index])
-                axes.add_collection3d(line_collection, zs=zs[line_index], zdir=zdir, **plot_kwargs)
+                axes.add_collection3d(
+                    line_collection, 
+                    zs=zs[line_index], 
+                    zdir=zdir, 
+                    **plot_kwargs
+                )
         elif plot_type in ["ncxyz", "ncnxyz", "ncxnyz", "ncxynz"]:
             if plot_type == "ncxyz":
                 assert xshape == yshape == zshape and xshape[0] == csize
@@ -353,13 +373,19 @@ def getFigure(
                     for z_index in range(rot_size):
                         line_index = (c_index, z_index)
                         axes.plot3D(
-                            x_rots[line_index], y_rots[line_index], z_lines[line_index],
-                            color=c_color, **plot_kwargs
+                            x_rots[line_index],
+                            y_rots[line_index],
+                            z_lines[line_index],
+                            color=c_color,
+                            **plot_kwargs
                         )
                 else:
                     axes.plot3D(
-                        x_rots[c_index], y_rots[c_index], z_lines[c_index],
-                        color=c_color, **plot_kwargs
+                        x_rots[c_index],
+                        y_rots[c_index],
+                        z_lines[c_index],
+                        color=c_color,
+                        **plot_kwargs
                     )
         elif plot_type in ["tnxnyz", "tnxynz", "txnynz"]:
             if plot_type == "tnxnyz":
@@ -529,7 +555,11 @@ def getParameterInsetAxes(
     return axins, axins_plot
 
 
-def calculateResolution(minimum: float, maximum: float, step_count: int) -> float:
+def calculateResolution(
+    minimum: float, 
+    maximum: float, 
+    step_count: int
+) -> float:
     """
     Calculate resolution from minimum, maximum, and step count.
 
@@ -547,7 +577,10 @@ def calculateResolution(minimum: float, maximum: float, step_count: int) -> floa
         raise ValueError("count must be int at least 1")
 
 
-def getUnitConversionFactor(old_units: Union[Unit, Quantity], new_units: Union[Unit, Quantity] = None) -> float:
+def getUnitConversionFactor(
+    old_units: Union[Unit, Quantity], 
+    new_units: Union[Unit, Quantity] = None
+) -> float:
     """
     Get unit conversion factor.
 
@@ -720,7 +753,8 @@ class ParameterSlider(Element, StoredObject):
         slider = self.getSlider()
 
         row = Row(
-            window=self.getWindowObject(), elements=[name_label, minimum_label, slider, maximum_label, stepcount_label]
+            window=self.getWindowObject(),
+            elements=[name_label, minimum_label, slider, maximum_label, stepcount_label]
         )
         layout = Layout(rows=row)
         return layout.getLayout()
@@ -933,8 +967,8 @@ class ColorbarTab(Tab, StoredObject):
         kwargs = {
             "text": '',
             "tooltip": "Choose boolean for colorbar."
-                       "When set True, colorbar will be autoscaled and limit inputs will be ignored."
-                       "When set False, limits inputs will be used if available.",
+                "When set True, colorbar will be autoscaled and limit inputs will be ignored."
+                "When set False, limits inputs will be used if available.",
             "default": True,
             "size": self.getDimensions(name="autoscale_toggle_checkbox"),
             "key": "-COLORBAR AUTOSCALE-"
@@ -1139,8 +1173,8 @@ class AxisTab(Tab, StoredObject):
         kwargs = {
             "text": '',
             "tooltip": f"Choose boolean for {name:s}-axis."
-                       f"When set True, {name:s}-axis will be autoscaled and limit inputs will be ignored."
-                       f"When set False, limits inputs will be used if available.",
+                f"When set True, {name:s}-axis will be autoscaled and limit inputs will be ignored."
+                f"When set False, limits inputs will be used if available.",
             "default": True,
             "size": self.getDimensions(name="autoscale_toggle_checkbox"),
             "key": f"-AUTOSCALE {name.upper():s}_AXIS-"
@@ -1373,7 +1407,11 @@ class PlottingTab(Tab):
         return elem
 
     @storeElement
-    def getAxisQuantitySpeciesElement(self, name: str, include_none: bool = False) -> sg.InputCombo:
+    def getAxisQuantitySpeciesElement(
+        self, 
+        name: str, 
+        include_none: bool = False
+    ) -> sg.InputCombo:
         """
         Get element to take user input for an axis quantity type.
         This allows user to choose which type of quantity to plot on the axis.
@@ -1412,7 +1450,11 @@ class PlottingTab(Tab):
         }
         return sg.Text(**kwargs)
 
-    def getAxisInputRow(self, name: str, include_none: bool = True) -> Row:
+    def getAxisInputRow(
+        self, 
+        name: str, 
+        include_none: bool = True
+    ) -> Row:
         """
         Get row that allows user input for a single axis.
 
@@ -1806,7 +1848,6 @@ class SimulationWindow(TabbedWindow):
             "mean_order_spin": getDimensions(["simulation_window", "analysis_tab", "mean_tab", "order_spin"])
         }
         super().__init__(name, runner, dimensions=dimensions)
-
         self.plot_choices = plot_choices
         self.free_parameter_values = free_parameter_values
 
@@ -1822,7 +1863,10 @@ class SimulationWindow(TabbedWindow):
         self.addTabs(plotting_tab)
         self.addTabs(AnalysisTabGroup("Analysis", self).getAsTab())
 
-    def getFreeParameterNames(self, indicies: Union[int, List[int]] = None) -> Union[str, List[str]]:
+    def getFreeParameterNames(
+        self, 
+        indicies: Union[int, List[int]] = None
+    ) -> Union[str, List[str]]:
         """
         Get stored name(s) for free parameter(s).
         The user may change the values of these parameters during simulation.
@@ -1837,17 +1881,17 @@ class SimulationWindow(TabbedWindow):
             """Base method for :meth:`~Layout.SimulationWindow.SimulationWindow.getFreeParameterNames`"""
             return free_parameter_names[index]
 
-        kwargs = {
-            "args": indicies,
-            "base_method": get,
-            "valid_input_types": int,
-            "output_type": list,
-            "default_args": range(len(free_parameter_names))
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            args=indicies,
+            base_method=get,
+            valid_input_types=int,
+            output_type=list,
+            default_args=range(len(free_parameter_names))
+        )
 
     def getFreeParameterValues(
-            self, name: str = None
+            self,
+            name: str = None
     ) -> Union[Dict[str, Tuple[float, float, int, Quantity]], Tuple[float, float, int, Quantity]]:
         """
         Get stored values for free parameter(s).
@@ -1866,7 +1910,10 @@ class SimulationWindow(TabbedWindow):
         else:
             raise TypeError("name must be str")
 
-    def getPlotChoices(self, species: Union[str, List[str]] = None) -> Union[List[str], Dict[str, List[str]]]:
+    def getPlotChoices(
+        self, 
+        species: Union[str, List[str]] = None
+    ) -> Union[List[str], Dict[str, List[str]]]:
         """
         Get stored names for quantities the user may choose to plot.
         
@@ -2126,7 +2173,10 @@ class SimulationWindowRunner(WindowRunner):
         step_count = round((slider_max - slider_min) / slider_resolution + 1)
         return np.linspace(slider_min, slider_max, step_count)
 
-    def getClosestSliderIndex(self, names: Union[str, List[str]] = None) -> Union[int, Tuple[int, ...]]:
+    def getClosestSliderIndex(
+        self, 
+        names: Union[str, List[str]] = None
+    ) -> Union[int, Tuple[int, ...]]:
         """
         Get location/index of slider closest to value of free parameter.
         Location is discretized from zero to the number of free-parameter values.
@@ -2149,14 +2199,13 @@ class SimulationWindowRunner(WindowRunner):
             )
             return closest_index
 
-        kwargs = {
-            "args": names,
-            "base_method": get,
-            "valid_input_types": str,
-            "output_type": tuple,
-            "default_args": self.getFreeParameterNames()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            args=names,
+            base_method=get,
+            valid_input_types=str,
+            output_type=tuple,
+            default_args=self.getFreeParameterNames()
+        )
 
     def getLikeSpecies(self, like: str):
         """
@@ -2495,7 +2544,7 @@ class SimulationWindowRunner(WindowRunner):
             :param keys: key(s) of element(s) to retrieve value from
             """
 
-            def get(key: str) -> Optional[str, float, bool]:
+            def get(key: str) -> Optional[Union[str, float, bool]]:
                 """Base method for :meth:`~Layout.SimulationWindow.SimulationWindow.getPlotAesthetics.getValues`"""
                 try:
                     value = self.getValue(key)
@@ -2510,13 +2559,12 @@ class SimulationWindowRunner(WindowRunner):
                 except KeyError:
                     return None
 
-            kwargs = {
-                "args": keys,
-                "base_method": get,
-                "valid_input_types": str,
-                "output_type": tuple
-            }
-            return recursiveMethod(**kwargs)
+            return recursiveMethod(
+                args=keys,
+                base_method=get,
+                valid_input_types=str,
+                output_type=tuple
+            )
 
         cartesian_names = ('x', 'y', 'z')
         scale_type_dict = {
@@ -2716,16 +2764,31 @@ class SimulationWindowRunner(WindowRunner):
             "transform_name": transform_name
         }
 
-        axis2name = {axis: plot_quantities[axis][0] for axis in plot_quantities_keys}
+        axis2name = {
+            axis: plot_quantities[axis][0] 
+            for axis in plot_quantities_keys
+        }
 
-        axis2specie = {axis: plot_quantities[axis][1] for axis in plot_quantities_keys}
-        axis2condensor_name = {axis: plot_quantities[axis][2] for axis in plot_quantities_keys}
+        axis2specie = {
+            axis: plot_quantities[axis][1] 
+            for axis in plot_quantities_keys
+        }
+        axis2condensor_name = {
+            axis: plot_quantities[axis][2] 
+            for axis in plot_quantities_keys
+        }
         is_timelike = {
-            axis: axis2specie[axis] in timelike_species and axis2condensor_name[axis] == "None"
+            axis: (
+                axis2specie[axis] in timelike_species and 
+                axis2condensor_name[axis] == "None"
+            )
             for axis in plot_quantities_keys
         }
         is_condensed = {
-            axis: axis2specie[axis] in timelike_species and axis2condensor_name[axis] != "None"
+            axis: (
+                axis2specie[axis] in timelike_species and 
+                axis2condensor_name[axis] != "None"
+            )
             for axis in plot_quantities_keys
         }
         is_parameterlike = {
@@ -2733,7 +2796,11 @@ class SimulationWindowRunner(WindowRunner):
             for axis in plot_quantities_keys
         }
         is_nonelike = {
-            axis: not is_timelike[axis] and not is_condensed[axis] and not is_parameterlike[axis]
+            axis: (
+                not is_timelike[axis] and 
+                not is_condensed[axis] and 
+                not is_parameterlike[axis]
+            )
             for axis in plot_quantities_keys
         }
 
@@ -2791,116 +2858,6 @@ class SimulationWindowRunner(WindowRunner):
         except (UnboundLocalError, KeyError, IndexError, AttributeError, ValueError):
             print("data:", traceback.print_exc())
 
-        """
-        if is_timelike['x']:
-            if is_timelike['y']:
-                if is_timelike['z']:
-                    if is_timelike['c']:
-                        plot_type = "txyz"
-                    elif is_parameterlike['c']:
-                        plot_type = "ncxyz"
-                    elif is_nonelike['c']:
-                        plot_type = "xyz"
-                elif is_parameterlike['z']:
-                    if is_timelike['c']:
-                        plot_type = "txynz"
-                    elif is_parameterlike['c']:
-                        plot_type = "ncxynz"
-                    elif is_nonelike['c']:
-                        plot_type = "xynz"
-                elif is_nonelike['z']:
-                    if is_timelike['c']:
-                        plot_type = "txy"
-                    elif is_parameterlike['c']:
-                        plot_type = "ncxy"
-                    elif is_nonelike['c']:
-                        plot_type = "xy"
-            elif is_parameterlike['y']:
-                if is_timelike['z']:
-                    if is_timelike['c']:
-                        plot_type = "txnyz"
-                    elif is_parameterlike['c']:
-                        plot_type = "ncxnyz"
-                    elif is_nonelike['c']:
-                        plot_type = "xnyz"
-                elif is_parameterlike['z']:
-                    if is_timelike['c']:
-                        plot_type = "txnynz"
-        elif is_condensed['x']:
-            if is_parameterlike['y']:
-                if is_parameterlike['z']:
-                    if is_parameterlike['c']:
-                        plot_type = "ncxnynz"
-                    elif is_condensed['c']:
-                        plot_type = "cxnynz"
-                    elif is_nonelike['c']:
-                        plot_type = "xnynz"
-                elif is_condensed['z']:
-                    if is_parameterlike['c']:
-                        plot_type = "ncxnyz"
-                    elif is_condensed['c']:
-                        plot_type = "cxnyz"
-                elif is_nonelike['z']:
-                    if is_parameterlike['c']:
-                        plot_type = "ncxny"
-                    elif is_condensed['c']:
-                        plot_type = "txy"
-                    elif is_nonelike['c']:
-                        plot_type = "xy"
-            elif is_condensed['y']:
-                if is_nonelike['z']:
-                    if is_parameterlike['c']:
-                        plot_type = "txy"
-                elif is_parameterlike['z']:
-                    if is_parameterlike['c']:
-                        plot_type = "ncxynz"
-                    elif is_condensed['c']:
-                        plot_type = "cxynz"
-                elif is_condensed['z']:
-                    if is_parameterlike['c']:
-                        plot_type = "txyz"
-        elif is_parameterlike['x']:
-            if is_timelike['y']:
-                if is_timelike['z']:
-                    if is_timelike['c']:
-                        plot_type = "tnxyz"
-                    elif is_parameterlike['c']:
-                        plot_type = "ncnxyz"
-                    elif is_nonelike['c']:
-                        plot_type = "nxyz"
-                elif is_parameterlike['z']:
-                    if is_nonelike['c']:
-                        plot_type = "tnxynz"
-            elif is_parameterlike['y']:
-                if is_timelike['z']:
-                    if is_timelike['c']:
-                        plot_type = "tnxnyz"
-                elif is_parameterlike['z']:
-                    if is_condensed['c']:
-                        plot_type = "cnxnynz"
-                elif is_condensed['z']:
-                    if is_parameterlike['c']:
-                        plot_type = "ncnxnyz"
-                    elif is_condensed['c']:
-                        plot_type = "cnxnyz"
-                elif is_nonelike['z']:
-                    if is_condensed['c']:
-                        plot_type = "cnxny"
-            elif is_condensed['y']:
-                if is_nonelike['z']:
-                    if is_parameterlike['c']:
-                        plot_type = "ncnxy"
-                    elif is_condensed['c']:
-                        plot_type = "txy"
-                    elif is_nonelike['c']:
-                        plot_type = "xy"
-                elif is_parameterlike['z']:
-                    if is_parameterlike['c']:
-                        plot_type = "ncnxynz"
-                    elif is_condensed['c']:
-                        plot_type = "cnxynz"
-                        """
-
         if timelike_count == 1:
             plot_type = ''
         elif condensed_count >= 1 and parameterlike_count == 0:
@@ -2937,6 +2894,8 @@ class SimulationWindowRunner(WindowRunner):
             return figure
         except UnboundLocalError:
             print("todo plots:", plot_quantities, traceback.print_exc())
+        except (KeyError, AttributeError):
+            print("figure:", traceback.print_exc())
 
     def updatePlotChoices(self, names: Union[str, List[str]] = None) -> None:
         """
@@ -2986,13 +2945,12 @@ class SimulationWindowRunner(WindowRunner):
                 else:
                     quantity_combobox.update(**kwargs)
 
-        kwargs = {
-            "args": names,
-            "base_method": update,
-            "valid_input_types": str,
-            "default_args": self.getAxisNames()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            args=names,
+            base_method=update,
+            valid_input_types=str,
+            default_args=self.getAxisNames()
+        )
 
     def saveResults(self) -> None:
         """
