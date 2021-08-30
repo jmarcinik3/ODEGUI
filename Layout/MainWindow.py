@@ -14,11 +14,13 @@ from numpy import ndarray
 from pint import Quantity
 
 from CustomErrors import RecursiveTypeError
-from Function import Derivative, Function, Independent, Model, generateFunction, generateParameter, readFunctionsFromFiles, readParametersFromFiles
+from Function import Derivative, Function, Independent, Model, \
+    generateFunction, generateParameter, readFunctionsFromFiles, readParametersFromFiles
 from Function import Parameter
 from Layout.ChooseGraphLayoutWindow import ChooseGraphLayoutWindowRunner
 from Layout.ChooseParametersWindow import ChooseParametersWindowRunner
-from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabRow, TabbedWindow, WindowRunner, generateCollapsableSection, getKeys, getNameFromElementKey, storeElement
+from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabRow, TabbedWindow, WindowRunner, \
+    generateCollapsableSection, getKeys, getNameFromElementKey, storeElement
 from Layout.SetFreeParametersWindow import SetFreeParametersWindowRunner
 from Layout.SimulationWindow import SimulationWindowRunner
 from YML import getDimensions, getStates, readLayout, readStates
@@ -199,17 +201,18 @@ class TimeEvolutionTab(Tab):
         :param self: :class:`~Layout.MainWindow.TimeEvolutionTab` to retrieve initial condition from
         :param names: name(s) of variable to retrieve initial conditions for
         """
+        initial_conditions = self.initial_conditions
 
         def get(name: str) -> float:
             """Base method for :meth:`~Layout.MainWindow.TimeEvolutionTab.getInitialConditions`."""
-            return self.initial_conditions[name]
+            return initial_conditions[name]
 
         kwargs = {
             "base_method": get,
             "args": names,
             "valid_input_types": str,
             "output_type": dict,
-            "default_args": list(self.initial_conditions.keys())
+            "default_args": initial_conditions.keys()
         }
         return recursiveMethod(**kwargs)
 
@@ -784,7 +787,6 @@ class FunctionRow(TabRow, StoredObject):
         """
         Get folderpath to save or load image from.
 
-        :param self: :class:`~Layout.MainWindow.FunctionRow` to retrieve folderpath from
         :param filestem: stem of file to retrieve folderpath for
         """
         top_folder = FunctionRow.image_folder
@@ -808,7 +810,7 @@ class FunctionRow(TabRow, StoredObject):
             filestem = filestems[index]
             kwargs = {
                 "name": name,
-                "expression": function.getExpression(generations=0),
+                "expression": function.getExpression(expanded=False),
                 "var2tex": "var2tex.yml",
                 "folder": self.getImageFoldername(filestem),
                 "filename": f"{name:s}.png"
@@ -1157,7 +1159,7 @@ class MainWindow(TabbedWindow):
         """
         return self.variable_names
 
-    def addVariableNames(self, names: Union[str, Iterable[str]]) -> Union[str, Iterable[str]]:
+    def addVariableNames(self, names: Union[str, Iterable[str]]) -> Union[str, List[str]]:
         """
         Add names of variables included in window.
 
@@ -1166,12 +1168,12 @@ class MainWindow(TabbedWindow):
         :returns: Name of new variable added if :paramref:`~Layout.MainWindow.MainWindow.addVariableNames.names` is str.
             List of new variables added if :paramref:`~Layout.MainWindow.MainWindow.addVariableNames.names` is list.
         """
+        append = self.variable_names.append
 
         def add(name: str) -> str:
-            """Base method for :meth:`~Layout.MainWindow.MainWindow.addVariableNames`."""
-            new_variable_name = name
-            self.variable_names.append(name)
-            return new_variable_name
+            """Base method for :meth:`~Layout.MainWindow.MainWindow.addVariableNames`"""
+            append(name)
+            return name
 
         kwargs = {
             "base_method": add,
@@ -1199,12 +1201,12 @@ class MainWindow(TabbedWindow):
             if :paramref:`~Layout.MainWindow.MainWindow.addFunctionNames.names` is str.
             List of new functions added if :paramref:`~Layout.MainWindow.MainWindow.addFunctionNames.names` is list.
         """
+        append = self.function_names.append
 
         def add(name: str) -> str:
-            """Base method for :meth:`~Layout.MainWindow.MainWindow.addFunctionNames`."""
-            new_function_name = name
-            self.function_names.append(name)
-            return new_function_name
+            """Base method for :meth:`~Layout.MainWindow.MainWindow.addFunctionNames`"""
+            append(name)
+            return name
 
         kwargs = {
             "base_method": add,
@@ -1232,12 +1234,12 @@ class MainWindow(TabbedWindow):
             :paramref:`~Layout.MainWindow.MainWindow.addParameterNames.names` is str.
             List of new parameters added if :paramref:`~Layout.MainWindow.MainWindow.addParameterNames.names` is list.
         """
+        append = self.parameter_names.append
 
         def add(name: str) -> str:
-            """Base method for :meth:`~Layout.MainWindow.MainWindow.addParameterNames`."""
-            new_parameter_name = name
-            self.parameter_names.append(name)
-            return new_parameter_name
+            """Base method for :meth:`~Layout.MainWindow.MainWindow.addParameterNames`"""
+            append(name)
+            return name
 
         kwargs = {
             "base_method": add,
@@ -1483,6 +1485,8 @@ class MainWindowRunner(WindowRunner):
                     self.loadParametersFromFile()
                 elif event == "Functions::import":
                     self.loadFunctionsFromFile()
+                elif event == "Time-Evolution Types::import":
+                    self.loadTimeEvolutionTypesFromFile()
                 elif "::set_time_evolution_types_to" in event:
                     time_evolution_type = event.replace("::set_time_evolution_types_to", '')
                     comboboxes = map(
@@ -1579,7 +1583,7 @@ class MainWindowRunner(WindowRunner):
             )
             core_function_objects.extend(children_function_objects)
 
-        getParameters = partial(Function.getFreeSymbols, generations="all", species="Parameter", return_type=str)
+        getParameters = partial(Function.getFreeSymbols, species="Parameter", expanded=True, return_type=str)
         core_parameter_names = unique(
             [
                 parameter_name
@@ -1615,7 +1619,7 @@ class MainWindowRunner(WindowRunner):
         kwargs = {
             "args": elements,
             "base_method": set,
-            "valid_input_types": sg.Element,
+            "valid_input_types": sg.Element
         }
         return recursiveMethod(**kwargs)
 
@@ -1666,7 +1670,7 @@ class MainWindowRunner(WindowRunner):
         }
         return recursiveMethod(**kwargs)
 
-    def getTimeEvolutionTypes(self, names: Union[str, Iterable[str]] = None) -> Union[str, Iterable[str]]:
+    def getTimeEvolutionTypes(self, names: Union[str, Iterable[str]] = None) -> Union[str, List[str]]:
         """
         Get selected time-evolution type for variable.
         Get default time-evolution type if none selected.
@@ -1727,9 +1731,11 @@ class MainWindowRunner(WindowRunner):
         :param filestems: stem(s) of file(s) to retrieve path(s) for
         """
 
+        stem2path_func = self.stem2path_func
+
         def get(filestem: str) -> str:
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getPathsFromFunctionStems`"""
-            return self.stem2path_func[filestem]
+            return stem2path_func[filestem]
 
         kwargs = {
             "base_method": get,
@@ -1774,7 +1780,7 @@ class MainWindowRunner(WindowRunner):
         else:
             raise TypeError("filestem must be of type str")
 
-    def getFunctions(self, names: Union[str, Iterable[str]] = None) -> Union[Function, Iterable[Function]]:
+    def getFunctions(self, names: Union[str, Iterable[str]] = None) -> Union[Function, List[Function]]:
         """
         Get function object from filestem and name.
         Uses present state of window.
@@ -1784,10 +1790,12 @@ class MainWindowRunner(WindowRunner):
             Defaults to all loaded functions.
         """
 
+        stem2name2func = self.stem2name2func
+
         def get(name: str) -> Function:
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getFunctions`."""
             filestem = self.getChosenFunctionStem(name)
-            function = self.stem2name2func[filestem][name]
+            function = stem2name2func[filestem][name]
             return function
 
         kwargs = {
@@ -1831,8 +1839,7 @@ class MainWindowRunner(WindowRunner):
         kwargs = {
             "base_method": set,
             "args": function_objects,
-            "valid_input_types": Function,
-            "output_type": list
+            "valid_input_types": Function
         }
         return recursiveMethod(**kwargs)
 
@@ -1883,7 +1890,6 @@ class MainWindowRunner(WindowRunner):
             "base_method": update,
             "args": names,
             "valid_input_types": str,
-            "output_type": list,
             "default_args": self.getFunctionNames()
         }
         return recursiveMethod(**kwargs)
@@ -1896,9 +1902,11 @@ class MainWindowRunner(WindowRunner):
         :param filestems: stem(s) of file(s) to retrieve path(s) for
         """
 
+        stem2path_param = self.stem2path_param
+
         def get(filestem: str) -> str:
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getPathsFromParameterStems`"""
-            return self.stem2path_param[filestem]
+            return stem2path_param[filestem]
 
         kwargs = {
             "base_method": get,
@@ -1969,9 +1977,11 @@ class MainWindowRunner(WindowRunner):
         :param names: name(s) of parameter(s) to retrieve quantity(s) for
         """
 
+        custom_parameters = self.custom_parameters
+
         def get(name: str) -> str:
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getCustomParameterQuantities`."""
-            return self.custom_parameters[name].getQuantity()
+            return custom_parameters[name].getQuantity()
 
         kwargs = {
             "base_method": get,
@@ -2305,10 +2315,50 @@ class MainWindowRunner(WindowRunner):
             "base_method": update,
             "args": names,
             "valid_input_types": str,
-            "output_type": list,
             "default_args": self.getParameterNames()
         }
         return recursiveMethod(**kwargs)
+
+    def setTimeEvolutionType(self, name: str, time_evolution_type: str) -> None:
+        """
+        Set time-evolution type for a variable in window.
+
+        :param self: '~Layout.MainWindow.MainWindowRunner' to set time evolution in
+        :param name: name of variable to set time-evolution type for
+        :param time_evolution_type: time-evolution type to set for variable
+        """
+        time_evolution_row: TimeEvolutionRow = TimeEvolutionRow.getInstances(names=name)
+        time_evolution_combobox = time_evolution_row.getTimeEvolutionTypeElement()
+        time_evolution_choices = vars(time_evolution_combobox)["Values"]
+        if time_evolution_type in time_evolution_choices:
+            combobox_key = getKeys(time_evolution_combobox)
+            time_evolution_combobox.update(time_evolution_type)
+            self.getWindow().write_event_value(combobox_key, time_evolution_type)
+
+    def loadTimeEvolutionTypesFromFile(self, filepath: str = None) -> None:
+        """
+        Load and store time-evolution types from file.
+        
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store time evolutions in
+        :param filepath: path of file to load time evolutions from.
+            Defaults to letting user choose file.
+        """
+        if filepath is None:
+            file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
+            kwargs = {
+                "message": "Enter Filename to Load",
+                "title": "Load Parameters",
+                "file_types": file_types,
+                "multiple_files": False
+            }
+            filepath = sg.PopupGetFile(**kwargs)
+            if filepath is None:
+                return None
+        
+        info = yaml.load(open(filepath, 'r'), Loader=yaml.Loader)
+        for time_evolution_type, variable_names in info.items():
+            for variable_name in variable_names:
+                self.setTimeEvolutionType(variable_name, time_evolution_type)
 
     def loadParametersFromFile(self, filepath: str = None, choose_parameters: bool = True) -> Optional[List[Parameter]]:
         """
@@ -2472,7 +2522,7 @@ class MainWindowRunner(WindowRunner):
         derivatives: List[Union[Derivative, Function]] = self.getModel().getDerivatives()
         der2vars = {
             der.getVariable(return_type=str):
-                der.getFreeSymbols(species="Variable", generations="all", return_type=str)
+                der.getFreeSymbols(species="Variable", expanded=True, return_type=str)
             for der in derivatives
         }
         variable_names = sorted(der2vars.keys(), key=lambda k: len(der2vars[k]))

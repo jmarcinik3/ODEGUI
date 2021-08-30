@@ -496,7 +496,7 @@ class Model:
             return {}
         elif equilibrium_count >= 1:
             equilibrium_variables = list(map(Derivative.getVariable, equilibria))
-            equilibrium_derivatives = [equilibrium.getExpression(generations="all") for equilibrium in equilibria]
+            equilibrium_derivatives = [equilibrium.getExpression(expanded=True) for equilibrium in equilibria]
 
             bk_probs = list(symbols("pC0 pC1 pC2 pO2 pO3"))
             if set(bk_probs).issubset(set(equilibrium_variables)):
@@ -517,7 +517,7 @@ class Model:
                         parameter
                         for equilibrium in equilibria
                         for parameter in
-                        equilibrium.getFreeSymbols(species="Parameter", generations="all", return_type=str)
+                        equilibrium.getFreeSymbols(species="Parameter", expanded=True, return_type=str)
                         if parameter not in skip_parameters
                     ]
                 )
@@ -592,8 +592,10 @@ class Model:
             return {}
         elif variable_count >= 1:
             functions = self.getFunctions(names=names)
-            getExpression = partial(Function.getExpression, generations="all")
-            expressions = list(map(getExpression, functions))
+            getExpression = partial(Function.getExpression, expanded=True)
+
+            # noinspection PyTypeChecker
+            expressions: List[Expr] = list(map(getExpression, functions))
             variables = list(map(Symbol, names))
 
             substitutions = {}
@@ -603,7 +605,7 @@ class Model:
                         parameter_name
                         for function_object in functions
                         for parameter_name in
-                        function_object.getFreeSymbols(species="Parameter", generations="all", return_type=str)
+                        function_object.getFreeSymbols(species="Parameter", expanded=True, return_type=str)
                         if parameter_name not in skip_parameters
                     ]
                 )
@@ -740,15 +742,15 @@ class Model:
         derivative_vector = []
         for derivative in temporal_derivatives:
             derivative: Union[Derivative, Function]
-            expression = derivative.getExpression(generations="all")
+            expression = derivative.getExpression(expanded=True)
 
-            derivative_variables = derivative.getFreeSymbols(species="Variable", generations="all")
+            derivative_variables = derivative.getFreeSymbols(species="Variable", expanded=True)
             variable_substitution = {
                 variable: substitution
                 for variable, substitution in variable_substitutions.items()
                 if variable in derivative_variables
             }
-            derivative_parameters = derivative.getFreeSymbols(species="Parameter", generations="all")
+            derivative_parameters = derivative.getFreeSymbols(species="Parameter", expanded=True)
             parameter_substitution = {
                 parameter: value
                 for parameter, value in parameter_substitutions.items()
@@ -815,7 +817,7 @@ class Model:
                 derivative: Union[Derivative, Function]
                 if derivative.getInitialCondition() == "Equilibrium":
                     variables_append(derivative.getVariable())
-                    equations_append(derivative.getExpression(generations="all").subs(substitutions))
+                    equations_append(derivative.getExpression(expanded=True).subs(substitutions))
 
             variable_count = len(equilibrium_variables)
             equations_lambda = lambdify((tuple(equilibrium_variables),), equilibrium_equations, modules=["math"])
@@ -1010,7 +1012,7 @@ class Parent:
         self: Function
         model = self.getModel()
 
-        free_symbol_names = self.getFreeSymbols(generations=0, substitute_dependents=False, return_type=str)
+        free_symbol_names = self.getFreeSymbols(expanded=False, substitute_dependents=False, return_type=str)
         dependent_children_names = list(self.instance_arguments.keys())
         instance_argument_function_names = []
         for instance_argument in self.instance_arguments.values():
@@ -1092,10 +1094,10 @@ class Child:
 
         self: Function
 
-        def get(name: str) -> Derivative:
+        def get(name: str) -> Function:
             """Base method for :meth:`~Function.Model.getParents`"""
-            parents = self.getModel().getFunctions(names=name)
-            return parents
+            parent = self.getModel().getFunctions(names=name)
+            return parent
 
         kwargs = {
             "base_method": get,
@@ -1529,7 +1531,7 @@ class Dependent:
                 if isinstance(sibling, Dependent):
                     instance_functions.append(sibling.getInstanceArgumentForm(parent))
                 elif isinstance(sibling, Function):
-                    instance_functions.append(sibling.getExpression(generations="all"))
+                    instance_functions.append(sibling.getExpression(expanded=True))
                 else:
                     raise TypeError(f"sibling for {self_name:s} must be Function")
             return instance_functions
@@ -1556,7 +1558,7 @@ class Dependent:
         :param parent: :class:`~Function.Function` to retrieve instance arguments from
         """
         self: Function
-        expression = self.getExpression(generations="all")
+        expression = self.getExpression(expanded=True)
         self: Dependent
         species = self.getGeneralSpecies()
         for specie in species:
@@ -1642,26 +1644,21 @@ class Piecewise:
         """
         return len(self.pieces)
 
-    def getExpression(self, generations: Union[int, str] = 0, **kwargs) -> spPiecewise:
+    def getExpression(self, expanded: bool = False, **kwargs) -> spPiecewise:
         """
         Get symbolic piecewise expression.
 
         :param self: :class:`~Function.Piecewise` to retrieve expression for
-        :param generations: see :paramref:`~Function.Function.getExpression.generations`
+        :param expanded: see :paramref:`~Function.Function.getExpression.expanded`
         :param kwargs: additional arguments to substitute into :meth:`~Function.Function.getExpression`
         """
-        if generations == "all":
+        if expanded:
             functions: List[Function] = self.getPieces(return_type=Function)
-            getExpression = partial(Function.getExpression, generations="all", **kwargs)
+            getExpression = partial(Function.getExpression, expanded=True, **kwargs)
             pieces = list(map(getExpression, functions))
-        elif generations >= 1:
-            functions: List[Function] = self.getPieces(return_type=Function)
-            getExpression = partial(Function.getExpression, generations=generations - 1, **kwargs)
-            pieces = list(map(getExpression, functions))
-        elif generations == 0:
-            pieces = self.getPieces(return_type=Symbol)
         else:
-            raise ValueError("generations must be 'all' or some integer greater than or equal to 0")
+            pieces = self.getPieces(return_type=Symbol)
+
         conditions = self.getConditions()
         exprconds = [(pieces[i], conditions[i]) for i in range(self.getPieceCount())]
         return spPiecewise(*exprconds)
@@ -1683,7 +1680,7 @@ class NonPiecewise:
         self.expression = expression
 
     def getExpression(
-            self, parent: Function = None, substitute_dependents: bool = None, generations: Union[int, str] = 0
+            self, parent: Function = None, substitute_dependents: bool = None, expanded: Union[int, str] = 0
     ) -> Expr:
         """
         Get symbol expression for function.
@@ -1692,29 +1689,21 @@ class NonPiecewise:
         :param parent: function to retrieve input arguments from.
             Only called if self is Dependent function.
         :param substitute_dependents: set True to substitute all dependents into expression.
-            Set False to substitute in accordance with :paramref:`~Function.Function.getExpression.generations`.
-            Defaults to False if :paramref:`~Function.Function.getExpression.generations`==0.
-            Defaults to True otherwise.
-        :param generations: number of generations for children to substitute into expression.
-            Set to 0 to retrieve original expression without substitutions.
-            Set to positive integer n to substitute n generations of children.
-            Set to "all" to substitute all generations of children.
+            Set False to substitute in accordance with :paramref:`~Function.Function.getExpression.expanded`.
+            Defaults to :paramref:`~Function.Function.getExpression.expanded`.
+        :param expanded: set True to substitute children into expression.
+            Set False to retrieve original expression.
         """
         if isinstance(self, Dependent) and isinstance(parent, Independent):
             parent: Function
             return self.getInstanceArgumentForm(parent)
 
         if substitute_dependents is None:
-            if generations == "all":
-                substitute_dependents = True
-            elif generations >= 1:
-                substitute_dependents = True
-            elif generations == 0:
-                substitute_dependents = False
+            substitute_dependents = expanded
 
         expression = self.expression
         self: Function
-        if generations == 0:
+        if not expanded:
             has_model = isinstance(self.getModel(), Model)
             if substitute_dependents:
                 if has_model:
@@ -1735,20 +1724,13 @@ class NonPiecewise:
                     child_expression = child_symbol
             elif isinstance(child, Independent):
                 child: Function
-                if generations == "all":
+                if expanded:
                     child_expression = child.getExpression(
                         substitute_dependents=substitute_dependents,
-                        generations=generations
+                        expanded=True
                     )
-                elif generations >= 1:
-                    child_expression = child.getExpression(
-                        substitute_dependents=substitute_dependents,
-                        generations=generations - 1
-                    )
-                elif generations == 0:
-                    child_expression = child_symbol
                 else:
-                    raise ValueError("generations must be 'all' or some integer greater than or equal to 0")
+                    child_expression = child_symbol
             else:
                 raise TypeError("child must be of type Dependent xor Independent")
             expression = expression.subs(child_symbol, child_expression)

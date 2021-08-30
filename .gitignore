@@ -1,4 +1,6 @@
 .idea/
 __pycache__/
+Recreation/
+.vscode/
 genRST.py
-docs/
+temp.py

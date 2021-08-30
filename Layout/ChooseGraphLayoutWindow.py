@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import Dict, Iterable, List, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
+# noinspection PyPep8Naming
 import PySimpleGUI as sg
 
 from CustomErrors import RecursiveTypeError
@@ -97,7 +98,7 @@ class ChooseGraphLayoutWindowRunner(WindowRunner):
         self.getLayoutChoices = window_object.getLayoutChoices
         self.getLayoutCodes = window_object.getLayoutCodes
 
-    def getLayoutCode(self) -> Tuple[str, str]:
+    def getLayoutCode(self) -> Tuple[str, Optional[str]]:
         """
         Get chosen layout from window.
         Uses present state of window.

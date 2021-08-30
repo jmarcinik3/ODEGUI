@@ -3,7 +3,7 @@ time_evolution_types:
   xa: [Temporal, Constant]
   pm: [Temporal, Equilibrium, Constant]
   pr: [Temporal, Equilibrium, Constant]
-  pT: [Temporal, Constant]
+  pT: [Temporal, Equilibrium, Constant]
   Vm: [Temporal, Constant, Function]
   Ca: [Temporal, Equilibrium, Constant]
   mCa: [Temporal, Equilibrium, Constant]

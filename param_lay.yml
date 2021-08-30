@@ -27,6 +27,7 @@ Current:
   IT: [ET]
   IT_H1988: [gTmax, GT1, ZT1, GT2, ZT2]
   IT_H1986: [gTmax1]
+  IT_N2014: [gT1]
   IL: [EL, gL]
   ICa: [ECa, gCa1, tauinfCa, tauVtauCa, VtauCa, dVtauCa, dVCa, VhalfCa, mhmaxCa,  mhminCa, deltaCa, deltatauCa]
   IBK_H1988: [gBK11, EBK]

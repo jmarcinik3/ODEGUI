@@ -1,0 +1,6 @@
+IT:
+  expression: $I$
+  filename: IT.png
+gT:
+  expression: $g_T(1) p_T$
+  filename: gT.png

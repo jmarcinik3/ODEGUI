@@ -38,17 +38,18 @@ class StoredObject:
 
         :param names: name(s) of row(s) to retrieve from :class:`~macros.StoredObject`
         """
+        instances = cls.instances
 
         def get(name: str):
             """Base method for :meth:`~macros.StoredObject.getInstance`"""
-            return cls.instances[name]
+            return instances[name]
 
         kwargs = {
             "args": names,
             "base_method": get,
             "valid_input_types": str,
             "output_type": list,
-            "default_args": cls.instances.keys()
+            "default_args": instances.keys()
         }
         return recursiveMethod(**kwargs)
 

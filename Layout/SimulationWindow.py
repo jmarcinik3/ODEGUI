@@ -5,18 +5,23 @@ The simulation must be run once by hitting the button before the window function
 """
 from __future__ import annotations
 
+import os
 import tkinter as tk
 import traceback
 from functools import partial
 from itertools import product
+from os.path import basename, join
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+# noinspection PyPep8Naming
+# noinspection PyPep8Naming
+from zipfile import ZipFile
 
-# noinspection PyPep8Naming
-import PIL
-# noinspection PyPep8Naming
 import PySimpleGUI as sg
+import imageio
 import matplotlib.pyplot as plt
 import numpy as np
+import yaml
 from matplotlib import cm, colors
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -25,13 +30,10 @@ from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from numpy import ndarray
 from pint import Quantity, Unit
-from scipy.interpolate import interp1d, interpn
-from sympy import Expr
-from sympy import Symbol
+from sympy import Expr, Symbol
 from sympy.core import function
 from sympy.utilities.lambdify import lambdify
 
-from CustomErrors import RecursiveTypeError
 from Function import Model
 from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabbedWindow, WindowRunner, getKeys, storeElement
 from Results import Results
@@ -69,7 +71,7 @@ def getFigure(
         colorbar_kwargs: Dict[str, Any] = None,
         axes_kwargs: Dict[str, Any] = None,
         plot_kwargs: Dict[str, Any] = None,
-        inset_parameters: Dict[str, float] = None
+        inset_parameters: Dict[str, Dict[str, Union[float, Tuple[float, float]]]] = None
 ) -> Figure:
     """
     Get matplotlib figure from data.
@@ -102,6 +104,7 @@ def getFigure(
             "value": value is value for parameter within range
     :param colorbar_kwargs: additional arguments to pass into :class:`matplotlib.pyplot.colorbar`
     :param axes_kwargs: additional arguments to pass into :class:`matplotlib.axes.Axes'
+    :param plot_kwargs: additional arguments to pass into axes plot method
     """
 
     def getLimits(data: ndarray, axis_name: str) -> Tuple[float, float]:
@@ -142,14 +145,20 @@ def getFigure(
 
     if 'x' in plot_type:
         x = results['x'] / scale_factor['x']
+        xsize = x.size
+        xshape = x.shape
         axes_kwargs["xlim"] = getLimits(x, 'x')
 
     if 'y' in plot_type:
         y = results['y'] / scale_factor['y']
+        ysize = y.size
+        yshape = y.shape
         axes_kwargs["ylim"] = getLimits(y, 'y')
 
     if 'z' in plot_type:
         z = results['z'] / scale_factor['z']
+        zsize = z.size
+        zshape = z.shape
         axes_kwargs["zlim"] = getLimits(z, 'z')
         axes = figure.add_subplot(projection="3d")
     else:
@@ -159,6 +168,8 @@ def getFigure(
 
     if 'c' in plot_type or 't' in plot_type:
         c = results['c'] / scale_factor['c']
+        csize = c.size
+        cshape = c.shape
 
         if colorbar_kwargs is None:
             colorbar_kwargs = {}
@@ -186,42 +197,78 @@ def getFigure(
 
     x_length = len(x)
     if 'z' not in plot_type:
-        if plot_type == "xy":
+        if plot_type in ["xy", "nxy", "xny"]:
+            assert xshape == yshape
             axes.plot(x, y, **plot_kwargs)
-        elif plot_type in ["cxy", "ncxy", "cnxy", "cxny", "txy"]:
-            if plot_type == "cxy":
-                axes.contourf(x, y, c.T, levels=segment_count, cmap=colormap, norm=norm, **plot_kwargs)
-            elif plot_type == "txy":
-                segment_length = round(x_length / segment_count)
+        elif plot_type == "cnxny":
+            assert cshape == (xsize, ysize)
+            axes.contourf(
+                x, y, c.T, 
+                levels=segment_count, 
+                cmap=colormap, 
+                norm=norm, 
+                **plot_kwargs
+            )
+        elif plot_type in ["txy", "cnxy", "cxny"]:
+            assert cshape == xshape == yshape
 
-                if segment_length == 0:
-                    axes.scatter(x, y, color=c_colors)
-                else:
-                    points = np.array([x, y]).T.reshape(-1, 1, 2)
-                    segments = np.concatenate([points[:-1], points[1:]], axis=1)
-                    line_collection = LineCollection(segments, cmap=colormap, norm=norm)
-                    line_collection.set_array(c)
-                    axes.add_collection(line_collection, **plot_kwargs)
-            elif plot_type == "ncxy":
-                for index in range(c.shape[0]):
-                    axes.plot(x[index], y[index], color=c_colors[index], **plot_kwargs)
-            elif plot_type in ["cnxy", "cxny"]:
-                if plot_type == "cnxy":
-                    size = x.shape[0]
-                    x_rots = x
-                    y_rots = np.tile(y, (size, 1))
-                elif plot_type == "cxny":
-                    size = y.shape[0]
-                    x_rots = np.tile(x, (size, 1))
-                    y_rots = y
+            segment_count = max(min(segment_count, cshape[-1]), 1)
+            segment_length = round(x_length / segment_count)
 
-                for index in range(size):
-                    axes.plot(x_rots[index], y_rots[index], color=c_colors[index], **plot_kwargs)
+            if segment_length == 0:
+                axes.scatter(x, y, color=c_colors)
+            else:
+                points = np.array([x, y]).T.reshape(-1, 1, 2)
+                segments = np.concatenate([points[:-1], points[1:]], axis=1)
+                line_collection = LineCollection(segments, cmap=colormap, norm=norm)
+                line_collection.set_array(c)
+                axes.add_collection(line_collection, **plot_kwargs)
+        elif plot_type in ["ncxy", "ncxny", "ncnxy"]:
+            if plot_type == "ncxy":
+                assert xshape == yshape and xshape[0] == csize
+                x_lines, y_lines = x, y
+            elif plot_type == "ncxny":
+                assert xshape == (csize, ysize)
+                x_lines = x
+                y_lines = np.tile(y, (csize, 1))
+            elif plot_type == "ncnxy":
+                assert yshape == (csize, xsize)
+                x_lines = np.tile(x, (csize, 1))
+                y_lines = y
+
+            for line_index in range(csize):
+                axes.plot(
+                    x_lines[line_index],
+                    y_lines[line_index], 
+                    color=c_colors[line_index], 
+                    **plot_kwargs
+                )
+        elif plot_type in ["tnxy", "txny"]:
+            if plot_type == "txny":
+                assert cshape == xshape and cshape[0] == ysize
+                x_lines = x
+                y_lines = np.tile(y, (cshape[-1], 1)).T
+                line_count = ysize
+            elif plot_type == "tnxy":
+                assert cshape == yshape and cshape[0] == xsize
+                x_lines = np.tile(x, (cshape[-1], 1)).T
+                y_lines = y
+                line_count = xsize
+
+            for line_index in range(line_count):
+                points = np.array([x_lines[line_index], y_lines[line_index]]).T.reshape(-1, 1, 2)
+                segments = np.concatenate([points[:-1], points[1:]], axis=1)
+                line_collection = LineCollection(segments, cmap=colormap, norm=norm)
+                line_collection.set_array(c[line_index])
+                axes.add_collection(line_collection, **plot_kwargs)
     elif 'z' in plot_type:
         if plot_type == "xyz":
+            assert xshape == yshape == zshape
             axes.plot3D(x, y, z, **plot_kwargs)
         elif plot_type == "txyz":
-            segment_count = min(segment_count, c.shape[1])
+            assert cshape == xshape == yshape == zshape
+
+            segment_count = max(min(segment_count, cshape[-1]), 1)
             segment_length = round(x_length / segment_count)
 
             if segment_length == 0:
@@ -234,95 +281,136 @@ def getFigure(
                 axes.add_collection(line_collection, **plot_kwargs)
         elif plot_type in ["nxyz", "xnyz", "xynz"]:
             if plot_type == "nxyz":
-                assert y.shape == z.shape and y.shape[0] == x.size
-                x_rots = np.tile(x, (y.shape[1], 1)).T
+                assert yshape == zshape and yshape[0] == xsize
+                x_rots = np.tile(x, (yshape[1], 1)).T
                 y_rots = y
                 z_lines = z
-                size = x.size
+                rot_size = xsize
             elif plot_type == "xnyz":
-                assert x.shape == z.shape and x.shape[0] == y.size
+                assert xshape == zshape and xshape[0] == ysize
                 x_rots = x
-                y_rots = np.tile(y, (x.shape[1], 1)).T
+                y_rots = np.tile(y, (xshape[1], 1)).T
                 z_lines = z
-                size = y.size
+                rot_size = ysize
             elif plot_type == "xynz":
-                assert x.shape == y.shape and x.shape[0] == z.size
+                assert xshape == yshape and xshape[0] == zsize
                 x_rots = x
                 y_rots = y
-                z_lines = np.tile(z, (x.shape[1], 1)).T
-                size = z.size
+                z_lines = np.tile(z, (xshape[1], 1)).T
+                rot_size = zsize
 
-            for index in range(size):
-                axes.plot3D(x_rots[index], y_rots[index], z_lines[index], **plot_kwargs)
-        elif plot_type == "ncxyz":
-            assert x.shape == y.shape == z.shape and x.shape[0] == c.size
-            for index in range(c.size):
-                axes.plot3D(x[index], y[index], z[index], color=c_colors[index], **plot_kwargs)
+            for line_index in range(rot_size):
+                axes.plot3D(
+                    x_rots[line_index], 
+                    y_rots[line_index], 
+                    z_lines[line_index], 
+                    **plot_kwargs
+                )
         elif plot_type in ["tnxyz", "txnyz", "txynz"]:
             if plot_type == "tnxyz":
-                assert c.shape == y.shape == z.shape and y.shape[0] == x.size
+                assert cshape == yshape == zshape and yshape[0] == xsize
                 x_rots, y_rots, zs = y, z, x
                 zdir = 'x'
             elif plot_type == "txnyz":
-                assert c.shape == x.shape == z.shape and x.shape[0] == y.size
+                assert cshape == xshape == zshape and xshape[0] == ysize
                 x_rots, y_rots, zs = x, z, y
                 zdir = 'y'
             elif plot_type == "txynz":
-                assert c.shape == x.shape == y.shape and x.shape[0] == z.size
+                assert cshape == xshape == yshape and xshape[0] == zsize
                 x_rots, y_rots, zs = x, y, z
                 zdir = 'z'
 
-            for index in range(zs.size):
-                points = np.array([x_rots[index], y_rots[index]]).T.reshape(-1, 1, 2)
+            for line_index in range(zs.size):
+                points = np.array([x_rots[line_index], y_rots[line_index]]).T.reshape(-1, 1, 2)
                 segments = np.concatenate([points[:-1], points[1:]], axis=1)
                 line_collection = LineCollection(segments, cmap=colormap, norm=norm)
-                line_collection.set_array(c[index])
-                axes.add_collection3d(line_collection, zs=zs[index], zdir=zdir, **plot_kwargs)
-        elif plot_type in ["ncnxyz", "ncxnyz", "ncxynz"]:
-            if plot_type == "ncnxyz":
-                assert y.shape[0:2] == (c.size, x.size) and y.shape == z.shape
-                x_rots = np.transpose(np.tile(x, (c.size, y.shape[2], 1)), axes=(0, 2, 1))
+                line_collection.set_array(c[line_index])
+                axes.add_collection3d(
+                    line_collection, 
+                    zs=zs[line_index], 
+                    zdir=zdir, 
+                    **plot_kwargs
+                )
+        elif plot_type in ["ncxyz", "ncnxyz", "ncxnyz", "ncxynz"]:
+            if plot_type == "ncxyz":
+                assert xshape == yshape == zshape and xshape[0] == csize
+                x_rots, y_rots, z_lines = x, y, z
+                extra_dimension = False
+            elif plot_type == "ncnxyz":
+                assert yshape[0:2] == (csize, xsize) and yshape == zshape
+                try:
+                    x_rots = np.transpose(np.tile(x, (csize, yshape[2], 1)), axes=(0, 2, 1))
+                    rot_size = xsize
+                    extra_dimension = True
+                except IndexError:
+                    x_rots = np.tile(x, (csize, 1))
+                    extra_dimension = False
                 y_rots, z_lines = y, z
-                zsize = x.size
             elif plot_type == "ncxnyz":
-                assert x.shape[0:2] == (c.size, y.size) and x.shape == z.shape
+                assert xshape[0:2] == (csize, ysize) and xshape == zshape
                 x_rots, z_lines = x, z
-                y_rots = np.transpose(np.tile(y, (c.size, x.shape[2], 1)), axes=(0, 2, 1))
-                zsize = y.size
+                try:
+                    y_rots = np.transpose(np.tile(y, (csize, xshape[2], 1)), axes=(0, 2, 1))
+                    rot_size = ysize
+                    extra_dimension = True
+                except IndexError:
+                    y_rots = np.tile(y, (csize, 1))
+                    extra_dimension = False
             elif plot_type == "ncxynz":
-                assert x.shape[0:2] == (c.size, z.size) and x.shape == y.shape
+                assert xshape[0:2] == (csize, zsize) and xshape == yshape
                 x_rots, y_rots = x, y
-                z_lines = np.transpose(np.tile(z, (c.size, x.shape[2], 1)), axes=(0, 2, 1))
-                zsize = z.size
+                try:
+                    z_lines = np.transpose(np.tile(z, (csize, xshape[2], 1)), axes=(0, 2, 1))
+                    rot_size = zsize
+                    extra_dimension = True
+                except IndexError:
+                    z_lines = np.tile(z, (csize, 1))
+                    extra_dimension = False
 
-            for z_index in range(zsize):
-                for c_index in range(c.size):
-                    index = (c_index, z_index)
-                    axes.plot3D(x_rots[index], y_rots[index], z_lines[index], color=c_colors[c_index], **plot_kwargs)
+            for c_index in range(csize):
+                c_color = c_colors[c_index]
+                if extra_dimension:
+                    for z_index in range(rot_size):
+                        line_index = (c_index, z_index)
+                        axes.plot3D(
+                            x_rots[line_index],
+                            y_rots[line_index],
+                            z_lines[line_index],
+                            color=c_color,
+                            **plot_kwargs
+                        )
+                else:
+                    axes.plot3D(
+                        x_rots[c_index],
+                        y_rots[c_index],
+                        z_lines[c_index],
+                        color=c_color,
+                        **plot_kwargs
+                    )
         elif plot_type in ["tnxnyz", "tnxynz", "txnynz"]:
             if plot_type == "tnxnyz":
-                assert c.shape[0:2] == (x.size, y.size) and c.shape == z.shape
-                ysize = x.size
+                assert cshape[0:2] == (xsize, ysize) and cshape == zshape
+                yrot_size = xsize
                 x_rots = z
-                y_rots = np.tile(x, (c.shape[2], 1)).T
+                y_rots = np.tile(x, (cshape[2], 1)).T
                 zs, zdir = y, 'y'
                 c_rots = c
             elif plot_type == "tnxynz":
-                assert c.shape[0:2] == (x.size, z.size) and c.shape == y.shape
-                ysize = z.size
+                assert cshape[0:2] == (xsize, zsize) and cshape == yshape
+                yrot_size = zsize
                 x_rots = np.transpose(y, axes=(1, 0, 2))
-                y_rots = np.tile(z, (c.shape[2], 1)).T
+                y_rots = np.tile(z, (cshape[2], 1)).T
                 zs, zdir = x, 'x'
                 c_rots = np.transpose(c, axes=(1, 0, 2))
             elif plot_type == "txnynz":
-                assert c.shape[0:2] == (y.size, z.size) and c.shape == x.shape
-                ysize = y.size
+                assert cshape[0:2] == (ysize, zsize) and cshape == xshape
+                yrot_size = ysize
                 x_rots = x
-                y_rots = np.tile(y, (c.shape[2], 1)).T
+                y_rots = np.tile(y, (cshape[2], 1)).T
                 zs, zdir = z, 'z'
                 c_rots = c
 
-            for y_index in range(ysize):
+            for y_index in range(yrot_size):
                 for z_index in range(zs.size):
                     if plot_type == "tnxnyz":
                         points = np.array([y_rots[y_index], x_rots[y_index, z_index]]).T.reshape(-1, 1, 2)
@@ -333,6 +421,51 @@ def getFigure(
                     line_collection = LineCollection(segments, cmap=colormap, norm=norm)
                     line_collection.set_array(c_rots[y_index, z_index])
                     axes.add_collection3d(line_collection, zs=zs[z_index], zdir=zdir, **plot_kwargs)
+        elif plot_type in ["cnxnyz", "cnxynz", "cxnynz", "cnxnynz", "ncnxnyz", "ncnxynz", "ncxnynz"]:
+            if plot_type == "cnxnyz":
+                assert cshape == zshape == (xsize, ysize)
+                c_shaped = c.reshape(csize)
+                x_shaped = np.tile(x, (ysize, 1)).T
+                y_shaped = np.tile(y, (xsize, 1))
+                z_shaped = z
+            elif plot_type == "cnxynz":
+                assert cshape == yshape == (xsize, zsize)
+                c_shaped = c.reshape(csize)
+                x_shaped = np.tile(x, (zsize, 1)).T
+                y_shaped = y
+                z_shaped = np.tile(z, (xsize, 1))
+            elif plot_type == "cxnynz":
+                assert cshape == xshape == (ysize, zsize)
+                c_shaped = c.reshape(csize)
+                x_shaped = x
+                y_shaped = np.transpose(np.tile(y, (zsize, 1)))
+                z_shaped = np.tile(z, (ysize, 1))
+            elif plot_type == "cnxnynz":
+                assert cshape == (xsize, ysize, zsize)
+                c_shaped = c.reshape(csize)
+                x_shaped = np.transpose(np.tile(x, (ysize, zsize, 1)), axes=(2, 0, 1))
+                y_shaped = np.transpose(np.tile(y, (zsize, xsize, 1)), axes=(1, 2, 0))
+                z_shaped = np.tile(z, (xsize, ysize, 1))
+            elif plot_type == "ncnxnyz":
+                assert zshape == (csize, xsize, ysize)
+                c_shaped = np.transpose(np.tile(c, (xsize, ysize, 1)), axes=(2, 0, 1)).reshape(zsize)
+                x_shaped = np.transpose(np.tile(x, (ysize, csize, 1)), axes=(1, 2, 0))
+                y_shaped = np.tile(y, (csize, xsize, 1))
+                z_shaped = z
+            elif plot_type == "ncnxynz":
+                assert yshape == (csize, xsize, zsize)
+                c_shaped = np.transpose(np.tile(c, (xsize, zsize, 1)), axes=(2, 0, 1)).reshape(ysize)
+                x_shaped = np.transpose(np.tile(x, (zsize, csize, 1)), axes=(1, 2, 0))
+                y_shaped = y
+                z_shaped = np.tile(z, (csize, xsize, 1))
+            elif plot_type == "ncxnynz":
+                assert xshape == (csize, ysize, zsize)
+                c_shaped = np.transpose(np.tile(c, (ysize, zsize, 1)), axes=(2, 0, 1)).reshape(xsize)
+                x_shaped = x
+                y_shaped = np.transpose(np.tile(y, (zsize, csize, 1)), axes=(1, 2, 0))
+                z_shaped = np.tile(z, (csize, ysize, 1))
+
+            axes.scatter3D(x_shaped, y_shaped, z_shaped, color=cmap.to_rgba(c_shaped))
 
         axes.set_xlim3d(*axes_kwargs["xlim"])
         axes.set_ylim3d(*axes_kwargs["ylim"])
@@ -422,7 +555,11 @@ def getParameterInsetAxes(
     return axins, axins_plot
 
 
-def calculateResolution(minimum: float, maximum: float, step_count: int) -> float:
+def calculateResolution(
+    minimum: float, 
+    maximum: float, 
+    step_count: int
+) -> float:
     """
     Calculate resolution from minimum, maximum, and step count.
 
@@ -440,7 +577,10 @@ def calculateResolution(minimum: float, maximum: float, step_count: int) -> floa
         raise ValueError("count must be int at least 1")
 
 
-def getUnitConversionFactor(old_units: Union[Unit, Quantity], new_units: Union[Unit, Quantity] = None) -> float:
+def getUnitConversionFactor(
+    old_units: Union[Unit, Quantity], 
+    new_units: Union[Unit, Quantity] = None
+) -> float:
     """
     Get unit conversion factor.
 
@@ -459,7 +599,8 @@ class ParameterSlider(Element, StoredObject):
     """
     Slider to choose value for free parameter.
     This contains
-        #. Four labels. One for parameter name. One for minimum parameter value. One for maximum parameter value. One for number of distinct parameter values
+        #. Four labels. One for parameter name. One for minimum parameter value. One for maximum parameter value.
+        One for number of distinct parameter values
         #. Slider. This allows the user to choose which parameter value to plot a simulation for.
     
     :ivar name: name of parameter
@@ -612,7 +753,8 @@ class ParameterSlider(Element, StoredObject):
         slider = self.getSlider()
 
         row = Row(
-            window=self.getWindowObject(), elements=[name_label, minimum_label, slider, maximum_label, stepcount_label]
+            window=self.getWindowObject(),
+            elements=[name_label, minimum_label, slider, maximum_label, stepcount_label]
         )
         layout = Layout(rows=row)
         return layout.getLayout()
@@ -621,8 +763,10 @@ class ParameterSlider(Element, StoredObject):
 class SimulationTab(Tab):
     """
     This class contains the layout for the simulation tab in the simulation window.
-        #. Input fields to set time steps. This allows the user to set the minimum, maximum, and number of steps for time in the simulation.
-        #. Run button. This allows the user to run the simulation. This is particularly useful if the user wishes to run the simulation again with more precision.
+        #. Input fields to set time steps.
+        This allows the user to set the minimum, maximum, and number of steps for time in the simulation.
+        #. Run button. This allows the user to run the simulation.
+        This is particularly useful if the user wishes to run the simulation again with more precision.
     """
 
     def __init__(self, name: str, window: SimulationWindow) -> None:
@@ -823,8 +967,8 @@ class ColorbarTab(Tab, StoredObject):
         kwargs = {
             "text": '',
             "tooltip": "Choose boolean for colorbar."
-                       "When set True, colorbar will be autoscaled and limit inputs will be ignored."
-                       "When set False, limits inputs will be used if available.",
+                "When set True, colorbar will be autoscaled and limit inputs will be ignored."
+                "When set False, limits inputs will be used if available.",
             "default": True,
             "size": self.getDimensions(name="autoscale_toggle_checkbox"),
             "key": "-COLORBAR AUTOSCALE-"
@@ -1029,8 +1173,8 @@ class AxisTab(Tab, StoredObject):
         kwargs = {
             "text": '',
             "tooltip": f"Choose boolean for {name:s}-axis."
-                       f"When set True, {name:s}-axis will be autoscaled and limit inputs will be ignored."
-                       f"When set False, limits inputs will be used if available.",
+                f"When set True, {name:s}-axis will be autoscaled and limit inputs will be ignored."
+                f"When set False, limits inputs will be used if available.",
             "default": True,
             "size": self.getDimensions(name="autoscale_toggle_checkbox"),
             "key": f"-AUTOSCALE {name.upper():s}_AXIS-"
@@ -1263,7 +1407,11 @@ class PlottingTab(Tab):
         return elem
 
     @storeElement
-    def getAxisQuantitySpeciesElement(self, name: str, include_none: bool = False) -> sg.InputCombo:
+    def getAxisQuantitySpeciesElement(
+        self, 
+        name: str, 
+        include_none: bool = False
+    ) -> sg.InputCombo:
         """
         Get element to take user input for an axis quantity type.
         This allows user to choose which type of quantity to plot on the axis.
@@ -1302,7 +1450,11 @@ class PlottingTab(Tab):
         }
         return sg.Text(**kwargs)
 
-    def getAxisInputRow(self, name: str, include_none: bool = True) -> Row:
+    def getAxisInputRow(
+        self, 
+        name: str, 
+        include_none: bool = True
+    ) -> Row:
         """
         Get row that allows user input for a single axis.
 
@@ -1696,7 +1848,6 @@ class SimulationWindow(TabbedWindow):
             "mean_order_spin": getDimensions(["simulation_window", "analysis_tab", "mean_tab", "order_spin"])
         }
         super().__init__(name, runner, dimensions=dimensions)
-
         self.plot_choices = plot_choices
         self.free_parameter_values = free_parameter_values
 
@@ -1712,7 +1863,10 @@ class SimulationWindow(TabbedWindow):
         self.addTabs(plotting_tab)
         self.addTabs(AnalysisTabGroup("Analysis", self).getAsTab())
 
-    def getFreeParameterNames(self, indicies: Union[int, List[int]] = None) -> Union[str, List[str]]:
+    def getFreeParameterNames(
+        self, 
+        indicies: Union[int, List[int]] = None
+    ) -> Union[str, List[str]]:
         """
         Get stored name(s) for free parameter(s).
         The user may change the values of these parameters during simulation.
@@ -1720,18 +1874,24 @@ class SimulationWindow(TabbedWindow):
         :param self: :class:`~Layout.SimulationWindow.SimulationWindow` to retrieve names from
         :param indicies: location to retrieve parameter name from in collection of names
         """
-        if isinstance(indicies, int):
-            free_parameter_names = self.getFreeParameterNames()
-            return free_parameter_names[indicies]
-        elif isinstance(indicies, list):
-            return [self.getFreeParameterNames(indicies=index) for index in indicies]
-        elif indicies is None:
-            return list(self.free_parameter_values.keys())
-        else:
-            raise RecursiveTypeError(indicies)
+
+        free_parameter_names = list(self.free_parameter_values.keys())
+
+        def get(index: int) -> str:
+            """Base method for :meth:`~Layout.SimulationWindow.SimulationWindow.getFreeParameterNames`"""
+            return free_parameter_names[index]
+
+        return recursiveMethod(
+            args=indicies,
+            base_method=get,
+            valid_input_types=int,
+            output_type=list,
+            default_args=range(len(free_parameter_names))
+        )
 
     def getFreeParameterValues(
-            self, name: str = None
+            self,
+            name: str = None
     ) -> Union[Dict[str, Tuple[float, float, int, Quantity]], Tuple[float, float, int, Quantity]]:
         """
         Get stored values for free parameter(s).
@@ -1750,7 +1910,10 @@ class SimulationWindow(TabbedWindow):
         else:
             raise TypeError("name must be str")
 
-    def getPlotChoices(self, species: Union[str, List[str]] = None) -> Union[List[str], Dict[str, List[str]]]:
+    def getPlotChoices(
+        self, 
+        species: Union[str, List[str]] = None
+    ) -> Union[List[str], Dict[str, List[str]]]:
         """
         Get stored names for quantities the user may choose to plot.
         
@@ -1919,7 +2082,7 @@ class SimulationWindowRunner(WindowRunner):
         self.getPlotChoices = window_object.getPlotChoices
         self.getFreeParameterNames = window_object.getFreeParameterNames
 
-        self.axis_names = ['x', 'y', 'z', 'c']
+        self.axis_names = ['c', 'x', 'y', 'z']
         self.timelike_species = ["Variable", "Function"]
         self.parameterlike_species = ["Parameter"]
         self.values = None
@@ -2010,7 +2173,10 @@ class SimulationWindowRunner(WindowRunner):
         step_count = round((slider_max - slider_min) / slider_resolution + 1)
         return np.linspace(slider_min, slider_max, step_count)
 
-    def getClosestSliderIndex(self, names: Union[str, List[str]] = None) -> Union[int, Tuple[int]]:
+    def getClosestSliderIndex(
+        self, 
+        names: Union[str, List[str]] = None
+    ) -> Union[int, Tuple[int, ...]]:
         """
         Get location/index of slider closest to value of free parameter.
         Location is discretized from zero to the number of free-parameter values.
@@ -2022,18 +2188,24 @@ class SimulationWindowRunner(WindowRunner):
         :returns: Slider index for free parameter if names is str.
             Tuple of slider indicies for all given free parameters if names is list or tuple.
         """
-        if isinstance(names, str):
-            slider_value = self.getSliderValue(names)
-            free_parameter_values = self.getFreeParameterValues(names)
-            index = min(range(len(free_parameter_values)), key=lambda i: abs(free_parameter_values[i] - slider_value))
-            return index
-        elif isinstance(names, list):
-            # noinspection PyTypeChecker
-            return tuple(self.getClosestSliderIndex(names=name) for name in names)
-        elif names is None:
-            return self.getClosestSliderIndex(names=self.getFreeParameterNames())
-        else:
-            raise RecursiveTypeError(names)
+
+        def get(name: str) -> int:
+            """Base method for :meth:`~Layout.SimulationWindow.SimulationWindowRunner.getClosestSliderIndex`"""
+            slider_value = self.getSliderValue(name)
+            free_parameter_values = self.getFreeParameterValues(name)
+            closest_index = min(
+                range(len(free_parameter_values)),
+                key=lambda i: abs(free_parameter_values[i] - slider_value)
+            )
+            return closest_index
+
+        return recursiveMethod(
+            args=names,
+            base_method=get,
+            valid_input_types=str,
+            output_type=tuple,
+            default_args=self.getFreeParameterNames()
+        )
 
     def getLikeSpecies(self, like: str):
         """
@@ -2277,7 +2449,7 @@ class SimulationWindowRunner(WindowRunner):
         Run simulation for a single set of free-parameter values.
         Save results in :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
         
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from and save results in.
+        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from and save results in
         :param index: index for free-parameter values.
             Results are saved at this index.
         :param parameter_values: dictionary of free-parameter values.
@@ -2288,9 +2460,9 @@ class SimulationWindowRunner(WindowRunner):
             This gives the order for arguments in the lambdified derivative vector.
         :param general_derivative_vector: partially-simplified, symbolic derivative vector.
             Simplified as much as possible, except leave free parameters and variables as symbolic.
-        :param y0: initial condition vector for derivative vector.
-        :param times: vector of time steps to solve ODE at.
-        :param model: :class:`~Function.Model` to run simulation for.
+        :param y0: initial condition vector for derivative vector
+        :param times: vector of time steps to solve ODE at
+        :param model: :class:`~Function.Model` to run simulation for
         """
         if any(element is None for element in [variable_names, general_derivative_vector, y0, times]):
             if model is None:
@@ -2320,7 +2492,7 @@ class SimulationWindowRunner(WindowRunner):
         Run simulations for all possible combinations of free-parameter values.
         Save results in :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
         
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from and save results in.
+        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from and save results in
         """
         self.resetResults()
         free_parameter_names = self.getFreeParameterNames()
@@ -2372,7 +2544,7 @@ class SimulationWindowRunner(WindowRunner):
             :param keys: key(s) of element(s) to retrieve value from
             """
 
-            def get(key: str) -> Optional[str, float, bool]:
+            def get(key: str) -> Optional[Union[str, float, bool]]:
                 """Base method for :meth:`~Layout.SimulationWindow.SimulationWindow.getPlotAesthetics.getValues`"""
                 try:
                     value = self.getValue(key)
@@ -2387,13 +2559,12 @@ class SimulationWindowRunner(WindowRunner):
                 except KeyError:
                     return None
 
-            kwargs = {
-                "args": keys,
-                "base_method": get,
-                "valid_input_types": str,
-                "output_type": tuple
-            }
-            return recursiveMethod(**kwargs)
+            return recursiveMethod(
+                args=keys,
+                base_method=get,
+                valid_input_types=str,
+                output_type=tuple
+            )
 
         cartesian_names = ('x', 'y', 'z')
         scale_type_dict = {
@@ -2462,7 +2633,7 @@ class SimulationWindowRunner(WindowRunner):
         }
         return aesthetics_kwargs
 
-    def getFigure(self, data: Dict[str, ndarray], **kwargs) -> Figure:
+    def getFigure(self, data: Dict[str, ndarray] = None, **kwargs) -> Figure:
         """
         Get matplotlib figure for results.
         
@@ -2474,7 +2645,7 @@ class SimulationWindowRunner(WindowRunner):
             if any element in :paramref:`~Layout.SimulationWindow.SimulationWindowRunner.getFigure.data` is not ndarray.
             Figure with given data plotted if both are ndarray.
         """
-        if any(not isinstance(x, ndarray) for x in data.values()):
+        if data is None or any(not isinstance(x, ndarray) for x in data.values()):
             figure_canvas = self.getFigureCanvas()
             figure_canvas_attributes = vars(figure_canvas)
             figure = figure_canvas_attributes["figure"]
@@ -2593,198 +2764,138 @@ class SimulationWindowRunner(WindowRunner):
             "transform_name": transform_name
         }
 
-        plot_choice_names = {axis: plot_quantities[axis][0] for axis in plot_quantities_keys}
-        species = {plot_quantities[axis][0]: plot_quantities[axis][1] for axis in plot_quantities_keys}
-        condensor_names = {plot_quantities[axis][0]: plot_quantities[axis][2] for axis in plot_quantities_keys}
+        axis2name = {
+            axis: plot_quantities[axis][0] 
+            for axis in plot_quantities_keys
+        }
 
+        axis2specie = {
+            axis: plot_quantities[axis][1] 
+            for axis in plot_quantities_keys
+        }
+        axis2condensor_name = {
+            axis: plot_quantities[axis][2] 
+            for axis in plot_quantities_keys
+        }
         is_timelike = {
-            name: species[name] in timelike_species and condensor_names[name] == "None"
-            for name in plot_choice_names.values()
+            axis: (
+                axis2specie[axis] in timelike_species and 
+                axis2condensor_name[axis] == "None"
+            )
+            for axis in plot_quantities_keys
         }
         is_condensed = {
-            name: species[name] in timelike_species and condensor_names[name] != "None"
-            for name in plot_choice_names.values()
+            axis: (
+                axis2specie[axis] in timelike_species and 
+                axis2condensor_name[axis] != "None"
+            )
+            for axis in plot_quantities_keys
         }
         is_parameterlike = {
-            name: species[name] in parameterlike_species
-            for name in plot_choice_names.values()
+            axis: axis2specie[axis] in parameterlike_species
+            for axis in plot_quantities_keys
         }
         is_nonelike = {
-            name: not is_timelike[name] and not is_condensed[name] and not is_parameterlike[name]
-            for name in plot_choice_names.values()
+            axis: (
+                not is_timelike[axis] and 
+                not is_condensed[axis] and 
+                not is_parameterlike[axis]
+            )
+            for axis in plot_quantities_keys
         }
 
         timelike_count = sum(is_timelike.values())
         parameterlike_count = sum(is_parameterlike.values())
         condensed_count = sum(is_condensed.values())
-        none_count = sum(is_nonelike.values())
 
         results = {}
-
-        parameter_names = tuple([name for name in plot_choice_names.values() if is_parameterlike[name]])
-        timelike_names = tuple([name for name in plot_choice_names.values() if is_timelike[name]])
-        condensed_names = tuple([name for name in plot_choice_names.values() if is_condensed[name]])
-
         try:
-            results = {}
             if parameterlike_count == 0:
                 getResultsOverTime = partial(results_object.getResultsOverTime, **results_kwargs)
 
-                for timelike_name in timelike_names:
-                    results[timelike_name] = getResultsOverTime(quantity_names=timelike_name)
-
-                for condensed_name in condensed_names:
-                    condensor_name = condensor_names[condensed_name]
-                    results[condensed_name] = getResultsOverTime(
-                        names=condensed_name,
-                        condensor_name=condensor_name,
-                        **self.getCondensorKwargs(condensor_name)
-                    )
+                for axis_name, quantity_name in axis2name.items():
+                    if is_timelike[axis_name]:
+                        results[axis_name] = getResultsOverTime(quantity_names=quantity_name)
+                    elif is_condensed[axis_name]:
+                        condensor_name = axis2condensor_name[axis_name]
+                        results[axis_name] = getResultsOverTime(
+                            quantity_names=quantity_name,
+                            condensor_name=condensor_name,
+                            **self.getCondensorKwargs(condensor_name)
+                        )
             else:
+                parameter_names = tuple(
+                    [
+                        axis2name[axis]
+                        for axis in plot_quantities_keys
+                        if is_parameterlike[axis]
+                    ]
+                )
+
                 getResultsOverTimePerParameter = partial(
                     results_object.getResultsOverTimePerParameter,
                     parameter_names=parameter_names,
                     **results_kwargs
                 )
 
-                if len(timelike_names) >= 1:
-                    _, quantity_results = getResultsOverTimePerParameter(quantity_names=timelike_names)
-                    results.update(dict(zip(timelike_names, quantity_results)))
+                for axis_name, quantity_name in axis2name.items():
+                    if is_timelike[axis_name]:
+                        parameter_results, quantity_results = getResultsOverTimePerParameter(
+                            quantity_names=quantity_name
+                        )
+                        results[axis_name] = quantity_results[0]
+                    elif is_parameterlike[axis_name]:
+                        results[axis_name] = results_object.getFreeParameterValues(names=quantity_name)
+                    elif is_condensed[axis_name]:
+                        condensor_name = axis2condensor_name[axis_name]
+                        parameter_results, quantity_results = getResultsOverTimePerParameter(
+                            quantity_names=quantity_name,
+                            condensor_name=condensor_name,
+                            **self.getCondensorKwargs(condensor_name)
+                        )
+                        results[axis_name] = quantity_results[0]
 
-                for condensed_name in condensed_names:
-                    condensor_name = condensor_names[condensed_name]
-                    _, result = getResultsOverTimePerParameter(
-                        quantity_names=condensed_name,
-                        condensor_name=condensor_name,
-                        **self.getCondensorKwargs(condensor_name)
-                    )
-                    results[condensed_name] = result[0]
-
-                results_object = self.getResultsObject()
-                for parameter_name in parameter_names:
-                    results[parameter_name] = results_object.getFreeParameterValues(names=parameter_name)
         except (UnboundLocalError, KeyError, IndexError, AttributeError, ValueError):
             print("data:", traceback.print_exc())
 
+        if timelike_count == 1:
+            plot_type = ''
+        elif condensed_count >= 1 and parameterlike_count == 0:
+            plot_type = ''
+        elif timelike_count >= 1 and condensed_count >= 1:
+            plot_type = ''
+        elif is_nonelike['x'] or is_nonelike['y']:
+            plot_type = ''
+        else:
+            if is_parameterlike['c']:
+                plot_type = f"nc"
+            elif is_condensed['c']:
+                plot_type = 'c'
+            elif is_timelike['c']:
+                plot_type = 't'
+            elif is_nonelike['c']:
+                plot_type = ''
+            else:
+                plot_type = ''
+
+            for axis_name in ['x', 'y', 'z']:
+                if is_parameterlike[axis_name]:
+                    plot_type += f"n{axis_name:s}"
+                elif is_condensed[axis_name] or is_timelike[axis_name]:
+                    plot_type += axis_name
+                elif is_nonelike[axis_name]:
+                    pass
+
         try:
-            is_timelike_axis = lambda axis: is_timelike[plot_choice_names[axis]]
-            is_parameterlike_axis = lambda axis: is_parameterlike[plot_choice_names[axis]]
-            is_condensed_axis = lambda axis: is_condensed[plot_choice_names[axis]]
-            is_nonelike_axis = lambda axis: is_nonelike[plot_choice_names[axis]]
-
-            axis_results = {}
-
-            if not is_nonelike_axis('x'):
-                x = results[plot_choice_names['x']]
-                axis_results['x'] = x
-            if not is_nonelike_axis('y'):
-                y = results[plot_choice_names['y']]
-                axis_results['y'] = y
-            if not is_nonelike_axis('z'):
-                z = results[plot_choice_names['z']]
-                axis_results['z'] = z
-            if not is_nonelike_axis('c'):
-                c = results[plot_choice_names['c']]
-                axis_results['c'] = c
-
-            if is_timelike_axis('x'):
-                if is_timelike_axis('y'):
-                    if is_timelike_axis('z'):
-                        if is_timelike_axis('c'):
-                            plot_type = "txyz"
-                        elif is_parameterlike_axis('c'):
-                            plot_type = "ncxyz"
-                        elif is_nonelike_axis('c'):
-                            plot_type = "xyz"
-                    elif is_parameterlike_axis('z'):
-                        if is_timelike_axis('c'):
-                            plot_type = "txynz"
-                        elif is_parameterlike_axis('c'):
-                            assert x.shape == y.shape
-                            if x.shape[0:2] != (c.size, z.size):
-                                axis_results['x'] = np.transpose(x, axes=(1, 0, 2))
-                                axis_results['y'] = np.transpose(y, axes=(1, 0, 2))
-                            plot_type = "ncxynz"
-                        elif is_nonelike_axis('c'):
-                            plot_type = "xynz"
-                    elif is_nonelike_axis('z'):
-                        if is_timelike_axis('c'):
-                            plot_type = "txy"
-                        elif is_parameterlike_axis('c'):
-                            plot_type = "ncxy"
-                        elif is_nonelike_axis('c'):
-                            plot_type = "xy"
-                elif is_parameterlike_axis('y'):
-                    if is_timelike_axis('z'):
-                        if is_timelike_axis('c'):
-                            plot_type = "txnyz"
-                        elif is_parameterlike_axis('c'):
-                            assert x.shape == z.shape
-                            if x.shape[0:2] != (c.size, y.size):
-                                axis_results['x'] = np.transpose(x, axes=(1, 0, 2))
-                                axis_results['z'] = np.transpose(z, axes=(1, 0, 2))
-                            plot_type = "ncxnyz"
-                        elif is_nonelike_axis('c'):
-                            plot_type = "xnyz"
-                    elif is_parameterlike_axis('z'):
-                        if is_timelike_axis('c'):
-                            plot_type = "txnynz"
-            elif is_condensed_axis('x'):
-                if is_parameterlike_axis('y'):
-                    if is_nonelike_axis('z'):
-                        if is_parameterlike_axis('c'):
-                            axis_results['x'] = x if x.shape == (c.size, y.size) else x.T
-                            plot_type = "cnxy"
-                        elif is_condensed_axis('c'):
-                            plot_type = "txy"
-                        elif is_nonelike_axis('c'):
-                            plot_type = "xy"
-                elif is_condensed_axis('y'):
-                    if is_nonelike_axis('z'):
-                        if is_parameterlike_axis('c'):
-                            plot_type = "txy"
-            elif is_parameterlike_axis('x'):
-                if is_timelike_axis('y'):
-                    if is_timelike_axis('z'):
-                        if is_timelike_axis('c'):
-                            plot_type = "tnxyz"
-                        elif is_parameterlike_axis('c'):
-                            assert y.shape == z.shape
-                            if y.shape[0:2] != (c.size, x.size):
-                                axis_results['y'] = np.transpose(y, axes=(1, 0, 2))
-                                axis_results['z'] = np.transpose(z, axes=(1, 0, 2))
-                            plot_type = "ncnxyz"
-                        elif is_nonelike_axis('c'):
-                            plot_type = "nxyz"
-                    elif is_parameterlike_axis('z'):
-                        plot_type = "tnxynz"
-                elif is_parameterlike_axis('y'):
-                    if is_timelike_axis('z'):
-                        if is_timelike_axis('c'):
-                            plot_type = "tnxnyz"
-                    elif is_nonelike_axis('z'):
-                        if is_condensed_axis('c'):
-                            axis_results['c'] = c
-                            plot_type = "cxy"
-                elif is_condensed_axis('y'):
-                    if is_nonelike_axis('z'):
-                        if is_parameterlike_axis('c'):
-                            axis_results['y'] = y if y.shape == (c.size, x.size) else y.T
-                            plot_type = "cxny"
-                        elif is_condensed_axis('c'):
-                            plot_type = "txy"
-                        elif is_nonelike_axis('c'):
-                            plot_type = "xy"
-
-            try:
-                print(plot_type, {key: value.shape for key, value in axis_results.items()})
-                figure = self.getFigure(axis_results, plot_type=plot_type, **figure_kwargs)
-                self.updateFigureCanvas(figure)
-                return figure
-            except UnboundLocalError:
-                print("todo plots:", plot_quantities, traceback.print_exc())
-        except (KeyError, AttributeError, ValueError):
-            print("plot:", traceback.print_exc())
+            print(plot_type, {key: value.shape for key, value in results.items()})
+            if plot_type != '':
+                figure = self.getFigure(results, plot_type=plot_type, **figure_kwargs)
+            self.updateFigureCanvas(figure)
+            return figure
+        except UnboundLocalError:
+            print("todo plots:", plot_quantities, traceback.print_exc())
+        except (KeyError, AttributeError):
+            print("figure:", traceback.print_exc())
 
     def updatePlotChoices(self, names: Union[str, List[str]] = None) -> None:
         """
@@ -2796,13 +2907,13 @@ class SimulationWindowRunner(WindowRunner):
             Updates all axes by default.
         """
 
+        # noinspection PyTypeChecker
+        window_object: SimulationWindow = self.getWindowObject()
+        # noinspection PyTypeChecker
+        plotting_tab: PlottingTab = window_object.getPlottingTab()
+
         def update(name: str) -> None:
             """Base method for :meth:`~Layout.SimulationWindow.SimulationWindowRunner.updatePlotChoices`"""
-            # noinspection PyTypeChecker
-            window_object: SimulationWindow = self.getWindowObject()
-            # noinspection PyTypeChecker
-            plotting_tab: PlottingTab = window_object.getPlottingTab()
-
             specie = self.getValue(getKeys(plotting_tab.getAxisQuantitySpeciesElement(name)))
             choices = self.getPlotChoices(species=specie) if specie != "None" else ['']
             quantity_combobox = plotting_tab.getAxisQuantityElement(name)
@@ -2834,13 +2945,12 @@ class SimulationWindowRunner(WindowRunner):
                 else:
                     quantity_combobox.update(**kwargs)
 
-        kwargs = {
-            "args": names,
-            "base_method": update,
-            "valid_input_types": str,
-            "default_args": self.getAxisNames()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            args=names,
+            base_method=update,
+            valid_input_types=str,
+            default_args=self.getAxisNames()
+        )
 
     def saveResults(self) -> None:
         """
@@ -2939,29 +3049,6 @@ class SimulationWindowRunner(WindowRunner):
                 except OSError:
                     sg.PopupError(f"cannot save figure as {filepath:s}")
         elif isinstance(name, str):
-            parameter_index = self.getFreeParameterIndex(name)
-            default_index = list(self.getClosestSliderIndex())
-            new_index = lambda i: tuple(default_index[:parameter_index] + [i] + default_index[parameter_index + 1:])
-            parameter_values = self.getFreeParameterValues(name)
-            parameter_value_range = (np.min(parameter_values), np.max(parameter_values))
-
-            images = []
-            images_append = images.append
-            inset_parameters = {
-                name: {
-                    "range": parameter_value_range
-                }
-            }
-            image_count = len(parameter_values)
-            for i in range(image_count):
-                if not self.updateProgressMeter("Saving Animation", i, image_count):
-                    break
-                inset_parameters[name]["value"] = parameter_values[i]
-                figure = self.updatePlot(index=new_index(i), inset_parameters=inset_parameters)
-                image = PIL.Image.frombytes("RGB", figure.canvas.get_width_height(), figure.canvas.tostring_rgb())
-                images_append(image)
-            self.updateProgressMeter("Saving Animation", image_count, image_count)
-
             file_types = [("Graphics Interchange Format", "*.gif"), ("ALL Files", "*.*")]
             kwargs = {
                 "message": "Enter Filename",
@@ -2970,11 +3057,48 @@ class SimulationWindowRunner(WindowRunner):
                 "file_types": tuple(file_types)
             }
             filepath = sg.PopupGetFile(**kwargs)
+
             if isinstance(filepath, str):
-                kwargs = {
-                    "save_all": True,
-                    "append_images": images[1:],
-                    "duration": round(4000 / len(images)),
-                    "loop": 0
+                save_directory = Path(filepath).parent
+                zip_filepath = filepath.replace(".gif", ".zip")
+                yaml_filepath = join(save_directory, "values.yml")
+
+                parameter_index = self.getFreeParameterIndex(name)
+                default_index = list(self.getClosestSliderIndex())
+                parameter_values = self.getFreeParameterValues(name)
+
+                inset_parameters = {
+                    name: {
+                        "range": (parameter_values.min(), parameter_values.max())
+                    }
                 }
-                images[0].save(filepath, **kwargs)
+                image_count = len(parameter_values)
+
+                with imageio.get_writer(filepath, mode='I') as writer, ZipFile(zip_filepath, 'w') as zipfile:
+                    for i in range(image_count):
+                        if not self.updateProgressMeter("Saving Animation", i, image_count):
+                            break
+
+                        data_index = default_index
+                        data_index[parameter_index] = i
+                        parameter_value = parameter_values[i]
+                        inset_parameters[name]["value"] = parameter_value
+                        figure = self.updatePlot(index=tuple(data_index), inset_parameters=inset_parameters)
+
+                        png_filepath = join(save_directory, f"{name:s}_{i:d}.png")
+                        figure.savefig(png_filepath)
+                        writer.append_data(imageio.imread(png_filepath))
+                        zipfile.write(png_filepath, basename(png_filepath))
+                        os.remove(png_filepath)
+
+                    with open(yaml_filepath, 'w') as yamlfile:
+                        yaml_parameter_values = list(map(float, parameter_values))
+                        yaml_parameter_indicies = list(range(len(parameter_values)))
+                        parameter_values_dict = dict(zip(yaml_parameter_indicies, yaml_parameter_values))
+                        yaml.dump(parameter_values_dict, yamlfile)
+                    zipfile.write(yaml_filepath, basename(yaml_filepath))
+                    os.remove(yaml_filepath)
+
+                self.updateProgressMeter("Saving Animation", image_count, image_count)
+            else:
+                sg.PopupError("invalid filepath")
