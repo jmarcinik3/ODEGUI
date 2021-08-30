@@ -3049,18 +3049,18 @@ class SimulationWindowRunner(WindowRunner):
                 except OSError:
                     sg.PopupError(f"cannot save figure as {filepath:s}")
         elif isinstance(name, str):
-            file_types = [("Graphics Interchange Format", "*.gif"), ("ALL Files", "*.*")]
+            file_types = [("Compressed File", "*.zip"), ("ALL Files", "*.*")]
             kwargs = {
                 "message": "Enter Filename",
                 "title": "Save Figure",
                 "save_as": True,
                 "file_types": tuple(file_types)
             }
-            filepath = sg.PopupGetFile(**kwargs)
+            zip_filepath = sg.PopupGetFile(**kwargs)
 
-            if isinstance(filepath, str):
-                save_directory = Path(filepath).parent
-                zip_filepath = filepath.replace(".gif", ".zip")
+            if isinstance(zip_filepath, str):
+                save_directory = Path(zip_filepath).parent
+                gif_filepath = zip_filepath.replace(".zip", ".gif")
                 yaml_filepath = join(save_directory, "values.yml")
 
                 parameter_index = self.getFreeParameterIndex(name)
@@ -3074,22 +3074,26 @@ class SimulationWindowRunner(WindowRunner):
                 }
                 image_count = len(parameter_values)
 
-                with imageio.get_writer(filepath, mode='I') as writer, ZipFile(zip_filepath, 'w') as zipfile:
-                    for i in range(image_count):
-                        if not self.updateProgressMeter("Saving Animation", i, image_count):
-                            break
+                with ZipFile(zip_filepath, 'w') as zipfile:
+                    with imageio.get_writer(gif_filepath, mode='I') as writer:
+                        for i in range(image_count):
+                            if not self.updateProgressMeter("Saving Animation", i, image_count):
+                                break
 
-                        data_index = default_index
-                        data_index[parameter_index] = i
-                        parameter_value = parameter_values[i]
-                        inset_parameters[name]["value"] = parameter_value
-                        figure = self.updatePlot(index=tuple(data_index), inset_parameters=inset_parameters)
+                            data_index = default_index
+                            data_index[parameter_index] = i
+                            parameter_value = parameter_values[i]
+                            inset_parameters[name]["value"] = parameter_value
+                            figure = self.updatePlot(index=tuple(data_index), inset_parameters=inset_parameters)
 
-                        png_filepath = join(save_directory, f"{name:s}_{i:d}.png")
-                        figure.savefig(png_filepath)
-                        writer.append_data(imageio.imread(png_filepath))
-                        zipfile.write(png_filepath, basename(png_filepath))
-                        os.remove(png_filepath)
+                            png_filepath = join(save_directory, f"{name:s}_{i:d}.png")
+                            figure.savefig(png_filepath)
+                            writer.append_data(imageio.imread(png_filepath))
+                            zipfile.write(png_filepath, basename(png_filepath))
+                            os.remove(png_filepath)
+
+                    zipfile.write(gif_filepath, basename(gif_filepath))
+                    os.remove(gif_filepath)
 
                     with open(yaml_filepath, 'w') as yamlfile:
                         yaml_parameter_values = list(map(float, parameter_values))
@@ -3099,6 +3103,6 @@ class SimulationWindowRunner(WindowRunner):
                     zipfile.write(yaml_filepath, basename(yaml_filepath))
                     os.remove(yaml_filepath)
 
-                self.updateProgressMeter("Saving Animation", image_count, image_count)
+                    self.updateProgressMeter("Saving Animation", image_count, image_count)
             else:
                 sg.PopupError("invalid filepath")
