@@ -237,8 +237,8 @@ class Results:
         try:
             expression = self.general_function_expressions[name]
         except KeyError:
-            functions = self.getModel().getFunctions(names=name)
-            expression = functions.getExpression(
+            function = self.getModel().getFunctions(names=name)
+            expression = function.getExpression(
                 expanded=False,
                 substitute_dependents=True
             )
@@ -299,7 +299,7 @@ class Results:
 
         :param self: :class:`~Results.Results` to retrieve results from
         :param index: index of parameter value for free parameter
-        :param name: name of function to retrieve results ofZ
+        :param name: name of function to retrieve results of
         """
         expression = self.getGeneralFunctionExpression(name)
         parameter_substitutions = self.getParameterSubstitutions(
@@ -308,19 +308,22 @@ class Results:
             include_free=True
         )
         expression = expression.subs(parameter_substitutions)
-
-        free_symbols = expression.free_symbols
-        free_symbol_names = list(map(str, free_symbols))
-        expression_lambda = lambdify(
-            [free_symbols],
-            expression,
-            modules=["numpy", "scipy"]
-        )
-        substitutions_results = self.getResultsOverTime(
-            index=index,
-            quantity_names=free_symbol_names
-        )
-        updated_results = expression_lambda(substitutions_results)
+        if expression.is_constant():
+            time_count = len(self.getResultsOverTime(index, 't'))
+            updated_results = np.repeat(float(expression), time_count)
+        else:
+            free_symbols = expression.free_symbols
+            free_symbol_names = list(map(str, free_symbols))
+            expression_lambda = lambdify(
+                [free_symbols],
+                expression,
+                modules=["numpy", "scipy"]
+            )
+            substitutions_results = self.getResultsOverTime(
+                index=index,
+                quantity_names=free_symbol_names
+            )
+            updated_results = expression_lambda(substitutions_results)
         return updated_results
 
     def getEquilibriumVariableResults(
