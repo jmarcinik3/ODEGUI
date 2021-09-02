@@ -1,6 +1,18 @@
+C:
+  expression: $C(1)$
+  filename: C.png
 CpT:
   expression: $e^{\frac{\Delta{E}^\varnothing}{T k_B}}$
   filename: CpT.png
+Fa:
+  expression: $- F_{es} + F_{gs} - F_m$
+  filename: Fa.png
+Fm:
+  expression: $F_{m,max} \gamma \left(- S_m p_T + 1\right)$
+  filename: Fm.png
+S:
+  expression: $\frac{1}{\lambda_a}$
+  filename: S.png
 dpT:
   expression: $\frac{- p_T + p_T(\infty)}{\tau_T}$
   filename: dpT.png

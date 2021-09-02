@@ -20,7 +20,7 @@ lambdaC:
   
 Fm:
   properties: [Independent]
-  parameters: [Fmmax, Sm]
+  parameters: [gamma, Fmmax, Sm]
   variables: pT
   form: gamma * Fmmax * (1-Sm*pT)
 Fa:

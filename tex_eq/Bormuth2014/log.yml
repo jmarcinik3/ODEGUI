@@ -24,6 +24,5 @@ lambdahb:
   expression: $\lambda_C + \lambda_H$
   filename: lambdahb.png
 tauT:
-  expression: $\frac{\tau_T^\varnothing}{\cosh{\left(- \frac{\log{\left(C_{p_T} \right)}}{2}
-    + \frac{x_{p_T}}{2 \Delta{x_{p_T}}} \right)}}$
+  expression: $\tau_T^\varnothing$
   filename: tauT.png
