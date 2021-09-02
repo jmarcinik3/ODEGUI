@@ -1295,7 +1295,10 @@ class Derivative:
     """
 
     def __init__(
-            self, variable: Union[Symbol, str], time_evolution_type: str = "Temporal", initial_condition: float = 0
+        self, 
+        variable: Union[Symbol, str], 
+        time_evolution_type: str = "Temporal", 
+        initial_condition: float = 0
     ) -> None:
         """
          Constructor for :class:`~Function.Derivative`.
@@ -1778,7 +1781,7 @@ def FunctionMaster(
 
 def getFunctionInfo(info: dict, model: Model = None) -> dict:
     """
-    Get ormatted dictionary of info to generate Function object.
+    Get formatted dictionary of info to generate Function object.
 
     :param info: 2/3-level dictionary of info directly from file.
         First key is name of function.
