@@ -1548,11 +1548,24 @@ class MainWindowRunner(WindowRunner):
         """
         if model is None:
             model = self.getModel()
+        variable_names = ['t'] + model.getVariables(return_type=str)
+        
+        function_names = []
+        for function_obj in model.getFunctions(filter_type=Independent):
+            function_name = function_obj.getName()
+            if not isinstance(function_obj, Derivative):
+                function_names.append(function_name)
+            elif function_obj.getTimeEvolutionType() in ["Temporal", "Constant"]:
+                function_names.append(function_name)
+
+        free_parameter_names = self.getParameterNames(parameter_types="Free")
+
         plot_choices = {
-            "Variable": ['t'] + model.getVariables(return_type=str),
-            "Function": list(map(Function.getName, model.getFunctions(filter_type=Independent))),
-            "Parameter": self.getParameterNames(parameter_types="Free")
+            "Variable": variable_names,
+            "Function": function_names,
+            "Parameter": free_parameter_names
         }
+        
         return plot_choices
 
     def getModel(self) -> Model:
@@ -1563,41 +1576,56 @@ class MainWindowRunner(WindowRunner):
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve model from
         """
         # noinspection PyTypeChecker
-        function_objects: List[Function] = self.getFunctions()
+        function_objs: List[Function] = unique(self.getFunctions())
         # noinspection PyTypeChecker
-        parameters: List[Parameter] = self.getParameters()
-        full_model = Model(functions=function_objects, parameters=parameters)
+        parameter_objs: List[Parameter] = unique(self.getParameters())
+        full_model = Model(functions=function_objs, parameters=parameter_objs)
 
         # noinspection PyTypeChecker
-        core_function_objects: List[Function] = full_model.getDerivatives()
+        temporal_derivatives = derivative_functions = []
+        for derivative in full_model.getDerivatives():
+            variable_name = derivative.getVariable(return_type=str)
+            print('1', variable_name)
+            time_evolution_type = self.getTimeEvolutionTypes(names=variable_name)
+            if time_evolution_type == "Temporal":
+                temporal_derivatives.append(derivative)
+            elif time_evolution_type == "Function":
+                derivative_function_obj = full_model.getFunctions(names=variable_name)
+                derivative_functions.append(derivative_function_obj)
+                derivative_functions.append(derivative)
+
+        core_function_objs = unique(temporal_derivatives + derivative_functions)
+        for obj in core_function_objs:
+            print(len(core_function_objs), obj.getName(), obj.getExpression())
         pre_length = -1
-        while pre_length != len(core_function_objects):
-            pre_length = len(core_function_objects)
-            children_function_objects = unique(
+        while pre_length != len(core_function_objs):
+            pre_length = len(core_function_objs)
+            children_function_objs = unique(
                 [
                     child_function_object
-                    for function_object in core_function_objects
+                    for function_object in core_function_objs
                     for child_function_object in function_object.getChildren()
-                    if child_function_object not in core_function_objects
+                    if child_function_object not in core_function_objs
                 ]
             )
-            core_function_objects.extend(children_function_objects)
+            core_function_objs.extend(children_function_objs)
 
         getParameters = partial(Function.getFreeSymbols, species="Parameter", expanded=True, return_type=str)
         core_parameter_names = unique(
             [
                 parameter_name
-                for function_object in core_function_objects
-                for parameter_name in getParameters(function_object)
+                for function_obj in core_function_objs
+                for parameter_name in getParameters(function_obj)
             ]
         )
-        core_parameter_objects = full_model.getParameters(names=core_parameter_names)
+        core_parameter_objs = full_model.getParameters(names=core_parameter_names)
 
-        core_model = Model(functions=core_function_objects, parameters=core_parameter_objects)
+        core_model = Model(functions=core_function_objs, parameters=core_parameter_objs)
         for derivative in core_model.getDerivatives():
             variable_name = derivative.getVariable(return_type=str)
             derivative.setTimeEvolutionType(self.getTimeEvolutionTypes(names=variable_name))
             derivative.setInitialCondition(self.getInitialConditions(names=variable_name))
+        
         return core_model
 
     def setElementsAsValue(self, elements: Union[sg.Element, Iterable[sg.Element]], value: str) -> None:
