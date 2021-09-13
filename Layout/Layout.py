@@ -4,7 +4,7 @@ This modules contains wrapper and containers for PySimpleGUI elements.
 
 from __future__ import annotations
 
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
@@ -553,6 +553,111 @@ class Window:
             "finalize": True
         }
         return sg.Window(**kwargs)
+
+
+class ChooseChecksWindow(Window):
+    """
+    This class contains the layout for the choose-by-checks window.
+        #. Menu: This allows user to (un)check all selections.
+        #. Header to indicate purpose of each column.
+        #. Footer with submit and cancel buttons.
+        #. Row for each selection, allowing user to choose using checkbox.
+    """
+
+    def __init__(
+            self,
+            name: str,
+            runner: WindowRunner,
+            get_rows: Callable,
+            header_text: str = ''
+    ):
+        """
+        Constructor for :class:`~Layout.Layout.ChooseChecksWindow`.
+
+        :param name: name of window
+        :param runner: :class:`~Layout.Layout.WindowRunner` that window is stored in
+        :param get_rows: callable to retrieve selection rows from for window
+        """
+        dimensions = {
+            "window": (None, None)  # dim
+        }
+        super().__init__(name, runner, dimensions=dimensions)
+
+        self.header_text = header_text
+        self.getRows = get_rows
+
+    def getMenu(self) -> sg.Menu:
+        """
+        Get toolbar menu for window.
+
+        :param self: :class:`~Layout.Layout.ChooseChecksWindow` to retrieve menu from
+        """
+        menu_definition = [
+            [
+                "Set",
+                [
+                    "Check All",
+                    "Uncheck All"
+                ]
+            ]
+        ]
+        kwargs = {
+            "menu_definition": menu_definition,
+            "key": self.getKey("toolbar_menu")
+        }
+        return sg.Menu(**kwargs)
+
+    def getHeaderRow(self) -> Row:
+        """
+        Get header for window.
+        This includes labels, which indicate the purpose of each column in the window.
+
+        :param self: :class:`~Layout.Layout.ChooseChecksWindow` to retrieve header from
+        """
+        text = self.header_text
+        kwargs = {
+            "text": text
+        }
+        row = Row(elements=sg.Text(**kwargs))
+        return row
+
+    @staticmethod
+    def getFooterRow() -> Row:
+        """
+        Get footer for window.
+        This includes a submit and cancel button.
+        """
+        submit_button = sg.Submit()
+        cancel_button = sg.Cancel()
+        row = Row(elements=[submit_button, cancel_button])
+        return row
+
+    def getRowsLayout(self) -> Layout:
+        """
+        Get layout for scrollable section containing row for each selection.
+
+        :param self: :class:`~Layout.Layout.ChooseChecksWindow` to retrieve section from
+        """
+        column = sg.Column(
+            layout=Layout(rows=self.getRows()).getLayout(),
+            size=(None, 350),  # dim
+            scrollable=True,
+            vertical_scroll_only=True
+        )
+        layout = Layout(rows=Row(elements=column))
+        return layout
+
+    def getLayout(self) -> List[List[sg.Element]]:
+        """
+        Get layout for window.
+
+        :param self: :class:`~Layout.Layout.ChooseChecksWindow` to retrieve layout from
+        """
+        menu = Layout(rows=Row(elements=self.getMenu()))
+        header = self.getHeaderRow()
+        footer = self.getFooterRow()
+        rows = self.getRowsLayout()
+        return menu.getLayout() + header.getLayout() + rows.getLayout() + footer.getLayout()
 
 
 class TabbedWindow(Window):

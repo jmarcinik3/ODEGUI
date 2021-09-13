@@ -11,7 +11,7 @@ import PySimpleGUI as sg
 from pint import Quantity
 
 from Function import Parameter
-from Layout.Layout import Layout, Row, Window, WindowRunner
+from Layout.Layout import ChooseChecksWindow, Row, WindowRunner
 from macros import formatQuantity, getTexImage, recursiveMethod
 
 
@@ -96,7 +96,7 @@ class ChooseParameterRow(Row):
         return sg.Checkbox(**kwargs)
 
 
-class ChooseParametersWindow(Window):
+class ChooseParametersWindow(ChooseChecksWindow):
     """
     This class contains the layout for the choose-parameters window.
         #. Menu: This allows user to (un)check all parameters.
@@ -115,7 +115,7 @@ class ChooseParametersWindow(Window):
             name: str,
             parameters: List[Parameter],
             runner: ChooseParametersWindowRunner,
-            filename: str = ''
+            filename: str = None
     ):
         """
         Constructor for :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow`.
@@ -127,10 +127,18 @@ class ChooseParametersWindow(Window):
             Value is parameter object for parameter.
         :param filename: name of file that parameters were loaded from
         """
-        dimensions = {
-            "window": (None, None)  # dim
-        }
-        super().__init__(name, runner, dimensions=dimensions)
+        header_text = "Choose which parameters to overwrite"
+        if isinstance(filename, str):
+            file_basename = basename(filename)
+            header_text += f" ({file_basename:s})"
+
+        super().__init__(
+            name,
+            runner,
+            get_rows=self.getParameterRows,
+            header_text=header_text
+        )
+
         self.parameters = parameters
         self.filename = filename
 
@@ -165,82 +173,6 @@ class ChooseParametersWindow(Window):
         ]
         return rows
 
-    def getMenu(self) -> sg.Menu:
-        """
-        Get toolbar menu for window.
-
-        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve menu from
-        """
-        menu_definition = [
-            [
-                "Set",
-                [
-                    "Check All",
-                    "Uncheck All"
-                ]
-            ]
-        ]
-        kwargs = {
-            "menu_definition": menu_definition,
-            "key": self.getKey("toolbar_menu")
-        }
-        return sg.Menu(**kwargs)
-
-    def getHeaderRow(self) -> Row:
-        """
-        Get header for window.
-        This includes labels, which indicate the purpose of each column in the window.
-
-        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve header from
-        """
-        filename = basename(self.getFilename())
-        text = "Choose which parameters to overwrite"
-        if filename != '':
-            text += f" ({filename:s})"
-        kwargs = {
-            "text": text
-        }
-        row = Row(elements=sg.Text(**kwargs))
-        return row
-
-    @staticmethod
-    def getFooterRow() -> Row:
-        """
-        Get footer for window.
-        This includes a submit and cancel button.
-        """
-        submit_button = sg.Submit()
-        cancel_button = sg.Cancel()
-        row = Row(elements=[submit_button, cancel_button])
-        return row
-
-    def getParameterRowsLayout(self) -> Layout:
-        """
-        Get layout for scrollable section containing row for each parameter.
-
-        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve section from
-        """
-        kwargs = {
-            "layout": Layout(rows=self.getParameterRows()).getLayout(),
-            "size": (None, 350),  # dim
-            "scrollable": True,
-            "vertical_scroll_only": True
-        }
-        layout = Layout(rows=Row(elements=sg.Column(**kwargs)))
-        return layout
-
-    def getLayout(self) -> List[List[sg.Element]]:
-        """
-        Get layout for window.
-
-        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow` to retrieve layout from
-        """
-        menu = Layout(rows=Row(elements=self.getMenu()))
-        header = self.getHeaderRow()
-        footer = self.getFooterRow()
-        parameter_rows = self.getParameterRowsLayout()
-        return menu.getLayout() + header.getLayout() + parameter_rows.getLayout() + footer.getLayout()
-
 
 class ChooseParametersWindowRunner(WindowRunner):
     """
@@ -272,20 +204,20 @@ class ChooseParametersWindowRunner(WindowRunner):
         """
         parameter_names = list(map(Parameter.getName, self.getParameters()))
         return parameter_names
-    
-    def setChecks(self, names: Union[str, Iterable[str]], overwrite: bool) -> None:
+
+    def setChecks(self, names: Union[str, Iterable[str]], checked: bool) -> None:
         """
-        Set all checkboxes (determining whether to overwrite parameter) to chosen value.
+        Set all checkboxes to chosen value.
 
         :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindowRunner` to set checkboxes in
         :param names: name(s) of parameter(s) to set checkboxes for
-        :param overwrite: set True to set all checkboxes to True.
+        :param checked: set True to set all checkboxes to True.
             Set False to set all checkboxes to False.
         """
 
         def set(name: str) -> None:
             checkbox = self.getElements(name)
-            checkbox.update(value=overwrite)
+            checkbox.update(value=checked)
 
         return recursiveMethod(
             base_method=set,
@@ -294,13 +226,26 @@ class ChooseParametersWindowRunner(WindowRunner):
             output_type=list
         )
 
-    def getChosenParameters(self) -> List[str]:
+    def getCheckedParameterNames(self) -> List[str]:
         """
-        Get checked parameters in window.
+        Get currently checked parameters.
         Uses present state of window.
 
         :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindowRunner` to retrieve checked boxes from
-        :returns: List of parameter names, where corresponding checkbox is checked
+        """
+        parameter_names = self.getParameterNames()
+        checked_parameter_names = [parameter_name for parameter_name in parameter_names if self.getValue(parameter_name)]
+        return checked_parameter_names
+        
+    def getChosenParameters(self) -> List[str]:
+        """
+        Get parameters chosen by user.
+        Uses present state of window.
+
+        :param self: :class:`~Layout.ChooseParametersWindow.ChooseParametersWindowRunner` to retrieve checked boxes from
+        :returns: Tuple of (event, parameter_names).
+            event is name of final event, i.e. "Submit" or "Cancel",
+            parameter_names is list of parameter names, where corresponding checkbox is checked,
         """
         window = self.getWindow()
         event = ''
@@ -308,15 +253,17 @@ class ChooseParametersWindowRunner(WindowRunner):
             event, self.values = window.read()
             menu_value = self.getValue(self.getKey("toolbar_menu"))
 
-            parameter_names = self.getParameterNames()
             if menu_value is not None:
+                parameter_names = self.getParameterNames()
                 if event == "Check All":
-                    self.setChecks(names=parameter_names, overwrite=True)
+                    self.setChecks(names=parameter_names, checked=True)
                 elif event == "Uncheck All":
-                    self.setChecks(names=parameter_names, overwrite=False)
+                    self.setChecks(names=parameter_names, checked=False)
             elif event == "Submit":
+                checked_parameter_names = self.getCheckedParameterNames()
                 window.close()
-                return [parameter_name for parameter_name in parameter_names if self.getValue(parameter_name)]
+                return event, checked_parameter_names
 
+        checked_parameter_names = self.getCheckedParameterNames()
         window.close()
-        return []
+        return event, checked_parameter_names

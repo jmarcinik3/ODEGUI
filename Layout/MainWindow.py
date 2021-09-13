@@ -19,6 +19,7 @@ from Function import Derivative, Function, Independent, Model, \
 from Function import Parameter
 from Layout.ChooseGraphLayoutWindow import ChooseGraphLayoutWindowRunner
 from Layout.ChooseParametersWindow import ChooseParametersWindowRunner
+from Layout.ChooseVariablesWindow import ChooseVariablesWindowRunner
 from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabRow, TabbedWindow, WindowRunner, \
     generateCollapsableSection, getKeys, getNameFromElementKey, storeElement
 from Layout.SetFreeParametersWindow import SetFreeParametersWindowRunner
@@ -1564,12 +1565,13 @@ class MainWindowRunner(WindowRunner):
 
         return plot_choices
 
-    def getModel(self) -> Model:
+    def getModel(self, variable_names: Union[str, List[str]] = None) -> Model:
         """
         Get model for window.
         Uses present state of window.
 
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve model from
+        :param variable_names: variables expected to graph in simulation
         """
         # noinspection PyTypeChecker
         function_objs: List[Function] = unique(self.getFunctions())
@@ -1577,21 +1579,45 @@ class MainWindowRunner(WindowRunner):
         parameter_objs: List[Parameter] = unique(self.getParameters())
         full_model = Model(functions=function_objs, parameters=parameter_objs)
 
-        # noinspection PyTypeChecker
+        if variable_names is None:
+            core_variable_names = full_model.getVariables(return_type=str)
+        else:
+            if isinstance(variable_names, str):
+                core_variable_names = [variable_names]
+            elif isinstance(variable_names, list):
+                core_variable_names = variable_names
+            else:
+                raise RecursiveTypeError(variable_names)
+
+            pre_length = -1
+            while pre_length != len(core_variable_names):
+                pre_length = len(core_variable_names)
+                for core_variable_name in core_variable_names:
+                    core_derivative_obj = full_model.getDerivativesFromVariableNames(names=core_variable_name)
+                    new_core_variable_names = core_derivative_obj.getVariables(
+                        expanded=True,
+                        substitute_dependents=True,
+                        return_type=str
+                    )
+                    for new_core_variable_name in new_core_variable_names:
+                        if new_core_variable_name not in core_variable_names:
+                            core_variable_names.append(new_core_variable_name)
+                core_variable_names = unique(core_variable_names)
+        
         temporal_derivative_objs = []
         derivative_function_objs = []
-        function_derivative_objs = []
-        for derivative in full_model.getDerivatives():
-            variable_name = derivative.getVariable(return_type=str)
-            print('1', variable_name)
-            time_evolution_type = self.getTimeEvolutionTypes(names=variable_name)
+        for core_variable_name in core_variable_names:
+            time_evolution_type = self.getTimeEvolutionTypes(names=core_variable_name)
             if time_evolution_type == "Temporal":
-                temporal_derivative_objs.append(derivative)
+                core_derivative_obj = full_model.getDerivativesFromVariableNames(names=core_variable_name)
+                core_derivative_obj.setTimeEvolutionType(time_evolution_type)
+                core_derivative_obj.setInitialCondition(self.getInitialConditions(names=core_variable_name))
+                temporal_derivative_objs.append(core_derivative_obj)
+                
             elif time_evolution_type == "Function":
-                derivative_function_obj = full_model.getFunctions(names=variable_name)
+                derivative_function_obj = full_model.getFunctions(names=core_variable_name)
                 derivative_function_objs.append(derivative_function_obj)
-                function_derivative_objs.append(derivative)
-
+        
         core_function_objs = unique(temporal_derivative_objs + derivative_function_objs)
         pre_length = -1
         while pre_length != len(core_function_objs):
@@ -2420,7 +2446,9 @@ class MainWindowRunner(WindowRunner):
 
         if choose_parameters:
             runner = ChooseParametersWindowRunner("Choose Parameters to Load", parameters=loaded_parameters)
-            parameter_names = runner.getChosenParameters()
+            event, parameter_names = runner.getChosenParameters()
+            if event == "Cancel":
+                return None
         else:
             parameter_names = self.getParameterNames()
 
@@ -2521,7 +2549,9 @@ class MainWindowRunner(WindowRunner):
         """
         event, free_parameter_values = self.getFreeParameterValues()
         if event == "Submit":
-            model = self.getModel()
+            runner = ChooseVariablesWindowRunner("Choose Variables to Simulate", variable_names=self.getVariableNames())
+            event, variable_names = runner.getChosenVariables()
+            model = self.getModel(variable_names=variable_names)
             kwargs = {
                 "name": "Run Simulation for Model",
                 "model": model,
