@@ -207,14 +207,13 @@ class TimeEvolutionTab(Tab):
             """Base method for :meth:`~Layout.MainWindow.TimeEvolutionTab.getInitialConditions`."""
             return initial_conditions[name]
 
-        kwargs = {
-            "base_method": get,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": dict,
-            "default_args": initial_conditions.keys()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=get,
+            args=names,
+            valid_input_types=str,
+            output_type=dict,
+            default_args=initial_conditions.keys()
+        )
 
     def getTimeEvolutionTypes(self, name: str, index: int = None) -> Union[str, Iterable[str]]:
         """
@@ -1175,13 +1174,12 @@ class MainWindow(TabbedWindow):
             append(name)
             return name
 
-        kwargs = {
-            "base_method": add,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": list
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=add,
+            args=names,
+            valid_input_types=str,
+            output_type=list
+        )
 
     def getFunctionNames(self) -> List[str]:
         """
@@ -1208,13 +1206,12 @@ class MainWindow(TabbedWindow):
             append(name)
             return name
 
-        kwargs = {
-            "base_method": add,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": list
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=add,
+            args=names,
+            valid_input_types=str,
+            output_type=list
+        )
 
     def getParameterNames(self) -> List[str]:
         """
@@ -1241,13 +1238,12 @@ class MainWindow(TabbedWindow):
             append(name)
             return name
 
-        kwargs = {
-            "base_method": add,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": list
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=add,
+            args=names,
+            valid_input_types=str,
+            output_type=list
+        )
 
     def getBlueprints(self, tab_name: str = None) -> dict:
         """
@@ -1609,7 +1605,7 @@ class MainWindowRunner(WindowRunner):
                         child_names += list(map(str, instance_argument))
                 except KeyError:
                     pass
-                
+
                 for child_name in child_names:
                     child_obj = full_model.getFunctions(names=child_name)
                     if child_obj not in core_function_objs:
@@ -1652,12 +1648,11 @@ class MainWindowRunner(WindowRunner):
                 key = getKeys(element)
                 window.write_event_value(key, value)
 
-        kwargs = {
-            "args": elements,
-            "base_method": set,
-            "valid_input_types": sg.Element
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            args=elements,
+            base_method=set,
+            valid_input_types=sg.Element
+        )
 
     def getInitialConditions(self, names: Union[str, Iterable[str]] = None) -> Union[float, ndarray, str]:
         """
@@ -1697,14 +1692,13 @@ class MainWindowRunner(WindowRunner):
                     value = float(getStates("initial_condition", name))
                 return value
 
-        kwargs = {
-            "base_method": get,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": list,
-            "default_args": self.getVariableNames()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=get,
+            args=names,
+            valid_input_types=str,
+            output_type=list,
+            default_args=self.getVariableNames()
+        )
 
     def getTimeEvolutionTypes(self, names: Union[str, Iterable[str]] = None) -> Union[str, List[str]]:
         """
@@ -1728,14 +1722,13 @@ class MainWindowRunner(WindowRunner):
             except AttributeError:
                 return getStates("time_evolution_types", name)
 
-        kwargs = {
-            "base_method": get,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": list,
-            "default_args": self.getVariableNames()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=get,
+            args=names,
+            valid_input_types=str,
+            output_type=list,
+            default_args=self.getVariableNames()
+        )
 
     def changeTimeEvolution(self, name: str) -> None:
         """
@@ -1773,14 +1766,13 @@ class MainWindowRunner(WindowRunner):
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getPathsFromFunctionStems`"""
             return stem2path_func[filestem]
 
-        kwargs = {
-            "base_method": get,
-            "args": filestems,
-            "valid_input_types": str,
-            "output_type": list,
-            "default_args": self.getFunctionStems()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=get,
+            args=filestems,
+            valid_input_types=str,
+            output_type=list,
+            default_args=self.getFunctionStems()
+        )
 
     def getFunctionStems(self) -> List[str]:
         """
@@ -1834,14 +1826,13 @@ class MainWindowRunner(WindowRunner):
             function = stem2name2func[filestem][name]
             return function
 
-        kwargs = {
-            "base_method": get,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": list,
-            "default_args": self.getFunctionNames()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=get,
+            args=names,
+            valid_input_types=str,
+            output_type=list,
+            default_args=self.getFunctionNames()
+        )
 
     def getChosenFunctionStem(self, name: str) -> str:
         """
@@ -1872,12 +1863,11 @@ class MainWindowRunner(WindowRunner):
             else:
                 self.setFunctionWithoutStem(function_object)
 
-        kwargs = {
-            "base_method": set,
-            "args": function_objects,
-            "valid_input_types": Function
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=set,
+            args=function_objects,
+            valid_input_types=Function
+        )
 
     def setFunctionWithStem(self, function_object: Function) -> None:
         """
@@ -1922,13 +1912,12 @@ class MainWindowRunner(WindowRunner):
             image_size = vars(image_expression)["Size"]
             image_expression.update(data=image_data, size=image_size)
 
-        kwargs = {
-            "base_method": update,
-            "args": names,
-            "valid_input_types": str,
-            "default_args": self.getFunctionNames()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=update,
+            args=names,
+            valid_input_types=str,
+            default_args=self.getFunctionNames()
+        )
 
     def getPathsFromParameterStems(self, filestems: Union[str, Iterable[str]] = None) -> Union[str, List[str]]:
         """
@@ -1944,14 +1933,13 @@ class MainWindowRunner(WindowRunner):
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getPathsFromParameterStems`"""
             return stem2path_param[filestem]
 
-        kwargs = {
-            "base_method": get,
-            "args": filestems,
-            "valid_input_types": str,
-            "output_type": list,
-            "default_args": self.getParameterStems()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=get,
+            args=filestems,
+            valid_input_types=str,
+            output_type=list,
+            default_args=self.getParameterStems()
+        )
 
     def getParameterStems(self) -> List[str]:
         """
@@ -2019,14 +2007,13 @@ class MainWindowRunner(WindowRunner):
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getCustomParameterQuantities`."""
             return custom_parameters[name].getQuantity()
 
-        kwargs = {
-            "base_method": get,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": dict,
-            "default_args": list(self.custom_parameters.keys())
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=get,
+            args=names,
+            valid_input_types=str,
+            output_type=dict,
+            default_args=list(self.custom_parameters.keys())
+        )
 
     def isCustomParameter(self, name: str) -> bool:
         """
@@ -2061,14 +2048,13 @@ class MainWindowRunner(WindowRunner):
                 parameter = self.stem2name2param[filestem][name]
             return parameter
 
-        kwargs = {
-            "base_method": get,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": list,
-            "default_args": self.getParameterNames()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=get,
+            args=names,
+            valid_input_types=str,
+            output_type=list,
+            default_args=self.getParameterNames()
+        )
 
     def getParameterNames(
             self, parameter_types: Union[str, Iterable[str]] = None, custom_type: bool = None
@@ -2155,14 +2141,13 @@ class MainWindowRunner(WindowRunner):
                 return quantity.units
             raise ValueError("Invalid entry for form input")
 
-        kwargs = {
-            "base_method": get,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": dict,
-            "default_args": self.getParameterNames()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=get,
+            args=names,
+            valid_input_types=str,
+            output_type=dict,
+            default_args=self.getParameterNames()
+        )
 
     def setParameters(self, parameters: Union[Parameter, Iterable[Parameter]]) -> None:
         """
@@ -2181,13 +2166,12 @@ class MainWindowRunner(WindowRunner):
             else:
                 self.setParameterWithoutStem(parameter)
 
-        kwargs = {
-            "base_method": set,
-            "args": parameters,
-            "valid_input_types": Parameter,
-            "output_type": list
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=set,
+            args=parameters,
+            valid_input_types=Parameter,
+            output_type=list
+        )
 
     def setParameterAsCustom(self, name: str, custom: bool) -> None:
         """
@@ -2261,14 +2245,13 @@ class MainWindowRunner(WindowRunner):
             field_value = self.getValue(input_field_key)
             return field_value
 
-        kwargs = {
-            "base_method": get,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": list,
-            "default_args": self.getParameterNames()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=get,
+            args=names,
+            valid_input_types=str,
+            output_type=list,
+            default_args=self.getParameterNames()
+        )
 
     def updateParametersFromStems(self, names: Union[str, Iterable[str]] = None):
         """
@@ -2289,14 +2272,13 @@ class MainWindowRunner(WindowRunner):
             parameter = self.getParameterFromStem(name, filestem)
             self.setParameterWithStem(parameter)
 
-        kwargs = {
-            "base_method": update,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": list,
-            "default_args": self.getParameterNames()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=update,
+            args=names,
+            valid_input_types=str,
+            output_type=list,
+            default_args=self.getParameterNames()
+        )
 
     def updateParametersFromFields(self, names: Union[str, Iterable[str]] = None) -> None:
         """
@@ -2320,14 +2302,13 @@ class MainWindowRunner(WindowRunner):
                 new_parameter = Parameter(name, new_quantity)
                 self.setParameters(new_parameter)
 
-        kwargs = {
-            "base_method": update,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": list,
-            "default_args": self.getParameterNames()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=update,
+            args=names,
+            valid_input_types=str,
+            output_type=list,
+            default_args=self.getParameterNames()
+        )
 
     def updateParameterLabels(self, names: Union[str, Iterable[str]] = None) -> None:
         """
@@ -2347,13 +2328,12 @@ class MainWindowRunner(WindowRunner):
             new_label = formatQuantity(self.getParameterQuantities(names=name))
             label_element.update(new_label)
 
-        kwargs = {
-            "base_method": update,
-            "args": names,
-            "valid_input_types": str,
-            "default_args": self.getParameterNames()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=update,
+            args=names,
+            valid_input_types=str,
+            default_args=self.getParameterNames()
+        )
 
     def setTimeEvolutionType(self, name: str, time_evolution_type: str) -> None:
         """

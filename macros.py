@@ -44,14 +44,13 @@ class StoredObject:
             """Base method for :meth:`~macros.StoredObject.getInstance`"""
             return instances[name]
 
-        kwargs = {
-            "args": names,
-            "base_method": get,
-            "valid_input_types": str,
-            "output_type": list,
-            "default_args": instances.keys()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            args=names,
+            base_method=get,
+            valid_input_types=str,
+            output_type=list,
+            default_args=instances.keys()
+        )
 
 
 def unique(nonunique: List[Any]) -> List[Any]:

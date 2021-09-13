@@ -287,13 +287,12 @@ class ChooseParametersWindowRunner(WindowRunner):
             checkbox = self.getElements(name)
             checkbox.update(value=overwrite)
 
-        kwargs = {
-            "base_method": set,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": list,
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=set,
+            args=names,
+            valid_input_types=str,
+            output_type=list
+        )
 
     def getChosenParameters(self) -> List[str]:
         """

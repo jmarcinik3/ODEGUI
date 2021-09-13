@@ -211,13 +211,12 @@ class Model:
             if quantity_object.getModel() is not self:
                 quantity_object.setModel(self)
 
-        kwargs = {
-            "base_method": add,
-            "args": quantity_objects,
-            "valid_input_types": (Function, Parameter),
-            "output_type": list
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=add,
+            args=quantity_objects,
+            valid_input_types=(Function, Parameter),
+            output_type=list
+        )
 
     def getParameterNames(self):
         """
@@ -248,14 +247,13 @@ class Model:
             """Base method for :meth:`~Function.Model.getParameters`"""
             return self.parameters[name]
 
-        kwargs = {
-            "base_method": get,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": list,
-            "default_args": self.getParameterNames()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=get,
+            args=names,
+            valid_input_types=str,
+            output_type=list,
+            default_args=self.getParameterNames()
+        )
 
     def getParameterQuantites(self, names: Union[str, List[str]] = None) -> Union[Quantity, Dict[str, Quantity]]:
         """
@@ -276,14 +274,13 @@ class Model:
             quantity = parameter.getQuantity()
             return quantity
 
-        kwargs = {
-            "base_method": get,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": dict,
-            "default_args": self.getParameterNames()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=get,
+            args=names,
+            valid_input_types=str,
+            output_type=dict,
+            default_args=self.getParameterNames()
+        )
 
     def getFunctions(
             self,
@@ -898,13 +895,12 @@ class Model:
                     return derivative
             raise ValueError("names input must correspond to some Derivative stored in Model")
 
-        kwargs = {
-            "base_method": get,
-            "args": names,
-            "valid_input_types": (str, Symbol),
-            "output_type": list
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=get,
+            args=names,
+            valid_input_types=(str, Symbol),
+            output_type=list
+        )
 
 
 class Parent:
@@ -1036,14 +1032,13 @@ class Child:
             parent = self.getModel().getFunctions(names=name)
             return parent
 
-        kwargs = {
-            "base_method": get,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": list,
-            "default_args": self.getParentNames()
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=get,
+            args=names,
+            valid_input_types=str,
+            output_type=list,
+            default_args=self.getParentNames()
+        )
 
     def getParentNames(self) -> Union[str, List[str]]:
         """

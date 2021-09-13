@@ -63,13 +63,12 @@ def getKeys(elements: Union[sg.Element, Iterable[sg.Element]]) -> Union[str, Tup
         """Base method for :meth:`~Layout.Layout.getKey`"""
         return vars(element)["Key"]
 
-    kwargs = {
-        "args": elements,
-        "base_method": get,
-        "valid_input_types": sg.Element,
-        "output_type": tuple
-    }
-    return recursiveMethod(**kwargs)
+    return recursiveMethod(
+        args=elements,
+        base_method=get,
+        valid_input_types=sg.Element,
+        output_type=tuple
+    )
 
 
 def getNameFromElementKey(key: str) -> Optional[str]:
@@ -191,13 +190,12 @@ class Row:
             """Base method for :meth:`~Layout.Layout.Row.addElements`"""
             self.elements.append(element)
 
-        kwargs = {
-            "base_method": add,
-            "args": elements,
-            "valid_input_types": sg.Element,
-            "output_type": list
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=add,
+            args=elements,
+            valid_input_types=sg.Element,
+            output_type=list
+        )
 
     def getRow(self) -> List[sg.Element]:
         """
@@ -258,13 +256,12 @@ class Layout:
             """Base method for :meth:`~Layout.Layout.Layout.addRows`"""
             self.rows.append(row)
 
-        kwargs = {
-            "base_method": add,
-            "args": rows,
-            "valid_input_types": Row,
-            "output_type": list
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=add,
+            args=rows,
+            valid_input_types=Row,
+            output_type=list
+        )
 
     def getRows(self) -> List[Row]:
         """
@@ -590,13 +587,12 @@ class TabbedWindow(Window):
             """Base method for Layout.Layout.TabbedWindow.addTabs"""
             self.tabs.append(tab)
 
-        kwargs = {
-            "base_method": add,
-            "args": tabs,
-            "valid_input_types": (sg.Tab, Tab),
-            "output_type": list
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=add,
+            args=tabs,
+            valid_input_types=(sg.Tab, Tab),
+            output_type=list
+        )
 
     def getTabs(self, names: Union[str, Iterable[str]] = None) -> List[sg.Tab]:
         """
@@ -621,13 +617,12 @@ class TabbedWindow(Window):
                         return tab
             raise ValueError(f"tab {name:s} not found in {self.__class__.__name__:s}")
 
-        kwargs = {
-            "args": names,
-            "base_method": get,
-            "valid_input_types": str,
-            "output_type": list
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            args=names,
+            base_method=get,
+            valid_input_types=str,
+            output_type=list
+        )
 
 
 class WindowRunner:
@@ -704,13 +699,12 @@ class WindowRunner:
             """Base method for :meth:`~Layout.Layout.WindowRunner.getElements`"""
             return self.getWindow()[key]
 
-        kwargs = {
-            "base_method": get,
-            "args": keys,
-            "valid_input_types": str,
-            "output_type": list
-        }
-        return recursiveMethod(**kwargs)
+        return recursiveMethod(
+            base_method=get,
+            args=keys,
+            valid_input_types=str,
+            output_type=list
+        )
 
     def toggleVisibility(self, key: str) -> None:
         """
