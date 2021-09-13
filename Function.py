@@ -126,7 +126,7 @@ class Parameter(PaperQuantity):
         functions = [
             function_object
             for function_object in model_functions
-            if symbol in function_object.getFreeSymbols(species="Parameter", **kwargs)
+            if symbol in function_object.getParameters(**kwargs)
         ]
         return functions
 
@@ -328,7 +328,7 @@ class Model:
             ymls = [ymls]
 
         for yml in ymls:
-            generateFunctionsFromFile(yml, model=self)
+            self.addPaperQuantities(generateFunctionsFromFile(yml, model=self))
 
     def loadParametersFromFiles(self, ymls: Union[str, List[str]]) -> None:
         """
@@ -341,7 +341,7 @@ class Model:
             ymls = [ymls]
 
         for yml in ymls:
-            generateParametersFromFile(yml, model=self)
+            self.addPaperQuantities(generateParametersFromFile(yml, model=self))
 
     def saveQuantitiesToFile(self, filepath: str, specie: str) -> TextIO:
         """
@@ -517,7 +517,7 @@ class Model:
                         parameter
                         for equilibrium in equilibria
                         for parameter in
-                        equilibrium.getFreeSymbols(species="Parameter", expanded=True, return_type=str)
+                        equilibrium.getParameters(expanded=True, return_type=str)
                         if parameter not in skip_parameters
                     ]
                 )
@@ -605,7 +605,7 @@ class Model:
                         parameter_name
                         for function_object in functions
                         for parameter_name in
-                        function_object.getFreeSymbols(species="Parameter", expanded=True, return_type=str)
+                        function_object.getParameters(expanded=True, return_type=str)
                         if parameter_name not in skip_parameters
                     ]
                 )
@@ -690,7 +690,7 @@ class Model:
             Set False to leave them as symbolic variables.
         :param substitute_constants: set True to substitute numerical values in for all constant derivative.
             Set False to leave them as symbolic variables.
-        :param substitute_functions: set True to substitute corresponding expresions for function-type derivatives.
+        :param substitute_functions: set True to substitute corresponding expressions for function-type derivatives.
             Set False to leave them as symbolic variables.
         :param lambdified: set True to return derivative vector as lambda function handle.
             Set False to return symbolic derivative vector
@@ -744,13 +744,14 @@ class Model:
             derivative: Union[Derivative, Function]
             expression = derivative.getExpression(expanded=True)
 
-            derivative_variables = derivative.getFreeSymbols(species="Variable", expanded=True)
+            derivative_variables = derivative.getVariables(expanded=True)
+            derivative_functions = derivative.getFunctions(expanded=True)
             variable_substitution = {
                 variable: substitution
                 for variable, substitution in variable_substitutions.items()
-                if variable in derivative_variables
+                if variable in derivative_variables + derivative_functions
             }
-            derivative_parameters = derivative.getFreeSymbols(species="Parameter", expanded=True)
+            derivative_parameters = derivative.getParameters(expanded=True)
             parameter_substitution = {
                 parameter: value
                 for parameter, value in parameter_substitutions.items()
@@ -971,76 +972,6 @@ class Parent:
         self.instance_arguments[name] = new_child
         return new_child
 
-    def getChildren(self, names: Union[str, List[str]] = None) -> Union[Function, List[Function]]:
-        """
-        Get children functions.
-        
-        __Recursion Base__
-            return all children: names [None]
-
-        :param self: parent to retrieve child(s) from
-        :param names: name(s) of child(s) to retrieve from parent.
-            Defaults to all children.
-        """
-
-        self: Function
-
-        def get(name: str) -> Function:
-            """Base method for :meth:`~Function.Model.getChildren`"""
-            child = self.getModel().getFunctions(names=name)
-            return child
-
-        kwargs = {
-            "base_method": get,
-            "args": names,
-            "valid_input_types": str,
-            "output_type": list,
-            "default_args": self.getChildrenNames()
-        }
-        return recursiveMethod(**kwargs)
-
-    def getChildrenNames(self) -> List[str]:
-        """
-        Get names of children functions.
-        
-        __Recursion Base__
-            retrieve name of single parent: functions [Function]
-            retrieve names of all parents: functions [None]
-
-        :param self: parent to retrieve child name(s) from
-        """
-        self: Function
-        model = self.getModel()
-
-        free_symbol_names = self.getFreeSymbols(expanded=False, substitute_dependents=False, return_type=str)
-        dependent_children_names = list(self.instance_arguments.keys())
-        instance_argument_function_names = []
-        for instance_argument in self.instance_arguments.values():
-            try:
-                function_names = list(map(str, instance_argument["functions"]))
-                independent_function_names = [
-                    function_name
-                    for function_name in function_names
-                    if isinstance(model.getFunctions(names=function_name), Independent)
-                ]
-                instance_argument_function_names.extend(independent_function_names)
-            except KeyError:
-                pass
-
-        children_names = dependent_children_names + instance_argument_function_names
-        if isinstance(self, Independent):
-            self: Function
-            model_function_names = model.getFunctionNames()
-            model_children_names = [
-                name
-                for name in free_symbol_names
-                if name in model_function_names
-            ]
-            children_names.extend(model_children_names)
-
-        children_names = unique(children_names)
-        return unique(children_names)
-
     def getInstanceArgumentSpecies(self, name: str) -> List[str]:
         """
         Get all possible species of instance arguments.
@@ -1050,7 +981,7 @@ class Parent:
         """
         return self.instance_arguments[name].keys()
 
-    def getInstanceArguments(self, name: str, specie: str = None) -> Union[Symbol, List[Symbol]]:
+    def getInstanceArguments(self, name: str = None, specie: str = None) -> Union[Symbol, List[Symbol]]:
         """
         Get instance arguments of given species for function.
         
@@ -1061,10 +992,16 @@ class Parent:
         :param specie: name of instance-argument species to retrieve from parent, acts as an optional filter
         :param name: name of child function to retrieve instance arguments for
         """
-        if isinstance(specie, str):
-            return self.instance_arguments[name][specie]
-        elif specie is None:
-            return self.instance_arguments[name]
+        if isinstance(name, str):
+            if isinstance(specie, str):
+                return self.instance_arguments[name][specie]
+            elif specie is None:
+                return self.instance_arguments[name]
+        elif name is None:
+            if isinstance(specie, str):
+                return {key: self.instance_arguments[key][specie] for key in self.instance_arguments.keys()}
+            elif specie is None:
+                return self.instance_arguments
         else:
             raise TypeError("specie must be str")
 
@@ -1119,7 +1056,7 @@ class Child:
         parents = [
             function_object.getName()
             for function_object in self.getModel().getFunctions()
-            if name in function_object.getChildrenNames()
+            if name in function_object.getFunctions(return_type=str)
         ]
         return parents
 
@@ -1214,6 +1151,30 @@ class Function(Child, Parent, PaperQuantity):
         """
         return self.is_parameter
 
+    def getParameters(self, **kwargs) -> Union[List[str], List[Symbol]]:
+        """
+        Get parameters in expression.
+
+        :param kwargs: arguments to pass into :meth:`~Function.Function.getFreeSymbols`
+        """
+        return self.getFreeSymbols(species="Parameter", **kwargs)
+
+    def getVariables(self, **kwargs) -> Union[List[str], List[Symbol]]:
+        """
+        Get variables in expression.
+
+        :param kwargs: arguments to pass into :meth:`~Function.Function.getFreeSymbols`
+        """
+        return self.getFreeSymbols(species="Variable", **kwargs)
+    
+    def getFunctions(self, **kwargs):
+        """
+        Get functions in expression.
+
+        :param kwargs: arguments to pass into :meth:`~Function.Function.getFreeSymbols`
+        """
+        return self.getFreeSymbols(species="Function", **kwargs)
+
     def getFreeSymbols(
             self,
             species: str = None,
@@ -1225,7 +1186,7 @@ class Function(Child, Parent, PaperQuantity):
         
         :param self: :class:`~Function.Function` to retrieve symbols from
         :param species: species of free symbol to retrieve, acts as filter.
-            Can be "Parameter", "Variable".
+            Can be "Parameter", "Variable", "Function".
             Defaults to all free symbols.
         :param return_type: class type of output.
             Must be either sympy.Symbol or str.
@@ -1243,6 +1204,8 @@ class Function(Child, Parent, PaperQuantity):
                 model_symbol_names = model.getParameterNames()
             elif species == "Variable":
                 model_symbol_names = model.getVariables(return_type=str)
+            elif species == "Function":
+                model_symbol_names = model.getFunctionNames()
             else:
                 raise ValueError(f"invalid species type {species:s}")
 
@@ -1456,21 +1419,25 @@ class Dependent:
         """
         species = list(self.general_arguments.keys())
         if nested:
-            self: Function
-            for child in self.getChildren():
-                child_species = child.getGeneralSpecies()
-                if isinstance(child_species, str):
-                    species.append(child_species)
-                elif isinstance(child_species, list):
-                    species.extend(child_species)
-                elif isinstance(child_species, KeysView):
-                    species.extend(list(child_species))
-                else:
-                    raise TypeError(f"species for {child.getName():s} must be str, list, or dict_keys")
+            model = self.getModel()
+            for child_name in self.getFunctions(return_type=str):
+                child = model.getFunctions(names=child_name)
+                if isinstance(child, Dependent):
+                    child_species = child.getGeneralSpecies()
+                    if isinstance(child_species, str):
+                        species.append(child_species)
+                    elif isinstance(child_species, list):
+                        species.extend(child_species)
+                    elif isinstance(child_species, KeysView):
+                        species.extend(list(child_species))
+                    else:
+                        raise TypeError(f"species for {child.getName():s} must be str, list, or dict_keys")
         return unique(species)
 
     def getGeneralArguments(
-            self, species: Union[str, List[str]] = None, nested: bool = False
+        self, 
+        species: Union[str, List[str]] = None, 
+        nested: bool = False
     ) -> Union[List[Symbol], Dict[str, List[Symbol]]]:
         """
         Get general arguments of function.
@@ -1479,7 +1446,7 @@ class Dependent:
             return arguments of single species: species [str] and nested [False]
         
         :param self: :class:`~Function.Dependent` to retrieve arguments from
-        :param species: specie(s) of arguments to retrieive, acts as an optional filter
+        :param species: specie(s) of arguments to retrieve, acts as an optional filter
         :param nested: set True to include arguments from children (implicit).
             Set False to only include arguments from self (explicit).
         
@@ -1490,9 +1457,11 @@ class Dependent:
             if :paramref:`~Function.Dependent.getGeneralArguments.species` is str.
         """
         if nested:
+            model = self.getModel()
             general_arguments = self.getGeneralArguments(species=species, nested=False)
             self: Function
-            for child in self.getChildren():
+            for child_name in self.getFunctions(return_type=str):
+                child = model.getFunctions(names=child_name)
                 child_general_arguments = child.getGeneralArguments(species=species, nested=True)
                 if isinstance(child_general_arguments, Symbol):
                     general_arguments.append(child_general_arguments)
@@ -1528,15 +1497,17 @@ class Dependent:
         if specie == "functions":
             instance_function_symbols = parent.getInstanceArguments(specie=specie, name=self_name)
             instance_names = list(map(str, instance_function_symbols))
+            parent_model = parent.getModel()
             instance_functions = []
             for instance_name in instance_names:
-                sibling = parent.getChildren(names=instance_name)
+                sibling = parent_model.getFunctions(names=instance_name)
                 if isinstance(sibling, Dependent):
-                    instance_functions.append(sibling.getInstanceArgumentForm(parent))
-                elif isinstance(sibling, Function):
-                    instance_functions.append(sibling.getExpression(expanded=True))
+                    instance_function = sibling.getExpression(parent=self)
+                elif isinstance(sibling, Independent):
+                    instance_function = sibling.getExpression(expanded=True)
                 else:
                     raise TypeError(f"sibling for {self_name:s} must be Function")
+                instance_functions.append(instance_function)
             return instance_functions
         else:
             return parent.getInstanceArguments(specie=specie, name=self_name)
@@ -1561,13 +1532,28 @@ class Dependent:
         :param parent: :class:`~Function.Function` to retrieve instance arguments from
         """
         self: Function
-        expression = self.getExpression(expanded=True)
+        expression = Independent.getExpression(self, expanded=True)
         self: Dependent
+
         species = self.getGeneralSpecies()
         for specie in species:
             substitutions = self.getInstanceArgumentSubstitutions(parent, specie)
             expression = expression.subs(substitutions)
+
         return expression
+
+    def getExpression(self, parent: Function = None):
+        """
+        Get symbolic expression for function.
+        
+        :param self: :class:`~Function.Dependent` to retrieve expression for
+        :param parent: function to retrieve input arguments from
+        """
+        expression = self.expression
+        if parent is None:
+            return expression
+        
+        return self.getInstanceArgumentForm(parent)
 
 
 class Independent:
@@ -1580,6 +1566,56 @@ class Independent:
         Constructor for :class:`~Function.Independent`.
         """
         pass
+
+    def getExpression(
+        self,
+        substitute_dependents: bool = None,
+        expanded: bool = True
+    ):
+        """
+        Get symbolic expression for function.
+
+        :param self: :class:`~Function.Independent` to retrieve expression for
+        :param substitute_dependents: set True to substitute all dependents into expression.
+            Set False to substitute in accordance with :paramref:`~Function.Function.getExpression.expanded`.
+            Defaults to :paramref:`~Function.Function.getExpression.expanded`.
+        :param expanded: set True to substitute children into expression.
+            Set False to retrieve original expression.
+        """
+        if substitute_dependents is None:
+            substitute_dependents = expanded
+
+        expression = self.expression
+        self: Function
+        model = self.getModel()
+        if not expanded:
+            has_model = isinstance(model, Model)
+            if substitute_dependents:
+                if has_model:
+                    pass
+                else:
+                    warnings.warn(f"cannot substitute dependents without associated model for {self.getName():s}")
+                    return expression
+            else:
+                return expression
+
+        child_function_names = self.getFunctions(return_type=str)
+        for child_name in child_function_names:
+            child_symbol = Symbol(child_name)
+            child_obj = model.getFunctions(names=child_name)
+            if isinstance(child_obj, Independent):
+                if expanded:
+                    child_expression = child_obj.getExpression(
+                        expanded=True,
+                        substitute_dependents=substitute_dependents
+                    )
+                    expression = expression.subs(child_symbol, child_expression)
+            elif isinstance(child_obj, Dependent):
+                if substitute_dependents:
+                    child_expression = child_obj.getExpression(parent=self)
+                    expression = expression.subs(child_symbol, child_expression)
+
+        return expression
 
 
 class Piecewise:
@@ -1683,7 +1719,10 @@ class NonPiecewise:
         self.expression = expression
 
     def getExpression(
-            self, parent: Function = None, substitute_dependents: bool = None, expanded: Union[int, str] = 0
+            self,
+            parent: Function = None,
+            substitute_dependents: bool = None,
+            expanded: Union[int, str] = False
     ) -> Expr:
         """
         Get symbol expression for function.
@@ -1697,47 +1736,15 @@ class NonPiecewise:
         :param expanded: set True to substitute children into expression.
             Set False to retrieve original expression.
         """
-        if isinstance(self, Dependent) and isinstance(parent, Independent):
-            parent: Function
-            return self.getInstanceArgumentForm(parent)
+        if isinstance(self, Independent):
+            return Independent.getExpression(
+                self, 
+                substitute_dependents=substitute_dependents,
+                expanded=expanded
+            )
+        elif isinstance(self, Dependent):
+            return Dependent.getExpression(self, parent=parent)
 
-        if substitute_dependents is None:
-            substitute_dependents = expanded
-
-        expression = self.expression
-        self: Function
-        if not expanded:
-            has_model = isinstance(self.getModel(), Model)
-            if substitute_dependents:
-                if has_model:
-                    pass
-                else:
-                    warnings.warn(f"cannot substitute dependents without associated model for {self.getName():s}")
-                    return expression
-            else:
-                return expression
-
-        for child in self.getChildren():
-            child_symbol = child.getName(return_type=Symbol)
-            if isinstance(child, Dependent):
-                child: Function
-                if substitute_dependents:
-                    child_expression = child.getExpression(parent=self)
-                else:
-                    child_expression = child_symbol
-            elif isinstance(child, Independent):
-                child: Function
-                if expanded:
-                    child_expression = child.getExpression(
-                        substitute_dependents=substitute_dependents,
-                        expanded=True
-                    )
-                else:
-                    child_expression = child_symbol
-            else:
-                raise TypeError("child must be of type Dependent xor Independent")
-            expression = expression.subs(child_symbol, child_expression)
-        return expression
 
 
 def FunctionMaster(
@@ -1901,8 +1908,17 @@ def generateFunctionsFromFile(file: Union[str, BytesIO], **kwargs) -> List[Funct
         file = open(file, 'r')
 
     contents = yaml.load(file, Loader=yaml.Loader)
-    filestem = Path(file).stem
-    return [generateFunction(name, contents[name], filestem=filestem, **kwargs) for name in contents.keys()]
+    filestem = '' #Path(file).stem
+    function_objs = [
+        generateFunction(
+            name,
+            contents[name],
+            filestem=filestem,
+            **kwargs
+        )
+        for name in contents.keys()
+    ]
+    return function_objs
 
 
 def generateParametersFromFile(file: Union[str, BytesIO], **kwargs) -> List[Parameter]:
@@ -1918,7 +1934,16 @@ def generateParametersFromFile(file: Union[str, BytesIO], **kwargs) -> List[Para
 
     contents = yaml.load(file, Loader=yaml.Loader)
     filestem = Path(file).stem
-    return [generateParameter(name, contents[name], filestem=filestem, **kwargs) for name in contents.keys()]
+    parameter_objs = [
+        generateParameter(
+            name,
+            contents[name],
+            filestem=filestem,
+            **kwargs,
+        )
+        for name in contents.keys()
+    ]
+    return parameter_objs
 
 
 def getInheritance(

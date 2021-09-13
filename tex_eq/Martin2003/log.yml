@@ -35,7 +35,7 @@ cCar:
   expression: $[C]_X$
   filename: cCar.png
 cX:
-  expression: $- \frac{I}{2 \pi D F r z}$
+  expression: $- \frac{IX}{2 \pi D F r z}$
   filename: cX.png
 dXhb:
   expression: $- \frac{F_{hb}}{\lambda_{hb}}$

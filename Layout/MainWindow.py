@@ -1565,7 +1565,7 @@ class MainWindowRunner(WindowRunner):
             "Function": function_names,
             "Parameter": free_parameter_names
         }
-        
+
         return plot_choices
 
     def getModel(self) -> Model:
@@ -1582,33 +1582,40 @@ class MainWindowRunner(WindowRunner):
         full_model = Model(functions=function_objs, parameters=parameter_objs)
 
         # noinspection PyTypeChecker
-        temporal_derivatives = derivative_functions = []
+        temporal_derivative_objs = []
+        derivative_function_objs = []
+        function_derivative_objs = []
         for derivative in full_model.getDerivatives():
             variable_name = derivative.getVariable(return_type=str)
             print('1', variable_name)
             time_evolution_type = self.getTimeEvolutionTypes(names=variable_name)
             if time_evolution_type == "Temporal":
-                temporal_derivatives.append(derivative)
+                temporal_derivative_objs.append(derivative)
             elif time_evolution_type == "Function":
                 derivative_function_obj = full_model.getFunctions(names=variable_name)
-                derivative_functions.append(derivative_function_obj)
-                derivative_functions.append(derivative)
+                derivative_function_objs.append(derivative_function_obj)
+                function_derivative_objs.append(derivative)
 
-        core_function_objs = unique(temporal_derivatives + derivative_functions)
-        for obj in core_function_objs:
-            print(len(core_function_objs), obj.getName(), obj.getExpression())
+        core_function_objs = unique(temporal_derivative_objs + derivative_function_objs)
         pre_length = -1
         while pre_length != len(core_function_objs):
             pre_length = len(core_function_objs)
-            children_function_objs = unique(
-                [
-                    child_function_object
-                    for function_object in core_function_objs
-                    for child_function_object in function_object.getChildren()
-                    if child_function_object not in core_function_objs
-                ]
-            )
-            core_function_objs.extend(children_function_objs)
+            children_objs = []
+            for function_obj in core_function_objs:
+                child_names = function_obj.getFunctions(return_type=str)
+                try:
+                    child_instance_arguments = function_obj.getInstanceArguments(specie="functions")
+                    for instance_argument in child_instance_arguments.values():
+                        child_names += list(map(str, instance_argument))
+                except KeyError:
+                    pass
+                
+                for child_name in child_names:
+                    child_obj = full_model.getFunctions(names=child_name)
+                    if child_obj not in core_function_objs:
+                        children_objs.append(child_obj)
+            core_function_objs.extend(children_objs)
+            core_function_objs = unique(core_function_objs)
 
         getParameters = partial(Function.getFreeSymbols, species="Parameter", expanded=True, return_type=str)
         core_parameter_names = unique(
@@ -1621,7 +1628,8 @@ class MainWindowRunner(WindowRunner):
         core_parameter_objs = full_model.getParameters(names=core_parameter_names)
 
         core_model = Model(functions=core_function_objs, parameters=core_parameter_objs)
-        for derivative in core_model.getDerivatives():
+        core_derivatives = temporal_derivative_objs
+        for derivative in core_derivatives:
             variable_name = derivative.getVariable(return_type=str)
             derivative.setTimeEvolutionType(self.getTimeEvolutionTypes(names=variable_name))
             derivative.setInitialCondition(self.getInitialConditions(names=variable_name))
@@ -2410,8 +2418,13 @@ class MainWindowRunner(WindowRunner):
             filepath = sg.PopupGetFile(**kwargs)
             if filepath is None:
                 return None
+        try:
+            file = open(filepath, 'r')
+        except FileNotFoundError as error:
+            sg.PopupError(error.message)
+            return None
 
-        info = yaml.load(open(filepath, 'r'), Loader=yaml.Loader)
+        info = yaml.load(file, Loader=yaml.Loader)
         filestems = self.getParameterStems()
         loaded_parameters = []
         for key, value in info.items():

@@ -88,7 +88,7 @@ pTinf: # pT equilibrium
 gTCa: # conductance for transduction channel
   properties: [Independent]
   variables: pT
-  parameters: [PT,zCa,Cahbin,Cahbex]
+  parameters: [PTCa,zCa,Cahbin,Cahbex]
   children:
     gGHK:
       parameters: [PTCa,zCa,Cahbin,Cahbex]
@@ -108,8 +108,8 @@ cX: # equilibrium concentration for diffusion from point source
   parameters: F
   arguments:
     parameters: [z,D,r] # z: ion valence, D: diffusion constant, r: distance outside source
-    functions: I # inward current from source
-  form: -I / (2*pi*z*F*D*r)
+    functions: IX # inward current from source
+  form: -IX / (2*pi*z*F*D*r)
 cCar: # Ca2+ concentration at reclosure element
   properties: [Independent]
   parameters: [zCa,DCa,rr]
