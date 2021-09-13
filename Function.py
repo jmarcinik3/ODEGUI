@@ -1200,7 +1200,12 @@ class Function(Child, Parent, PaperQuantity):
             elif species == "Variable":
                 model_symbol_names = model.getVariables(return_type=str)
             elif species == "Function":
-                model_symbol_names = model.getFunctionNames()
+                model_variable_names = model.getVariables(return_type=str)
+                model_symbol_names = [
+                    function_name
+                    for function_name in model.getFunctionNames()
+                    if function_name not in model_variable_names
+                ]
             else:
                 raise ValueError(f"invalid species type {species:s}")
 
