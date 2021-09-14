@@ -98,11 +98,10 @@ class TimeEvolutionRow(TabRow, StoredObject):
         
         :param self: :class:`~Layout.MainWindow.TimeEvolutionRow` to retrieve label from
         """
-        kwargs = {
-            "name": self.getName(),
-            "size": self.getDimensions(name="variable_label")
-        }
-        return getTexImage(**kwargs)
+        return getTexImage(
+            name=self.getName(),
+            size=self.getDimensions(name="variable_label")
+        )
 
     @storeElement
     def getTimeEvolutionTypeElement(self) -> sg.InputCombo:
@@ -111,14 +110,13 @@ class TimeEvolutionRow(TabRow, StoredObject):
 
         :param self: :class:`~Layout.MainWindow.TimeEvolutionRow` to retrieve element from
         """
-        kwargs = {
-            "values": self.getTimeEvolutionTypes(),
-            "default_value": self.getTimeEvolutionTypes(index=0),
-            "enable_events": True,
-            "size": self.getDimensions(name="evolution_type_combobox"),
-            "key": f"-{tet_pre:s} {self.getName():s}-"
-        }
-        return sg.InputCombo(**kwargs)
+        return sg.InputCombo(
+            values=self.getTimeEvolutionTypes(),
+            default_value=self.getTimeEvolutionTypes(index=0),
+            enable_events=True,
+            size=self.getDimensions(name="evolution_type_combobox"),
+            key=f"-{tet_pre:s} {self.getName():s}-"
+        )
 
     @storeElement
     def getInitialConditionElement(self) -> sg.InputText:
@@ -127,12 +125,11 @@ class TimeEvolutionRow(TabRow, StoredObject):
         
         :param self: :class:`~Layout.MainWindow.TimeEvolutionRow` to retrieve element from
         """
-        kwargs = {
-            "default_text": self.getInitialCondition(),
-            "size": self.getDimensions(name="initial_condition_input_field"),
-            "key": f"-INITIAL CONDITION VALUE {self.getName():s}-"
-        }
-        return sg.InputText(**kwargs)
+        return sg.InputText(
+            default_text=self.getInitialCondition(),
+            size=self.getDimensions(name="initial_condition_input_field"),
+            key=f"-INITIAL CONDITION VALUE {self.getName():s}-"
+        )
 
     @storeElement
     def getInitialEquilibriumElement(self) -> sg.Checkbox:
@@ -141,15 +138,14 @@ class TimeEvolutionRow(TabRow, StoredObject):
         
         :param self: :class:`~Layout.MainWindow.TimeEvolutionRow` to retrieve element from
         """
-        kwargs = {
-            "text": "Equilibrium",
-            "default": False,
-            "enable_events": True,
-            "disabled": True,
-            "size": self.getDimensions(name="initial_equilibrium_checkbox"),
-            "key": f"-{ice_pre:s} {self.getName():s}"
-        }
-        return sg.Checkbox(**kwargs)
+        return sg.Checkbox(
+            text="Equilibrium",
+            default=False,
+            enable_events=True,
+            disabled=True,
+            size=self.getDimensions(name="initial_equilibrium_checkbox"),
+            key=f"-{ice_pre:s} {self.getName():s}"
+        )
 
 
 class TimeEvolutionTab(Tab):
@@ -243,24 +239,24 @@ class TimeEvolutionTab(Tab):
         :param self: :class:`~Layout.MainWindow.TimeEvolutionTab` to retrieve row from
         """
         row = Row(window=self.getWindowObject())
-        kwargs = {
-            "text": "Variable",
-            "size": self.getDimensions(name="variable_text"),
-            "justification": "center"
-        }
-        row.addElements(sg.Text(**kwargs))
-        kwargs = {
-            "text": "Evolution Type",
-            "size": self.getDimensions(name="evolution_type_text"),
-            "justification": "center"
-        }
-        row.addElements(sg.Text(**kwargs))
-        kwargs = {
-            "text": "Initial Condition",
-            "size": self.getDimensions(name="initial_condition_text"),
-            "justification": "center"
-        }
-        row.addElements(sg.Text(**kwargs))
+        text = sg.Text(
+            text="Variable",
+            size=self.getDimensions(name="variable_text"),
+            justification="center"
+        )
+        row.addElements(text)
+        text = sg.Text(
+            text="Evolution Type",
+            size=self.getDimensions(name="evolution_type_text"),
+            justification="center"
+        )
+        row.addElements(text)
+        text = sg.Text(
+            text="Initial Condition",
+            size=self.getDimensions(name="initial_condition_text"),
+            justification="center"
+        )
+        row.addElements(text)
         return row
 
     def getAsColumn(self) -> sg.Column:
@@ -272,13 +268,12 @@ class TimeEvolutionTab(Tab):
         header_row = self.getHeaderRow()
         rows = list(map(TimeEvolutionRow.getRow, self.getVariableRows()))
         layout = header_row.getLayout() + rows
-        kwargs = {
-            "layout": layout,
-            "size": self.getDimensions(name="time_evolution_tab"),
-            "scrollable": False,
-            "vertical_scroll_only": True
-        }
-        return sg.Column(**kwargs)
+        return sg.Column(
+            layout=layout,
+            size=self.getDimensions(name="time_evolution_tab"),
+            scrollable=False,
+            vertical_scroll_only=True
+        )
 
     def getLayout(self) -> List[List[sg.Element]]:
         """
@@ -426,16 +421,15 @@ class ParameterRow(TabRow, StoredObject):
         :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve checkbox from
         """
         name = self.getName()
-        kwargs = {
-            "text": "Custom",
-            "default": False,
-            "tooltip": f"Checked if parameter {name:s} is from custom value (i.e. input field)",
-            "enable_events": False,
-            "disabled": True,
-            "size": (None, None),  # dim
-            "key": f"-CUSTOM PARAMETER {name:s}-"
-        }
-        return sg.Checkbox(**kwargs)
+        return sg.Checkbox(
+            text="Custom",
+            default=False,
+            tooltip=f"Checked if parameter {name:s} is from custom value (i.e. input field)",
+            enable_events=False,
+            disabled=True,
+            size=(None, None),  # dim
+            key=f"-CUSTOM PARAMETER {name:s}-"
+        )
 
     @storeElement
     def getChooseFileElement(self) -> sg.Combo:
@@ -446,16 +440,15 @@ class ParameterRow(TabRow, StoredObject):
         """
         filestems = self.getStems()
         stem_count = len(filestems)
-        kwargs = {
-            "values": filestems,
-            "default_value": filestems[-1],
-            "tooltip": f"Choose file to load parameter {self.getName():s} from",
-            "enable_events": True,
-            "disabled": stem_count == 1,
-            "size": self.getDimensions(name="parameter_stem_combobox"),
-            "key": f"-{pf_pre:s} {self.getName():s}-"
-        }
-        return sg.Combo(**kwargs)
+        return sg.Combo(
+            values=filestems,
+            default_value=filestems[-1],
+            tooltip=f"Choose file to load parameter {self.getName():s} from",
+            enable_events=True,
+            disabled=stem_count == 1,
+            size=self.getDimensions(name="parameter_stem_combobox"),
+            key=f"-{pf_pre:s} {self.getName():s}-"
+        )
 
     def getNameLabel(self) -> Union[sg.Text, sg.Image]:
         """
@@ -463,11 +456,10 @@ class ParameterRow(TabRow, StoredObject):
 
         :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve label from
         """
-        kwargs = {
-            "name": self.getName(),
-            "size": self.getDimensions(name="parameter_label")
-        }
-        return getTexImage(**kwargs)
+        return getTexImage(
+            name=self.getName(),
+            size=self.getDimensions(name="parameter_label")
+        )
 
     @storeElement
     def getQuantityLabel(self) -> sg.Text:
@@ -477,13 +469,12 @@ class ParameterRow(TabRow, StoredObject):
         :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve label from
         """
         quantity = self.getQuantities()[-1]
-        kwargs = {
-            "text": formatQuantity(quantity),
-            "tooltip": "Present value of parameter",
-            "size": self.getDimensions(name="parameter_value_label"),
-            "key": f"-PARAMETER VALUE LABEL {self.getName():s}-"
-        }
-        return sg.Text(**kwargs)
+        return sg.Text(
+            text=formatQuantity(quantity),
+            tooltip="Present value of parameter",
+            size=self.getDimensions(name="parameter_value_label"),
+            key=f"-PARAMETER VALUE LABEL {self.getName():s}-"
+        )
 
     @storeElement
     def getValueInputElement(self) -> sg.InputText:
@@ -492,15 +483,14 @@ class ParameterRow(TabRow, StoredObject):
 
         :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve element from
         """
-        kwargs = {
-            "default_text": '',
-            "tooltip": "If 'Constant': enter new parameter value, then click button to update. " +
+        return sg.InputText(
+            default_text='',
+            tooltip="If 'Constant': enter new parameter value, then click button to update. " +
                        "If 'Sweep': this input field will be ignored." +
                        "Displayed units are preserved",
-            "size": self.getDimensions(name="parameter_value_input_field"),
-            "key": f"-PARAMETER VALUE INPUT {self.getName():s}-"
-        }
-        return sg.InputText(**kwargs)
+            size=self.getDimensions(name="parameter_value_input_field"),
+            key=f"-PARAMETER VALUE INPUT {self.getName():s}-"
+        )
 
     @storeElement
     def getParameterTypeElement(self) -> sg.InputCombo:
@@ -509,14 +499,13 @@ class ParameterRow(TabRow, StoredObject):
 
         :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve element from
         """
-        kwargs = {
-            "values": self.getParameterTypes(),
-            "default_value": self.getParameterTypes(0),
-            "enable_events": True,
-            "size": self.getDimensions(name="parameter_type_combobox"),
-            "key": f"-PARAMETER TYPE {self.getName():s}-"
-        }
-        return sg.InputCombo(**kwargs)
+        return sg.InputCombo(
+            values=self.getParameterTypes(),
+            default_value=self.getParameterTypes(0),
+            enable_events=True,
+            size=self.getDimensions(name="parameter_type_combobox"),
+            key=f"-PARAMETER TYPE {self.getName():s}-"
+        )
 
 
 class ParameterSection(Element):
@@ -608,12 +597,11 @@ class ParameterSection(Element):
         :param self: :class:`~Layout.MainWindow.ParameterSection` to retrieve layout from
         """
         header_row = self.getHeaderRow()
-        kwargs = {
-            "layout": list(map(ParameterRow.getRow, self.getParameterRows())),
-            "size": self.getDimensions(name="parameter_section"),
-            "key": f"-{psc_pre:s} {self.getName():s}-"
-        }
-        collapsable_section = generateCollapsableSection(**kwargs)
+        collapsable_section = generateCollapsableSection(
+            layout=list(map(ParameterRow.getRow, self.getParameterRows())),
+            size=self.getDimensions(name="parameter_section"),
+            key=f"-{psc_pre:s} {self.getName():s}-"
+        )
 
         layout = Layout()
         layout.addRows(rows=header_row)
@@ -680,13 +668,12 @@ class ParameterTab(Tab):
         section_layouts = map(ParameterSection.getLayout, self.getSections())
         for section_layout in section_layouts:
             layout += section_layout
-        kwargs = {
-            "layout": layout,
-            "size": self.getDimensions(name="parameter_tab"),
-            "scrollable": True,
-            "vertical_scroll_only": True
-        }
-        return sg.Column(**kwargs)
+        return sg.Column(
+            layout=layout,
+            size=self.getDimensions(name="parameter_tab"),
+            scrollable=True,
+            vertical_scroll_only=True
+        )
 
     def getLayout(self) -> List[List[sg.Column]]:
         """
@@ -808,14 +795,14 @@ class FunctionRow(TabRow, StoredObject):
         for index in range(len(functions)):
             function = functions[index]
             filestem = filestems[index]
-            kwargs = {
-                "name": name,
-                "expression": function.getExpression(expanded=False),
-                "var2tex": "var2tex.yml",
-                "folder": self.getImageFoldername(filestem),
-                "filename": f"{name:s}.png"
-            }
-            image_filepaths.append(expression2png(**kwargs))
+            expression_png = expression2png(
+                name=name,
+                expression=function.getExpression(expanded=False),
+                var2tex="var2tex.yml",
+                folder=self.getImageFoldername(filestem),
+                filename=f"{name:s}.png"
+            )
+            image_filepaths.append(expression_png)
         return image_filepaths
 
     def getRowLabel(self) -> Union[sg.Text, sg.Image]:
@@ -824,11 +811,10 @@ class FunctionRow(TabRow, StoredObject):
 
         :param self: :class:`~Layout.MainWindow.FunctionRow` to retrieve label from
         """
-        kwargs = {
-            "name": self.getName(),
-            "size": self.getDimensions(name="function_label")
-        }
-        return getTexImage(**kwargs)
+        return getTexImage(
+            name=self.getName(),
+            size=self.getDimensions(name="function_label")
+        )
 
     def getStems(self) -> List[str]:
         """
@@ -856,16 +842,16 @@ class FunctionRow(TabRow, StoredObject):
         """
         filestems = self.getStems()
         stem_count = len(filestems)
-        kwargs = {
-            "values": filestems,
-            "default_value": filestems[-1],
-            "tooltip": f"Choose file to load function {self.getName():s} from",
-            "enable_events": True,
-            "disabled": stem_count == 1,
-            "size": self.getDimensions(name="function_stem_combobox"),
-            "key": f"-{ff_pre:s} {self.getName():s}-"
-        }
-        return sg.Combo(**kwargs)
+
+        return sg.Combo(
+            values=filestems,
+            default_value=filestems[-1],
+            tooltip=f"Choose file to load function {self.getName():s} from",
+            enable_events=True,
+            disabled=stem_count == 1,
+            size=self.getDimensions(name="function_stem_combobox"),
+            key=f"-{ff_pre:s} {self.getName():s}-"
+        )
 
     @storeElement
     def getExpressionLabel(self) -> Union[sg.Text, sg.Image]:
@@ -878,13 +864,12 @@ class FunctionRow(TabRow, StoredObject):
         image_filepath = self.generatePngExpressions()[-1]
         image_folder = dirname(image_filepath)
 
-        kwargs = {
-            "name": name,
-            "size": self.getDimensions(name="expression_label"),
-            "tex_folder": image_folder,
-            "key": f"-FUNCTION EXPRESSION {self.getName():s}-"
-        }
-        return getTexImage(**kwargs)
+        return getTexImage(
+            name=name,
+            size=self.getDimensions(name="expression_label"),
+            tex_folder=image_folder,
+            key=f"-FUNCTION EXPRESSION {self.getName():s}-"
+        )
 
 
 class FunctionTab(Tab):
@@ -938,14 +923,15 @@ class FunctionTab(Tab):
         row = Row(window=self.getWindowObject())
         texts = ["Function", "Expression"]
         dimension_keys = [f"function_header_row_{string:s}" for string in ["function_label", "expression_label"]]
-        add_element = row.addElements
+
         for index in range(len(texts)):
-            kwargs = {
-                "text": texts[index],
-                "size": self.getDimensions(name=dimension_keys[index]),
-                "justification": "left"
-            }
-            add_element(sg.Text(**kwargs))
+            text_element = sg.Text(
+                text=texts[index],
+                size=self.getDimensions(name=dimension_keys[index]),
+                justification="left"
+            )
+            row.addElements(text_element)
+            
         return row
 
     def getAsColumn(self) -> sg.Column:
@@ -957,13 +943,13 @@ class FunctionTab(Tab):
         header_row = self.getHeaderRow()
         rows = list(map(FunctionRow.getRow, self.getFunctionRows()))
         layout = header_row.getLayout() + rows
-        kwargs = {
-            "layout": layout,
-            "size": self.getDimensions(name="function_tab"),
-            "scrollable": True,
-            "vertical_scroll_only": True
-        }
-        return sg.Column(**kwargs)
+
+        return sg.Column(
+            layout=layout,
+            size=self.getDimensions(name="function_tab"),
+            scrollable=True,
+            vertical_scroll_only=True
+        )
 
     def getLayout(self) -> List[List[sg.Element]]:
         """
@@ -1309,11 +1295,11 @@ class MainWindow(TabbedWindow):
                 ]
             ]
         ]
-        kwargs = {
-            "menu_definition": menu_definition,
-            "key": "-TOOLBAR MENU-"
-        }
-        return sg.Menu(**kwargs)
+
+        return sg.Menu(
+            menu_definition=menu_definition,
+            key="-TOOLBAR MENU-"
+        )
 
     @storeElement
     def getOpenSimulationButton(self) -> sg.Button:
@@ -1323,11 +1309,11 @@ class MainWindow(TabbedWindow):
         :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve button from
         """
         text = "Open Simulation"
-        kwargs = {
-            "button_text": text,
-            "key": f"-{text.upper():s}-"
-        }
-        return sg.Button(**kwargs)
+
+        return sg.Button(
+            button_text=text,
+            key=f"-{text.upper():s}-"
+        )
 
     @storeElement
     def getGenerateGraphButton(self) -> sg.Button:
@@ -1337,11 +1323,11 @@ class MainWindow(TabbedWindow):
         :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve button from
         """
         text = "Generate Graph"
-        kwargs = {
-            "button_text": text,
-            "key": f"-{text.upper():s}-"
-        }
-        return sg.Button(**kwargs)
+
+        return sg.Button(
+            button_text=text,
+            key=f"-{text.upper():s}-"
+        )
 
     def getLayout(self) -> List[List[sg.Element]]:
         """
@@ -2387,13 +2373,12 @@ class MainWindowRunner(WindowRunner):
         """
         if filepath is None:
             file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
-            kwargs = {
-                "message": "Enter Filename to Load",
-                "title": "Load Parameters",
-                "file_types": file_types,
-                "multiple_files": False
-            }
-            filepath = sg.PopupGetFile(**kwargs)
+            filepath = sg.PopupGetFile(
+                message="Enter Filename to Load",
+                title="Load Parameters",
+                file_types=file_types,
+                multiple_files=False
+            )
             if filepath is None:
                 return None
         
@@ -2415,13 +2400,12 @@ class MainWindowRunner(WindowRunner):
         """
         if filepath is None:
             file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
-            kwargs = {
-                "message": "Enter Filename to Load",
-                "title": "Load Parameters",
-                "file_types": file_types,
-                "multiple_files": False
-            }
-            filepath = sg.PopupGetFile(**kwargs)
+            filepath = sg.PopupGetFile(
+                message="Enter Filename to Load",
+                title="Load Parameters",
+                file_types=file_types,
+                multiple_files=False
+            )
             if filepath is None:
                 return None
         try:
@@ -2476,13 +2460,12 @@ class MainWindowRunner(WindowRunner):
         """
         if filepath is None:
             file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
-            kwargs = {
-                "message": "Enter Filename to Load",
-                "title": "Load Function",
-                "file_types": file_types,
-                "multiple_files": False
-            }
-            filepath = sg.PopupGetFile(**kwargs)
+            filepath = sg.PopupGetFile(
+                message="Enter Filename to Load",
+                title="Load Function",
+                file_types=file_types,
+                multiple_files=False
+            )
             if filepath is None:
                 return None
 
@@ -2526,13 +2509,12 @@ class MainWindowRunner(WindowRunner):
         """
         free_parameter_names = self.getParameterNames(parameter_types="Free")
         free_parameter_quantities = self.getParameterQuantities(names=free_parameter_names)
-
-        kwargs = {
-            "name": "Set Values for Free Parameters",
-            "free_parameter_quantities": free_parameter_quantities
-        }
-        set_free_parameters_window = SetFreeParametersWindowRunner(**kwargs)
+        set_free_parameters_window = SetFreeParametersWindowRunner(
+            name="Set Values for Free Parameters",
+            free_parameter_quantities=free_parameter_quantities
+        )
         event, free_parameter_values = set_free_parameters_window.runWindow()
+
         if event == "Submit":
             free_parameter_values = {free_parameter_name: tuple(
                 [*free_parameter_values[free_parameter_name], free_parameter_quantities[free_parameter_name]]
@@ -2552,13 +2534,12 @@ class MainWindowRunner(WindowRunner):
             runner = ChooseVariablesWindowRunner("Choose Variables to Simulate", variable_names=self.getVariableNames())
             event, variable_names = runner.getChosenVariables()
             model = self.getModel(variable_names=variable_names)
-            kwargs = {
-                "name": "Run Simulation for Model",
-                "model": model,
-                "free_parameter_values": free_parameter_values,
-                "plot_choices": self.getPlotChoices(model=model)
-            }
-            simulation_window = SimulationWindowRunner(**kwargs)
+            simulation_window = SimulationWindowRunner(
+                name="Run Simulation for Model",
+                model=model,
+                free_parameter_values=free_parameter_values,
+                plot_choices=self.getPlotChoices(model=model)
+            )
             simulation_window.runWindow()
 
     def generateFunction2ArgumentGraph(self, color1: str = "red", color2: str = "blue") -> Graph:

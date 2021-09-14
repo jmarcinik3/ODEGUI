@@ -67,13 +67,13 @@ class ChooseGraphLayoutWindow(Window):
         """
         radios = []
         for choice in self.getLayoutChoices():
-            kwargs = {
-                "text": choice,
-                "default": False,
-                "group_id": 0,
-                "key": self.getKey("layout_choice", choice)
-            }
-            radios.append(sg.Radio(**kwargs))
+            radio = sg.Radio(
+                text=choice,
+                default=False,
+                group_id=0,
+                key=self.getKey("layout_choice", choice)
+            )
+            radios.append(radio)
         return radios
 
     def getLayout(self) -> List[List[sg.Element]]:

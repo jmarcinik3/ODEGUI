@@ -33,43 +33,42 @@ class SetParameterRow(Row):
         return getTexImage(self.getName())
 
     def getQuantityLabel(self) -> sg.Text:
-        kwargs = {
-            "text": formatQuantity(self.getQuantity()),
-            "tooltip": "Present value of parameter",
-            "size": (10, 1),  # dim
-            "key": self.getKey("quantity_label", self.getName())
-        }
-        return sg.Text(**kwargs)
+        return sg.Text(
+            text=formatQuantity(self.getQuantity()),
+            tooltip="Present value of parameter",
+            size=(10, 1),  # dim
+            key=self.getKey("quantity_label", self.getName())
+        )
 
     def getMinimumInputElement(self) -> sg.InputText:
         name = self.getName()
-        kwargs = {
-            "default_text": '',
-            "tooltip": "Enter minimum value for parameter",
-            "size": (10, 1),  # dim
-            "key": self.getKey("free_parameter_minimum", name)
-        }
-        return sg.InputText(**kwargs)
+
+        return sg.InputText(
+            default_text='',
+            tooltip="Enter minimum value for parameter",
+            size=(10, 1),  # dim
+            key=self.getKey("free_parameter_minimum", name)
+        )
 
     def getMaximumInputElement(self) -> sg.InputText:
         name = self.getName()
-        kwargs = {
-            "default_text": '',
-            "tooltip": "Enter maximum value for parameter",
-            "size": (10, 1),  # dim
-            "key": self.getKey("free_parameter_maximum", name)
-        }
-        return sg.InputText(**kwargs)
+
+        return sg.InputText(
+            default_text='',
+            tooltip="Enter maximum value for parameter",
+            size=(10, 1),  # dim
+            key=self.getKey("free_parameter_maximum", name)
+        )
 
     def getStepCountInputElement(self) -> sg.InputText:
         name = self.getName()
-        kwargs = {
-            "default_text": '',
-            "tooltip": "Enter number of parameter values",
-            "size": (10, 1),  # dim
-            "key": self.getKey("free_parameter_stepcount", name)
-        }
-        return sg.InputText(**kwargs)
+
+        return sg.InputText(
+            default_text='',
+            tooltip="Enter number of parameter values",
+            size=(10, 1),  # dim
+            key=self.getKey("free_parameter_stepcount", name)
+        )
 
 
 class SetFreeParametersWindow(Window):
@@ -114,11 +113,11 @@ class SetFreeParametersWindow(Window):
     def getHeaderRow(self) -> Row:
         texts = []
         for text in ["Name", "Default Value", "Minimum", "Maximum", "Stepcount"]:
-            kwargs = {
-                "text": text,
-                "size": (8, 1)  # dim
-            }
-            texts.append(sg.Text(**kwargs))
+            text_element = sg.Text(
+                text=text,
+                size=(8, 1)  # dim
+            )
+            texts.append(text_element)
         return Row(window=self, elements=texts)
 
     def getFreeParameterRows(self) -> List[Row]:

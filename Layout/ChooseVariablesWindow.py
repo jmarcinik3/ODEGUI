@@ -44,11 +44,10 @@ class ChooseVariableRow(Row):
 
         :param self: :class:`~Layout.ChooseVariablesWindow.ChooseVariableRow` to retrieve label from
         """
-        kwargs = {
-            "name": self.getName(),
-            "size": (110, None)  # dim
-        }
-        return getTexImage(**kwargs)
+        return getTexImage(
+            name=self.getName(),
+            size=(110, None)  # dim
+        )
 
     def getCheckbox(self) -> sg.Checkbox:
         """
@@ -56,12 +55,11 @@ class ChooseVariableRow(Row):
 
         :param self: :class:`~Layout.ChooseVariablesWindow.ChooseVariableRow` to retrieve checkbox from
         """
-        kwargs = {
-            "text": "Include?",
-            "default": True,
-            "key": self.getName()
-        }
-        return sg.Checkbox(**kwargs)
+        return sg.Checkbox(
+            text="Include?",
+            default=True,
+            key=self.getName()
+        )
 
 
 class ChooseVariablesWindow(ChooseChecksWindow):

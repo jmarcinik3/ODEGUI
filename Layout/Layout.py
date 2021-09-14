@@ -122,10 +122,9 @@ class Element:
 
         :param self: :class:`~Layout.Layout.Element` to retrieve element of
         """
-        kwargs = {
-            "layout": self.getLayout()
-        }
-        return sg.Column(**kwargs)
+        return sg.Column(
+            layout=self.getLayout()
+        )
 
 
 class Row:
@@ -360,12 +359,11 @@ class Tab:
 
         :param self: :class:`~Layout.Layout.Tab` to retrieve tab from
         """
-        kwargs = {
-            "title": self.getName(),
-            "layout": self.getLayout(),
-            "pad": (0, 0)
-        }
-        return sg.Tab(**kwargs)
+        return sg.Tab(
+            title=self.getName(),
+            layout=self.getLayout(),
+            pad=(0, 0)
+        )
 
 
 class TabGroup:
@@ -457,11 +455,10 @@ class TabGroup:
 
         :param self: :class:`~Layout.Layout.TabGroup` to generate tab from
         """
-        kwargs = {
-            "layout": self.getLayout(),
-            "title": self.getName()
-        }
-        return sg.Tab(**kwargs)
+        return sg.Tab(
+            layout=self.getLayout(),
+            title=self.getName()
+        )
 
 
 class Window:
@@ -545,14 +542,13 @@ class Window:
 
         :param self: :class:`~Layout.Layout.Window` to retrieve window from
         """
-        kwargs = {
-            "title": self.getName(),
-            "layout": self.getLayout(),
-            "grab_anywhere": False,
-            "size": self.getDimensions("window"),
-            "finalize": True
-        }
-        return sg.Window(**kwargs)
+        return sg.Window(
+            title=self.getName(),
+            layout=self.getLayout(),
+            grab_anywhere=False,
+            size=self.getDimensions("window"),
+            finalize=True
+        )
 
 
 class ChooseChecksWindow(Window):
@@ -601,11 +597,10 @@ class ChooseChecksWindow(Window):
                 ]
             ]
         ]
-        kwargs = {
-            "menu_definition": menu_definition,
-            "key": self.getKey("toolbar_menu")
-        }
-        return sg.Menu(**kwargs)
+        return sg.Menu(
+            menu_definition=menu_definition,
+            key=self.getKey("toolbar_menu")
+        )
 
     def getHeaderRow(self) -> Row:
         """
@@ -615,10 +610,8 @@ class ChooseChecksWindow(Window):
         :param self: :class:`~Layout.Layout.ChooseChecksWindow` to retrieve header from
         """
         text = self.header_text
-        kwargs = {
-            "text": text
-        }
-        row = Row(elements=sg.Text(**kwargs))
+        text_element = sg.Text(text=text)
+        row = Row(elements=text_element)
         return row
 
     @staticmethod

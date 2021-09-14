@@ -64,11 +64,10 @@ class ChooseParameterRow(Row):
 
         :param self: :class:`~Layout.ChooseParametersWindow.ChooseParameterRow` to retrieve label from
         """
-        kwargs = {
-            "name": self.getName(),
-            "size": (110, None)  # dim
-        }
-        return getTexImage(**kwargs)
+        return getTexImage(
+            name=self.getName(),
+            size=(110, None)  # dim
+        )
 
     def getQuantityLabel(self) -> sg.Text:
         """
@@ -76,11 +75,10 @@ class ChooseParameterRow(Row):
 
         :param self: :class:`~Layout.ChooseParametersWindow.ChooseParameterRow` to retrieve label from
         """
-        kwargs = {
-            "text": formatQuantity(self.getQuantity()),
-            "size": (10, None)  # dim
-        }
-        return sg.Text(**kwargs)
+        return sg.Text(
+            text=formatQuantity(self.getQuantity()),
+            size=(10, None)  # dim
+        )
 
     def getCheckbox(self) -> sg.Checkbox:
         """
@@ -88,12 +86,11 @@ class ChooseParameterRow(Row):
 
         :param self: :class:`~Layout.ChooseParametersWindow.ChooseParameterRow` to retrieve checkbox from
         """
-        kwargs = {
-            "text": "Overwrite?",
-            "default": True,
-            "key": self.getName()
-        }
-        return sg.Checkbox(**kwargs)
+        return sg.Checkbox(
+            text="Overwrite?",
+            default=True,
+            key=self.getName()
+        )
 
 
 class ChooseParametersWindow(ChooseChecksWindow):

@@ -502,12 +502,12 @@ class Model:
 
             substitutions = {}
             if substitute_functions:
-                kwargs = {
-                    "substitute_parameters": substitute_parameters,
-                    "skip_parameters": skip_parameters,
-                    "substitute_constants": substitute_constants
-                }
-                substitutions.update(self.getFunctionSubstitutions(**kwargs))
+                function_substitutions = self.getFunctionSubstitutions(
+                    substitute_parameters=substitute_parameters,
+                    skip_parameters=skip_parameters,
+                    substitute_constants=substitute_constants
+                )
+                substitutions.update(function_substitutions)
             if substitute_parameters:
                 parameter_names = unique(
                     [
@@ -707,27 +707,23 @@ class Model:
 
         variable_substitutions = {}
         if substitute_equilibria:
-            kwargs = {
-                "substitute_parameters": substitute_parameters,
-                "substitute_constants": substitute_constants,
-                "skip_parameters": skip_parameters
-            }
-            equilibrium_solutions = self.getEquilibriumSolutions(**kwargs)
+            equilibrium_solutions = self.getEquilibriumSolutions(
+                substitute_parameters=substitute_parameters,
+                substitute_constants=substitute_constants,
+                skip_parameters=skip_parameters
+            )
             variable_substitutions.update(equilibrium_solutions)
         if substitute_constants:
             variable_substitutions.update(self.getConstantSubstitutions())
         if substitute_functions:
-            kwargs = {
-                "substitute_parameters": substitute_parameters,
-                "substitute_constants": substitute_constants,
-                "skip_parameters": skip_parameters
-            }
-            variable_substitutions.update(self.getFunctionSubstitutions(**kwargs))
+            function_substitutions = self.getFunctionSubstitutions(
+                substitute_parameters=substitute_parameters,
+                substitute_constants=substitute_constants,
+                skip_parameters=skip_parameters
+            )
+            variable_substitutions.update(function_substitutions)
 
-        kwargs = {
-            "skip_parameters": skip_parameters
-        }
-        parameter_substitutions = self.getParameterSubstitutions(**kwargs) if substitute_parameters else {}
+        parameter_substitutions = self.getParameterSubstitutions(skip_parameters=skip_parameters) if substitute_parameters else {}
 
         if names is None:
             temporal_derivatives = self.getDerivatives(time_evolution_types="Temporal")

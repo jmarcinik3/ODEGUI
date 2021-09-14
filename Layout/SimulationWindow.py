@@ -677,11 +677,10 @@ class ParameterSlider(Element, StoredObject):
         
         :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve label for
         """
-        kwargs = {
-            "name": self.getName(),
-            "size": self.getDimensions(name="parameter_slider_name_label")
-        }
-        return getTexImage(**kwargs)
+        return getTexImage(
+            name=self.getName(),
+            size=self.getDimensions(name="parameter_slider_name_label")
+        )
 
     def getMinimumLabel(self) -> sg.Text:
         """
@@ -689,11 +688,10 @@ class ParameterSlider(Element, StoredObject):
 
         :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve label for
         """
-        kwargs = {
-            "text": formatValue(self.getMinimum()),
-            "size": self.getDimensions(name="parameter_slider_minimum_label"),
-        }
-        return sg.Text(**kwargs)
+        return sg.Text(
+            text=formatValue(self.getMinimum()),
+            size=self.getDimensions(name="parameter_slider_minimum_label")
+        )
 
     def getMaximumLabel(self) -> sg.Text:
         """
@@ -701,11 +699,10 @@ class ParameterSlider(Element, StoredObject):
 
         :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve label for
         """
-        kwargs = {
-            "text": formatValue(self.getMaximum()),
-            "size": self.getDimensions(name="parameter_slider_maximum_label")
-        }
-        return sg.Text(**kwargs)
+        return sg.Text(
+            text=formatValue(self.getMaximum()),
+            size=self.getDimensions(name="parameter_slider_maximum_label")
+        )
 
     def getStepCountLabel(self) -> sg.Text:
         """
@@ -713,11 +710,10 @@ class ParameterSlider(Element, StoredObject):
 
         :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve label for
         """
-        kwargs = {
-            "text": self.getStepCount(),
-            "size": self.getDimensions(name="parameter_slider_stepcount_label")
-        }
-        return sg.Text(**kwargs)
+        return sg.Text(
+            text=self.getStepCount(),
+            size=self.getDimensions(name="parameter_slider_stepcount_label")
+        )
 
     @storeElement
     def getSlider(self) -> sg.Slider:
@@ -727,18 +723,19 @@ class ParameterSlider(Element, StoredObject):
         :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve slider from
         """
         minimum = self.getMinimum()
-        kwargs = {
-            "range": (minimum, self.getMaximum()),
-            "default_value": minimum,
-            "resolution": self.getResolution(),
-            "orientation": "horizontal",
-            "enable_events": True,
-            "size": self.getDimensions(name="parameter_slider_slider"),
-            "border_width": 0,
-            "pad": (0, 0),
-            "key": f"-{fps_pre:s} {self.getName():s}-"
-        }
-        return sg.Slider(**kwargs)
+        maximum = self.getMaximum()
+
+        return sg.Slider(
+            range=(minimum, maximum),
+            default_value=minimum,
+            resolution=self.getResolution(),
+            orientation="horizontal",
+            enable_events=True,
+            size=self.getDimensions(name="parameter_slider_slider"),
+            border_width=0,
+            pad=(0, 0),
+            key=f"-{fps_pre:s} {self.getName():s}-"
+        )
 
     def getLayout(self) -> List[List[sg.Element]]:
         """
@@ -786,13 +783,12 @@ class SimulationTab(Tab):
         
         :param self: :class:`~Layout.SimulationWindow.SimulationTab` to retrieve element from
         """
-        kwargs = {
-            "default_text": getStates("time", "initial"),
-            "tooltip": "Enter initial time (seconds)",
-            "size": self.getDimensions(name="initial_time_input_field"),
-            "key": "-INITIAL TIME-"
-        }
-        return sg.InputText(**kwargs)
+        return sg.InputText(
+            default_text=getStates("time", "initial"),
+            tooltip="Enter initial time (seconds)",
+            size=self.getDimensions(name="initial_time_input_field"),
+            key="-INITIAL TIME-"
+        )
 
     @storeElement
     def getTimeStepCountInputElement(self):
@@ -802,13 +798,12 @@ class SimulationTab(Tab):
 
         :param self: :class:`~Layout.SimulationWindow.SimulationTab` to retrieve element from
         """
-        kwargs = {
-            "default_text": getStates("time", "step_count"),
-            "tooltip": "Enter number of time-steps",
-            "size": self.getDimensions(name="timestep_count_input_field"),
-            "key": "-STEPCOUNT TIME-"
-        }
-        return sg.InputText(**kwargs)
+        return sg.InputText(
+            default_text=getStates("time", "step_count"),
+            tooltip="Enter number of time-steps",
+            size=self.getDimensions(name="timestep_count_input_field"),
+            key="-STEPCOUNT TIME-"
+        )
 
     @storeElement
     def getFinalTimeInputElement(self) -> sg.InputText:
@@ -818,13 +813,12 @@ class SimulationTab(Tab):
 
         :param self: :class:`~Layout.SimulationWindow.SimulationTab` to retrieve element from
         """
-        kwargs = {
-            "default_text": getStates("time", "final"),
-            "tooltip": "Enter final time (seconds)",
-            "size": self.getDimensions(name="final_time_input_field"),
-            "key": "-FINAL TIME-"
-        }
-        return sg.InputText(**kwargs)
+        return sg.InputText(
+            default_text=getStates("time", "final"),
+            tooltip="Enter final time (seconds)",
+            size=self.getDimensions(name="final_time_input_field"),
+            key="-FINAL TIME-"
+        )
 
     @storeElement
     def getRunButton(self) -> sg.Button:
@@ -834,11 +828,11 @@ class SimulationTab(Tab):
         :param self: :class:`~Layout.SimulationWindow.SimulationTab` to retrieve element from
         """
         text = "Run Simulation"
-        kwargs = {
-            "button_text": text,
-            "key": f"-{text.upper():s}-"
-        }
-        return sg.Button(**kwargs)
+
+        return sg.Button(
+            button_text=text,
+            key=f"-{text.upper():s}-"
+        )
 
     def getLayout(self) -> List[List[sg.Element]]:
         """
@@ -893,14 +887,13 @@ class ColorbarTab(Tab, StoredObject):
         top_row = Row(window=window_object)
         texts = ["Limits", "Scale"]
         dimension_keys = [f"axis_header_row_{string:s}" for string in ["limits", "scale"]]
-        add_element = top_row.addElements
         for index in range(len(texts)):
-            kwargs = {
-                "text": texts[index],
-                "size": self.getDimensions(name=dimension_keys[index]),
-                "justification": "center"
-            }
-            add_element(sg.Text(**kwargs))
+            text_element = sg.Text(
+                text=texts[index],
+                size=self.getDimensions(name=dimension_keys[index]),
+                justification="center"
+            )
+            top_row.addElements(text_element)
 
         bottom_row = Row(window=window_object)
         texts = ["Title", "Lower", "Upper", "Auto", "Factor"]
@@ -909,14 +902,14 @@ class ColorbarTab(Tab, StoredObject):
             for string in
             ["element_name", "element_title", "lower_limit", "upper_limit", "autoscale", "scale_factor"]
         ]
-        add_element = bottom_row.addElements
         for index in range(len(texts)):
-            kwargs = {
-                "text": texts[index],
-                "size": self.getDimensions(name=dimension_keys[index]),
-                "justification": "left"
-            }
-            add_element(sg.Text(**kwargs))
+            text_element = sg.Text(
+                text=texts[index],
+                size=self.getDimensions(name=dimension_keys[index]),
+                justification="left"
+            )
+            bottom_row.addElements(text_element)
+        
         return [top_row, bottom_row]
 
     @storeElement
@@ -926,20 +919,18 @@ class ColorbarTab(Tab, StoredObject):
 
         :param self: :class:`~Layout.SimulationWindow.ColorbarTab` to retrieve elements for
         """
-        kwargs = {
-            "default_text": '',
-            "tooltip": "Enter lower limit for colorbar.",
-            "size": self.getDimensions(name="axis_lower_limit_input_field"),
-            "key": "-COLORBAR LOWER LIMIT-"
-        }
-        lower_limit = sg.InputText(**kwargs)
-        kwargs = {
-            "default_text": '',
-            "tooltip": "Enter upper limit for colorbar.",
-            "size": self.getDimensions(name="axis_upper_limit_input_field"),
-            "key": "-COLORBAR UPPER LIMIT-"
-        }
-        upper_limit = sg.InputText(**kwargs)
+        lower_limit = sg.InputText(
+            default_text='',
+            tooltip="Enter lower limit for colorbar.",
+            size=self.getDimensions(name="axis_lower_limit_input_field"),
+            key="-COLORBAR LOWER LIMIT-"
+        )
+        upper_limit = sg.InputText(
+            default_text='',
+            tooltip="Enter upper limit for colorbar.",
+            size=self.getDimensions(name="axis_upper_limit_input_field"),
+            key="-COLORBAR UPPER LIMIT-"
+        )
         return lower_limit, upper_limit
 
     @storeElement
@@ -949,13 +940,12 @@ class ColorbarTab(Tab, StoredObject):
 
         :param self: :class:`~Layout.SimulationWindow.ColorbarTab` to retrieve element from
         """
-        kwargs = {
-            "default_text": '',
-            "tooltip": "Enter label for colorbar.",
-            "size": self.getDimensions(name="colorbar_title_input_field"),
-            "key": "-COLORBAR TITLE-"
-        }
-        return sg.InputText(**kwargs)
+        return sg.InputText(
+            default_text='',
+            tooltip="Enter label for colorbar.",
+            size=self.getDimensions(name="colorbar_title_input_field"),
+            key="-COLORBAR TITLE-"
+        )
 
     @storeElement
     def getAutoscaleElement(self) -> sg.Checkbox:
@@ -964,16 +954,15 @@ class ColorbarTab(Tab, StoredObject):
 
         :param self: :class:`~Layout.SimulationWindow.ColorbarTab` to retrieve element from
         """
-        kwargs = {
-            "text": '',
-            "tooltip": "Choose boolean for colorbar."
+        return sg.Checkbox(
+            text='',
+            tooltip="Choose boolean for colorbar."
                 "When set True, colorbar will be autoscaled and limit inputs will be ignored."
                 "When set False, limits inputs will be used if available.",
-            "default": True,
-            "size": self.getDimensions(name="autoscale_toggle_checkbox"),
-            "key": "-COLORBAR AUTOSCALE-"
-        }
-        return sg.Checkbox(**kwargs)
+            default=True,
+            size=self.getDimensions(name="autoscale_toggle_checkbox"),
+            key="-COLORBAR AUTOSCALE-"
+        )
 
     @storeElement
     def getScaleFactorInputElement(self) -> sg.Spin:
@@ -983,14 +972,14 @@ class ColorbarTab(Tab, StoredObject):
         :param self: :class:`~Layout.SimulationWindow.ColorbarTab` to retrieve element from
         """
         values = [f"1e{int(exponent):d}" for exponent in np.linspace(-24, 24, 49)]
-        kwargs = {
-            "values": values,
-            "initial_value": "1e0",
-            "tooltip": "Choose scale factor for colorbar. Data is divided by this factor.",
-            "size": self.getDimensions(name="scale_factor_spin"),
-            "key": "-COLORBAR SCALE FACTOR-"
-        }
-        return sg.Spin(**kwargs)
+
+        return sg.Spin(
+            values=values,
+            initial_value="1e0",
+            tooltip="Choose scale factor for colorbar. Data is divided by this factor.",
+            size=self.getDimensions(name="scale_factor_spin"),
+            key="-COLORBAR SCALE FACTOR-"
+        )
 
     @storeElement
     def getScaleTypeInputElement(self) -> sg.InputCombo:
@@ -999,14 +988,13 @@ class ColorbarTab(Tab, StoredObject):
 
         :param self: :class:`~Layout.SimulationWindow.ColorbarTab` to retrieve element from
         """
-        kwargs = {
-            "values": ["Linear", "Logarithmic"],
-            "default_value": "Linear",
-            "tooltip": "Choose scale type for colorbar.",
-            "size": self.getDimensions(name="scale_type_combobox"),
-            "key": "-COLORBAR SCALE TYPE-"
-        }
-        return sg.InputCombo(**kwargs)
+        return sg.InputCombo(
+            values=["Linear", "Logarithmic"],
+            default_value="Linear",
+            tooltip="Choose scale type for colorbar.",
+            size=self.getDimensions(name="scale_type_combobox"),
+            key="-COLORBAR SCALE TYPE-"
+        )
 
     @storeElement
     def getColormapInputElement(self) -> sg.InputCombo:
@@ -1017,14 +1005,14 @@ class ColorbarTab(Tab, StoredObject):
         """
         cmaps = plt.colormaps()
         default_cmap = "hsv"
-        kwargs = {
-            "values": cmaps,
-            "default_value": default_cmap,
-            "tooltip": "Choose colormap for colorbar.",
-            "size": self.getDimensions(name="colorbar_colormap_combobox"),
-            "key": "-COLORBAR COLORMAP-"
-        }
-        return sg.InputCombo(**kwargs)
+
+        return sg.InputCombo(
+            values=cmaps,
+            default_value=default_cmap,
+            tooltip="Choose colormap for colorbar.",
+            size=self.getDimensions(name="colorbar_colormap_combobox"),
+            key="-COLORBAR COLORMAP-"
+        )
 
     @storeElement
     def getSegmentCountElement(self) -> sg.Spin:
@@ -1034,14 +1022,14 @@ class ColorbarTab(Tab, StoredObject):
         :param self: :class:`~Layout.SimulationWindow.ColorbarTab` to retrieve element from
         """
         values = [f"{int(hundred):d}00" for hundred in np.linspace(1, 9, 9)]
-        kwargs = {
-            "values": values,
-            "initial_value": values[0],
-            "tooltip": "Choose segment count for colorbar segments.",
-            "size": self.getDimensions(name="colorbar_segment_count_spin"),
-            "key": "-COLORBAR SEGMENT COUNT-"
-        }
-        return sg.Spin(**kwargs)
+
+        return sg.Spin(
+            values=values,
+            initial_value=values[0],
+            tooltip="Choose segment count for colorbar segments.",
+            size=self.getDimensions(name="colorbar_segment_count_spin"),
+            key="-COLORBAR SEGMENT COUNT-"
+        )
 
     def getLayout(self) -> List[List[sg.Element]]:
         """
@@ -1096,14 +1084,13 @@ class AxisTab(Tab, StoredObject):
         top_row = Row(window=window_object)
         texts = ["", "Limits", "Scale"]
         dimension_keys = [f"axis_header_row_{string:s}" for string in ["element", "limits", "scale"]]
-        add_element = top_row.addElements
         for index in range(len(texts)):
-            kwargs = {
-                "text": texts[index],
-                "size": self.getDimensions(name=dimension_keys[index]),
-                "justification": "center"
-            }
-            add_element(sg.Text(**kwargs))
+            text_element = sg.Text(
+                text=texts[index],
+                size=self.getDimensions(name=dimension_keys[index]),
+                justification="center"
+            )
+            top_row.addElements(text_element)
 
         bottom_row = Row(window=window_object)
         texts = ["Element", "Title", "Lower", "Upper", "Auto", "Factor", "Type"]
@@ -1112,14 +1099,14 @@ class AxisTab(Tab, StoredObject):
             for string in
             ["element_name", "element_title", "lower_limit", "upper_limit", "autoscale", "scale_factor", "scale_type"]
         ]
-        add_element = bottom_row.addElements
         for index in range(len(texts)):
-            kwargs = {
-                "text": texts[index],
-                "size": self.getDimensions(name=dimension_keys[index]),
-                "justification": "left"
-            }
-            add_element(sg.Text(**kwargs))
+            text_element = sg.Text(
+                text=texts[index],
+                size=self.getDimensions(name=dimension_keys[index]),
+                justification="left"
+            )
+            bottom_row.addElements(text_element)
+
         return [top_row, bottom_row]
 
     @storeElement
@@ -1130,20 +1117,19 @@ class AxisTab(Tab, StoredObject):
         :param self: :class:`~Layout.SimulationWindow.AxisTab` to retrieve elements for
         :param name: name of axis
         """
-        kwargs = {
-            "default_text": '',
-            "tooltip": f"Enter lower limit for {name:s}-axis",
-            "size": self.getDimensions(name="axis_lower_limit_input_field"),
-            "key": f"-LOWER LIMIT {name.upper():s}_AXIS-"
-        }
-        lower_limit = sg.InputText(**kwargs)
-        kwargs = {
-            "default_text": '',
-            "tooltip": f"Enter upper limit for {name:s}-axis",
-            "size": self.getDimensions(name="axis_upper_limit_input_field"),
-            "key": f"-UPPER LIMIT {name.upper():s}_AXIS-"
-        }
-        upper_limit = sg.InputText(**kwargs)
+        lower_limit = sg.InputText(
+            default_text='',
+            tooltip=f"Enter lower limit for {name:s}-axis",
+            size=self.getDimensions(name="axis_lower_limit_input_field"),
+            key=f"-LOWER LIMIT {name.upper():s}_AXIS-"
+        )
+        upper_limit = sg.InputText(
+            default_text='',
+            tooltip=f"Enter upper limit for {name:s}-axis",
+            size=self.getDimensions(name="axis_upper_limit_input_field"),
+            key=f"-UPPER LIMIT {name.upper():s}_AXIS-"
+        )
+
         return lower_limit, upper_limit
 
     @storeElement
@@ -1154,13 +1140,12 @@ class AxisTab(Tab, StoredObject):
         :param self: :class:`~Layout.SimulationWindow.AxisTab` to retrieve element from
         :param name: name of axis
         """
-        kwargs = {
-            "default_text": '',
-            "tooltip": f"Enter label for {name:s}-axis",
-            "size": self.getDimensions(name="axis_row_title_input_field"),
-            "key": f"-TITLE {name.upper():s}_AXIS-"
-        }
-        return sg.InputText(**kwargs)
+        return sg.InputText(
+            default_text='',
+            tooltip=f"Enter label for {name:s}-axis",
+            size=self.getDimensions(name="axis_row_title_input_field"),
+            key=f"-TITLE {name.upper():s}_AXIS-"
+        )
 
     @storeElement
     def getAutoscaleElement(self, name: str) -> sg.Checkbox:
@@ -1170,16 +1155,15 @@ class AxisTab(Tab, StoredObject):
         :param self: :class:`~Layout.SimulationWindow.AxisTab` to retrieve element from
         :param name: name of axis
         """
-        kwargs = {
-            "text": '',
-            "tooltip": f"Choose boolean for {name:s}-axis."
+        return sg.Checkbox(
+            text='',
+            tooltip=f"Choose boolean for {name:s}-axis."
                 f"When set True, {name:s}-axis will be autoscaled and limit inputs will be ignored."
                 f"When set False, limits inputs will be used if available.",
-            "default": True,
-            "size": self.getDimensions(name="autoscale_toggle_checkbox"),
-            "key": f"-AUTOSCALE {name.upper():s}_AXIS-"
-        }
-        return sg.Checkbox(**kwargs)
+            default=True,
+            size=self.getDimensions(name="autoscale_toggle_checkbox"),
+            key=f"-AUTOSCALE {name.upper():s}_AXIS-"
+        )
 
     @storeElement
     def getScaleFactorInputElement(self, name: str) -> sg.Spin:
@@ -1190,14 +1174,14 @@ class AxisTab(Tab, StoredObject):
         :param name: name of axis
         """
         values = [f"1e{int(exponent):d}" for exponent in np.linspace(-24, 24, 49)]
-        kwargs = {
-            "values": values,
-            "initial_value": "1e0",
-            "tooltip": f"Choose scale factor for {name:s}-axis. Data is divided by this factor.",
-            "size": self.getDimensions(name="scale_factor_spin"),
-            "key": f"-SCALE FACTOR {name.upper():s}_AXIS-"
-        }
-        return sg.Spin(**kwargs)
+
+        return sg.Spin(
+            values=values,
+            initial_value="1e0",
+            tooltip=f"Choose scale factor for {name:s}-axis. Data is divided by this factor.",
+            size=self.getDimensions(name="scale_factor_spin"),
+            key=f"-SCALE FACTOR {name.upper():s}_AXIS-"
+        )
 
     @storeElement
     def getScaleTypeInputElement(self, name: str) -> sg.InputCombo:
@@ -1207,14 +1191,13 @@ class AxisTab(Tab, StoredObject):
         :param self: :class:`~Layout.SimulationWindow.AxisTab` to retrieve element from
         :param name: name of axis
         """
-        kwargs = {
-            "values": ["Linear", "Logarithmic"],
-            "default_value": "Linear",
-            "tooltip": f"Choose scale type for {name:s}-axis",
-            "size": self.getDimensions(name="scale_type_combobox"),
-            "key": f"-SCALE TYPE {name.upper():s}_AXIS-"
-        }
-        return sg.InputCombo(**kwargs)
+        return sg.InputCombo(
+            values=["Linear", "Logarithmic"],
+            default_value="Linear",
+            tooltip=f"Choose scale type for {name:s}-axis",
+            size=self.getDimensions(name="scale_type_combobox"),
+            key=f"-SCALE TYPE {name.upper():s}_AXIS-"
+        )
 
     @storeElement
     def getAxisLabelElement(self, name: str) -> sg.Text:
@@ -1224,11 +1207,10 @@ class AxisTab(Tab, StoredObject):
         :param self: :class:`~Layout.SimulationWindow.AxisTab` to retrieve element from
         :param name: name of axis
         """
-        kwargs = {
-            "text": name,
-            "size": self.getDimensions(name="axis_row_label")
-        }
-        return sg.Text(**kwargs)
+        return sg.Text(
+            text=name,
+            size=self.getDimensions(name="axis_row_label")
+        )
 
     def getInputRow(self, name: str, is_cartesian: bool = False) -> Row:
         """
@@ -1326,20 +1308,21 @@ class PlottingTab(Tab):
             f"axis_header_row_{string:s}"
             for string in ["element_name", "quantity_species", "quantity_name", "condensor_name"]
         ]
-        add_element = rows[0].addElements
         for index in range(len(texts)):
-            kwargs = {
-                "text": texts[index],
-                "size": self.getDimensions(name=dimension_keys[index]),
-                "justification": "left"
-            }
-            add_element(sg.Text(**kwargs))
-        kwargs = {
-            "text": "Transform",
-            "size": self.getDimensions(name="axis_header_row_transform_type"),
-            "justification": "left"
-        }
-        rows[1].addElements(sg.Text(**kwargs))
+            text_element = sg.Text(
+                text=texts[index],
+                size=self.getDimensions(name=dimension_keys[index]),
+                justification="left"
+            )
+            rows[0].addElements(text_element)
+
+        text_element = sg.Text(
+            text="Transform",
+            size=self.getDimensions(name="axis_header_row_transform_type"),
+            justification="left"
+        )
+        rows[1].addElements(text_element)
+
         return rows
 
     @storeElement
@@ -1351,15 +1334,15 @@ class PlottingTab(Tab):
         :param self: :class:`~Layout.SimulationWindow.PlottingTab` to retrieve element from
         """
         transform_types = ["None", "Fourier"]
-        kwargs = {
-            "values": transform_types,
-            "default_value": transform_types[0],
-            "tooltip": "Choose transform to perform on plot quantities",
-            "enable_events": True,
-            "size": self.getDimensions(name="transform_type_combobox"),
-            "key": f"{cc_pre:s} TRANSFORM"
-        }
-        return sg.InputCombo(**kwargs)
+
+        return sg.InputCombo(
+            values=transform_types,
+            default_value=transform_types[0],
+            tooltip="Choose transform to perform on plot quantities",
+            enable_events=True,
+            size=self.getDimensions(name="transform_type_combobox"),
+            key=f"{cc_pre:s} TRANSFORM"
+        )
 
     @storeElement
     def getAxisCondensorElement(self, name: str) -> sg.InputCombo:
@@ -1371,15 +1354,15 @@ class PlottingTab(Tab):
         :param name: name of axis to retrieve element from
         """
         axis_condensor = ["None", "Mean", "Frequency", "Standard Deviation"]
-        kwargs = {
-            "values": axis_condensor,
-            "default_value": axis_condensor[0],
-            "tooltip": f"Choose condensor for quantity on {name:s}-axis of plot",
-            "enable_events": True,
-            "size": self.getDimensions(name="axis_condensor_combobox"),
-            "key": f"-{cc_pre:s} CONDENSOR {name.upper():s}_AXIS-"
-        }
-        return sg.InputCombo(**kwargs)
+
+        return sg.InputCombo(
+            values=axis_condensor,
+            default_value=axis_condensor[0],
+            tooltip=f"Choose condensor for quantity on {name:s}-axis of plot",
+            enable_events=True,
+            size=self.getDimensions(name="axis_condensor_combobox"),
+            key=f"-{cc_pre:s} CONDENSOR {name.upper():s}_AXIS-"
+        )
 
     @storeElement
     def getAxisQuantityElement(self, name: str, **kwargs) -> sg.InputCombo:
@@ -1427,15 +1410,15 @@ class PlottingTab(Tab):
         axis_quantity_species.extend(["Variable", "Function"])
         if len(self.getPlotChoices(species="Parameter")) >= 1:
             axis_quantity_species.append("Parameter")
-        kwargs = {
-            "values": axis_quantity_species,
-            "default_value": axis_quantity_species[0],
-            "tooltip": f"Choose quantity type to display on {name:s}-axis of plot",
-            "enable_events": True,
-            "size": self.getDimensions(name="axis_quantity_species_combobox"),
-            "key": f"-{ccs_pre:s} {name.upper():s}_AXIS-"
-        }
-        return sg.InputCombo(**kwargs)
+
+        return sg.InputCombo(
+            values=axis_quantity_species,
+            default_value=axis_quantity_species[0],
+            tooltip=f"Choose quantity type to display on {name:s}-axis of plot",
+            enable_events=True,
+            size=self.getDimensions(name="axis_quantity_species_combobox"),
+            key=f"-{ccs_pre:s} {name.upper():s}_AXIS-"
+        )
 
     def getAxisLabelElement(self, name: str) -> sg.Text:
         """
@@ -1444,11 +1427,10 @@ class PlottingTab(Tab):
         :param self: :class:`~Layout.SimulationWindow.PlottingTab` to retrieve element from
         :param name: name of axis
         """
-        kwargs = {
-            "text": name,
-            "size": self.getDimensions(name="axis_row_label")
-        }
-        return sg.Text(**kwargs)
+        return sg.Text(
+            text=name,
+            size=self.getDimensions(name="axis_row_label")
+        )
 
     def getAxisInputRow(
         self, 
@@ -1551,14 +1533,14 @@ class FrequencyTab(Tab, StoredObject):
         row = Row(window=self.getWindowObject())
         texts = ["Method", "Condensor"]
         dimension_keys = [f"frequency_header_row_{string:s}" for string in ["method_name", "condensor_name"]]
-        add_element = row.addElements
+
         for index in range(len(texts)):
-            kwargs = {
-                "text": texts[index],
-                "size": self.getDimensions(name=dimension_keys[index]),
-                "justification": "left"
-            }
-            add_element(sg.Text(**kwargs))
+            text_element = sg.Text(
+                text=texts[index],
+                size=self.getDimensions(name=dimension_keys[index]),
+                justification="left"
+            )
+            row.addElements(text_element)
         return row
 
     @storeElement
@@ -1576,15 +1558,15 @@ class FrequencyTab(Tab, StoredObject):
             "Separation of Fourier Maxima",
             "Argument of Autocorrelation Maximum"
         ]
-        kwargs = {
-            "values": frequency_method,
-            "default_value": frequency_method[0],
-            "tooltip": "Choose method to calculate frequency",
-            "enable_events": True,
-            "size": self.getDimensions(name="frequency_method_combobox"),
-            "key": f"-ANALYSIS METHOD FREQUENCY-"
-        }
-        return sg.InputCombo(**kwargs)
+        
+        return sg.InputCombo(
+            values=frequency_method,
+            default_value=frequency_method[0],
+            tooltip="Choose method to calculate frequency",
+            enable_events=True,
+            size=self.getDimensions(name="frequency_method_combobox"),
+            key=f"-ANALYSIS METHOD FREQUENCY-"
+        )
 
     @storeElement
     def getCondensorElement(self) -> sg.InputCombo:
@@ -1595,15 +1577,15 @@ class FrequencyTab(Tab, StoredObject):
         :param self: :class:`~Layout.SimulationWindow.FrequencyTab` to retrieve element from
         """
         axis_condensor = ["Average", "Maximum", "Minimum", "Initial", "Final"]
-        kwargs = {
-            "values": axis_condensor,
-            "default_value": axis_condensor[0],
-            "tooltip": "Choose method to condense frequency",
-            "enable_events": True,
-            "size": self.getDimensions(name="frequency_condensor_combobox"),
-            "key": "ANALYSIS CONDENSOR FREQUENCY"
-        }
-        return sg.InputCombo(**kwargs)
+
+        return sg.InputCombo(
+            values=axis_condensor,
+            default_value=axis_condensor[0],
+            tooltip="Choose method to condense frequency",
+            enable_events=True,
+            size=self.getDimensions(name="frequency_condensor_combobox"),
+            key="ANALYSIS CONDENSOR FREQUENCY"
+        )
 
     def getLayout(self) -> List[List[sg.Element]]:
         """
@@ -1647,14 +1629,14 @@ class MeanTab(Tab, StoredObject):
         row = Row(window=self.getWindowObject())
         texts = ["Order"]
         dimension_keys = [f"mean_header_row_{string:s}" for string in ["order"]]
-        add_element = row.addElements
+        
         for index in range(len(texts)):
-            kwargs = {
-                "text": texts[index],
-                "size": self.getDimensions(name=dimension_keys[index]),
-                "justification": "left"
-            }
-            add_element(sg.Text(**kwargs))
+            text_element = sg.Text(
+                text=texts[index],
+                size=self.getDimensions(name=dimension_keys[index]),
+                justification="left"
+            )
+            row.addElements(text_element)
         return row
 
     @storeElement
@@ -1666,13 +1648,13 @@ class MeanTab(Tab, StoredObject):
         :param self: :class:`~Layout.SimulationWindow.MeanTab` to retrieve element from
         """
         values = ['-inf', '-1', '0', '1', '2', 'inf']
-        kwargs = {
-            "values": values,
-            "initial_value": '1',
-            "size": self.getDimensions(name="mean_order_spin"),
-            "key": f"-ANALYSIS ORDER MEAN-"
-        }
-        return sg.Spin(**kwargs)
+
+        return sg.Spin(
+            values=values,
+            initial_value='1',
+            size=self.getDimensions(name="mean_order_spin"),
+            key=f"-ANALYSIS ORDER MEAN-"
+        )
 
     def getLayout(self) -> List[List[sg.Element]]:
         """
@@ -1962,11 +1944,11 @@ class SimulationWindow(TabbedWindow):
                 ]
             ]
         ]
-        kwargs = {
-            "menu_definition": menu_definition,
-            "key": "-TOOLBAR MENU-"
-        }
-        return sg.Menu(**kwargs)
+        
+        return sg.Menu(
+            menu_definition=menu_definition,
+            key="-TOOLBAR MENU-"
+        )
 
     @storeElement
     def getCanvas(self) -> sg.Canvas:
@@ -1975,10 +1957,9 @@ class SimulationWindow(TabbedWindow):
 
         :param self: :class:`~Layout.SimulationWindow.SimulationWindow` to retrieve canvas from
         """
-        kwargs = {
-            "key": "-CANVAS-"
-        }
-        return sg.Canvas(**kwargs)
+        return sg.Canvas(
+            key="-CANVAS-"
+        )
 
     def getParameterSliderRows(self) -> List[Row]:
         """
@@ -1987,19 +1968,19 @@ class SimulationWindow(TabbedWindow):
         :param self: :class:`~Layout.SimulationWindow.SimulationWindow` to retrieve sliders from
         """
         slider_rows = []
-        append_slider = slider_rows.append
         for free_parameter_name, free_parameter_value in self.getFreeParameterValues().items():
             default_unit = free_parameter_value[3].units
             unit_conversion_factor = getUnitConversionFactor(default_unit)
             minimum_value = float(free_parameter_value[0]) * unit_conversion_factor
             maximum_value = float(free_parameter_value[1]) * unit_conversion_factor
             value_stepcount = int(free_parameter_value[2])
-            kwargs = {
-                "name": free_parameter_name,
-                "window": self,
-                "values": (minimum_value, maximum_value, value_stepcount, default_unit)
-            }
-            append_slider(Row(window=self, elements=ParameterSlider(**kwargs).getElement()))
+            parameter_slider = ParameterSlider(
+                name=free_parameter_name,
+                window=self,
+                values=(minimum_value, maximum_value, value_stepcount, default_unit)
+            )
+            slider_rows.append(Row(window=self, elements=parameter_slider.getElement()))
+        
         return slider_rows
 
     @storeElement
@@ -2010,12 +1991,12 @@ class SimulationWindow(TabbedWindow):
         :param self: :class:`~Layout.SimulationWindow.AestheticsTab` to retrieve element from
         """
         text = "Update Plot"
-        kwargs = {
-            "button_text": text,
-            "tooltip": "Click to update plot with new axis settings.",
-            "key": f"{text.upper():s}"
-        }
-        return sg.Button(**kwargs)
+        
+        return sg.Button(
+            button_text=text,
+            tooltip="Click to update plot with new axis settings.",
+            key=f"{text.upper():s}"
+        )
 
     def getLayout(self) -> List[List[sg.Element]]:
         """
@@ -2122,11 +2103,15 @@ class SimulationWindowRunner(WindowRunner):
         general_derivative_vector = self.general_derivative_vector
         if general_derivative_vector is None:
             model = self.getModel()
-            kwargs = {
-                "names": model.getVariables(time_evolution_types="Temporal", return_type=str),
-                "skip_parameters": self.getFreeParameterNames()
-            }
-            self.general_derivative_vector, equilibrium_substitutions = model.getDerivativeVector(**kwargs)
+            temporal_variable_names = model.getVariables(
+                time_evolution_types="Temporal",
+                return_type=str
+            )
+
+            self.general_derivative_vector, equilibrium_substitutions = model.getDerivativeVector(
+                names=temporal_variable_names,
+                skip_parameters=self.getFreeParameterNames()
+            )
             self.results.setEquilibriumExpressions(equilibrium_expressions=equilibrium_substitutions)
         return self.general_derivative_vector
 
@@ -2427,13 +2412,12 @@ class SimulationWindowRunner(WindowRunner):
         :param current_value: present number of simulation being calculated
         :param max_value: total number of simulations to calculate
         """
-        kwargs = {
-            "title": title,
-            "orientation": "horizontal",
-            "current_value": current_value,
-            "max_value": max_value
-        }
-        return sg.OneLineProgressMeter(**kwargs)
+        return sg.OneLineProgressMeter(
+            title=title,
+            orientation="horizontal",
+            current_value=current_value,
+            max_value=max_value
+        )
 
     def runSimulation(
             self,
@@ -2959,13 +2943,14 @@ class SimulationWindowRunner(WindowRunner):
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve results from
         """
         file_types = (("Compressed File", "*.zip"), ("ALL files", "*.*"),)
-        kwargs = {
-            "message": "Enter Filename",
-            "title": "Save Results",
-            "save_as": True,
-            "file_types": file_types
-        }
-        filename = sg.PopupGetFile(**kwargs)
+
+        filename = sg.PopupGetFile(
+            message="Enter Filename",
+            title="Save Results",
+            save_as=True,
+            file_types=file_types
+        )
+
         if isinstance(filename, str):
             self.getResultsObject().saveToFile(filename)
 
@@ -2976,13 +2961,14 @@ class SimulationWindowRunner(WindowRunner):
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from
         """
         file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
-        kwargs = {
-            "message": "Enter Filename",
-            "title": "Save Parameters",
-            "save_as": True,
-            "file_types": file_types
-        }
-        filename = sg.PopupGetFile(**kwargs)
+
+        filename = sg.PopupGetFile(
+            message="Enter Filename",
+            title="Save Parameters",
+            save_as=True,
+            file_types=file_types
+        )
+
         if isinstance(filename, str):
             self.getModel().saveParametersToFile(filename)
 
@@ -2993,13 +2979,14 @@ class SimulationWindowRunner(WindowRunner):
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from
         """
         file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
-        kwargs = {
-            "message": "Enter Filename",
-            "title": "Save Functions",
-            "save_as": True,
-            "file_types": file_types
-        }
-        filename = sg.PopupGetFile(**kwargs)
+        
+        filename = sg.PopupGetFile(
+            message="Enter Filename",
+            title="Save Functions",
+            save_as=True,
+            file_types=file_types
+        )
+
         if isinstance(filename, str):
             self.getModel().saveFunctionsToFile(filename)
 
@@ -3010,13 +2997,14 @@ class SimulationWindowRunner(WindowRunner):
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from
         """
         file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
-        kwargs = {
-            "message": "Enter Filename",
-            "title": "Save Time-Evolution Types",
-            "save_as": True,
-            "file_types": file_types
-        }
-        filename = sg.PopupGetFile(**kwargs)
+
+        filename = sg.PopupGetFile(
+            message="Enter Filename",
+            title="Save Time-Evolution Types",
+            save_as=True,
+            file_types=file_types
+        )
+
         if isinstance(filename, str):
             self.getModel().saveTimeEvolutionTypesToFile(filename)
 
@@ -3036,13 +3024,14 @@ class SimulationWindowRunner(WindowRunner):
             ]
             # noinspection PyTypeChecker
             file_types.append(("ALL Files", "*.*"))
-            kwargs = {
-                "message": "Enter Filename",
-                "title": "Save Figure",
-                "save_as": True,
-                "file_types": tuple(file_types)
-            }
-            filepath = sg.PopupGetFile(**kwargs)
+
+            filepath = sg.PopupGetFile(
+                message="Enter Filename",
+                title="Save Figure",
+                save_as=True,
+                file_types=tuple(file_types)
+            )
+
             if isinstance(filepath, str):
                 try:
                     figure.savefig(filepath)
@@ -3050,13 +3039,13 @@ class SimulationWindowRunner(WindowRunner):
                     sg.PopupError(f"cannot save figure as {filepath:s}")
         elif isinstance(name, str):
             file_types = [("Compressed File", "*.zip"), ("ALL Files", "*.*")]
-            kwargs = {
-                "message": "Enter Filename",
-                "title": "Save Figure",
-                "save_as": True,
-                "file_types": tuple(file_types)
-            }
-            zip_filepath = sg.PopupGetFile(**kwargs)
+
+            zip_filepath = sg.PopupGetFile(
+                message="Enter Filename",
+                title="Save Figure",
+                save_as=True,
+                file_types=tuple(file_types)
+            )
 
             if isinstance(zip_filepath, str):
                 save_directory = Path(zip_filepath).parent

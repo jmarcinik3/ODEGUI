@@ -299,14 +299,15 @@ def expression2png(name: str, expression: Expr, folder: str, filename: str, var2
 
     filepath = os.path.join(folder, filename)
     overwrite = name not in old_info.keys() or expression_str != old_info[name]["expression"]
-    kwargs = {
-        "tex_text": expression_str,
-        "filepath": filepath,
-        "overwrite": overwrite
-    }
+
     if overwrite:
         print(f"Overwriting {filepath:s} as {expression_str:s}")
-    tex2png(**kwargs)
+    
+    tex2png(
+        tex_text=expression_str,
+        filepath=filepath,
+        overwrite=overwrite
+    )
 
     new_info = old_info
     new_info[name] = {
