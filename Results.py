@@ -192,9 +192,9 @@ class Results:
             Value is symbolic equilibrium expression of variable.
         """
         if equilibrium_expressions is None:
-            free_parameter_names = self.getFreeParameterNames
-            solutions = self.getModel().getEquilibriumSolutions(
-                skip_parameters=free_parameter_names)
+            free_parameter_names = self.getFreeParameterNames()
+            model = self.getModel()
+            solutions = model.getEquilibriumSolutions(skip_parameters=free_parameter_names)
             self.general_equilibrium_expressions = solutions
         else:
             self.general_equilibrium_expressions = equilibrium_expressions
@@ -274,19 +274,34 @@ class Results:
             index=index, name=name)
         expression_sub = expression.subs(parameter_substitutions)
 
-        variables = self.getModel().getVariables(time_evolution_types="Temporal")
+        model = self.getModel()
+        variables = model.getVariables(
+            time_evolution_types="Temporal", 
+            return_type=Symbol
+        )
         expression_lambda = lambdify(
             [[Symbol("t"), *variables]],
             expression_sub,
             modules=["numpy", "scipy"]
         )
+
         variable_names = list(map(str, variables))
         temporal_results = self.getResultsOverTime(
-            index, quantity_names=variable_names)
-        times = self.getResultsOverTime(index, quantity_names="t")
+            index,
+            quantity_names=variable_names
+        )
+        times = self.getResultsOverTime(
+            index, 
+            quantity_names="t"
+        )
         times = times.reshape((1, times.size))
-        arguments = np.append(times, temporal_results, axis=0)
+        arguments = np.append(
+            times, 
+            temporal_results, 
+            axis=0
+        )
         results = expression_lambda(arguments)
+
         return np.array(results)
 
     def getFunctionResults(
@@ -357,7 +372,7 @@ class Results:
         :param index: index of parameter value for free parameter
         :param name: name of variable to retrieve results of
         """
-        derivative = self.getModel().getDerivativesFromVariableNames(names=name)
+        derivative = self.getModel().getDerivativesFromVariables(name)
         initial_condition = derivative.getInitialCondition()
         time_count = self.getResultsOverTime(index, "t").size
         results = np.repeat(initial_condition, time_count)
@@ -649,11 +664,9 @@ class Results:
                 pass
 
             model = self.getModel()
-
             if quantity_names in model.getVariables(return_type=str):
-                derivative = model.getDerivativesFromVariableNames(
-                    names=quantity_names)
-                time_evolution_type = derivative.getTimeEvolutionType()
+                variable_obj = model.getVariables(names=quantity_names)
+                time_evolution_type = variable_obj.getTimeEvolutionType()
                 results_handles = {
                     "Equilibrium": self.getEquilibriumVariableResults,
                     "Constant": self.getConstantVariableResults,
