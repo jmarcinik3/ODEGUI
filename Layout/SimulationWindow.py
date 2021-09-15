@@ -2113,6 +2113,7 @@ class SimulationWindowRunner(WindowRunner):
                 skip_parameters=self.getFreeParameterNames()
             )
             self.results.setEquilibriumExpressions(equilibrium_expressions=equilibrium_substitutions)
+        
         return self.general_derivative_vector
 
     def getResultsObject(self) -> Results:

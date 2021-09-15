@@ -33,7 +33,12 @@ class PaperQuantity:
     :ivar model: model that contains object
     """
 
-    def __init__(self, name: str, model: Model = None, filestem: str = None) -> None:
+    def __init__(
+        self,
+        name: str,
+        model: Model = None,
+        filestem: str = None
+    ) -> None:
         """
         Constructor for :class:`~Function.PaperQuantity`.
 
@@ -44,6 +49,16 @@ class PaperQuantity:
         self.name = name
         self.filestem = filestem
         self.model = model
+
+    def getSymbol(self) -> Symbol:
+        """
+        Get symbol of object.
+
+        :param self: :class:`~Function.PaperQuantity` to retrieve symbol from
+        """
+        name = self.getName()
+        symbol = Symbol(name)
+        return symbol
 
     def getName(self, return_type: Type[Union[str, Symbol]] = str) -> str:
         """
@@ -56,7 +71,7 @@ class PaperQuantity:
         if return_type == str:
             return self.name
         elif return_type == Symbol:
-            return Symbol(self.name)
+            return self.getSymbol()
         else:
             raise ValueError("invalid return type")
 
@@ -143,6 +158,69 @@ class Parameter(PaperQuantity):
         return info
 
 
+class Variable(PaperQuantity):
+    """
+    Store info pertinent to generate/simulate variable.
+
+    :ivar name: name of variable
+    :ivar time_evolution_type: time-evolution type of variable, i.e. how variable evolves over time
+    :ivar model: model that variable is stored in
+    """
+
+    def __init__(
+        self, 
+        name: str, 
+        time_evolution_type: str = "Temporal", 
+        **kwargs
+    ) -> None:
+        """
+        Constructor for :class:`~Function.Variable`.
+
+        :param name: name of variable
+        :param time_evolution_type: time-evolution type of variable
+        :param kwargs: additional arguments to pass into :class:`~Function.PaperQuantity`
+        """
+        super().__init__(name, **kwargs)
+        self.time_evolution_type = time_evolution_type
+
+    def getTimeEvolutionType(self) -> str:
+        """
+        Get time-evolution type for variable.
+
+        :param self: :class:`~Function.Variable` to retrieve time evolution from
+        """
+        return self.time_evolution_type
+
+    def getFunctions(self, **kwargs) -> List[Function]:
+        """
+        Get functions that rely on variable.
+
+        :param self: :class:`~Function.variable` that :class:`~Function.Function` rely on
+        :param kwargs: additional arguments to pass into :meth:`~Function.Function.getFreeSymbols`
+        """
+        model = self.getModel()
+        model_functions = model.getFunctions()
+        symbol = Symbol(self.getName())
+        functions = [
+            function_object
+            for function_object in model_functions
+            if symbol in function_object.getVariables(**kwargs)
+        ]
+        return functions
+
+    def getSaveInfo(self) -> dict:
+        """
+        Get sufficient info from variable for future recreation.
+
+        :param self: :class:`~Function.Variable` to retrieve info from
+        """
+        time_evolution_type = self.getTimeEvolutionType()
+        info = {
+            "time_evolution_type": time_evolution_type
+        }
+        return info
+
+
 class Model:
     """
     Container for Function and Parameter objects.
@@ -157,8 +235,9 @@ class Model:
 
     def __init__(
             self,
+            variables: List[Variable] = None,
             functions: List[Function] = None,
-            parameters: List[Parameter] = None,
+            parameters: List[Parameter] = None
     ) -> None:
         """
         Constructor for :class:`~Function.Model`.
@@ -166,12 +245,15 @@ class Model:
         :param functions: functions to initially include in model
         :param parameters: parameters to initially include in model
         """
+        self.variables = {}
         self.functions = {}
         self.parameters = {}
         if parameters is not None:
             self.addPaperQuantities(parameters)
         if functions is not None:
             self.addPaperQuantities(functions)
+        if variables is not None:
+            self.addPaperQuantities(variables)
 
     def addPaperQuantities(self, quantity_objects: Union[PaperQuantity, List[PaperQuantity]]) -> None:
         """
@@ -184,9 +266,10 @@ class Model:
 
         def add(quantity_object) -> None:
             """Base method for :meth:`~Function.Model.addPaperQuantities`"""
+            name = quantity_object.getName()
+
             if isinstance(quantity_object, Function):
                 if quantity_object not in self.getFunctions():
-                    name = quantity_object.getName()
                     if name in self.getFunctionNames():
                         print(f"Overwriting {name:s}={quantity_object.getExpression():} into model")
                         del self.functions[name]
@@ -197,9 +280,7 @@ class Model:
                         del self.parameters[name]
                     if not quantity_object.isParameter():
                         self.functions[name] = quantity_object
-
             elif isinstance(quantity_object, Parameter):
-                name = quantity_object.getName()
                 quantity = quantity_object.getQuantity()
                 if name in self.getFunctionNames():
                     print(f"Overwriting function {name:s} as parameter {name:s}={formatQuantity(quantity)}")
@@ -207,6 +288,11 @@ class Model:
                 elif name in self.getParameterNames():
                     print(f"Overwriting parameter {name:s}={formatQuantity(quantity):s} into model")
                 self.parameters[name] = quantity_object
+            elif isinstance(quantity_object, Variable):
+                if name in self.getVariableNames():
+                    print(f"Overwriting variable {name:s} into model")
+                    del self.variables[name]
+                self.variables[name] = quantity_object
 
             if quantity_object.getModel() is not self:
                 quantity_object.setModel(self)
@@ -214,7 +300,7 @@ class Model:
         return recursiveMethod(
             base_method=add,
             args=quantity_objects,
-            valid_input_types=(Function, Parameter),
+            valid_input_types=(Variable, Function, Parameter),
             output_type=list
         )
 
@@ -233,6 +319,14 @@ class Model:
         :param self: :class:`~Function.Model` to retrieve names from
         """
         return list(self.functions.keys())
+
+    def getVariableNames(self) -> Union[str, List[str]]:
+        """
+        Get names of stored variables in order added.
+
+        :param self: :class:`~Function.Model` to retrieve names from
+        """
+        return list(self.variables.keys())
 
     def getParameters(self, names: Union[str, List[str]] = None) -> Union[Parameter, List[Parameter]]:
         """
@@ -255,7 +349,7 @@ class Model:
             default_args=self.getParameterNames()
         )
 
-    def getParameterQuantites(self, names: Union[str, List[str]] = None) -> Union[Quantity, Dict[str, Quantity]]:
+    def getParameterQuantities(self, names: Union[str, List[str]] = None) -> Union[Quantity, Dict[str, Quantity]]:
         """
         Get parameter quantities stored in model.
         
@@ -404,14 +498,15 @@ class Model:
         :param filepath: path of file to save time-evolution types into
         :returns: new file
         """
-        derivatives: List[Union[Function, Derivative]] = self.getDerivatives()
+        variable_objs = self.getVariables()
 
         tet2vars = {}
-        for derivative in derivatives:
-            time_evolution_type = derivative.getTimeEvolutionType()
+        for variable_obj in variable_objs:
+            time_evolution_type = variable_obj.getTimeEvolutionType()
             if time_evolution_type not in tet2vars.keys():
                 tet2vars[time_evolution_type] = []
-            tet2vars[time_evolution_type].append(derivative.getVariable(return_type=str))
+            variable_name = variable_obj.getName()
+            tet2vars[time_evolution_type].append(variable_name)
 
         with open(filepath, 'w') as file:
             yaml.dump(tet2vars, file, default_flow_style=None)
@@ -419,7 +514,7 @@ class Model:
 
         return file
 
-    def getDerivatives(self, time_evolution_types: Union[str, List[str]] = None) -> List[Derivative]:
+    def getDerivatives(self) -> List[Derivative]:
         """
         Get stored derivatives of given time-evolution type(s).
         
@@ -428,28 +523,9 @@ class Model:
             get all derivatives: time_evolution_types [None]
 
         :param self: :class:`~Function.Model` to retrieve derivative(s) from
-        :param time_evolution_types: only retrieve derivatives of this type(s), acts as an optional filter
         """
-        if isinstance(time_evolution_types, str):
-            filtered_derivatives = [
-                derivative
-                for derivative in self.getFunctions(filter_type=Derivative)
-                if derivative.getTimeEvolutionType() == time_evolution_types
-            ]
-            return filtered_derivatives
-        elif isinstance(time_evolution_types, list):
-            derivatives = [
-                derivative
-                for time_evolution_type in time_evolution_types
-                for derivative in self.getDerivatives(time_evolution_types=time_evolution_type)
-            ]
-            return derivatives
-        elif time_evolution_types is None:
-            # noinspection PyTypeChecker
-            derivatives: List[Derivative] = self.getFunctions(filter_type=Derivative)
-            return derivatives
-        else:
-            raise RecursiveTypeError(time_evolution_types)
+        derivative_objs = self.getFunctions(filter_type=Derivative)
+        return derivative_objs
 
     def getEquilibriumSolutions(
             self,
@@ -479,26 +555,33 @@ class Model:
         if skip_parameters is None:
             skip_parameters = []
 
-        if isinstance(names, (str, list)):
-            equilibria = self.getFunctions(names=names)
-            if not all([isinstance(function_object, Derivative) for function_object in equilibria]):
-                raise TypeError("names must correspond to Derivative stored in Model")
-        elif names is None:
-            equilibria = self.getDerivatives(time_evolution_types="Equilibrium")
+        if names is None:
+            equilibrium_variables = self.getVariables(
+                time_evolution_types="Equilibrium", 
+                return_type=Symbol
+            ) # list(map(Derivative.getVariable, equilibria))
+        elif isinstance(names, (str, list)):
+            equilibrium_variables = self.getVariables(
+                names=names,
+                return_type=Symbol
+            )
         else:
             raise RecursiveTypeError(names)
-
-        equilibrium_count = len(equilibria)
+        
+        equilibrium_count = len(equilibrium_variables)
         if equilibrium_count == 0:
             return {}
         elif equilibrium_count >= 1:
-            equilibrium_variables = list(map(Derivative.getVariable, equilibria))
-            equilibrium_derivatives = [equilibrium.getExpression(expanded=True) for equilibrium in equilibria]
+            derivative_objs = self.getDerivativesFromVariables(equilibrium_variables)
+            equilibrium_expressions = [
+                derivative_obj.getExpression(expanded=True) 
+                for derivative_obj in derivative_objs
+            ]
 
             bk_probs = list(symbols("pC0 pC1 pC2 pO2 pO3"))
             if set(bk_probs).issubset(set(equilibrium_variables)):
-                equilibrium_derivatives.append(sum(bk_probs) - 1)
-            solutions = solve(equilibrium_derivatives, equilibrium_variables)
+                equilibrium_expressions.append(sum(bk_probs) - 1)
+            solutions = solve(equilibrium_expressions, equilibrium_variables)
 
             substitutions = {}
             if substitute_functions:
@@ -509,18 +592,24 @@ class Model:
                 )
                 substitutions.update(function_substitutions)
             if substitute_parameters:
-                parameter_names = unique(
-                    [
-                        parameter
-                        for equilibrium in equilibria
-                        for parameter in
-                        equilibrium.getParameters(expanded=True, return_type=str)
-                        if parameter not in skip_parameters
-                    ]
-                )
-                substitutions.update(self.getParameterSubstitutions(parameter_names))
+                parameter_names = []
+                for derivative_obj in derivative_objs:
+                    new_parameter_names = derivative_obj.getParameters(
+                        expanded=True,
+                        return_type=str
+                    )
+                    for parameter_name in new_parameter_names:
+                        if (
+                            parameter_name not in skip_parameters and 
+                            parameter_name not in parameter_names
+                        ):
+                            parameter_names.append(parameter_name)
+                
+                parameter_substitutions = self.getParameterSubstitutions(parameter_names)
+                substitutions.update(parameter_substitutions)
             if substitute_constants:
-                substitutions.update(self.getConstantSubstitutions())
+                constant_substitutions = self.getConstantSubstitutions()
+                substitutions.update(constant_substitutions)
 
             solutions = {
                 variable: solution.subs(substitutions)
@@ -556,7 +645,7 @@ class Model:
             substitute_constants=substitute_constants,
             substitute_functions=substitute_functions
         )
-        function_object = self.getDerivativesFromVariableNames(names=name)
+        function_object = self.getDerivativesFromVariables(name)
         equilibrium = equilibria[function_object.getVariable()]
         return equilibrium
 
@@ -621,15 +710,16 @@ class Model:
         :param self: :class:`~Function.Model` to retrieve constant derivative(s) from
         :param names: name(s) of constant derivative(s) to substitute numerical constants in for
         """
-        if isinstance(names, (str, list)):
-            constant_functions = self.getFunctions(names=names)
-            for function_object in constant_functions:
-                if not isinstance(function_object, Derivative):
-                    raise TypeError("names must correspond to Derivative stored in Model")
-        elif names is None:
-            constant_functions = self.getDerivatives(time_evolution_types="Constant")
-        else:
-            raise RecursiveTypeError(names)
+        if names is None:
+            names = self.getVariables(
+                time_evolution_types="Constant",
+                return_type=str
+            )
+        
+        constant_functions = self.getFunctions(names=names)
+        for function_object in constant_functions:
+            assert isinstance(function_object, Derivative)
+        
         constant_count = len(constant_functions)
         if constant_count == 0:
             return {}
@@ -653,7 +743,7 @@ class Model:
         """
         if skip_parameters is None:
             skip_parameters = []
-        quantities = self.getParameterQuantites(names=names)
+        quantities = self.getParameterQuantities(names=names)
         if names is None:
             names = quantities.keys()
 
@@ -698,9 +788,11 @@ class Model:
             Returned as lambda function handle
             if :paramref:`~Function.Model.getDerivativeVector.lambdified` is set to False.
         """
+        if names is None:
+            names = self.getVariableNames()
         if skip_parameters is None:
             skip_parameters = []
-
+        
         use_memory = Function.usingMemory()
         Function.clearMemory()
         Function.setUseMemory(False)
@@ -722,15 +814,9 @@ class Model:
                 skip_parameters=skip_parameters
             )
             variable_substitutions.update(function_substitutions)
-
+        
         parameter_substitutions = self.getParameterSubstitutions(skip_parameters=skip_parameters) if substitute_parameters else {}
-
-        if names is None:
-            temporal_derivatives = self.getDerivatives(time_evolution_types="Temporal")
-            getVariable = partial(Derivative.getVariable, return_type=str)
-            names = list(map(getVariable, temporal_derivatives))
-        else:
-            temporal_derivatives = self.getDerivativesFromVariableNames(names=names)
+        temporal_derivatives = self.getDerivativesFromVariables(names)
 
         derivative_vector = []
         for derivative in temporal_derivatives:
@@ -739,6 +825,7 @@ class Model:
 
             derivative_variables = derivative.getVariables(expanded=True)
             derivative_functions = derivative.getFunctions(expanded=True)
+
             variable_substitution = {
                 variable: substitution
                 for variable, substitution in variable_substitutions.items()
@@ -787,39 +874,9 @@ class Model:
             ndarray of float if return_type is ndarray.
         """
         initial_values = {
-            derivative.getVariable(): initial_value
+            derivative.getVariable(return_type=Symbol): derivative.getInitialCondition()
             for derivative in self.getDerivatives()
-            if isinstance((initial_value := derivative.getInitialCondition()), float)
         }
-
-        if initial_values is None:
-            derivatives = self.getDerivatives()
-
-            initial_constant_substitutions = {
-                derivative.getVariable(): initial_value
-                for derivative in derivatives
-                if isinstance((initial_value := derivative.getInitialCondition()), float)
-            }
-
-            substitutions = {
-                **initial_constant_substitutions, **self.getConstantSubstitutions(), **self.getParameterSubstitutions()
-            }
-
-            equilibrium_equations, equilibrium_variables = [], []
-            equations_append, variables_append = equilibrium_equations.append, equilibrium_variables.append
-            for derivative in derivatives:
-                derivative: Union[Derivative, Function]
-                if derivative.getInitialCondition() == "Equilibrium":
-                    variables_append(derivative.getVariable())
-                    equations_append(derivative.getExpression(expanded=True).subs(substitutions))
-
-            variable_count = len(equilibrium_variables)
-            equations_lambda = lambdify((tuple(equilibrium_variables),), equilibrium_equations, modules=["math"])
-            initial_guess = np.repeat(0.5, variable_count)
-            roots = optimize.root(equations_lambda, initial_guess)
-            solutions = {equilibrium_variables[i]: roots.x[i] for i in range(variable_count)}
-
-            initial_values = {**initial_constant_substitutions, **solutions}
 
         if isinstance(names, str):
             return initial_values[Symbol(names)]
@@ -840,9 +897,10 @@ class Model:
 
     def getVariables(
             self,
+            names: Union[str, List[str]] = None,
             time_evolution_types: Union[str, List[str]] = None,
-            return_type: Type[Union[Symbol, str]] = Symbol
-    ) -> Union[List[Symbol], List[str]]:
+            return_type: Type[Union[Variable, Symbol, str]] = Variable
+    ) -> Union[List[Variable], List[Symbol], List[str]]:
         """
         Get variables stored in model.
         
@@ -850,51 +908,84 @@ class Model:
             get symbolic variable associated with single derivative: names [str]
 
         :param self: :class:`~Function.Model` to retrieve derivative variable(s) from
+        :param names: name(s) of variable(s) to retrieve.
+            Defaults to all variables.
         :param time_evolution_types: only retrieve derivatives of this type(s), acts as a filter
         :param return_type: class type to return elements in list output as
         """
-        if isinstance(time_evolution_types, str):
-            derivatives = self.getDerivatives(time_evolution_types=time_evolution_types)
-            variables = list(map(Derivative.getVariable, derivatives))
-        elif isinstance(time_evolution_types, list):
-            variables = [
-                self.getVariables(time_evolution_types=time_evolution_type)
-                for time_evolution_type in time_evolution_types
-            ]
-        elif time_evolution_types is None:
-            derivatives = self.getDerivatives()
-            variables = list(map(Derivative.getVariable, derivatives))
+        if names is not None and time_evolution_types is not None:
+            raise ValueError("atleast one of names or time_evolution_types must be None")
+        elif time_evolution_types is not None:
+            if isinstance(time_evolution_types, str):
+                variables = [
+                    variable
+                    for variable in self.getVariables()
+                    if variable.getTimeEvolutionType() == time_evolution_types
+                ]
+            elif isinstance(time_evolution_types, list):
+                variables = [
+                    variable
+                    for time_evolution_type in time_evolution_types
+                    for variable in self.getVariables(time_evolution_types=time_evolution_type)
+                ]
+            else:
+                raise RecursiveTypeError(time_evolution_types)
         else:
-            raise RecursiveTypeError(time_evolution_types)
+            def get(name: str) -> Variable:
+                """Base method for :meth:`~Function.Model.getVariables`"""
+                return self.variables[name]
 
+            variables = recursiveMethod(
+                base_method=get,
+                args=names,
+                valid_input_types=str,
+                output_type=list,
+                default_args=self.getVariableNames()
+            )
+        
         if return_type == Symbol:
-            return variables
+            variable_symbols = list(map(Variable.getSymbol, variables))
+            return variable_symbols
         elif return_type == str:
-            return list(map(str, variables))
+            variable_names = list(map(Variable.getName, variables))
+            return variable_names
+        elif return_type == Variable:
+            return variables
         else:
-            raise ValueError("return_type must be Symbol or str")
+            raise ValueError("return_type must be of type Variable, Symbol, str")
+        
 
-    def getDerivativesFromVariableNames(
-            self, names: Union[str, Symbol, List[Union[str, Symbol]]]
+    def getDerivativesFromVariables(
+            self,
+            variables: Union[str, Symbol, Variable, List[Union[str, Symbol, Variable]]]
     ) -> Union[Derivative, List[Derivative]]:
         """
-        Get derivative corresponding to variable name.
+        Get derivative corresponding to variable.
 
         :param self: :class:`~Function.Model` to retrieve derivative(s) from
-        :param names: name(s) of variable(s) associated with derivative(s)
+        :param names: (name(s) of) variable(s)) associated with derivative(s)
         """
+        derivative_objs = self.getDerivatives()
 
-        def get(name: str) -> Derivative:
-            """Base method for :meth:`~Function.Model.getDerivativesFromVariableNames`"""
-            for derivative in self.getDerivatives():
-                if derivative.getVariable(return_type=str) == str(name):
-                    return derivative
-            raise ValueError("names input must correspond to some Derivative stored in Model")
+        def get(variable: Union[str, Symbol, Variable]) -> Derivative:
+            """Base method for :meth:`~Function.Model.getDerivativesFromVariables`"""
+            if isinstance(variable, str):
+                name = variable
+            elif isinstance(variable, Symbol):
+                name = str(variable)
+            elif isinstance(variable, Variable):
+                name = variable.getName()
+            else:
+                raise TypeError(f"variable must be of type str, Symbol, or Variable")
+            
+            for derivative_obj in derivative_objs:
+                if derivative_obj.getVariable(return_type=str) == name:
+                    return derivative_obj
 
         return recursiveMethod(
             base_method=get,
-            args=names,
-            valid_input_types=(str, Symbol),
+            args=variables,
+            valid_input_types=(str, Symbol, Variable),
             output_type=list
         )
 
@@ -1255,25 +1346,26 @@ class Derivative:
 
     def __init__(
         self, 
-        variable: Union[Symbol, str], 
-        time_evolution_type: str = "Temporal", 
+        variable_name: Union[Symbol, str],
         initial_condition: float = 0
     ) -> None:
         """
          Constructor for :class:`~Function.Derivative`.
          
         :param variable: variable that derivative is a derivative of
-        :param time_evolution_type: time-evolution type of derivative (e.g. "Temporal", "Equilibrium", "Constant")
         :param initial_condition: initial value of associated variable
         """
-        self.variable = None
-        self.setVariable(variable)
-        self.time_evolution_type = time_evolution_type
-        self.setTimeEvolutionType(time_evolution_type)
+        if isinstance(variable_name, Symbol):
+            self.variable_name = str(variable_name)
+        elif isinstance(variable_name, str):
+            self.variable_name = variable_name
+        else:
+            raise TypeError("variable input must be of type str or Symbol")
+        
         self.initial_condition = initial_condition
         self.setInitialCondition(initial_condition)
 
-    def getVariable(self, return_type: Type[Union[Symbol, str]] = Symbol) -> Union[Symbol, str]:
+    def getVariable(self, return_type: Type[Union[Variable, Symbol, str]] = Variable) -> Union[Variable, Symbol, str]:
         """
         Get variable that derivative is derivative of.
 
@@ -1281,43 +1373,19 @@ class Derivative:
         :param return_type: class type of output.
             Must be either sympy.Symbol or str.
         """
-        if return_type == Symbol:
-            return self.variable
+        variable_name = self.variable_name
+
+        if return_type == Variable:
+            model: Model = self.getModel()
+            variable_obj = model.getVariables(names=variable_name)
+            return variable_obj
+        elif return_type == Symbol:
+            return Symbol(variable_name)
         elif return_type == str:
-            return str(self.variable)
+            return variable_name
         else:
             raise ValueError("return_type must be sp.Symbol or str")
-
-    def setVariable(self, variable: Union[str, Symbol]) -> None:
-        """
-        Set variable associated with derivative.
         
-        :param self: :class:`~Function.Derivative` associated with variable
-        :param variable: variable to associate with derivative
-        """
-        if isinstance(variable, str):
-            self.setVariable(Symbol(variable))
-        elif isinstance(variable, Symbol):
-            self.variable = variable
-        else:
-            raise TypeError("variable input must be str of sympy.Symbol")
-
-    def getTimeEvolutionType(self) -> str:
-        """
-        Get time-evolution type of variable associated with derivative.
-
-        :param self: :class:`~Function.Derivative` to retrieve time-evolution type from
-        """
-        return self.time_evolution_type
-
-    def setTimeEvolutionType(self, time_evolution_type: str) -> None:
-        """
-        Set time-evolution type for variable.
-
-        :param self: :class:`~Function.Derivative` to set time-evolution type for
-        :param time_evolution_type: time-evolution type to set for variable
-        """
-        self.time_evolution_type = time_evolution_type
 
     def getInitialCondition(self) -> Union[str, float]:
         """
@@ -1325,13 +1393,9 @@ class Derivative:
 
         :param self: :class:`~Function.Derivative` to retrieve initial condition from
         :returns: Initial value float if value is provided.
-            "Equilibrium" if variable begins in equilibrium with respect to other variables.
+            todo... "Equilibrium" if variable begins in equilibrium with respect to other variables.
         """
-        if self.getTimeEvolutionType() == "Equilibrium":
-            initial_condition = "Equilibrium"
-        else:
-            initial_condition = self.initial_condition
-        return initial_condition
+        return self.initial_condition
 
     def setInitialCondition(self, value: Union[str, float]) -> None:
         """
@@ -1883,7 +1947,7 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
         }
     if "Derivative" in properties:
         kwargs["Derivative"] = {
-            "variable": getVariable(info)
+            "variable_name": getVariable(info)
         }
     if "Piecewise" in properties:
         kwargs["Piecewise"] = {

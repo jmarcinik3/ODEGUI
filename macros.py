@@ -388,4 +388,4 @@ def recursiveMethod(
         )
         return partialGet(args=default_args)
     else:
-        raise TypeError("invalid type for args")
+        raise TypeError(f"args must be of type N/A, not {type(args):}")
