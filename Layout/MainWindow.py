@@ -8,7 +8,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
 import yaml
-from colour import Color
+# from colour import Color
 from igraph import Graph, plot
 from numpy import ndarray
 from pint import Quantity
@@ -66,7 +66,8 @@ class TimeEvolutionRow(TabRow, StoredObject):
             self.getRowLabel(),
             self.getTimeEvolutionTypeElement(),
             self.getInitialConditionElement(),
-            self.getInitialEquilibriumElement()
+            self.getInitialEquilibriumElement(),
+            self.getIsCoreElement()
         ]
 
         # if "Equilibrium" in self.getTimeEvolutionTypes(): elements.append(self.getCheckbox())
@@ -144,6 +145,20 @@ class TimeEvolutionRow(TabRow, StoredObject):
             disabled=True,
             size=self.getDimensions(name="initial_equilibrium_checkbox"),
             key=f"-{ice_pre:s} {self.getName():s}"
+        )
+    
+    @storeElement
+    def getIsCoreElement(self) -> sg.Checkbox:
+        """
+        Get element allowing use to choose whether variable is pertinent/required for simulation.
+
+        :param self: :class:`~Layout.MainWindow.TimeEvolutionRow` to retrieve element from
+        """
+        return sg.Checkbox(
+            text='',
+            default=True,
+            size=self.getDimensions(name="is_core_checkbox"),
+            key=f"-IS CORE {self.getName():s}-"
         )
 
 
@@ -238,24 +253,35 @@ class TimeEvolutionTab(Tab):
         :param self: :class:`~Layout.MainWindow.TimeEvolutionTab` to retrieve row from
         """
         row = Row(window=self.getWindowObject())
+
         text = sg.Text(
             text="Variable",
             size=self.getDimensions(name="variable_text"),
             justification="center"
         )
         row.addElements(text)
+
         text = sg.Text(
             text="Evolution Type",
             size=self.getDimensions(name="evolution_type_text"),
             justification="center"
         )
         row.addElements(text)
+
         text = sg.Text(
             text="Initial Condition",
             size=self.getDimensions(name="initial_condition_text"),
             justification="center"
         )
         row.addElements(text)
+        
+        text = sg.Text(
+            text="Core",
+            size=self.getDimensions(name="is_core_text"),
+            justification="center"
+        )
+        row.addElements(text)
+
         return row
 
     def getAsColumn(self) -> sg.Column:
@@ -1044,6 +1070,9 @@ class MainWindow(TabbedWindow):
             "initial_condition_text": getDimensions(
                 ["main_window", "time_evolution_tab", "header_row", "initial_condition_text"]
             ),
+            "is_core_text": getDimensions(
+                ["main_window", "time_evolution_tab", "header_row", "is_core_text"]
+            ),
             "evolution_type_combobox": getDimensions(
                 ["main_window", "time_evolution_tab", "variable_row", "evolution_type_combobox"]
             ),
@@ -1055,6 +1084,9 @@ class MainWindow(TabbedWindow):
             ),
             "initial_equilibrium_checkbox": getDimensions(
                 ["main_window", "time_evolution_tab", "variable_row", "initial_equilibrium_checkbox"]
+            ),
+            "is_core_checkbox": getDimensions(
+                ["main_window", "time_evolution_tab", "variable_row", "is_core_checkbox"],
             ),
             "parameter_tab": getDimensions(["main_window", "parameter_tab", "tab"]),
             "parameter_section": getDimensions(["main_window", "parameter_tab", "parameter_section"]),
@@ -1256,19 +1288,23 @@ class MainWindow(TabbedWindow):
             stem + "::set_parameter_filestems_to"
             for stem in param_stems
         ]
+
         param_types_keyed = [
             ptype + "::set_parameter_types_to"
             for ptype in p_types
         ]
+
         func_stems = tuple(self.stem2name2func.keys())
         func_stems_keyed = [
             stem + "::set_function_filestems_to"
             for stem in func_stems
         ]
+
         tet_types_keyed = [
             tet_type + "::set_time_evolution_types_to"
             for tet_type in tet_types
         ]
+
         menu_definition = [
             [
                 "Import",
@@ -1287,8 +1323,16 @@ class MainWindow(TabbedWindow):
                         "Types",
                         param_types_keyed
                     ],
-                    "Time-Evolution Types to...",
-                    tet_types_keyed,
+                    "Variable",
+                    [
+                        "Time-Evolution Types",
+                        tet_types_keyed,
+                        "Core",
+                        [
+                            "Check All::set_variable_cores_to",
+                            "Uncheck All::set_variable_cores_to"
+                        ]
+                    ],
                     "Function Filestems",
                     func_stems_keyed
                 ]
@@ -1476,6 +1520,18 @@ class MainWindowRunner(WindowRunner):
                         TimeEvolutionRow.getInstances()
                     )
                     self.setElementsAsValue(comboboxes, time_evolution_type)
+                elif "::set_variable_cores_to" in event:
+                    checked_event = event.replace("::set_variable_cores_to", '')
+                    if checked_event == "Check All":
+                        checked = True
+                    elif checked_event == "Uncheck All":
+                        checked = False
+                    
+                    checkboxes = map(
+                        TimeEvolutionRow.getIsCoreElement,
+                        TimeEvolutionRow.getInstances()
+                    )
+                    self.setElementsAsValue(checkboxes, checked)
                 elif "::set_parameter_types_to" in event:
                     parameter_type = event.replace("::set_parameter_types_to", '')
                     comboboxes = map(
@@ -1659,7 +1715,11 @@ class MainWindowRunner(WindowRunner):
         )
         return core_model
 
-    def setElementsAsValue(self, elements: Union[sg.Element, Iterable[sg.Element]], value: str) -> None:
+    def setElementsAsValue(
+        self, 
+        elements: Union[sg.Element, Iterable[sg.Element]], 
+        value: Union[str, bool]
+    ) -> None:
         """
         Set values for collection of elements.
 
@@ -1670,8 +1730,20 @@ class MainWindowRunner(WindowRunner):
 
         def set(element: sg.Element) -> None:
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.setElementAsValue`"""
-            if value in vars(element)["Values"]:
+            
+            if isinstance(element, sg.Combo):
+                choices = vars(element)["Values"]
+                if value in choices:
+                    is_valid_value = True
+            elif isinstance(element, sg.Checkbox):
+                if isinstance(value, bool):
+                    is_valid_value = True
+            
+            if is_valid_value:
                 element.update(value)
+
+            events_enabled = vars(element)["ChangeSubmits"]
+            if events_enabled:
                 key = getKeys(element)
                 window.write_event_value(key, value)
 
@@ -1779,21 +1851,42 @@ class MainWindowRunner(WindowRunner):
         time_evolution_row.getInitialConditionElement().update(disabled=is_either_equilibrium)
         checkbox.update(disabled=is_equilibrium)
 
-    def getVariables(self) -> List[Variable]:
+    def isCoreVariable(self, name: str) -> bool:
+        """
+        Get whether variable is checked as core variable.
+
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve determine is-core from
+        :param name: name of variable to determined coreness of
+        """
+        variable_row: TimeEvolutionRow = TimeEvolutionRow.getInstances(names=name)
+        is_core_checkbox = variable_row.getIsCoreElement()
+        temp = getKeys(is_core_checkbox)
+        print('pass1', temp, is_core_checkbox.__class__)
+        is_core_variable = self.getValue(temp)
+        return is_core_variable
+
+    def getVariables(
+        self,
+        is_core: bool = None
+    ) -> List[Variable]:
         """
         Get variable objects for variables stored in window.
 
-        :param self: `:class:~Layout.MainWindow.MainWindowRunner` to retrieve objects from
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve objects from
+        :param is_core: set True to retrieve only core variables.
+            Set False to retreive only non-core variables.
+            Retrieves all variables by default.
         """
         variable_names = self.getVariableNames()
 
         variable_objs = []
         for variable_name in variable_names:
-            variable_obj = Variable(
-                variable_name,
-                time_evolution_type=self.getTimeEvolutionTypes(names=variable_name)
-            )
-            variable_objs.append(variable_obj)
+            if is_core is None or self.isCoreVariable(variable_name) == is_core:
+                variable_obj = Variable(
+                    variable_name,
+                    time_evolution_type=self.getTimeEvolutionTypes(names=variable_name)
+                )
+                variable_objs.append(variable_obj)
         
         return variable_objs
 
@@ -1887,7 +1980,8 @@ class MainWindowRunner(WindowRunner):
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve filename from
         :param name: name of function to retrieve filename for
         """
-        combobox_key = getKeys(FunctionRow.getInstances(names=name).getChooseFileElement())
+        function_row = FunctionRow.getInstances(names=name)
+        combobox_key = getKeys(function_row.getChooseFileElement())
         filestem = self.getValue(combobox_key)
         return filestem
 
@@ -2570,16 +2664,18 @@ class MainWindowRunner(WindowRunner):
         """
         event, free_parameter_values = self.getFreeParameterValues()
         if event == "Submit":
-            runner = ChooseVariablesWindowRunner("Choose Variables to Simulate", variable_names=self.getVariableNames())
-            event, variable_names = runner.getChosenVariables()
-            model = self.getModel(variable_names=variable_names)
-            simulation_window = SimulationWindowRunner(
-                name="Run Simulation for Model",
-                model=model,
-                free_parameter_values=free_parameter_values,
-                plot_choices=self.getPlotChoices(model=model)
-            )
-            simulation_window.runWindow()
+            variable_objs = self.getVariables(is_core=True)
+            variable_names = list(map(Variable.getName, variable_objs))
+            if event == "Submit":
+                
+                model = self.getModel(variable_names=variable_names)
+                simulation_window = SimulationWindowRunner(
+                    name="Run Simulation for Model",
+                    model=model,
+                    free_parameter_values=free_parameter_values,
+                    plot_choices=self.getPlotChoices(model=model)
+                )
+                simulation_window.runWindow()
 
     def generateFunction2ArgumentGraph(self, color1: str = "red", color2: str = "blue") -> Graph:
         """
@@ -2590,30 +2686,75 @@ class MainWindowRunner(WindowRunner):
         :param color2: color of last node (and edges) in graph
         :returns: Generated graph
         """
-        derivatives: List[Union[Derivative, Function]] = self.getModel().getDerivatives()
-        der2vars = {
-            der.getVariable(return_type=str):
-                der.getFreeSymbols(species="Variable", expanded=True, return_type=str)
-            for der in derivatives
-        }
-        variable_names = sorted(der2vars.keys(), key=lambda k: len(der2vars[k]))
+        model = self.getModel()
+        variable_objs = model.getVariables()
+        var2vars = {}
+        for variable_obj_from in variable_objs:
+            time_evolution_type = variable_obj_from.getTimeEvolutionType()
+            variable_name_from = variable_obj_from.getName()
+
+            if time_evolution_type == "Temporal":
+                derivative_obj_from = model.getDerivativesFromVariables(variable_name_from)
+                variable_names_to = derivative_obj_from.getVariables(
+                    expanded=True, 
+                    return_type=str
+                )
+            elif time_evolution_type == "Equilibrium":
+                derivative_obj_from = model.getDerivativesFromVariables(variable_name_from)
+                variable_names_to = derivative_obj_from.getVariables(
+                    expanded=True, 
+                    return_type=str
+                )
+                variable_names_to.remove(variable_name_from)
+            elif time_evolution_type == "Function":
+                function_obj_from = model.getFunctions(names=variable_name_from)
+                variable_names_to = function_obj_from.getVariables(
+                    expanded=True, 
+                    return_type=str
+                )
+            elif time_evolution_type == "Constant":
+                variable_names_to = []
+
+            variable_objs_to = model.getVariables(names=variable_names_to)
+            var2vars[variable_obj_from] = variable_objs_to
+
+        variable_objs_from = sorted(
+            var2vars.keys(), 
+            key=lambda k: len(var2vars[k])
+        )
+        variable_count = len(variable_objs_from)
 
         graph = Graph(
-            n=len(variable_names),
+            n=variable_count,
             directed=True
         )
-        colors = Color(color1).range_to(Color(color2), len(der2vars.keys()))
-        vertex2color = [color.rgb for color in colors]
+        # colors = Color(color1).range_to(Color(color2), len(var2vars.keys()))
+        # vertex2color = [color.rgb for color in colors]
+        evolution2color = {
+            "Temporal": "red",
+            "Equilibrium": "orange",
+            "Function": "green",
+            "Constant": "violet"
+        }
 
-        for ider in range(len(variable_names)):
-            derivative_name = variable_names[ider]
-            vertex_color = vertex2color[ider]
-            graph.vs[ider]["name"] = derivative_name
-            graph.vs[ider]["color"] = vertex_color
-            for variable_name in der2vars[derivative_name]:
-                ivar = variable_names.index(variable_name)
-                graph.add_edges([(ider, ivar)])
-                graph.es[-1]["color"] = vertex_color
+        variable_names = list(map(Variable.getName, variable_objs_from))
+        for variable_index_from in range(variable_count):
+            variable_from = variable_objs_from[variable_index_from]
+            variable_name_from = variable_from.getName()
+            time_evolution_type_from = variable_from.getTimeEvolutionType()
+
+            color_from = evolution2color[time_evolution_type_from]
+            graph.vs[variable_index_from]["name"] = variable_name_from
+            graph.vs[variable_index_from]["color"] = color_from
+
+            variable_objs_to = var2vars[variable_from]
+            for variable_obj_to in variable_objs_to:
+                variable_name_to = variable_obj_to.getName()
+                variable_index_to = variable_names.index(variable_name_to)
+
+                graph.add_edges([(variable_index_from, variable_index_to)])
+                graph.es[-1]["color"] = color_from
+        
         graph.vs["label"] = graph.vs["name"]
 
         return graph

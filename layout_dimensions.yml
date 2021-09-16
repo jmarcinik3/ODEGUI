@@ -14,7 +14,10 @@ main_window:
         width: (600-110)*1/4 * 169/1350
         height:
       initial_condition_text:
-        width: (600-110)*3/4 * 169/1350
+        width: (600-110)*2/4 * 169/1350
+        height:
+      is_core_text:
+        width: (600-110)*1/4 * 169/1350
         height:
     variable_row:
       variable_label:
@@ -24,10 +27,13 @@ main_window:
         width: (600-110)*1/4 * 191/1350
         height: 10
       initial_condition_input_field:
-        width: (600-110)*3/4*1/2 * 193/1350
+        width: (600-110)*2/4*1/2 * 193/1350
         height:
       initial_equilibrium_checkbox:
-        width: (600-110)*3/4*1/2 * 166/1350
+        width: (600-110)*2/4*1/2 * 166/1350
+        height: 1
+      is_core_checkbox:
+        width: (600-110)*1/4 * 169/1350
         height: 1
   parameter_tab:
     tab:
