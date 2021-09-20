@@ -1648,8 +1648,6 @@ class MainWindowRunner(WindowRunner):
 
             if time_evolution_type == "Temporal":
                 core_function_obj = full_model.getDerivativesFromVariables(core_variable_name)
-                initial_condition = self.getInitialConditions(names=core_variable_name)
-                core_function_obj.setInitialCondition(initial_condition)
             elif time_evolution_type == "Equilibrium":
                 core_function_obj = full_model.getDerivativesFromVariables(core_variable_name)
             elif time_evolution_type == "Function":
@@ -1669,7 +1667,8 @@ class MainWindowRunner(WindowRunner):
                     core_variable_names.append(new_core_variable_name)
                     new_core_variable_obj = Variable(
                         new_core_variable_name,
-                        time_evolution_type=self.getTimeEvolutionTypes(names=new_core_variable_name)
+                        time_evolution_type=self.getTimeEvolutionTypes(names=new_core_variable_name),
+                        initial_condition=self.getInitialConditions(names=new_core_variable_name)
                     )
                     core_variable_objs.append(new_core_variable_obj)
         

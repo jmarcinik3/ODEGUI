@@ -170,7 +170,8 @@ class Variable(PaperQuantity):
     def __init__(
         self, 
         name: str, 
-        time_evolution_type: str = "Temporal", 
+        time_evolution_type: str = "Temporal",
+        initial_condition: float = 0,
         **kwargs
     ) -> None:
         """
@@ -183,6 +184,9 @@ class Variable(PaperQuantity):
         super().__init__(name, **kwargs)
         self.time_evolution_type = time_evolution_type
 
+        self.initial_condition = None
+        self.setInitialCondition(initial_condition)
+
     def getTimeEvolutionType(self) -> str:
         """
         Get time-evolution type for variable.
@@ -190,6 +194,23 @@ class Variable(PaperQuantity):
         :param self: :class:`~Function.Variable` to retrieve time evolution from
         """
         return self.time_evolution_type
+
+    def getInitialCondition(self) -> float:
+        """
+        Get initial value for variable.
+
+        :param self: :class:`~Function.Variable` to retrieve value from
+        """
+        return self.initial_condition
+
+    def setInitialCondition(self, value: Union[str, float]) -> None:
+        """
+        Set initial condition or value for variable.
+
+        :param self: :class:`~Function.Derivative` to set initial condition for
+        :param value: initial condition to set for variable
+        """
+        self.initial_condition = value
 
     def getFunctions(self, **kwargs) -> List[Function]:
         """
@@ -707,8 +728,8 @@ class Model:
         """
         Get constants to substitute into variables.
 
-        :param self: :class:`~Function.Model` to retrieve constant derivative(s) from
-        :param names: name(s) of constant derivative(s) to substitute numerical constants in for
+        :param self: :class:`~Function.Model` to retrieve variable(s) from
+        :param names: name(s) of variable(s) to substitute numerical constants in for
         """
         if names is None:
             names = self.getVariables(
@@ -716,18 +737,14 @@ class Model:
                 return_type=str
             )
         
-        constant_functions = self.getFunctions(names=names)
-        for function_object in constant_functions:
-            assert isinstance(function_object, Derivative)
-        
-        constant_count = len(constant_functions)
+        constant_count = len(names)
         if constant_count == 0:
             return {}
         elif constant_count >= 1:
+            variables = self.getVariables(names=names)
             substitutions = {
-                function_object.getVariable():
-                    function_object.getInitialCondition()
-                for function_object in constant_functions
+                variable.getSymbol(): variable.getInitialCondition()
+                for variable in variables
             }
             return substitutions
 
@@ -806,7 +823,8 @@ class Model:
             )
             variable_substitutions.update(equilibrium_solutions)
         if substitute_constants:
-            variable_substitutions.update(self.getConstantSubstitutions())
+            constant_substitutions = self.getConstantSubstitutions()
+            variable_substitutions.update(constant_substitutions)
         if substitute_functions:
             function_substitutions = self.getFunctionSubstitutions(
                 substitute_parameters=substitute_parameters,
@@ -859,7 +877,7 @@ class Model:
         Get initial values for variables in model.
         
         :param self: :class:`~Function.Model` to retrieve derivatives from
-        :param names: name(s) of variables to retrieve values for
+        :param names: name(s) of variable(s) to retrieve values for
         :param return_type: class type for output.
             Must be dict, list, or ndarray.
             Only called if names is list.
@@ -873,17 +891,22 @@ class Model:
             List of floats if return_type is list.
             ndarray of float if return_type is ndarray.
         """
-        initial_values = {
-            derivative.getVariable(return_type=Symbol): derivative.getInitialCondition()
-            for derivative in self.getDerivatives()
-        }
+        if initial_values is None:
+            variable_objs = self.getVariables(names=names)
+            if len(names) == 1:
+                variable_objs = [variable_objs]
+            
+            initial_values = {
+                variable_obj.getSymbol(): variable_obj.getInitialCondition()
+                for variable_obj in variable_objs
+            }
 
         if isinstance(names, str):
             return initial_values[Symbol(names)]
         elif isinstance(names, Symbol):
             return initial_values[names]
         elif isinstance(names, list):
-            initial_value = lambda name: self.getInitialValues(names=name, initial_values=initial_values)
+            def initial_value(name): return self.getInitialValues(names=name, initial_values=initial_values)
             if return_type == list:
                 return [initial_value(name) for name in names]
             elif return_type == ndarray:
@@ -1361,9 +1384,6 @@ class Derivative:
             self.variable_name = variable_name
         else:
             raise TypeError("variable input must be of type str or Symbol")
-        
-        self.initial_condition = initial_condition
-        self.setInitialCondition(initial_condition)
 
     def getVariable(self, return_type: Type[Union[Variable, Symbol, str]] = Variable) -> Union[Variable, Symbol, str]:
         """
@@ -1386,26 +1406,6 @@ class Derivative:
         else:
             raise ValueError("return_type must be sp.Symbol or str")
         
-
-    def getInitialCondition(self) -> Union[str, float]:
-        """
-        Get initial numerical condition for variable associated with derivative.
-
-        :param self: :class:`~Function.Derivative` to retrieve initial condition from
-        :returns: Initial value float if value is provided.
-            todo... "Equilibrium" if variable begins in equilibrium with respect to other variables.
-        """
-        return self.initial_condition
-
-    def setInitialCondition(self, value: Union[str, float]) -> None:
-        """
-        Set initial condition or value for variable.
-
-        :param self: :class:`~Function.Derivative` to set initial condition for
-        :param value: initial condition to set for variable
-        """
-        self.initial_condition = value
-
 
 class Dependent:
     """
