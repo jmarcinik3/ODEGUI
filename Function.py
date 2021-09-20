@@ -535,12 +535,15 @@ class Model:
 
             return file
         elif file_extension == ".tex":
+            present_mode = SymbolicVariables.mode
+            SymbolicVariables.switchMode("tex")
 
             save_lines = [
                 r"\documentclass{article}" + "\n",
                 r"\usepackage{amsmath, amssymb}" + "\n",
                 r"\begin{document}" + "\n", 
             ]
+
             for function_obj in function_objs:
                 symbol = function_obj.getSymbol()
                 symbol_tex = latex(symbol)
@@ -550,11 +553,12 @@ class Model:
                     + f"{symbol_tex:s} = {expression_tex:s}" \
                     + r"\end{equation}" \
                     + "\n"
-
                 filestem = function_obj.getStem()
                 save_lines.append(equation_tex)
             save_lines.append(r"\end{document}")
             
+            SymbolicVariables.switchMode(present_mode)
+
             with open(filepath, 'w') as file:
                 file.writelines(save_lines)
                 file.close()
@@ -565,8 +569,6 @@ class Model:
             save_directory = dirname(filepath)
             self.saveFunctionsToFile(tex_filepath)
             subprocess.run(["latexmk", "-pdf", f"-outdir={save_directory:s}", tex_filepath])
-
-        
 
     def saveParametersToFile(self, *args, **kwargs) -> TextIO:
         """
@@ -928,7 +930,7 @@ class Model:
             derivative_vector.append(expression)
 
         Function.setUseMemory(use_memory)
-        
+
         print("derivative vector:", derivative_vector)
         if lambdified:
             derivative_vector = lambdify((Symbol('t'), tuple(names)), derivative_vector, modules=["math"])
