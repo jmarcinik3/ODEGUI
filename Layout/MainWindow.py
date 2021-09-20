@@ -1629,9 +1629,25 @@ class MainWindowRunner(WindowRunner):
 
         core_variable_objs = self.getVariables(is_core=True)
         core_variable_names = set(map(Variable.getName, core_variable_objs))
-        append_variable_name = core_variable_names.add
+        add_variable_name = core_variable_names.add
+
+        def getVariableNamesFromFunction(function_obj) -> List[str]:
+            return function_obj.getVariables(
+                expanded=True,
+                substitute_dependents=True,
+                return_type=str
+            )
+
         core_function_names = set()
-        append_function_name = core_function_names.add
+        add_function_name = core_function_names.add
+        
+        core_parameter_names = set()
+        add_parameter_names = core_parameter_names.update
+        getParameterNames = partial(
+            Function.getParameters, 
+            expanded=True, 
+            return_type=str
+        )
 
         full_model = Model(
             variables=self.getVariables(),
@@ -1639,40 +1655,38 @@ class MainWindowRunner(WindowRunner):
             parameters=self.getParameters()
         )
 
-        core_function_objs = []
         variable_name_stack = list(core_variable_names.copy())
-        
-        append_stack = variable_name_stack.append
+        append_variable_stack = variable_name_stack.append
         while len(variable_name_stack) != 0:
             core_variable_name = variable_name_stack.pop()
-
             time_evolution_type = self.getTimeEvolutionTypes(names=core_variable_name)
-            if time_evolution_type == "Temporal":
-                core_function_obj = full_model.getDerivativesFromVariables(core_variable_name)
-            elif time_evolution_type == "Equilibrium":
-                core_function_obj = full_model.getDerivativesFromVariables(core_variable_name)
-            elif time_evolution_type == "Function":
-                core_function_obj = self.getFunctions(names=core_variable_name)
+            if time_evolution_type != "Constant":
+                if time_evolution_type == "Temporal":
+                    core_function_obj = full_model.getDerivativesFromVariables(core_variable_name)
+                elif time_evolution_type == "Equilibrium":
+                    core_function_obj = full_model.getDerivativesFromVariables(core_variable_name)
+                elif time_evolution_type == "Function":
+                    core_function_obj = self.getFunctions(names=core_variable_name)
 
-            new_core_function_name = core_function_obj.getName()
-            append_function_name(new_core_function_name)
+                child_function_name = core_function_obj.getName()
+                add_function_name(child_function_name)
 
-            new_core_variable_names = core_function_obj.getVariables(
-                expanded=True,
-                substitute_dependents=True,
-                return_type=str
-            )
-            
-            for new_core_variable_name in new_core_variable_names:
-                if new_core_variable_name not in core_variable_names:
-                    append_stack(new_core_variable_name)
-                    append_variable_name(new_core_variable_name)
+                child_variable_names = getVariableNamesFromFunction(core_function_obj)
+                
+                for child_variable_name in child_variable_names:
+                    if child_variable_name not in core_variable_names:
+                        append_variable_stack(child_variable_name)
+                        add_variable_name(child_variable_name)
 
+        
         function_name_stack = list(core_function_names.copy())
-        append_stack = function_name_stack.append
+        append_function_stack = function_name_stack.append
         while len(function_name_stack) != 0:
             core_function_name = function_name_stack.pop()
             core_function_obj = self.getFunctions(names=core_function_name)
+
+            new_parameter_names = getParameterNames(core_function_obj)
+            add_parameter_names(new_parameter_names)
 
             child_names = core_function_obj.getFunctions(return_type=str)
             try:
@@ -1682,25 +1696,11 @@ class MainWindowRunner(WindowRunner):
             except KeyError:
                 pass
 
-            for new_core_function_name in child_names:
-                pre_len = len(core_function_names)
-                append_function_name(new_core_function_name)
-                if len(core_function_names) == pre_len:
-                    append_stack(new_core_function_name)
-                
-        
-        getParameters = partial(
-            Function.getParameters, 
-            expanded=True, 
-            return_type=str
-        )
-
-        core_parameter_names = set()
-        append_parameter_names = core_parameter_names.update
-        for function_obj in core_function_objs:
-            new_parameter_names = getParameters(function_obj)
-            append_parameter_names(new_parameter_names)
-        
+            for child_function_name in child_names:
+                if child_function_name not in core_function_names:
+                    append_function_stack(child_function_name)
+                    add_function_name(child_function_name)
+            
         core_model = Model(
             variables=self.getVariables(names=core_variable_names),
             functions=self.getFunctions(names=core_function_names), 
@@ -1861,7 +1861,7 @@ class MainWindowRunner(WindowRunner):
     def getVariables(
         self,
         is_core: bool = None,
-        names: Union[str, List[str]] = None
+        names: Union[str, Iterable[str]] = None
     ) -> List[Variable]:
         """
         Get variable objects for variables stored in window.
@@ -2675,10 +2675,7 @@ class MainWindowRunner(WindowRunner):
             variable_objs = self.getVariables(is_core=True)
             variable_names = list(map(Variable.getName, variable_objs))
             if event == "Submit":
-                import time
-                s = time.time()
                 model = self.getModel(variable_names=variable_names)
-                print(time.time()-s)
                 simulation_window = SimulationWindowRunner(
                     name="Run Simulation for Model",
                     model=model,
@@ -2687,13 +2684,11 @@ class MainWindowRunner(WindowRunner):
                 )
                 simulation_window.runWindow()
 
-    def generateFunction2ArgumentGraph(self, color1: str = "red", color2: str = "blue") -> Graph:
+    def generateFunction2ArgumentGraph(self) -> Graph:
         """
         Generate directional graph from (1) derivative variable to (2) variables in derivative.
 
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve derivatives from
-        :param color1: color of first node (and edges) in graph
-        :param color2: color of last node (and edges) in graph
         :returns: Generated graph
         """
         model = self.getModel()

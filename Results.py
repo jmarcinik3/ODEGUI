@@ -372,8 +372,9 @@ class Results:
         :param index: index of parameter value for free parameter
         :param name: name of variable to retrieve results of
         """
-        derivative = self.getModel().getDerivativesFromVariables(name)
-        initial_condition = derivative.getInitialCondition()
+        model = self.getModel()
+        variable_obj = model.getVariables(names=name)
+        initial_condition = variable_obj.getInitialCondition()
         time_count = self.getResultsOverTime(index, "t").size
         results = np.repeat(initial_condition, time_count)
         return results
