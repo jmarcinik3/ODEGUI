@@ -37,6 +37,7 @@ Xin: $[X]_{in}$
 Xex: $[X]_{ex}$
 gGHK: $g_{GHK}$
 I: $I$
+IX: $I_X$
 
 ICa: $I_{Ca}$
 IL: $I_L$
@@ -74,7 +75,7 @@ lambdahb: $\lambda_{hb}$
 CpT: $C_{p_T}$
 dxpT: $\Delta{x_{p_T}}$
 xpT: $x_{p_T}$
-pTinf: $p_T(\infty)$
+pTinf: $p_{T}(\infty)$
 cX: $[C]_X$
 cCar: $[Ca^{2+}]_r$
 cCam: $[Ca^{2+}]_m$
