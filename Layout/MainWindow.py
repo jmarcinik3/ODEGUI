@@ -1627,14 +1627,12 @@ class MainWindowRunner(WindowRunner):
         else:
             raise RecursiveTypeError(variable_names)
 
-        core_variable_objs = []
-        for core_variable_name in core_variable_names:
-            core_variable_obj = Variable(
-                core_variable_name,
-                time_evolution_type=self.getTimeEvolutionTypes(names=core_variable_name)
-            )
-            core_variable_objs.append(core_variable_obj)
-        
+        core_variable_objs = self.getVariables(is_core=True)
+        core_variable_names = set(map(Variable.getName, core_variable_objs))
+        append_variable_name = core_variable_names.add
+        core_function_names = set()
+        append_function_name = core_function_names.add
+
         full_model = Model(
             variables=self.getVariables(),
             functions=self.getFunctions(), 
@@ -1642,11 +1640,13 @@ class MainWindowRunner(WindowRunner):
         )
 
         core_function_objs = []
-        variable_name_stack = core_variable_names.copy()
-        while len(variable_name_stack) >= 1:
-            core_variable_name = variable_name_stack.pop(0)
-            time_evolution_type = self.getTimeEvolutionTypes(names=core_variable_name)
+        variable_name_stack = list(core_variable_names.copy())
+        
+        append_stack = variable_name_stack.append
+        while len(variable_name_stack) != 0:
+            core_variable_name = variable_name_stack.pop()
 
+            time_evolution_type = self.getTimeEvolutionTypes(names=core_variable_name)
             if time_evolution_type == "Temporal":
                 core_function_obj = full_model.getDerivativesFromVariables(core_variable_name)
             elif time_evolution_type == "Equilibrium":
@@ -1654,7 +1654,8 @@ class MainWindowRunner(WindowRunner):
             elif time_evolution_type == "Function":
                 core_function_obj = self.getFunctions(names=core_variable_name)
 
-            core_function_objs.append(core_function_obj)
+            new_core_function_name = core_function_obj.getName()
+            append_function_name(new_core_function_name)
 
             new_core_variable_names = core_function_obj.getVariables(
                 expanded=True,
@@ -1664,55 +1665,48 @@ class MainWindowRunner(WindowRunner):
             
             for new_core_variable_name in new_core_variable_names:
                 if new_core_variable_name not in core_variable_names:
-                    variable_name_stack.append(new_core_variable_name)
-                    core_variable_names.append(new_core_variable_name)
-                    new_core_variable_obj = Variable(
-                        new_core_variable_name,
-                        time_evolution_type=self.getTimeEvolutionTypes(names=new_core_variable_name),
-                        initial_condition=self.getInitialConditions(names=new_core_variable_name)
-                    )
-                    core_variable_objs.append(new_core_variable_obj)
-        
-        core_function_names = list(map(Function.getName, core_function_objs))
-        function_name_stack = core_function_names.copy()
-        while len(function_name_stack) >= 1:
-            core_function_name = function_name_stack.pop(0)
+                    append_stack(new_core_variable_name)
+                    append_variable_name(new_core_variable_name)
+
+        function_name_stack = list(core_function_names.copy())
+        append_stack = function_name_stack.append
+        while len(function_name_stack) != 0:
+            core_function_name = function_name_stack.pop()
             core_function_obj = self.getFunctions(names=core_function_name)
 
             child_names = core_function_obj.getFunctions(return_type=str)
             try:
                 instance_arguments = core_function_obj.getInstanceArguments(specie="functions")
                 for instance_argument in instance_arguments.values():
-                    child_names.extend(list(map(str, instance_argument)))
+                    child_names.extend(instance_argument)
             except KeyError:
                 pass
 
             for new_core_function_name in child_names:
-                if new_core_function_name not in core_function_names:
-                    function_name_stack.append(new_core_function_name)
-                    core_function_names.append(new_core_function_name)
-                    new_core_function_obj = self.getFunctions(names=new_core_function_name)
-                    core_function_objs.append(new_core_function_obj)
+                pre_len = len(core_function_names)
+                append_function_name(new_core_function_name)
+                if len(core_function_names) == pre_len:
+                    append_stack(new_core_function_name)
+                
         
         getParameters = partial(
             Function.getParameters, 
             expanded=True, 
             return_type=str
         )
-        core_parameter_names = unique(
-            [
-                parameter_name
-                for function_obj in core_function_objs
-                for parameter_name in getParameters(function_obj)
-            ]
-        )
-        core_parameter_objs = self.getParameters(names=core_parameter_names)
+
+        core_parameter_names = set()
+        append_parameter_names = core_parameter_names.update
+        for function_obj in core_function_objs:
+            new_parameter_names = getParameters(function_obj)
+            append_parameter_names(new_parameter_names)
         
         core_model = Model(
-            variables=core_variable_objs,
-            functions=core_function_objs, 
-            parameters=core_parameter_objs
+            variables=self.getVariables(names=core_variable_names),
+            functions=self.getFunctions(names=core_function_names), 
+            parameters=self.getParameters(names=core_parameter_names)
         )
+
         return core_model
 
     def setElementsAsValue(
@@ -1866,7 +1860,8 @@ class MainWindowRunner(WindowRunner):
 
     def getVariables(
         self,
-        is_core: bool = None
+        is_core: bool = None,
+        names: Union[str, List[str]] = None
     ) -> List[Variable]:
         """
         Get variable objects for variables stored in window.
@@ -1875,18 +1870,32 @@ class MainWindowRunner(WindowRunner):
         :param is_core: set True to retrieve only core variables.
             Set False to retreive only non-core variables.
             Retrieves all variables by default.
+        :param names: subset of variable name(s) to retrieve.
+            Ignores :paramref:`~Layout.MainWindow.MainWindowRunner.getVariables.is_core`.
         """
-        variable_names = self.getVariableNames()
-
-        variable_objs = []
-        for variable_name in variable_names:
-            if is_core is None or self.isCoreVariable(variable_name) == is_core:
-                variable_obj = Variable(
-                    variable_name,
-                    time_evolution_type=self.getTimeEvolutionTypes(names=variable_name)
-                )
-                variable_objs.append(variable_obj)
+        def get(name: str) -> Variable:
+            variable_obj = Variable(
+                name,
+                time_evolution_type=self.getTimeEvolutionTypes(names=name),
+                initial_condition=self.getInitialConditions(names=name)
+            )
+            return variable_obj
         
+        if isinstance(names, str):
+            return get(names)
+        
+        elif names is None:
+            names = self.getVariableNames()
+        else:
+            for name in names:
+                assert isinstance(name, str)
+
+        core_is_none = is_core is None
+        variable_objs = [
+            get(name)
+            for name in names
+            if core_is_none or self.isCoreVariable(name) == is_core
+        ]
         return variable_objs
 
     def getPathsFromFunctionStems(self, filestems: Union[str, Iterable[str]] = None) -> Union[str, List[str]]:
@@ -2666,8 +2675,10 @@ class MainWindowRunner(WindowRunner):
             variable_objs = self.getVariables(is_core=True)
             variable_names = list(map(Variable.getName, variable_objs))
             if event == "Submit":
-                
+                import time
+                s = time.time()
                 model = self.getModel(variable_names=variable_names)
+                print(time.time()-s)
                 simulation_window = SimulationWindowRunner(
                     name="Run Simulation for Model",
                     model=model,
