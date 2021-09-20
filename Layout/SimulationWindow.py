@@ -2981,7 +2981,8 @@ class SimulationWindowRunner(WindowRunner):
         """
         file_types = (
             ("YML", "*.yml"), 
-            ("YAML", "*.yaml"), 
+            ("YAML", "*.yaml"),
+            ("JSON", "*.json"),
             ("LaTeX", "*.tex"), 
             ("Plain Text", "*.txt"),
             ("Portable Document Format", "*.pdf"),

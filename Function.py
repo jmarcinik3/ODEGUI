@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import json
+import subprocess
 import warnings
 from collections.abc import KeysView
 from functools import partial
 from io import BytesIO
 from os.path import dirname
 from pathlib import Path
-import subprocess
 from typing import Dict, Iterable, List, Optional, TextIO, Tuple, Type, Union
 
 import numpy as np
@@ -15,9 +16,9 @@ from metpy.units import units
 from numpy import ndarray
 from pint import Quantity
 from scipy import optimize
-from sympy import Expr, latex, Piecewise as spPiecewise
-# noinspection PyUnresolvedReferences
-from sympy import Symbol, cosh, exp, ln, pi, sin, solve, symbols, var
+from sympy import Expr
+from sympy import Piecewise as spPiecewise
+from sympy import Symbol, cosh, exp, latex, ln, pi, sin, solve, symbols, var
 from sympy.core import function
 from sympy.utilities.lambdify import lambdify
 
@@ -508,16 +509,16 @@ class Model:
     def saveFunctionsToFile(self, filepath: str) -> TextIO:
         """
         Save functions stored in model into YML file for future retrieval.
+        Accepted formats are *.yml, *.yaml, *.json, *.tex, *.pdf (with *.tex)
 
         :param self: :class:`~Function.Model` to retrieve functions from
         :param args: required arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
-        :param kwargs: additional arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
         :returns: new file
         """
         file_extension = Path(filepath).suffix
         function_objs = self.getFunctions()
         
-        if file_extension in [".yml", ".yaml"]:
+        if file_extension in [".yml", ".yaml", ".json"]:
             save_info = {}
             for function_obj in function_objs:
                 name = function_obj.getName()
@@ -529,8 +530,17 @@ class Model:
                 else:
                     save_info[name] = function_obj.getSaveInfo()
 
+            if file_extension in [".yml", ".yaml"]:
+                dump = partial(
+                    yaml.dump, 
+                    default_flow_style=None, 
+                    sort_keys=False,
+                )
+            elif file_extension == ".json":
+                dump = json.dump
+            
             with open(filepath, 'w') as file:
-                yaml.dump(save_info, file, default_flow_style=None)
+                dump(save_info, file)
                 file.close()
 
             return file
@@ -1027,9 +1037,10 @@ class Model:
             else:
                 raise RecursiveTypeError(time_evolution_types)
         else:
+            variable_objs = self.variables
             def get(name: str) -> Variable:
                 """Base method for :meth:`~Function.Model.getVariables`"""
-                return self.variables[name]
+                return variable_objs[name]
 
             variables = recursiveMethod(
                 base_method=get,
