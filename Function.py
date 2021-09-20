@@ -4,7 +4,9 @@ import warnings
 from collections.abc import KeysView
 from functools import partial
 from io import BytesIO
+from os.path import dirname
 from pathlib import Path
+import subprocess
 from typing import Dict, Iterable, List, Optional, TextIO, Tuple, Type, Union
 
 import numpy as np
@@ -13,8 +15,7 @@ from metpy.units import units
 from numpy import ndarray
 from pint import Quantity
 from scipy import optimize
-from sympy import Expr
-from sympy import Piecewise as spPiecewise
+from sympy import Expr, latex, Piecewise as spPiecewise
 # noinspection PyUnresolvedReferences
 from sympy import Symbol, cosh, exp, ln, pi, sin, solve, symbols, var
 from sympy.core import function
@@ -23,6 +24,7 @@ from sympy.utilities.lambdify import lambdify
 from CustomErrors import RecursiveTypeError
 from macros import formatQuantity, recursiveMethod, unique
 
+var2tex = yaml.load(open("var2tex.yml", 'r'), Loader=yaml.Loader)
 
 class PaperQuantity:
     """
@@ -46,6 +48,10 @@ class PaperQuantity:
         :param model: model that contains object
         :param filestem: stem of file where object was loaded from
         """
+        assert isinstance(name, str)
+        assert isinstance(filestem, str) or filestem is None
+        assert isinstance(model, Model) or model is None
+
         self.name = name
         self.filestem = filestem
         self.model = model
@@ -57,23 +63,16 @@ class PaperQuantity:
         :param self: :class:`~Function.PaperQuantity` to retrieve symbol from
         """
         name = self.getName()
-        symbol = Symbol(name)
+        symbol = SymbolicVariables.getVariables(names=name)
         return symbol
 
-    def getName(self, return_type: Type[Union[str, Symbol]] = str) -> str:
+    def getName(self) -> str:
         """
         Get name of object.
 
         :param self: :class:`~Function.PaperQuantity` to retrieve name from
-        :param return_type: return type of output.
-            Must be str or Symbol.
         """
-        if return_type == str:
-            return self.name
-        elif return_type == Symbol:
-            return self.getSymbol()
-        else:
-            raise ValueError("invalid return type")
+        return self.name
 
     def getStem(self) -> str:
         """
@@ -98,6 +97,8 @@ class PaperQuantity:
         :param self: :class:`~Function.PaperQuantity` to set model for
         :param model: model to set for object
         """
+        assert isinstance(model, Model)
+
         self.model = model
 
 
@@ -117,6 +118,7 @@ class Parameter(PaperQuantity):
         :param name: name of parameter
         :param kwargs: additional arguments to pass into :class:`~Function.PaperQuantity`
         """
+        assert isinstance(quantity, Quantity)
         super().__init__(name, **kwargs)
         self.quantity = quantity
 
@@ -135,9 +137,10 @@ class Parameter(PaperQuantity):
         :param self: :class:`~Function.Parameter` that :class:`~Function.Function` rely on
         :param kwargs: additional arguments to pass into :meth:`~Function.Function.getFreeSymbols`
         """
+        name = self.getName()
+        symbol = self.getSymbol()
         model = self.getModel()
         model_functions = model.getFunctions()
-        symbol = Symbol(self.getName())
         functions = [
             function_object
             for function_object in model_functions
@@ -171,7 +174,7 @@ class Variable(PaperQuantity):
         self, 
         name: str, 
         time_evolution_type: str = "Temporal",
-        initial_condition: float = 0,
+        initial_condition: float = 0.,
         **kwargs
     ) -> None:
         """
@@ -181,6 +184,9 @@ class Variable(PaperQuantity):
         :param time_evolution_type: time-evolution type of variable
         :param kwargs: additional arguments to pass into :class:`~Function.PaperQuantity`
         """
+        assert isinstance(time_evolution_type, str)
+        assert isinstance(initial_condition, (int, float))
+
         super().__init__(name, **kwargs)
         self.time_evolution_type = time_evolution_type
 
@@ -256,9 +262,9 @@ class Model:
 
     def __init__(
             self,
-            variables: List[Variable] = None,
-            functions: List[Function] = None,
-            parameters: List[Parameter] = None
+            variables: Union[Variable, List[Variable]] = None,
+            functions: Union[Function, List[Function]] = None,
+            parameters: Union[Parameter, List[Parameter]] = None
     ) -> None:
         """
         Constructor for :class:`~Function.Model`.
@@ -266,6 +272,16 @@ class Model:
         :param functions: functions to initially include in model
         :param parameters: parameters to initially include in model
         """
+        if not isinstance(variables, Variable) and variables is not None:
+            for variable in variables:
+                assert isinstance(variable, Variable)
+        if not isinstance(parameters, Parameter) and parameters is not None:
+            for parameter in parameters:
+                assert isinstance(parameter, Parameter)
+        if not isinstance(functions, Function) and functions is not None:
+            for function in functions:
+                assert isinstance(function, Function)
+
         self.variables = {}
         self.functions = {}
         self.parameters = {}
@@ -489,7 +505,7 @@ class Model:
 
         return file
 
-    def saveFunctionsToFile(self, *args, **kwargs) -> TextIO:
+    def saveFunctionsToFile(self, filepath: str) -> TextIO:
         """
         Save functions stored in model into YML file for future retrieval.
 
@@ -498,7 +514,59 @@ class Model:
         :param kwargs: additional arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
         :returns: new file
         """
-        return self.saveQuantitiesToFile(*args, **kwargs, specie="Function")
+        file_extension = Path(filepath).suffix
+        function_objs = self.getFunctions()
+        
+        if file_extension in [".yml", ".yaml"]:
+            save_info = {}
+            for function_obj in function_objs:
+                name = function_obj.getName()
+                filestem = function_obj.getStem()
+                if isinstance(filestem, str):
+                    if filestem not in save_info.keys():
+                        save_info[filestem] = []
+                    save_info[filestem].append(name)
+                else:
+                    save_info[name] = function_obj.getSaveInfo()
+
+            with open(filepath, 'w') as file:
+                yaml.dump(save_info, file, default_flow_style=None)
+                file.close()
+
+            return file
+        elif file_extension == ".tex":
+
+            save_lines = [
+                r"\documentclass{article}" + "\n",
+                r"\usepackage{amsmath, amssymb}" + "\n",
+                r"\begin{document}" + "\n", 
+            ]
+            for function_obj in function_objs:
+                symbol = function_obj.getSymbol()
+                symbol_tex = latex(symbol)
+                expression = function_obj.getTexExpression(expanded=False)
+                expression_tex = latex(expression)
+                equation_tex = r"\begin{equation}" \
+                    + f"{symbol_tex:s} = {expression_tex:s}" \
+                    + r"\end{equation}" \
+                    + "\n"
+
+                filestem = function_obj.getStem()
+                save_lines.append(equation_tex)
+            save_lines.append(r"\end{document}")
+            
+            with open(filepath, 'w') as file:
+                file.writelines(save_lines)
+                file.close()
+
+            return file
+        elif file_extension == ".pdf":
+            tex_filepath = filepath.replace(".pdf", ".tex")
+            save_directory = dirname(filepath)
+            self.saveFunctionsToFile(tex_filepath)
+            subprocess.run(["latexmk", "-pdf", f"-outdir={save_directory:s}", tex_filepath])
+
+        
 
     def saveParametersToFile(self, *args, **kwargs) -> TextIO:
         """
@@ -860,6 +928,8 @@ class Model:
             derivative_vector.append(expression)
 
         Function.setUseMemory(use_memory)
+        
+        print("derivative vector:", derivative_vector)
         if lambdified:
             derivative_vector = lambdify((Symbol('t'), tuple(names)), derivative_vector, modules=["math"])
         if substitute_equilibria:
@@ -900,9 +970,10 @@ class Model:
                 variable_obj.getSymbol(): variable_obj.getInitialCondition()
                 for variable_obj in variable_objs
             }
-
+        
         if isinstance(names, str):
-            return initial_values[Symbol(names)]
+            symbol = SymbolicVariables.getVariables(names=names)
+            return initial_values[symbol]
         elif isinstance(names, Symbol):
             return initial_values[names]
         elif isinstance(names, list):
@@ -912,7 +983,7 @@ class Model:
             elif return_type == ndarray:
                 return np.array([initial_value(name) for name in names])
             elif return_type == dict:
-                return {Symbol(name): initial_value(name) for name in names}
+                return {SymbolicVariables.getVariables(names=name): initial_value(name) for name in names}
             else:
                 raise ValueError("return_type must be list, ndarray, or dict")
         else:
@@ -1002,8 +1073,10 @@ class Model:
                 raise TypeError(f"variable must be of type str, Symbol, or Variable")
             
             for derivative_obj in derivative_objs:
-                if derivative_obj.getVariable(return_type=str) == name:
+                derivative_variable_name = derivative_obj.getVariable(return_type=str)
+                if derivative_variable_name == name:
                     return derivative_obj
+            
 
         return recursiveMethod(
             base_method=get,
@@ -1020,19 +1093,21 @@ class Parent:
     :ivar instance_arguments: 2-level dictionary of arguments for children functions.
         Firsy key is name of child function.
         Second key is specie of instance arguments.
-        Value is list of symbolic arguments to substitute into child.
+        Value is list of string arguments to substitute into child.
         Only used for :class:`~Function.Dependent` children.
     """
 
-    def __init__(self, children: Dict[str, Dict[str, Union[Symbol, List[Symbol]]]]) -> None:
+    def __init__(self, children: Dict[str, Dict[str, Union[str, List[str]]]]) -> None:
         """
         Constructor for :class:`~Function.Parent`.
         
         :param children: 2-level dictionary of info for children function.
             First key is name of child.
             Second key is specie of instance arguments for child.
-            Value is symbols for instance arguments.
+            Value is strings for instance arguments.
         """
+        assert isinstance(children, dict) or children is None
+
         self.instance_arguments = {}
 
         if children is not None:
@@ -1041,7 +1116,8 @@ class Parent:
             self.addChildren(children)
 
     def addChildren(
-            self, children: Dict[str, Dict[str, Union[Symbol, List[Symbol]]]]
+        self, 
+        children: Dict[str, Dict[str, Union[str, List[str]]]]
     ) -> Dict[str, Dict[str, List[Symbol]]]:
         """
         Add info to reference children functions of parent.
@@ -1054,9 +1130,17 @@ class Parent:
             Key is name of child.
             Value is dictionary of info output from :meth:`~Function.Parent.addChild`
         """
-        return {name: self.addChild(name, arguments) for name, arguments in children.items()}
+        new_children = []
+        for child_name, arguments in children.items():
+            new_child = self.addChild(child_name, arguments)
+            new_children.append(new_child)
+        return new_children
 
-    def addChild(self, name: str, arguments: Dict[str, List[Symbol]]) -> Dict[str, List[Symbol]]:
+    def addChild(
+        self, 
+        name: str, 
+        arguments: Dict[str, List[str]]
+    ) -> Dict[str, List[str]]:
         """
         Add info to reference child function of parent.
 
@@ -1069,12 +1153,21 @@ class Parent:
             Key is species of instance argument from parent.
             Value is symbol(s) for this species of argument.
         """
-        new_child = {
-            specie: [instance_argument]
-            if isinstance((instance_argument := arguments[specie]), Symbol)
-            else instance_argument
-            for specie in arguments.keys()
-        }
+        assert isinstance(name, str)
+
+        new_child = {}
+        argument_species = arguments.keys()
+        for argument_specie in argument_species:
+            instance_argument = arguments[argument_specie]
+            if isinstance(instance_argument, str):
+                new_child[argument_specie] = [instance_argument]
+            elif isinstance(instance_argument, list):
+                for argument in instance_argument:
+                    assert isinstance(argument, str)
+                new_child[argument_specie] = instance_argument
+            else:
+                raise RecursiveTypeError(instance_arguments)
+
         self.instance_arguments[name] = new_child
         return new_child
 
@@ -1087,9 +1180,13 @@ class Parent:
         """
         return self.instance_arguments[name].keys()
 
-    def getInstanceArguments(self, name: str = None, specie: str = None) -> Union[Symbol, List[Symbol]]:
+    def getInstanceArguments(
+        self, 
+        name: str = None, 
+        specie: str = None
+    ) -> Union[str, List[str]]:
         """
-        Get instance arguments of given species for function.
+        Get string instance arguments of given species for function.
         
         __Recursion Base__
             return all instance arguments of given specie: specie [None] and names [None]
@@ -1100,7 +1197,8 @@ class Parent:
         """
         if isinstance(name, str):
             if isinstance(specie, str):
-                return self.instance_arguments[name][specie]
+                instance_argument_names = self.instance_arguments[name][specie]
+                return instance_argument_names
             elif specie is None:
                 return self.instance_arguments[name]
         elif name is None:
@@ -1298,7 +1396,8 @@ class Function(Child, Parent, PaperQuantity):
         :param kwargs: additional arguments to pass into
             :meth:`~Function.Piecewise.getExpression` or into :meth:`~Function.NonPiecewise.getExpression`
         """
-        free_symbols = list(self.getExpression(**kwargs).free_symbols)
+        expression = self.getExpression(**kwargs)
+        free_symbols = list(expression.free_symbols)
         if species is None:
             free_symbol_names = list(map(str, free_symbols))
         else:
@@ -1331,6 +1430,14 @@ class Function(Child, Parent, PaperQuantity):
             return list(map(Symbol, free_symbol_names))
         else:
             raise ValueError("return_type must be Symbol or str")
+
+    def getTexExpression(self, **kwargs):
+        pre_mode = SymbolicVariables.mode
+        SymbolicVariables.switchMode("tex")
+
+        expression = self.getExpression(**kwargs)
+        SymbolicVariables.switchMode(pre_mode)
+        return expression
 
     def getExpression(self, **kwargs):
         """
@@ -1369,7 +1476,7 @@ class Derivative:
 
     def __init__(
         self, 
-        variable_name: Union[Symbol, str],
+        variable_name: str,
         initial_condition: float = 0
     ) -> None:
         """
@@ -1378,12 +1485,8 @@ class Derivative:
         :param variable: variable that derivative is a derivative of
         :param initial_condition: initial value of associated variable
         """
-        if isinstance(variable_name, Symbol):
-            self.variable_name = str(variable_name)
-        elif isinstance(variable_name, str):
-            self.variable_name = variable_name
-        else:
-            raise TypeError("variable input must be of type str or Symbol")
+        assert isinstance(variable_name, str)
+        self.variable_name = variable_name
 
     def getVariable(self, return_type: Type[Union[Variable, Symbol, str]] = Variable) -> Union[Variable, Symbol, str]:
         """
@@ -1400,7 +1503,8 @@ class Derivative:
             variable_obj = model.getVariables(names=variable_name)
             return variable_obj
         elif return_type == Symbol:
-            return Symbol(variable_name)
+            variable_obj = self.getVariable(return_type=Variable)
+            return variable_obj.getSymbol()
         elif return_type == str:
             return variable_name
         else:
@@ -1413,10 +1517,10 @@ class Dependent:
     
     :ivar general_arguments: dictionary of arguments to be substituted from another function.
         Key is specie of arguments.
-        Value is list of symbols for arguments of specie.
+        Value is list of strings for arguments of specie.
     """
 
-    def __init__(self, arguments: Union[Symbol, List[Symbol]]) -> None:
+    def __init__(self, arguments: Union[str, List[str]]) -> None:
         """
         Constructor for :class:`~Function.Dependent`.
         
@@ -1427,7 +1531,7 @@ class Dependent:
 
     def setGeneralArguments(
             self,
-            arguments: Union[Union[Symbol, List[Symbol]], Dict[str, Union[Symbol, List[Symbol]]]],
+            arguments: Union[Union[str, List[str]], Dict[str, Union[Symbol, List[Symbol]]]],
             specie: str = None
     ) -> None:
         """
@@ -1449,17 +1553,16 @@ class Dependent:
             if :paramref:`~Function.Dependent.setGeneralArguments.arguments` is dictionary.
         """
         if isinstance(specie, str):
-            if isinstance(arguments, Symbol):
+            if isinstance(arguments, str):
                 self.general_arguments[specie] = [arguments]
             elif isinstance(arguments, list):
                 for argument in arguments:
-                    if not isinstance(argument, Symbol):
-                        raise TypeError("argument must be sympy.Symbol")
+                    assert isinstance(argument, str)
                 self.general_arguments[specie] = arguments
             elif arguments is None:
                 self.general_arguments[specie] = []
             else:
-                raise RecursiveTypeError(arguments, Symbol)
+                raise RecursiveTypeError(arguments, str)
         elif specie is None:
             if isinstance(arguments, dict):
                 for specie, argument in arguments.items():
@@ -1534,7 +1637,9 @@ class Dependent:
             if isinstance(species, str):
                 general_species = self.getGeneralSpecies(nested=False)
                 if species in general_species:
-                    return self.general_arguments[species]
+                    specie_argument_names = self.general_arguments[species]
+                    specie_argument_symbolics = SymbolicVariables.getVariables(names=specie_argument_names)
+                    return specie_argument_symbolics
                 elif species not in general_species:
                     return []
             elif isinstance(species, list):
@@ -1555,8 +1660,7 @@ class Dependent:
         self: Function
         self_name = self.getName()
         if specie == "functions":
-            instance_function_symbols = parent.getInstanceArguments(specie=specie, name=self_name)
-            instance_names = list(map(str, instance_function_symbols))
+            instance_names = parent.getInstanceArguments(specie=specie, name=self_name)
             parent_model = parent.getModel()
             instance_functions = []
             for instance_name in instance_names:
@@ -1594,7 +1698,7 @@ class Dependent:
         self: Function
         expression = Independent.getExpression(self, expanded=True)
         self: Dependent
-
+        
         species = self.getGeneralSpecies()
         for specie in species:
             substitutions = self.getInstanceArgumentSubstitutions(parent, specie)
@@ -1609,7 +1713,7 @@ class Dependent:
         :param self: :class:`~Function.Dependent` to retrieve expression for
         :param parent: function to retrieve input arguments from
         """
-        expression = self.expression
+        expression = eval(self.expression)
         if parent is None:
             return expression
         
@@ -1645,7 +1749,7 @@ class Independent:
         if substitute_dependents is None:
             substitute_dependents = expanded
 
-        expression = self.expression
+        expression = eval(self.expression)
         self: Function
         model = self.getModel()
         if not expanded:
@@ -1661,7 +1765,7 @@ class Independent:
 
         child_function_names = self.getFunctions(return_type=str)
         for child_name in child_function_names:
-            child_symbol = Symbol(child_name)
+            child_symbol = SymbolicVariables.getVariables(names=child_name)
             child_obj = model.getFunctions(names=child_name)
             if isinstance(child_obj, Independent):
                 if expanded:
@@ -1682,21 +1786,23 @@ class Piecewise:
     """
     Stores info pertaining to piecewise function.
     
-    :ivar pieces: function symbols constituting piecewise (pieces)
+    :ivar pieces: function names constituting piecewise (pieces)
     :ivar conditions: conditions under which to use each piece
     """
 
-    def __init__(self, pieces: List[Function], conditions: List[str]) -> None:
+    def __init__(self, pieces: List[str], conditions: List[str]) -> None:
         """
         Constructor for :class:`~Function.Piecewise`.
         
         :param pieces: symbols for function pieces
         :param conditions: conditions corresponding to function pieces
         """
-        if len(pieces) != len(conditions):
-            raise ValueError("each function must have exactly one corresponding condition")
+        assert len(pieces) == len(conditions)
+        for piece in pieces:
+            assert isinstance(piece, str)
+
         self.pieces = pieces
-        self.conditions = list(map(eval, conditions))  # eval() to convert str to bool
+        self.conditions = conditions
 
     def getConditions(self) -> List[bool]:
         """
@@ -1704,7 +1810,9 @@ class Piecewise:
         
         :param self: :class:`~Function.Piecewise` to retrieve conditions from
         """
-        return self.conditions
+        conditions = self.conditions
+        symbolic_conditions = list(map(eval, conditions))
+        return symbolic_conditions
 
     def getPieces(
             self, return_type: Type[Union[str, Symbol, Function]] = Symbol
@@ -1723,14 +1831,16 @@ class Piecewise:
         """
         pieces = self.pieces
         if return_type == str:
-            piece_names = list(map(str, pieces))
+            piece_names = pieces
             return piece_names
         elif return_type == Symbol:
-            return pieces
+            piece_symbols = SymbolicVariables.getVariables(names=pieces)
+            return piece_symbols
         elif return_type == Function:
-            piece_names = self.getPieces(return_type=str)
             self: Function
-            functions = self.getModel().getFunctions(names=piece_names)
+            model = self.getModel()
+            piece_names = self.getPieces(return_type=str)
+            functions = model.getFunctions(names=piece_names)
             return functions
         else:
             raise ValueError("invalid return type")
@@ -1752,14 +1862,21 @@ class Piecewise:
         :param kwargs: additional arguments to substitute into :meth:`~Function.Function.getExpression`
         """
         if expanded:
-            functions: List[Function] = self.getPieces(return_type=Function)
-            getExpression = partial(Function.getExpression, expanded=True, **kwargs)
-            pieces = list(map(getExpression, functions))
+            function_objs: List[Function] = self.getPieces(return_type=Function)
+            getExpression = partial(
+                Function.getExpression, 
+                expanded=True, 
+                **kwargs,
+            )
+            pieces = list(map(getExpression, function_objs))
         else:
             pieces = self.getPieces(return_type=Symbol)
 
         conditions = self.getConditions()
-        exprconds = [(pieces[i], conditions[i]) for i in range(self.getPieceCount())]
+        exprconds = [
+            (pieces[i], conditions[i]) 
+            for i in range(self.getPieceCount())
+        ]
         return spPiecewise(*exprconds)
 
 
@@ -1770,12 +1887,13 @@ class NonPiecewise:
     :ivar expression: symbolic expression for function
     """
 
-    def __init__(self, expression: Expr) -> None:
+    def __init__(self, expression: str) -> None:
         """
         Constructor for :class:`~Function.NonPiecewise`.
 
-        :param expression: symbolic expression for function
+        :param expression: symbolic expression as str for function
         """
+        assert isinstance(expression, str)
         self.expression = expression
 
     def getExpression(
@@ -1817,7 +1935,7 @@ def FunctionMaster(
     Generate function object with desired inheritance and properties.
 
     :param name: name of function
-    :param expression: symbol expression/pieces for function
+    :param expression: string expression/pieces for function
     :param inheritance: classes for Function object to inherit
     :param kwargs: arguments to pass into inheritance classes.
         Key is string name of class.
@@ -1846,6 +1964,80 @@ def FunctionMaster(
     return self
 
 
+class SymbolicVariables:
+    valid_modes = ["tex", "symbol"]
+    mode = "symbol"
+    variable_names = []
+    tex_variables = {}
+    symbolic_variables = {}
+    
+    @classmethod
+    def addVariables(cls, names: Union[str, List[str]]) -> Union[Symbol, List[Symbol]]:
+        variable_names = cls.variable_names
+        
+        def add(name: str) -> None:
+            assert isinstance(name, str)
+
+            if name not in variable_names:
+                try:
+                    tex = var2tex[name].replace('$','')
+                except KeyError:
+                    tex = name
+                
+                symbol_tex = Symbol(tex)
+                symbol = Symbol(name)
+                cls.variable_names.append(name)
+                cls.tex_variables[name] = symbol_tex
+                cls.symbolic_variables[name] = symbol
+            
+            globals()[name] = cls.getVariables(names=name)
+            return globals()[name]
+        
+        return recursiveMethod(
+            args=names,
+            base_method=add,
+            valid_input_types=str
+        )
+
+    @classmethod
+    def getVariables(cls, names: Union[str, List[str]] = None) -> Symbol:
+        mode = cls.mode
+
+        if mode == "tex":
+            variables = cls.tex_variables
+        elif mode == "symbol":
+            variables = cls.symbolic_variables
+        
+        def get(name: str):
+            return variables[name]
+        
+        return recursiveMethod(
+            args=names,
+            base_method=get,
+            valid_input_types=str,
+            output_type=list,
+            default_args=cls.variable_names
+        )
+
+    @classmethod
+    def switchMode(cls, mode: str = None) -> str:
+        if mode is None:
+            present_mode = cls.mode
+            if present_mode == "tex":
+                cls.mode = "symbol"
+            elif present_mode == "symbol":
+                cls.mode = "tex"
+        elif isinstance(mode, str):
+            assert mode in SymbolicVariables.valid_modes
+            cls.mode = mode
+        
+        for variable_name in cls.variable_names:
+            globals()[variable_name] = cls.getVariables(names=variable_name)
+        
+        return cls.mode
+
+
+
 def getFunctionInfo(info: dict, model: Model = None) -> dict:
     """
     Get formatted dictionary of info to generate Function object.
@@ -1858,22 +2050,32 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
     """
 
     # noinspection PyShadowingNames
-    def getVariables(info: dict) -> List[Symbol]:
+    def getVariables(info: dict) -> List[str]:
         """
-        Get symbolic variables for function.
+        Get names of variables for function.
 
         :param info: info for function
         """
-        return var(info["variables"])
+        variable_names = info["variables"]
+        if isinstance(variable_names, str):
+            variable_names = [variable_names]
+            
+        SymbolicVariables.addVariables(names=variable_names)
+        return variable_names
 
     # noinspection PyShadowingNames
-    def getParameters(info: dict) -> List[Symbol]:
+    def getParameters(info: dict) -> List[str]:
         """
-        Get symbolic parameters for function.
+        Get names of parameters forfunction.
 
         :param info: info for function
         """
-        return var(info["parameters"])
+        parameter_names = info["parameters"]
+        if isinstance(parameter_names, str):
+            parameter_names = [parameter_names]
+            
+        SymbolicVariables.addVariables(names=parameter_names)
+        return parameter_names
 
     # noinspection PyShadowingNames
     def getProperties(info: dict) -> List[str]:
@@ -1885,23 +2087,31 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
         return info["properties"]
 
     # noinspection PyShadowingNames
-    def getArguments(info: dict) -> Dict[str, List[Symbol]]:
+    def getArguments(info: dict) -> Dict[str, List[str]]:
         """
-        Get symbolic general arguments for function.
+        Get general arguments as string for function.
 
         :param info: info for function
         """
-        arguments = info["arguments"]
-        return {key: var(arguments[key]) for key in arguments.keys()}
+        info_arguments = info["arguments"]
+
+        arguments = {}
+        for specie, argument_names in info_arguments.items():
+            SymbolicVariables.addVariables(names=argument_names)
+            arguments[specie] = argument_names
+        
+        return arguments
 
     # noinspection PyShadowingNames
-    def getVariable(info: dict) -> Symbol:
+    def getVariableName(info: dict) -> str:
         """
-        Get associated variable for derivative.
+        Get name of associated variable for derivative.
 
         :param info: info for function
         """
-        return Symbol(info["variable"])
+        variable_name = info["variable"]
+        SymbolicVariables.addVariables(names=variable_name)
+        return variable_name
 
     # noinspection PyShadowingNames
     def getChildren(info: dict) -> dict:
@@ -1916,15 +2126,18 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
         """
         children_info = info["children"]
         children_names = list(children_info.keys())
-        var(children_names)
+        SymbolicVariables.addVariables(names=children_names)
 
         children_dict = {}
         for child_name in children_names:
             if (child_info := children_info[child_name]) is not None:
-                children_dict[child_name] = {
-                    argument_type: var(child_info[argument_type])
-                    for argument_type in child_info.keys()
-                }
+                children_dict[child_name] = {}
+                argument_species = child_info.keys()
+                for argument_specie in argument_species:
+                    argument_variable_names = child_info[argument_specie]
+                    SymbolicVariables.addVariables(names=argument_variable_names)
+                    children_dict[child_name][argument_specie] = argument_variable_names
+            
         return children_dict
 
     kwargs = {}
@@ -1938,7 +2151,7 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
         kwargs["parameters"] = getParameters(info)
     if "children" in info_keys:
         kwargs["children"] = getChildren(info)
-
+    
     properties = getProperties(info)
     kwargs["properties"] = properties
     if "Dependent" in properties:
@@ -1947,7 +2160,7 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
         }
     if "Derivative" in properties:
         kwargs["Derivative"] = {
-            "variable_name": getVariable(info)
+            "variable_name": getVariableName(info)
         }
     if "Piecewise" in properties:
         kwargs["Piecewise"] = {
@@ -2056,13 +2269,14 @@ def generateFunction(
 
     info_keys = info.keys()
     if "form" in info_keys:
-        expression = eval(info["form"])
+        expression = info["form"]
     elif "pieces" in info_keys:
-        expression = list(map(Symbol, info["pieces"]))
+        expression = info["pieces"]
     else:
         raise ValueError("info from functions_yml file must contain either form or pieces")
 
     inheritance = getInheritance(kwargs["properties"])
+    SymbolicVariables.addVariables(names=name)
     return FunctionMaster(name, expression, inheritance=tuple(inheritance), **kwargs)
 
 
@@ -2078,6 +2292,7 @@ def generateParameter(name: str, info: Dict[str, Union[float, str]], **kwargs) -
     value = float(info["value"])
     unit = info["unit"]
     quantity = value * units(unit)
+    SymbolicVariables.addVariables(names=name)
     return Parameter(name, quantity, **kwargs)
 
 

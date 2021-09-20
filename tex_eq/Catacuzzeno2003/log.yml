@@ -23,19 +23,19 @@ Im:
   expression: $I_{soma}$
   filename: Im.png
 Isoma:
-  expression: $I_A + I_{Ca} + I_{DRK} + I_{K1} + I_L + I_h$
+  expression: $I_{A} + I_{L} + I_{h} + I_{Ca} + I_{DRK} + I_{K1}$
   filename: Isoma.png
 aA1:
-  expression: $a_{A1}(\pm\infty) - \frac{1 - a_{A1}(\pm\infty)}{e^{\frac{V_{1/2a_{A1}}
-    - V_m}{\Delta{V_{a_{A1}}}}} + 1}$
+  expression: $a_{A1}(\pm\infty) - \frac{1 - a_{A1}(\pm\infty)}{e^{\frac{- V_{m} +
+    V_{1/2a_{A1}}}{\Delta{V_{a_{A1}}}}} + 1}$
   filename: aA1.png
 alphaDRK:
-  expression: $\frac{1}{\left(- \frac{1}{\alpha(\infty)} + \frac{1}{\\alpha(0)}\right)
-    e^{- \frac{V_m}{\Delta{V_\alpha}}} + \frac{1}{\alpha(\infty)}}$
+  expression: $\frac{1}{\left(- \frac{1}{\alpha(\infty)} + \frac{1}{\alpha(0)}\right)
+    e^{- \frac{V_{m}}{\Delta{V_\alpha}}} + \frac{1}{\alpha(\infty)}}$
   filename: alphaDRK.png
 betaDRK:
-  expression: $\frac{1}{\left(- \frac{1}{\beta(-\infty)} + \frac{1}{\\beta(0)}\right)
-    e^{- \frac{V_m}{\Delta{V_\beta}}} + \frac{1}{\beta(-\infty)}}$
+  expression: $\frac{1}{\left(\frac{1}{\beta(0)} - \frac{1}{\beta(-\infty)}\right)
+    e^{- \frac{V_{m}}{\Delta{V_\beta}}} + \frac{1}{\beta(-\infty)}}$
   filename: betaDRK.png
 dVm:
   expression: $\frac{- I_A - I_{Ca} - I_{DRK} - I_{K1} - I_L - I_h}{C_m}$
@@ -47,8 +47,8 @@ dhA2:
   expression: $\frac{dm_s}{dt}$
   filename: dhA2.png
 dmA:
-  expression: '$\begin{cases} \frac{dm_{A<}}{dt} & \text{for}\: V_m < V_{m,h_A} \\\frac{dm_{A>}}{dt}
-    & \text{otherwise} \end{cases}$'
+  expression: '$\begin{cases} \frac{dm_{A<}}{dt} & \text{for}\: V_{m} < V_{m,h_A}
+    \\\frac{dm_{A>}}{dt} & \text{otherwise} \end{cases}$'
   filename: dmA.png
 dmAgt:
   expression: $\frac{dm_s}{dt}$
@@ -60,11 +60,11 @@ dmCa:
   expression: $\frac{dm_s}{dt}$
   filename: dmCa.png
 dmDRK:
-  expression: $\frac{- m_{DRK} + m_s(\infty)}{\tau_{DRK}}$
+  expression: $\frac{- m_{DRK} + m_{s}(\infty)}{\tau_{DRK}}$
   filename: dmDRK.png
 dmh:
-  expression: '$\begin{cases} \frac{dm_{h<}}{dt} & \text{for}\: V_m < V_{m,m_h} \\\frac{dm_{h>}}{dt}
-    & \text{otherwise} \end{cases}$'
+  expression: '$\begin{cases} \frac{dm_{h<}}{dt} & \text{for}\: V_{m} < V_{m,m_h}
+    \\\frac{dm_{h>}}{dt} & \text{otherwise} \end{cases}$'
   filename: dmh.png
 dmhgt:
   expression: $\frac{dm_s}{dt}$
@@ -73,13 +73,13 @@ dmhlt:
   expression: $\frac{dm_s}{dt}$
   filename: dmhlt.png
 dmhs:
-  expression: $\frac{- m_s + m_s(\infty)}{\tau_{m_s}}$
+  expression: $\frac{- m_{s} + m_{s}(\infty)}{\tau_{m_s}}$
   filename: dmhs.png
 gA1:
-  expression: $g_{GHK} h_{A1} m_A^{3}$
+  expression: $g_{GHK} h_{A1} m_{A}^{3}$
   filename: gA1.png
 gA2:
-  expression: $g_{GHK} h_{A2} m_A^{3}$
+  expression: $g_{GHK} h_{A2} m_{A}^{3}$
   filename: gA2.png
 gCa:
   expression: $g_{Ca}(1) m_{Ca}^{3}$
@@ -88,15 +88,15 @@ gDRK:
   expression: $g_{GHK} m_{DRK}^{2}$
   filename: gDRK.png
 gh:
-  expression: $g_h(1) \left(3 m_h^{3} \left(1 - m_h\right) + m_h^{3}\right)$
+  expression: $g_{h(1)} \left(3 m_{h}^{3} \left(1 - m_{h}\right) + m_{h}^{3}\right)$
   filename: gh.png
 mhsinf:
-  expression: $m_{s,min} + \left(m_{s,max} - m_{s,min}\right) \left(e^{\frac{V_{1/2s}
-    - V_m}{\Delta_{V_s}}} + 1\right)^{- \delta_s}$
+  expression: $m_{s,min} + \left(m_{s,max} - m_{s,min}\right) \left(e^{\frac{- V_{m}
+    + V_{1/2s}}{\Delta_{V_s}}} + 1\right)^{- \delta_{s}}$
   filename: mhsinf.png
 mhstau:
-  expression: $\tau_s(\infty) + \left(\tau_s(V_{\tau_s}) - \tau_s(\infty)\right) e^{-
-    \left(\frac{V_m - V_{\tau_s}}{\Delta{V_{\tau_s}}}\right)^{\delta_{\tau_s}}}$
+  expression: $\tau_{s}(\infty) + \left(\tau_{s}(V_{\tau_s}) - \tau_{s}(\infty)\right)
+    e^{- \left(\frac{V_{m} - V_{\tau_s}}{\Delta{V_{\tau_s}}}\right)^{\delta_{\tau_s}}}$
   filename: mhstau.png
 tauDRK:
   expression: $\frac{1}{\alpha_{DRK} + \beta_{DRK}}$

@@ -206,8 +206,8 @@ kgs1: $k_{gs}(1)$
 
 ### kr (Martin2003)
 kr: $k_r$
-kr0: $k_r(0)$
-kr1: $k_r(1)$
+kr0: $k_{r}(0)$
+kr1: $k_{r}(1)$
 ktl: $k_{tl}$
 
 ### mutual
@@ -222,7 +222,7 @@ msf: $m_{sf}$
 xisf: $\xi_{sf}$
 ksf: $k_{sf}$
 mhb: $m_{hb}$
-Vm0: $V_m(0)$
+Vm0: $V_{m}(0)$
 
 ## soma
 Cm: $C_m$
@@ -237,15 +237,15 @@ KS: $K_S$
 ### mhs
 dV: $\Delta_{V_s}$
 Vhalf: $V_{1/2s}$
-tauVtau: $\tau_s(V_{\tau_s})$
-tauinf: $\tau_s(\infty)$
+tauVtau: $\tau_{s}(V_{\tau_s})$
+tauinf: $\tau_{s}(\infty)$
 Vtau: $V_{\tau_s}$
 dVtau: $\Delta{V_{\tau_s}}$
 mhsorder: $\delta_s$
 tauorder: $\delta_{\tau_s}$
 mhsmin: $m_{s,min}$
 mhsmax: $m_{s,max}$
-mhsinf: $m_s(\infty)$
+mhsinf: $m_{s}(\infty)$
 mhstau: $\tau_{m_s}$
 mhs: $m_s$
 dmhs: $\frac{dm_s}{dt}$

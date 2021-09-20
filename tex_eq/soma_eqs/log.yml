@@ -72,8 +72,8 @@ dmDRK:
   expression: $\frac{- m_{DRK} + m_s(\infty)}{\tau_{DRK}}$
   filename: dmDRK.png
 dmK1f:
-  expression: '$\begin{cases} \frac{dm_{K1f<}}{dt} & \text{for}\: E_{K1f} > V_m \\\frac{dm_{K1f>}}{dt}
-    & \text{otherwise} \end{cases}$'
+  expression: '$\begin{cases} \frac{dm_{K1f<}}{dt} & \text{for}\: E_{K1f} > V_{m}
+    \\\frac{dm_{K1f>}}{dt} & \text{otherwise} \end{cases}$'
   filename: dmK1f.png
 dmK1fgt:
   expression: $\frac{dm_s}{dt}$
@@ -82,8 +82,8 @@ dmK1flt:
   expression: $\frac{dm_s}{dt}$
   filename: dmK1flt.png
 dmK1s:
-  expression: '$\begin{cases} \frac{dm_{K1s<}}{dt} & \text{for}\: E_{K1s} > V_m \\\frac{dm_{K1s>}}{dt}
-    & \text{otherwise} \end{cases}$'
+  expression: '$\begin{cases} \frac{dm_{K1s<}}{dt} & \text{for}\: E_{K1s} > V_{m}
+    \\\frac{dm_{K1s>}}{dt} & \text{otherwise} \end{cases}$'
   filename: dmK1s.png
 dmK1sgt:
   expression: $\frac{dm_s}{dt}$

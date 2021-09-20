@@ -13,7 +13,7 @@ import yaml
 from pint import Quantity
 from sympy import Expr
 
-from Function import Dependent, Derivative, Function, Independent, Model, NonPiecewise, Parameter, Piecewise, generateFunction, generateParameter, readFunctionsFromFiles, readParametersFromFiles
+from Function import Dependent, Derivative, Function, Independent, Model, NonPiecewise, Parameter, Piecewise, Variable, generateFunction, generateParameter, readFunctionsFromFiles, readParametersFromFiles
 from Layout.SimulationWindow import SimulationWindowRunner
 from Results import Results
 
@@ -30,45 +30,6 @@ def doi2bib(doi):
     return r.text
 
 
-# noinspection PyShadowingNames
-def FunctionCore(
-        name: str,
-        expression: Union[Expr, List[Function]],
-        inheritance: Tuple[Type[Union[Derivative, Dependent, Independent, Piecewise, NonPiecewise]]] = (),
-        **kwargs
-) -> Function:
-    """
-    Constructor for :class:`~Function.FunctionMaster.FunctionCore`.
-
-    :param name: name of function
-    :param expression: symbol expression/pieces for function
-    :param inheritance: classes for Function object to inherit
-    :param kwargs: arguments to pass into inheritance classes.
-        Key is string name of class.
-        Value is dictionary of arguments/parameters to pass into class.
-    """
-    self = type("FunctionCore", (Function, *inheritance), dict())(name, **kwargs)
-
-    if Derivative in inheritance:
-        Derivative.__init__(self, **kwargs["Derivative"])
-
-    if Dependent in inheritance:
-        Dependent.__init__(self, **kwargs["Dependent"])
-    elif Independent in inheritance:
-        Independent.__init__(self)
-    else:
-        raise ValueError("Function must inherit either Dependent or Independent")
-
-    if Piecewise in inheritance:
-        Piecewise.__init__(self, expression, **kwargs["Piecewise"])
-    elif NonPiecewise in inheritance:
-        NonPiecewise.__init__(self, expression)
-    else:
-        raise ValueError("Function must inherit either Piecewise of NonPiecewise")
-
-    return self
-
-
 def loadFunctions(file: Union[str, BytesIO], stem2path: Dict[str, str]) -> List[Function]:
     if isinstance(file, str):
         file = open(file, 'r')
@@ -83,7 +44,7 @@ def loadFunctions(file: Union[str, BytesIO], stem2path: Dict[str, str]) -> List[
                 functions_from_file = readFunctionsFromFiles(path_from_stem, names=value).values()
                 loaded_functions.extend(functions_from_file)
             else:
-                sg.PopupError(f"filestem {key:d} not found for functions (skipping)")
+                sg.PopupError(f"filestem {key:d} not found for function {key:s} (skipping)")
         else:
             loaded_functions.append(generateFunction(key, value))
 
@@ -137,24 +98,51 @@ def loadResultsFromFile(
 
     archive = zipfile.ZipFile(results_filepath, 'r')
 
-    results = dill.load(BytesIO(archive.read("Results.pkl")), 'rb')
-    free_parameters = yaml.load(BytesIO(archive.read("FreeParameter.yml")), Loader=yaml.Loader)
-    time_evolution_types = yaml.load(BytesIO(archive.read("TimeEvolutionType.yml")), Loader=yaml.Loader)
-    function_objects = loadFunctions(BytesIO(archive.read("Function.yml")), stem2path_func)
-    parameters = loadParameters(BytesIO(archive.read("Parameter.yml")), stem2path_param)
+    results = dill.load(
+        BytesIO(archive.read("Results.pkl")), 
+        'rb'
+    )
+    free_parameters = yaml.load(
+        BytesIO(archive.read("FreeParameter.yml")), 
+        Loader=yaml.Loader
+    )
+    time_evolution_types = yaml.load(
+        BytesIO(archive.read("TimeEvolutionType.yml")), 
+        Loader=yaml.Loader
+    )
+    function_objs = loadFunctions(
+        BytesIO(archive.read("Function.yml")), 
+        stem2path_func
+    )
+    parameter_objs = loadParameters(
+        BytesIO(archive.read("Parameter.yml")), 
+        stem2path_param
+    )
 
     values = {}
     for name, value in free_parameters.items():
         values[name] = np.array(list(map(float, value["values"])))
 
-    model = Model(functions=function_objects, parameters=parameters)
-
+    variable_objs = []
     for time_evolution_type, variable_names in time_evolution_types.items():
         for variable_name in variable_names:
-            derivative = model.getDerivativesFromVariableNames(names=variable_name)
-            derivative.setTimeEvolutionType(time_evolution_type)
+            variable_obj = Variable(
+                variable_name,
+                time_evolution_type=time_evolution_type
+            )
+            variable_objs.append(variable_obj)
 
-    results_obj = Results(model, values, results)
+    model = Model(
+        variables=variable_objs,
+        functions=function_objs, 
+        parameters=parameter_objs
+    )
+
+    results_obj = Results(
+        model, 
+        values, 
+        results
+    )
 
     return results_obj
 
@@ -170,7 +158,10 @@ def getSimulationFromResults(
     model = results_obj.getModel()
 
     archive = zipfile.ZipFile(results_filepath, 'r')
-    free_parameters = yaml.load(BytesIO(archive.read("FreeParameter.yml")), Loader=yaml.Loader)
+    free_parameters = yaml.load(
+        BytesIO(archive.read("FreeParameter.yml")), 
+        Loader=yaml.Loader
+    )
     free_parameter_values = {}
     for name, value in free_parameters.items():
         quantity = Quantity(0, value["unit"])
@@ -185,7 +176,7 @@ def getSimulationFromResults(
     }
 
     simulation_window = SimulationWindowRunner(
-        "Window",
+        "Simulation from Previous Results",
         results=results_obj,
         free_parameter_values=free_parameter_values,
         plot_choices=plot_choices
@@ -210,7 +201,13 @@ if __name__ == "__main__":
         suppress_raise_key_errors=False
     )
 
-    res_path = "D:\\Marcinik\\Recreation\\Arnold Tongue\\sim2\\res2.zip"
+    file_types = (("Compressed File", "*.zip"), ("ALL files", "*.*"),)
+    res_path = sg.PopupGetFile(
+        message="Enter Filename to Load",
+        title="Load Previous Results",
+        file_types=file_types,
+        multiple_files=False
+    )
     simulation_window = getSimulationFromResults(
         res_path,
         parameter_directory="parameters",

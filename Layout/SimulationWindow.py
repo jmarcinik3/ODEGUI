@@ -2979,7 +2979,14 @@ class SimulationWindowRunner(WindowRunner):
 
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from
         """
-        file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
+        file_types = (
+            ("YML", "*.yml"), 
+            ("YAML", "*.yaml"), 
+            ("LaTeX", "*.tex"), 
+            ("Plain Text", "*.txt"),
+            ("Portable Document Format", "*.pdf"),
+            ("ALL Files", "*.*"),
+        )
         
         filename = sg.PopupGetFile(
             message="Enter Filename",
@@ -2989,7 +2996,8 @@ class SimulationWindowRunner(WindowRunner):
         )
 
         if isinstance(filename, str):
-            self.getModel().saveFunctionsToFile(filename)
+            model = self.getModel()
+            model.saveFunctionsToFile(filename)
 
     def saveModelTimeEvolutionTypes(self) -> None:
         """

@@ -5,32 +5,32 @@ CpT:
   expression: $e^{\frac{\Delta{E}^\varnothing}{T k_B}}$
   filename: CpT.png
 Fa:
-  expression: $- F_{es} + F_{gs} - F_m$
+  expression: $- F_{m} - F_{es} + F_{gs}$
   filename: Fa.png
 Fm:
-  expression: $F_{m,max} \gamma \left(- S_m p_T + 1\right)$
+  expression: $F_{m,max} \gamma \left(- S_{m} p_{T} + 1\right)$
   filename: Fm.png
 S:
-  expression: $\frac{1}{\lambda_a}$
+  expression: $\frac{1}{\lambda_{a}}$
   filename: S.png
 dpT:
-  expression: $\frac{- p_T + p_T(\infty)}{\tau_T}$
+  expression: $\frac{- p_{T} + p_{T}(\infty)}{\tau_{T}}$
   filename: dpT.png
 dxpT:
   expression: $\frac{T k_B}{d k_{gs}}$
   filename: dxpT.png
 lambdaC:
-  expression: $\lambda_C$
+  expression: $\lambda_{C}$
   filename: lambdaC.png
 lambdahb:
-  expression: $\lambda_C + \lambda_H$
+  expression: $\lambda_{C} + \lambda_{H}$
   filename: lambdahb.png
 pTinf:
   expression: $\frac{1}{C_{p_T} e^{- \frac{x_{p_T}}{\Delta{x_{p_T}}}} + 1}$
   filename: pTinf.png
 tauT:
-  expression: $\frac{\tau_T^\varnothing}{\cosh{\left(- \frac{\log{\left(C_{p_T} \right)}}{2}
-    + \frac{x_{p_T}}{2 \Delta{x_{p_T}}} \right)}}$
+  expression: $\frac{\tau^{\varnothing}_{T}}{\cosh{\left(- \frac{\log{\left(C_{p_T}
+    \right)}}{2} + \frac{x_{p_T}}{2 \Delta{x_{p_T}}} \right)}}$
   filename: tauT.png
 xpT:
   expression: $X_{hb} \gamma - \frac{d}{2} - x_a + x_c$

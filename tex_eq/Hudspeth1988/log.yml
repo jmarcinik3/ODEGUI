@@ -11,47 +11,46 @@ ICa:
   expression: $I$
   filename: ICa.png
 IL:
-  expression: $g_L \left(- E_L + V_m\right)$
+  expression: $g_{L} \left(- E_{L} + V_{m}\right)$
   filename: IL.png
 IT:
   expression: $I$
   filename: IT.png
 Im:
-  expression: $I_T + I_{soma}$
+  expression: $I_{T} + I_{soma}$
   filename: Im.png
 Isoma:
-  expression: $I_{BK} + I_{Ca} + I_L$
+  expression: $I_{L} + I_{BK} + I_{Ca}$
   filename: Isoma.png
 KpC1:
-  expression: $\varepsilon_X^{\delta_{C_1}} K_{C_1}(0)$
+  expression: $K_{C_1}(0) \varepsilon_{X}^{\delta_{C_1}}$
   filename: KpC1.png
 KpC2:
-  expression: $\varepsilon_X^{\delta_{C_2}} K_{C_2}(0)$
+  expression: $K_{C_2}(0) \varepsilon_{X}^{\delta_{C_2}}$
   filename: KpC2.png
 KpO3:
-  expression: $\varepsilon_X^{\delta_{O_2}} K_{O_2}(0)$
+  expression: $K_{O_2}(0) \varepsilon_{X}^{\delta_{O_2}}$
   filename: KpO3.png
 dCa:
-  expression: $- [Ca^{2+}] K_S - \frac{I_{Ca} U}{C_{vol} F \xi_{[[Ca^{2+}]^{2+}]}
-    z_{Ca}}$
+  expression: $- K_{S} [Ca^{2+}] - \frac{I_{Ca} U}{C_{vol} F \xi_{[Ca^{2+}]} z_{Ca}}$
   filename: dCa.png
 dVm:
-  expression: $- \frac{I_m}{C_m}$
+  expression: $- \frac{I_{m}}{C_{m}}$
   filename: dVm.png
 dpC0:
-  expression: $- k_{C_1}^+ p_{C0} + k^-_{C_1} p_{C1}$
+  expression: $k^-_{C_1} p_{C1} - k_{C_1}^+ p_{C0}$
   filename: dpC0.png
 dpC1:
-  expression: $k_{C_1}^+ p_{C0} + k^-_{C_2} p_{C2} - p_{C1} \left(k_{C_2}^+ + k^-_{C_1}\right)$
+  expression: $k^-_{C_2} p_{C2} + k_{C_1}^+ p_{C0} - p_{C1} \left(k^-_{C_1} + k_{C_2}^+\right)$
   filename: dpC1.png
 dpC2:
   expression: $k_{C_2}^+ p_{C1} + k_{O_2}^- p_{O2} - p_{C2} \left(k^+_{O_2} + k^-_{C_2}\right)$
   filename: dpC2.png
 dpO2:
-  expression: $k^+_{O_2} p_{C2} + k^-_{O_3} p_{O3} - p_{O2} \left(k_{O_3}^+ + k_{O_2}^-\right)$
+  expression: $k^+_{O_2} p_{C2} + k^-_{O_3} p_{O3} - p_{O2} \left(k_{O_2}^- + k_{O_3}^+\right)$
   filename: dpO2.png
 dpO3:
-  expression: $k_{O_3}^+ p_{O2} - k^-_{O_3} p_{O3}$
+  expression: $- k^-_{O_3} p_{O3} + k_{O_3}^+ p_{O2}$
   filename: dpO3.png
 gBK:
   expression: $g_{BK}(1,1) \left(p_{O2} + p_{O3}\right)$
@@ -60,7 +59,7 @@ gCa:
   expression: $g_{Ca}(1) m_{Ca}^{3}$
   filename: gCa.png
 gT:
-  expression: $\frac{g_{T,max}}{\left(e^{A_T} + 1\right) e^{B_T} + 1}$
+  expression: $\frac{g_{T,max}}{\left(e^{A_{T}} + 1\right) e^{B_{T}} + 1}$
   filename: gT.png
 gTmax:
   expression: $g_{T,max}$
@@ -75,5 +74,5 @@ kaO3:
   expression: $\frac{[Ca^{2+}] k^-_{O_3}}{K_{p_{O_3}}}$
   filename: kaO3.png
 kdO2:
-  expression: $\varepsilon_X^{\tilde{d}_K - 1} k^-_{O_2}(0)$
+  expression: $\varepsilon_{X}^{\tilde{d}_K - 1} k^-_{O_2}(0)$
   filename: kdO2.png

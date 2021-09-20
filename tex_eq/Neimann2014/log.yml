@@ -2,5 +2,5 @@ IT:
   expression: $I$
   filename: IT.png
 gT:
-  expression: $g_T(1) p_T$
+  expression: $g_{T(1)} p_{T}$
   filename: gT.png

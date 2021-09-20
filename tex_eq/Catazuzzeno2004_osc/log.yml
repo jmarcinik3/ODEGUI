@@ -2,5 +2,5 @@ Im:
   expression: $I_{soma}$
   filename: Im.png
 Isoma:
-  expression: $I_A + I_{K1} + I_L + I_h$
+  expression: $I_{A} + I_{L} + I_{h} + I_{K1}$
   filename: Isoma.png

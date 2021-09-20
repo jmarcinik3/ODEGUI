@@ -203,53 +203,6 @@ def getTexImage(name: str, tex_folder: str = "tex", **kwargs) -> Union[sg.Image,
         return sg.Text(name, **kwargs)
 
 
-def expression2tex(expression: Expr, var2tex: str) -> str:
-    """
-    Get tex expression from symbolic expression.
-    
-    :param expression: expression of equation to convert to tex
-    :param var2tex: name of YML with variable-to-tex dictionary.
-        Key is name of variable.
-        Value is tex expression of variable.
-    """
-    expression_str = latex(expression)
-    var2tex = yaml.load(open(var2tex, 'r'), Loader=yaml.Loader)
-    # noinspection PyTypeChecker
-    sorted_tex: List[str] = sorted(var2tex.keys(), key=len, reverse=True)
-    if isinstance(expression, Expr):
-        free_symbols = expression.free_symbols
-        free_symbol_names = [str(free_symbol) for free_symbol in free_symbols]
-        sorted_tex = [name for name in sorted_tex if name in free_symbol_names]
-
-    for var in sorted_tex:
-        if f"\\{var:s}" in expression_str and f"\\\\{var:s}" not in expression_str:
-            continue
-
-        last_character = var[-1]
-        if not last_character.isdigit() or last_character in var[:-2]:
-            sympy_var = var
-        else:
-            first_digit_index = 0
-            for index in reversed(range(len(var))):
-                if not var[index].isdigit():
-                    first_digit_index = index + 1
-                    break
-            digits = var[first_digit_index:]
-            sympy_var = ''.join((var[:first_digit_index], f"_{{{digits:s}}}"))
-
-        tex = var2tex[var].replace('$', '')
-        var_subscript = f"_{{{var:s}}}"
-        var_in_subscript = var_subscript in expression_str
-        if var_in_subscript:
-            expression_str = expression_str.replace(var_subscript, '***')
-        expression_str = expression_str.replace(sympy_var, tex)
-        if var_in_subscript:
-            expression_str = expression_str.replace('***', var_subscript)
-    expression_str = '$' + expression_str + '$'
-
-    return expression_str
-
-
 def tex2png(tex_text: str, filepath: str, overwrite: bool = False) -> None:
     """
     Save tex for given text as PNG.
@@ -284,7 +237,7 @@ def expression2png(name: str, expression: Expr, folder: str, filename: str, var2
         Value is tex expression of variable.
     :returns: filepath of new image file
     """
-    expression_str = expression2tex(expression, var2tex)
+    expression_str = f"${latex(expression):s}$"
 
     if not os.path.isdir(folder):
         os.mkdir(folder)

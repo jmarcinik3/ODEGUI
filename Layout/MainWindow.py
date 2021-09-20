@@ -820,9 +820,10 @@ class FunctionRow(TabRow, StoredObject):
         for index in range(len(functions)):
             function = functions[index]
             filestem = filestems[index]
+            expression = function.getTexExpression(expanded=False)
             expression_png = expression2png(
                 name=name,
-                expression=function.getExpression(expanded=False),
+                expression=expression,
                 var2tex="var2tex.yml",
                 folder=self.getImageFoldername(filestem),
                 filename=f"{name:s}.png"
@@ -1859,9 +1860,8 @@ class MainWindowRunner(WindowRunner):
         """
         variable_row: TimeEvolutionRow = TimeEvolutionRow.getInstances(names=name)
         is_core_checkbox = variable_row.getIsCoreElement()
-        temp = getKeys(is_core_checkbox)
-        print('pass1', temp, is_core_checkbox.__class__)
-        is_core_variable = self.getValue(temp)
+        checkbox_key = getKeys(is_core_checkbox)
+        is_core_variable = self.getValue(checkbox_key)
         return is_core_variable
 
     def getVariables(

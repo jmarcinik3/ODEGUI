@@ -17,12 +17,12 @@ dxa:
   expression: $\frac{- F_{es} + F_{gs} - F_m}{\gamma \lambda_a}$
   filename: dxa.png
 lambdaC:
-  expression: $\frac{N d^{2} \gamma^{2} k_{gs}^{2} p_T \tau_T \left(1 - p_T\right)}{T
-    k_B}$
+  expression: $\frac{N \gamma^{2} \tau_{T} d^{2} k_{gs}^{2} p_{T} \left(1 - p_{T}\right)}{T
+    k_{B}}$
   filename: lambdaC.png
 lambdahb:
   expression: $\lambda_C + \lambda_H$
   filename: lambdahb.png
 tauT:
-  expression: $\tau_T^\varnothing$
+  expression: $\tau^{\varnothing}_{T}$
   filename: tauT.png

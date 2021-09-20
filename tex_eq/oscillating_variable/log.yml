@@ -1,3 +1,3 @@
 Vm:
-  expression: $A_{V_m} \sin{\left(\omega_{V_m} t + \phi_{V_m} \right)} + V_m(0)$
+  expression: $A_{V_m} \sin{\left(\omega_{V_m} t + \phi_{V_m} \right)} + V_{m}(0)$
   filename: Vm.png
