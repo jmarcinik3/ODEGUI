@@ -1932,9 +1932,9 @@ class SimulationWindow(TabbedWindow):
                     [
                         "Results::Save",
                         "Parameters::Save",
-                        "Functions::Save"
+                        "Functions::Save",
+                        "Time-Evolution Types::Save"
                     ],
-                    "Time-Evolution Types::Save",
                     "Figure",
                     [
                         "Static::Save Figure",
