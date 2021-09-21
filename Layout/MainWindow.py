@@ -7,6 +7,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
+
 from CustomErrors import RecursiveTypeError
 from Function import Derivative, Function, Independent, Model, Parameter, Variable, \
     generateFunction, generateParameter, readFunctionsFromFiles, readParametersFromFiles
@@ -2483,21 +2484,30 @@ class MainWindowRunner(WindowRunner):
             default_args=self.getParameterNames()
         )
 
-    def setTimeEvolutionType(self, name: str, time_evolution_type: str) -> None:
+    def setTimeEvolutionType(self, names: Union[str, List[str]], time_evolution_type: str) -> None:
         """
         Set time-evolution type for a variable in window.
 
         :param self: '~Layout.MainWindow.MainWindowRunner' to set time evolution in
-        :param name: name of variable to set time-evolution type for
+        :param names: name(s) of variable(s) to set time-evolution type for
         :param time_evolution_type: time-evolution type to set for variable
         """
-        time_evolution_row: TimeEvolutionRow = TimeEvolutionRow.getInstances(names=name)
-        time_evolution_combobox = time_evolution_row.getTimeEvolutionTypeElement()
-        time_evolution_choices = vars(time_evolution_combobox)["Values"]
-        if time_evolution_type in time_evolution_choices:
-            combobox_key = getKeys(time_evolution_combobox)
-            time_evolution_combobox.update(time_evolution_type)
-            self.getWindow().write_event_value(combobox_key, time_evolution_type)
+        assert isinstance(time_evolution_type, str)
+
+        def set(name: str) -> None:
+            time_evolution_row: TimeEvolutionRow = TimeEvolutionRow.getInstances(names=name)
+            time_evolution_combobox = time_evolution_row.getTimeEvolutionTypeElement()
+            time_evolution_choices = vars(time_evolution_combobox)["Values"]
+            if time_evolution_type in time_evolution_choices:
+                combobox_key = getKeys(time_evolution_combobox)
+                time_evolution_combobox.update(time_evolution_type)
+                self.getWindow().write_event_value(combobox_key, time_evolution_type)
+        
+        return recursiveMethod(
+            args=names,
+            base_method=set,
+            valid_input_types=str
+        )
 
     def loadTimeEvolutionTypesFromFile(self, filepath: str = None) -> None:
         """
@@ -2521,10 +2531,9 @@ class MainWindowRunner(WindowRunner):
             if filepath is None:
                 return None
         
-        info = loadConfig(filepath)
-        for time_evolution_type, variable_names in info.items():
-            for variable_name in variable_names:
-                self.setTimeEvolutionType(variable_name, time_evolution_type)
+        contents = loadConfig(filepath)
+        for time_evolution_type, variable_names in contents.items():
+            self.setTimeEvolutionType(variable_names, time_evolution_type)
 
     def loadParametersFromFile(self, filepath: str = None, choose_parameters: bool = True) -> Optional[List[Parameter]]:
         """

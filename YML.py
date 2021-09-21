@@ -5,12 +5,14 @@ from pathlib import Path
 from typing import List, Optional, Tuple, Union
 from zipfile import ZipFile
 
+import xmltodict
 import yaml
 
 config_file_types = [
+    ("JavaScript Object Notation", "*.json"),
     ("YML", "*.yml"),
-    ("YAML", "*.yaml"),
-    ("JSON", "*.json"),
+    ("YAML Ain't Markup Language", "*.yaml"),
+    ("Extensible Markup Language", "*.xml")
 ]
 config_file_extensions = [
     config_file_type[1].replace('*', '')
@@ -38,7 +40,7 @@ def readPrefixes(filename="prefix.yml"):
     return prefixes
 
 
-def readStates(choice=None, filename: str = "states.yml") -> dict:
+def readStates(choice=None, filename: str = "states.json") -> dict:
     """
     Get dictionary of default values for elements in window.
     
@@ -52,12 +54,12 @@ def readStates(choice=None, filename: str = "states.yml") -> dict:
         return choices[choice]
 
 
-def getStates(choice, name, filename="states.yml"):
+def getStates(choice, name, filename="states.json"):
     choices = readStates(choice, filename)
     return choices[name]
 
 
-def getDimensions(keys: List[str], filename: str = "layout_dimensions.yml") -> Tuple[Optional[float], Optional[float]]:
+def getDimensions(keys: List[str], filename: str = "layout_dimensions.json") -> Tuple[Optional[float], Optional[float]]:
     def getDimension(dimension):
         if dimension is not None:
             try:
@@ -80,29 +82,29 @@ def getDimensions(keys: List[str], filename: str = "layout_dimensions.yml") -> T
 
 def loadConfig(filepath: str, archive: ZipFile = None) -> Union[dict, list]:
     """
-    Load contents from config file ('*.yml', '*.yaml', '*.json')
+    Load contents from config file ('*.json', '*.xml', '*.yml', '*.yaml')
 
     :param filepath: path of file to load contents from.
         Must be relative to *.zip file if :paramref:`~YML.loadConfig.archive` is given.
     """
     assert isinstance(filepath, str)
 
-    file_extension = Path(filepath).suffix
-
-    if file_extension in [".yml", ".yaml"]:
-        load = partial(yaml.load, Loader=yaml.Loader)
-    elif file_extension == ".json":
-        load = json.load
-
     if archive is None:
         file = open(filepath, 'r')
     else:
         assert isinstance(archive, ZipFile)
         file = BytesIO(archive.read(filepath))
-    
-    contents = load(file)
-    file.close()
 
+    file_extension = Path(filepath).suffix
+    if file_extension == ".json":
+        contents = json.load(file)
+    elif file_extension == ".xml":
+        file_str = file.read()
+        contents = xmltodict.parse(file_str, dict_constructor=dict)["root"]
+    elif file_extension in [".yml", ".yaml"]:
+        contents = yaml.load(file, Loader=yaml.Loader)
+    
+    file.close()
     return contents
 
 def saveConfig(contents: dict, filepath: str) -> BytesIO:
@@ -117,16 +119,19 @@ def saveConfig(contents: dict, filepath: str) -> BytesIO:
 
     file_extension = Path(filepath).suffix
 
-    if file_extension in [".yml", ".yaml"]:
-        dump = partial(
-            yaml.dump, 
-            default_flow_style=None,
-            sort_keys=False
-        )
-    elif file_extension == ".json":
-        dump = json.dump
-
     with open(filepath, 'w') as file:
-        dump(contents, file)
+        if file_extension == ".json":
+            json.dump(contents, file)
+        elif file_extension == ".xml":
+            xml_str = xmltodict.unparse({"root": contents})
+            file.write(xml_str)
+        elif file_extension in [".yml", ".yaml"]:
+            yaml.dump(
+                contents,
+                file,
+                default_flow_style=None,
+                sort_keys=False
+            )
+        
     
     return file

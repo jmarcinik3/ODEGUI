@@ -596,7 +596,6 @@ class Model:
             tet2vars[time_evolution_type].append(variable_name)
 
         file = saveConfig(tet2vars, filepath)
-
         return file
 
     def getDerivatives(self) -> List[Derivative]:
@@ -1163,7 +1162,7 @@ class Parent:
                     assert isinstance(argument, str)
                 new_child[argument_specie] = instance_argument
             else:
-                raise RecursiveTypeError(instance_arguments)
+                raise RecursiveTypeError(instance_argument)
 
         self.instance_arguments[name] = new_child
         return new_child
