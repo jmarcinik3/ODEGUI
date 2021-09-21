@@ -8,23 +8,25 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
 import yaml
-# from colour import Color
-from igraph import Graph, plot
-from numpy import ndarray
-from pint import Quantity
-
 from CustomErrors import RecursiveTypeError
 from Function import Derivative, Function, Independent, Model, Parameter, Variable, \
     generateFunction, generateParameter, readFunctionsFromFiles, readParametersFromFiles
+# from colour import Color
+from igraph import Graph, plot
+from macros import StoredObject, \
+    expression2png, formatQuantity, getTexImage, recursiveMethod, unique
+from numpy import ndarray
+from pint import Quantity
+from YML import config_file_extensions, config_file_types, \
+    getDimensions, getStates, loadConfig, readLayout, readStates
+
 from Layout.ChooseGraphLayoutWindow import ChooseGraphLayoutWindowRunner
 from Layout.ChooseParametersWindow import ChooseParametersWindowRunner
 from Layout.ChooseVariablesWindow import ChooseVariablesWindowRunner
-from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabRow, TabbedWindow, WindowRunner, \
+from Layout.Layout import Element, Layout, Row, Tab, TabbedWindow, TabGroup, TabRow, WindowRunner, \
     generateCollapsableSection, getKeys, getNameFromElementKey, storeElement
 from Layout.SetFreeParametersWindow import SetFreeParametersWindowRunner
 from Layout.SimulationWindow import SimulationWindowRunner
-from YML import getDimensions, getStates, readLayout, readStates
-from macros import StoredObject, expression2png, formatQuantity, getTexImage, recursiveMethod, unique
 
 tet_types = ("Temporal", "Equilibrium", "Constant", "Function")
 p_types = ("Constant", "Free")
@@ -2507,7 +2509,10 @@ class MainWindowRunner(WindowRunner):
             Defaults to letting user choose file.
         """
         if filepath is None:
-            file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
+            file_types = (
+                *config_file_types,
+                ("ALL Files", "*.*"),
+            )
             filepath = sg.PopupGetFile(
                 message="Enter Filename to Load",
                 title="Load Time-Evolution Types",
@@ -2517,13 +2522,7 @@ class MainWindowRunner(WindowRunner):
             if filepath is None:
                 return None
         
-        try:
-            file = open(filepath, 'r')
-        except FileNotFoundError as error:
-            sg.PopupError(repr(error))
-            return None
-        
-        info = yaml.load(file, Loader=yaml.Loader)
+        info = loadConfig(filepath)
         for time_evolution_type, variable_names in info.items():
             for variable_name in variable_names:
                 self.setTimeEvolutionType(variable_name, time_evolution_type)
@@ -2540,7 +2539,10 @@ class MainWindowRunner(WindowRunner):
         :returns: parameter objects for chosen parameters
         """
         if filepath is None:
-            file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
+            file_types = (
+                *config_file_types,
+                ("ALL Files", "*.*"),
+            )
             filepath = sg.PopupGetFile(
                 message="Enter Filename to Load",
                 title="Load Parameters",
@@ -2549,13 +2551,8 @@ class MainWindowRunner(WindowRunner):
             )
             if filepath is None:
                 return None
-        try:
-            file = open(filepath, 'r')
-        except FileNotFoundError as error:
-            sg.PopupError(error.message)
-            return None
 
-        info = yaml.load(file, Loader=yaml.Loader)
+        info = loadConfig(filepath)
         filestems = self.getParameterStems()
         loaded_parameters = []
         for key, value in info.items():
@@ -2600,7 +2597,10 @@ class MainWindowRunner(WindowRunner):
         :returns: function objects for chosen functions
         """
         if filepath is None:
-            file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
+            file_types = (
+                *config_file_types, 
+                ("ALL Files", "*.*"),
+            )
             filepath = sg.PopupGetFile(
                 message="Enter Filename to Load",
                 title="Load Function",
@@ -2610,7 +2610,7 @@ class MainWindowRunner(WindowRunner):
             if filepath is None:
                 return None
 
-        info = yaml.load(open(filepath, 'r'), Loader=yaml.Loader)
+        info = loadConfig(filepath)
         filestems = self.getFunctionStems()
         loaded_functions = []
         for key, value in info.items():

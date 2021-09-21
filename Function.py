@@ -24,8 +24,10 @@ from sympy.utilities.lambdify import lambdify
 
 from CustomErrors import RecursiveTypeError
 from macros import formatQuantity, recursiveMethod, unique
+from YML import config_file_extensions, loadConfig, saveConfig
 
-var2tex = yaml.load(open("var2tex.yml", 'r'), Loader=yaml.Loader)
+
+var2tex = loadConfig("var2tex.yml")
 
 class PaperQuantity:
     """
@@ -446,31 +448,31 @@ class Model:
         else:
             raise RecursiveTypeError(names)
 
-    def loadFunctionsFromFiles(self, ymls: Union[str, List[str]]) -> None:
+    def loadFunctionsFromFiles(self, filepaths: Union[str, List[str]]) -> None:
         """
         Add functions to model by parsing through YML file.
 
         :param self: :class:`~Function.Model` to add function(s) to
-        :param ymls: name(s) of YML file(s) to retrieve function info from
+        :param filepaths: name(s) of config file(s) to retrieve function info from
         """
-        if isinstance(ymls, str):
-            ymls = [ymls]
+        if isinstance(filepaths, str):
+            filepaths = [filepaths]
 
-        for yml in ymls:
-            self.addPaperQuantities(generateFunctionsFromFile(yml, model=self))
+        for filepath in filepaths:
+            self.addPaperQuantities(generateFunctionsFromFile(filepath, model=self))
 
-    def loadParametersFromFiles(self, ymls: Union[str, List[str]]) -> None:
+    def loadParametersFromFiles(self, filepaths: Union[str, List[str]]) -> None:
         """
         Add parameters to model by parsing through YML file.
 
         :param self: :class:`~Function.Model` to add function(s) to
-        :param ymls: name(s) of YML file(s) to retrieve parameter info from
+        :param filepaths: name(s) of config file(s) to retrieve parameter info from
         """
-        if isinstance(ymls, str):
-            ymls = [ymls]
+        if isinstance(filepaths, str):
+            filepaths = [filepaths]
 
-        for yml in ymls:
-            self.addPaperQuantities(generateParametersFromFile(yml, model=self))
+        for filepath in filepaths:
+            self.addPaperQuantities(generateParametersFromFile(filepath, model=self))
 
     def saveQuantitiesToFile(self, filepath: str, specie: str) -> TextIO:
         """
@@ -499,11 +501,8 @@ class Model:
                 save_info[filestem].append(name)
             else:
                 save_info[name] = quantity_object.getSaveInfo()
-
-        with open(filepath, 'w') as file:
-            yaml.dump(save_info, file, default_flow_style=None)
-            file.close()
-
+            
+        file = saveConfig(save_info, filepath)
         return file
 
     def saveFunctionsToFile(self, filepath: str) -> TextIO:
@@ -515,10 +514,10 @@ class Model:
         :param args: required arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
         :returns: new file
         """
-        file_extension = Path(filepath).suffix
         function_objs = self.getFunctions()
         
-        if file_extension in [".yml", ".yaml", ".json"]:
+        file_extension = Path(filepath).suffix
+        if file_extension in config_file_extensions:
             save_info = {}
             for function_obj in function_objs:
                 name = function_obj.getName()
@@ -529,23 +528,11 @@ class Model:
                     save_info[filestem].append(name)
                 else:
                     save_info[name] = function_obj.getSaveInfo()
-
-            if file_extension in [".yml", ".yaml"]:
-                dump = partial(
-                    yaml.dump, 
-                    default_flow_style=None, 
-                    sort_keys=False,
-                )
-            elif file_extension == ".json":
-                dump = json.dump
             
-            with open(filepath, 'w') as file:
-                dump(save_info, file)
-                file.close()
-
+            file = saveConfig(save_info, filepath)
             return file
         elif file_extension == ".tex":
-            present_mode = SymbolicVariables.mode
+            pre_mode = SymbolicVariables.mode
             SymbolicVariables.switchMode("tex")
 
             save_lines = [
@@ -567,11 +554,10 @@ class Model:
                 save_lines.append(equation_tex)
             save_lines.append(r"\end{document}")
             
-            SymbolicVariables.switchMode(present_mode)
+            SymbolicVariables.switchMode(pre_mode)
 
             with open(filepath, 'w') as file:
                 file.writelines(save_lines)
-                file.close()
 
             return file
         elif file_extension == ".pdf":
@@ -609,9 +595,7 @@ class Model:
             variable_name = variable_obj.getName()
             tet2vars[time_evolution_type].append(variable_name)
 
-        with open(filepath, 'w') as file:
-            yaml.dump(tet2vars, file, default_flow_style=None)
-            file.close()
+        file = saveConfig(tet2vars, filepath)
 
         return file
 
@@ -2182,53 +2166,57 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
     return kwargs
 
 
-def generateFunctionsFromFile(file: Union[str, BytesIO], **kwargs) -> List[Function]:
+def generateFunctionsFromFile(filepath: str, **kwargs) -> List[Function]:
     """
     Generate all functions from file.
     
-    :param file: path of file (or file itself) to read functions from
+    :param filepath: path of file to read functions from
     :param kwargs: additional arguments to pass into :meth:`~Function.generateFunction`
     :returns: Generated functions
     """
-    if isinstance(file, str):
-        file = open(file, 'r')
+    assert isinstance(filepath, str)
 
-    contents = yaml.load(file, Loader=yaml.Loader)
-    filestem = '' #Path(file).stem
-    function_objs = [
-        generateFunction(
+    contents = loadConfig(filepath)
+
+    filestem = Path(filepath).stem
+    def generateFunctionPartial(name) -> Function:
+        return generateFunction(
             name,
             contents[name],
             filestem=filestem,
             **kwargs
         )
-        for name in contents.keys()
-    ]
+    
+    function_names = contents.keys()
+    function_objs = list(map(generateFunctionPartial, function_names))
+
     return function_objs
 
 
-def generateParametersFromFile(file: Union[str, BytesIO], **kwargs) -> List[Parameter]:
+def generateParametersFromFile(filepath: str, **kwargs) -> List[Parameter]:
     """
     Generate all parameter from file.
 
-    :param file: path of file (or file itself) to read parameters from
+    :param filepath: path of file to read parameters from
     :param kwargs: additional arguments to pass into :meth:`~Function.generateParameter`
     :returns: Generated parameters
     """
-    if isinstance(file, str):
-        file = open(file, 'r')
+    assert isinstance(filepath, str)
 
-    contents = yaml.load(file, Loader=yaml.Loader)
-    filestem = Path(file).stem
-    parameter_objs = [
-        generateParameter(
+    contents = loadConfig(filepath)
+
+    filestem = Path(filepath).stem
+    def generateParameterPartial(name) -> Parameter:
+        return generateParameter(
             name,
             contents[name],
             filestem=filestem,
-            **kwargs,
+            **kwargs
         )
-        for name in contents.keys()
-    ]
+
+    parameter_names = contents.keys()
+    parameter_objs = list(map(generateParameterPartial, parameter_names))
+
     return parameter_objs
 
 
@@ -2323,7 +2311,9 @@ def createModel(function_ymls: Union[str, List[str]], parameter_ymls: Union[str,
 
 
 def readQuantitiesFromFiles(
-        filepaths: Union[str, List[str]], specie: str, names: Iterable[str] = None
+    filepaths: Union[str, List[str]],
+    specie: str,
+    names: Iterable[str] = None
 ) -> Dict[str, PaperQuantity]:
     """
     Read file containing information about paper quantities.
@@ -2340,7 +2330,10 @@ def readQuantitiesFromFiles(
     load_all = names is None
     if isinstance(filepaths, str):
         filepaths = [filepaths]
-
+    else:
+        for filepath in filepaths:
+            assert isinstance(filepath, str)
+    
     if specie == "Parameter":
         generate = generateParameter
     elif specie == "Function":
@@ -2350,11 +2343,16 @@ def readQuantitiesFromFiles(
 
     quantity_objects = {}
     for filepath in filepaths:
-        objects_info = yaml.load(open(filepath, 'r'), Loader=yaml.Loader)
+        objects_info = loadConfig(filepath)
         filestem = Path(filepath).stem
         for name, info in objects_info.items():
             if load_all or name in names:
-                quantity_objects[name] = generate(name, info, filestem=filestem)
+                quantity_objects[name] = generate(
+                    name, 
+                    info, 
+                    filestem=filestem,
+                )
+    
     return quantity_objects
 
 

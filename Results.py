@@ -15,6 +15,7 @@ from sympy.utilities.lambdify import lambdify
 
 from Function import Model, Parameter
 from macros import recursiveMethod
+from YML import saveConfig
 
 
 class Results:
@@ -822,32 +823,20 @@ class Results:
 
         path_directory = dirname(filepath)
 
-        function_file = model.saveFunctionsToFile(
-            join(path_directory, "Function.yml")
-        )
-        parameter_file = model.saveParametersToFile(
-            join(path_directory, "Parameter.yml")
-        )
-        time_evolution_type_file = model.saveTimeEvolutionTypesToFile(
-            join(path_directory, "TimeEvolutionType.yml")
-        )
+        function_filepath = join(path_directory, "Function.yml")
+        function_file = model.saveFunctionsToFile(function_filepath)
 
-        free_parameter_file = open(
-            join(path_directory, "FreeParameter.yml"),
-            'w'
-        )
-        yaml.dump(
-            free_parameter_info,
-            free_parameter_file,
-            default_flow_style=None,
-            sort_keys=False
-        )
-        free_parameter_file.close()
+        parameter_filepath = join(path_directory, "Parameter.yml")
+        parameter_file = model.saveParametersToFile(parameter_filepath)
 
-        results_file = open(
-            join(path_directory, "Results.pkl"),
-            'wb'
-        )
+        time_evolution_type_filepath = join(path_directory, "TimeEvolutionType.yml")
+        time_evolution_type_file = model.saveTimeEvolutionTypesToFile(time_evolution_type_filepath)
+
+        free_parameter_filepath = join(path_directory, "FreeParameter.yml")
+        free_parameter_file = saveConfig(free_parameter_info, free_parameter_filepath)
+
+        results_filepath = join(path_directory, "Results.pkl")
+        results_file = open(results_filepath, 'wb')
         dill.dump(self.results, results_file)
         results_file.close()
 
@@ -858,7 +847,7 @@ class Results:
             results_file,
             time_evolution_type_file
         ]
-
+        
         with ZipFile(filepath, 'w') as zipfile:
             for file in files:
                 filepath = file.name

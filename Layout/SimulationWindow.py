@@ -17,11 +17,13 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 # noinspection PyPep8Naming
 from zipfile import ZipFile
 
-import PySimpleGUI as sg
 import imageio
 import matplotlib.pyplot as plt
 import numpy as np
+import PySimpleGUI as sg
 import yaml
+from Function import Model
+from macros import StoredObject, recursiveMethod
 from matplotlib import cm, colors
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -30,16 +32,14 @@ from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from numpy import ndarray
 from pint import Quantity, Unit
+from Results import Results
+from Simulation import formatResultsAsDictionary, solveODE
 from sympy import Expr, Symbol
 from sympy.core import function
 from sympy.utilities.lambdify import lambdify
+from YML import config_file_types, getDimensions, getStates
 
-from Function import Model
-from Layout.Layout import Element, Layout, Row, Tab, TabGroup, TabbedWindow, WindowRunner, getKeys, storeElement
-from Results import Results
-from Simulation import formatResultsAsDictionary, solveODE
-from YML import getDimensions, getStates
-from macros import StoredObject, formatValue, getTexImage, recursiveMethod, unique
+from Layout.Layout import Element, Layout, Row, Tab, TabbedWindow, TabGroup, WindowRunner, getKeys, storeElement
 
 cc_pre = "CANVAS CHOICE"
 ccs_pre = ' '.join((cc_pre, "SPECIE"))
@@ -2961,7 +2961,10 @@ class SimulationWindowRunner(WindowRunner):
         
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from
         """
-        file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
+        file_types = (
+            *config_file_types,
+            ("ALL Files", "*.*"),
+        )
 
         filename = sg.PopupGetFile(
             message="Enter Filename",
@@ -2980,11 +2983,8 @@ class SimulationWindowRunner(WindowRunner):
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from
         """
         file_types = (
-            ("YML", "*.yml"), 
-            ("YAML", "*.yaml"),
-            ("JSON", "*.json"),
-            ("LaTeX", "*.tex"), 
-            ("Plain Text", "*.txt"),
+            *config_file_types,
+            ("LaTeX", "*.tex"),
             ("Portable Document Format", "*.pdf"),
             ("ALL Files", "*.*"),
         )
@@ -3006,7 +3006,10 @@ class SimulationWindowRunner(WindowRunner):
 
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from
         """
-        file_types = (("YML", "*.yml"), ("YAML", "*.yaml"), ("Plain Text", "*.txt"), ("ALL Files", "*.*"),)
+        file_types = (
+            *config_file_types,
+            ("ALL Files", "*.*"),
+        )
 
         filename = sg.PopupGetFile(
             message="Enter Filename",
@@ -3094,11 +3097,11 @@ class SimulationWindowRunner(WindowRunner):
                     zipfile.write(gif_filepath, basename(gif_filepath))
                     os.remove(gif_filepath)
 
-                    with open(yaml_filepath, 'w') as yamlfile:
-                        yaml_parameter_values = list(map(float, parameter_values))
-                        yaml_parameter_indicies = list(range(len(parameter_values)))
-                        parameter_values_dict = dict(zip(yaml_parameter_indicies, yaml_parameter_values))
-                        yaml.dump(parameter_values_dict, yamlfile)
+                    yaml_parameter_values = list(map(float, parameter_values))
+                    yaml_parameter_indicies = list(range(len(parameter_values)))
+                    parameter_values_dict = dict(zip(yaml_parameter_indicies, yaml_parameter_values))
+                    saveConfig(parameter_values_dict, yaml_filepath)
+
                     zipfile.write(yaml_filepath, basename(yaml_filepath))
                     os.remove(yaml_filepath)
 

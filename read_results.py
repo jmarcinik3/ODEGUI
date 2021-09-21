@@ -1,9 +1,9 @@
-import zipfile
 from io import BytesIO
 from os import listdir
 from os.path import isfile, join
 from pathlib import Path
 from typing import Dict, Iterable, List, Tuple, Type, Union
+from zipfile import ZipFile
 
 import PySimpleGUI as sg
 import dill
@@ -13,10 +13,11 @@ import yaml
 from pint import Quantity
 from sympy import Expr
 
-from Function import Dependent, Derivative, Function, Independent, Model, NonPiecewise, Parameter, Piecewise, Variable, generateFunction, generateParameter, readFunctionsFromFiles, readParametersFromFiles
+from Function import Dependent, Derivative, Function, Independent, Model, NonPiecewise, Parameter, Piecewise, Variable, \
+    generateFunction, generateParameter, readFunctionsFromFiles, readParametersFromFiles
 from Layout.SimulationWindow import SimulationWindowRunner
 from Results import Results
-
+from YML import loadConfig
 
 def doi2bib(doi):
     """
@@ -30,14 +31,18 @@ def doi2bib(doi):
     return r.text
 
 
-def loadFunctions(file: Union[str, BytesIO], stem2path: Dict[str, str]) -> List[Function]:
-    if isinstance(file, str):
-        file = open(file, 'r')
+def loadFunctions(
+    filepath: str, 
+    stem2path: Dict[str, str], 
+    archive: ZipFile = None
+) -> List[Function]:
+    assert isinstance(filepath, str)
 
-    info = yaml.load(file, Loader=yaml.Loader)
+    contents = loadConfig(filepath, archive=archive)
+
     filestems = stem2path.keys()
     loaded_functions = []
-    for key, value in info.items():
+    for key, value in contents.items():
         if key in filestems:
             if isinstance(value, Iterable):
                 path_from_stem = stem2path[key]
@@ -51,11 +56,15 @@ def loadFunctions(file: Union[str, BytesIO], stem2path: Dict[str, str]) -> List[
     return loaded_functions
 
 
-def loadParameters(file: Union[str, BytesIO], stem2path: Dict[str, str]) -> List[Parameter]:
-    if isinstance(file, str):
-        file = open(file, 'r')
+def loadParameters(
+    filepath: str, 
+    stem2path: Dict[str, str], 
+    archive: ZipFile = None
+) -> List[Parameter]:
+    assert isinstance(filepath, str)
 
-    info = yaml.load(file, Loader=yaml.Loader)
+    info = loadConfig(filepath, archive=archive)
+
     filestems = stem2path.keys()
     loaded_parameters = []
     for key, value in info.items():
@@ -96,28 +105,17 @@ def loadResultsFromFile(
         for filepath in equation_filepaths
     }
 
-    archive = zipfile.ZipFile(results_filepath, 'r')
+    archive = ZipFile(results_filepath, 'r')
 
     results = dill.load(
         BytesIO(archive.read("Results.pkl")), 
         'rb'
     )
-    free_parameters = yaml.load(
-        BytesIO(archive.read("FreeParameter.yml")), 
-        Loader=yaml.Loader
-    )
-    time_evolution_types = yaml.load(
-        BytesIO(archive.read("TimeEvolutionType.yml")), 
-        Loader=yaml.Loader
-    )
-    function_objs = loadFunctions(
-        BytesIO(archive.read("Function.yml")), 
-        stem2path_func
-    )
-    parameter_objs = loadParameters(
-        BytesIO(archive.read("Parameter.yml")), 
-        stem2path_param
-    )
+    free_parameters = loadConfig("FreeParameter.yml", archive=archive)
+    time_evolution_types = loadConfig("TimeEvolutionType.yml", archive=archive)
+    
+    function_objs = loadFunctions("Function.yml", stem2path_func, archive=archive)
+    parameter_objs = loadParameters("Parameter.yml", stem2path_param, archive=archive)
 
     values = {}
     for name, value in free_parameters.items():
@@ -147,7 +145,9 @@ def loadResultsFromFile(
     return results_obj
 
 def getSimulationFromResults(
-        results_filepath: str, parameter_directory: str = "parameters", equation_directory: str = "equations"
+    results_filepath: str, 
+    parameter_directory: str = "parameters", 
+    equation_directory: str = "equations"
 ) -> SimulationWindowRunner:
     results_obj = loadResultsFromFile(
         results_filepath,
@@ -157,13 +157,11 @@ def getSimulationFromResults(
 
     model = results_obj.getModel()
 
-    archive = zipfile.ZipFile(results_filepath, 'r')
-    free_parameters = yaml.load(
-        BytesIO(archive.read("FreeParameter.yml")), 
-        Loader=yaml.Loader
-    )
+    archive = ZipFile(results_filepath, 'r')
+    free_parameter_contents = loadConfig("FreeParameter.yml", archive=archive)
+
     free_parameter_values = {}
-    for name, value in free_parameters.items():
+    for name, value in free_parameter_contents.items():
         quantity = Quantity(0, value["unit"])
         values = list(map(float, value["values"]))
         minimum, maximum, stepcount = min(values), max(values), len(values)
@@ -201,7 +199,10 @@ if __name__ == "__main__":
         suppress_raise_key_errors=False
     )
 
-    file_types = (("Compressed File", "*.zip"), ("ALL files", "*.*"),)
+    file_types = (
+        ("Compressed File", "*.zip"), 
+        ("ALL files", "*.*"),
+    )
     res_path = sg.PopupGetFile(
         message="Enter Filename to Load",
         title="Load Previous Results",

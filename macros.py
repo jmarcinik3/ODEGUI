@@ -5,18 +5,18 @@ from __future__ import annotations
 
 import os
 from functools import partial
+from pathlib import Path
 from typing import Any, Callable, Iterable, List, Type, Union
 
+import numpy as np
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
-import numpy as np
-import yaml
 from numpy import ndarray
 from pint import Quantity
 from sympy import Expr, latex
 from sympy.printing.preview import preview
 
-import YML
+from YML import loadConfig, readVar2Tex, saveConfig
 
 
 class StoredObject:
@@ -244,7 +244,7 @@ def expression2png(name: str, expression: Expr, folder: str, filename: str, var2
 
     logpath = os.path.join(folder, "log.yml")
     if os.path.isfile(logpath):
-        old_info = yaml.load(open(logpath, 'r'), Loader=yaml.Loader)
+        old_info = loadConfig(logpath)
         if old_info is None:
             old_info = {}
     else:
@@ -255,7 +255,7 @@ def expression2png(name: str, expression: Expr, folder: str, filename: str, var2
 
     if overwrite:
         print(f"Overwriting {filepath:s} as {expression_str:s}")
-    
+
     tex2png(
         tex_text=expression_str,
         filepath=filepath,
@@ -267,7 +267,7 @@ def expression2png(name: str, expression: Expr, folder: str, filename: str, var2
         "expression": expression_str,
         "filename": filename
     }
-    yaml.dump(new_info, open(logpath, 'w'))
+    saveConfig(new_info, logpath)
 
     return filepath
 
@@ -283,11 +283,11 @@ def tex2pngFromFile(output_folder: str, tex_filename: str, **kwargs) -> None:
         Values are corresponding TeX format.
     :param kwargs: additional arguments to pass into :meth:`~macros.tex2png`
     """
-    tex_yml = YML.readVar2Tex(tex_filename)
+    tex_yml = readVar2Tex(tex_filename)
 
     if not os.path.isdir(output_folder):
         os.mkdir(output_folder)
-    for key in YML.readVar2Tex(tex_filename):
+    for key in readVar2Tex(tex_filename):
         filepath = f"{output_folder:s}/{key:s}.png"
         tex2png(tex_yml[key], filepath, **kwargs)
 
