@@ -1,0 +1,367 @@
+{
+  "KpC1": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": [
+      "KC10",
+      "deltaC1",
+      "zK"
+    ],
+    "children": {
+      "BoltzX": {
+        "parameters": "zK"
+      }
+    },
+    "form": "KC10 * BoltzX**deltaC1"
+  },
+  "KpC2": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": [
+      "KC20",
+      "deltaC2",
+      "zK"
+    ],
+    "children": {
+      "BoltzX": {
+        "parameters": "zK"
+      }
+    },
+    "form": "KC20 * BoltzX**deltaC2"
+  },
+  "KpO3": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": [
+      "KO20",
+      "deltaO2",
+      "zK"
+    ],
+    "children": {
+      "BoltzX": {
+        "parameters": "zK"
+      }
+    },
+    "form": "KO20 * BoltzX**deltaO2"
+  },
+  "kaC1": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "Ca",
+    "parameters": "kdC1",
+    "children": {
+      "KpC1": null
+    },
+    "form": "kdC1*Ca / KpC1"
+  },
+  "kaC2": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "Ca",
+    "parameters": "kdC2",
+    "children": {
+      "KpC2": null
+    },
+    "form": "kdC2*Ca / KpC2"
+  },
+  "kdO2": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "Vm",
+    "parameters": [
+      "kdO20",
+      "zCa",
+      "dK"
+    ],
+    "children": {
+      "BoltzX": {
+        "parameters": "zCa"
+      }
+    },
+    "form": "kdO20 * BoltzX**(dK-1)"
+  },
+  "kaO3": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "Ca",
+    "parameters": "kdO3",
+    "children": {
+      "KpO3": null
+    },
+    "form": "kdO3*Ca / KpO3"
+  },
+  "IL": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "Vm",
+    "parameters": [
+      "gL",
+      "EL"
+    ],
+    "form": "gL * (Vm-EL)"
+  },
+  "gCa": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "mCa",
+    "parameters": "gCa1",
+    "form": "gCa1 * mCa**3"
+  },
+  "ICa": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "Vm",
+    "parameters": "ECa",
+    "children": {
+      "gCa": null,
+      "I": {
+        "parameters": "ECa",
+        "functions": "gCa"
+      }
+    },
+    "form": "I"
+  },
+  "gBK": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": [
+      "pO2",
+      "pO3"
+    ],
+    "parameters": "gBK11",
+    "form": "gBK11 * (pO2+pO3)"
+  },
+  "IBK": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "Vm",
+    "parameters": "EBK",
+    "children": {
+      "gBK": null,
+      "I": {
+        "parameters": "EBK",
+        "functions": "gBK"
+      }
+    },
+    "form": "I"
+  },
+  "AT": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": [
+      "GT1",
+      "ZT1",
+      "R",
+      "T"
+    ],
+    "variables": "Xhb",
+    "form": "(GT1-ZT1*Xhb) / (R*T)"
+  },
+  "BT": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": [
+      "GT2",
+      "ZT2",
+      "R",
+      "T"
+    ],
+    "variables": "Xhb",
+    "form": "(GT2-ZT2*Xhb) / (R*T)"
+  },
+  "gT": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": "gTmax",
+    "children": {
+      "AT": null,
+      "BT": null
+    },
+    "form": "gTmax / ( 1+exp(BT)*(1+exp(AT)) )"
+  },
+  "IT": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": "ET",
+    "children": {
+      "gT": null,
+      "I": {
+        "parameters": "ET",
+        "functions": "gT"
+      }
+    },
+    "form": "I"
+  },
+  "dCa": {
+    "properties": [
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "Ca",
+    "variables": "Ca",
+    "parameters": [
+      "U",
+      "zCa",
+      "F",
+      "Cvol",
+      "xiCa",
+      "KS"
+    ],
+    "children": {
+      "ICa": null
+    },
+    "form": "-ICa*U/(zCa*F*Cvol*xiCa) - KS*Ca"
+  },
+  "dpC0": {
+    "properties": [
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "pC0",
+    "variables": [
+      "pC0",
+      "pC1"
+    ],
+    "parameters": "kdC1",
+    "children": {
+      "kaC1": null
+    },
+    "form": "kdC1*pC1 - kaC1*pC0"
+  },
+  "dpC1": {
+    "properties": [
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "pC1",
+    "variables": [
+      "pC0",
+      "pC1",
+      "pC2"
+    ],
+    "parameters": [
+      "kdC1",
+      "kdC2"
+    ],
+    "children": {
+      "kaC1": null,
+      "kaC2": null
+    },
+    "form": "kdC2*pC2 + kaC1*pC0 - (kdC1+kaC2)*pC1"
+  },
+  "dpC2": {
+    "properties": [
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "pC2",
+    "variables": [
+      "pC1",
+      "pC2",
+      "pO2"
+    ],
+    "parameters": [
+      "kdC2",
+      "kaO2"
+    ],
+    "children": {
+      "kdO2": null,
+      "kaC2": null
+    },
+    "form": "kdO2*pO2 + kaC2*pC1 - (kdC2+kaO2)*pC2"
+  },
+  "dpO2": {
+    "properties": [
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "pO2",
+    "variables": [
+      "pC2",
+      "pO2",
+      "pO3"
+    ],
+    "parameters": [
+      "kdO3",
+      "kaO2"
+    ],
+    "children": {
+      "kdO2": null,
+      "kaO3": null
+    },
+    "form": "kdO3*pO3 + kaO2*pC2 - (kdO2+kaO3)*pO2"
+  },
+  "dpO3": {
+    "properties": [
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "pO3",
+    "variables": [
+      "pO2",
+      "pO3"
+    ],
+    "parameters": "kdO3",
+    "children": {
+      "kaO3": null
+    },
+    "form": "kaO3*pO2 - kdO3*pO3"
+  },
+  "dVm": {
+    "properties": [
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "Vm",
+    "parameters": "Cm",
+    "children": {
+      "Im": null
+    },
+    "form": "-Im / Cm"
+  },
+  "Isoma": {
+    "properties": [
+      "Independent"
+    ],
+    "children": {
+      "ICa": null,
+      "IBK": null,
+      "IL": null
+    },
+    "form": "ICa + IBK + IL"
+  },
+  "Im": {
+    "properties": [
+      "Independent"
+    ],
+    "children": {
+      "Isoma": null,
+      "IT": null
+    },
+    "form": "Isoma + IT"
+  },
+  "gTmax": {
+    "properties": [
+      "Independent",
+      "Parameter"
+    ],
+    "parameters": "gTmax",
+    "form": "gTmax"
+  }
+}

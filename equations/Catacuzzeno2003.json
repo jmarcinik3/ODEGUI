@@ -1,0 +1,708 @@
+{
+  "mhsinf": {
+    "properties": [
+      "Dependent"
+    ],
+    "variables": "Vm",
+    "arguments": {
+      "parameters": [
+        "Vhalf",
+        "dV",
+        "mhsmin",
+        "mhsmax",
+        "mhsorder"
+      ]
+    },
+    "form": "mhsmin + (mhsmax-mhsmin) / (1+exp(-(Vm-Vhalf)/dV))**mhsorder"
+  },
+  "mhstau": {
+    "properties": [
+      "Dependent"
+    ],
+    "variables": "Vm",
+    "arguments": {
+      "parameters": [
+        "Vtau",
+        "dVtau",
+        "tauVtau",
+        "tauinf",
+        "tauorder"
+      ]
+    },
+    "form": "tauinf + (tauVtau-tauinf)*exp(-((Vm-Vtau)/dVtau)**tauorder)"
+  },
+  "dmhs": {
+    "properties": [
+      "Dependent"
+    ],
+    "arguments": {
+      "variables": "mhs",
+      "parameters": [
+        "Vhalf",
+        "dV",
+        "mhsmin",
+        "mhsmax",
+        "mhsorder",
+        "Vtau",
+        "dVtau",
+        "tauVtau",
+        "tauinf",
+        "tauorder"
+      ]
+    },
+    "children": {
+      "mhsinf": {
+        "parameters": [
+          "Vhalf",
+          "dV",
+          "mhsmin",
+          "mhsmax",
+          "mhsorder"
+        ]
+      },
+      "mhstau": {
+        "parameters": [
+          "Vtau",
+          "dVtau",
+          "tauVtau",
+          "tauinf",
+          "tauorder"
+        ]
+      }
+    },
+    "form": "(mhsinf-mhs) / mhstau"
+  },
+  "alphaDRK": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "Vm",
+    "parameters": [
+      "alphainf",
+      "alpha0",
+      "dValpha"
+    ],
+    "form": "1 / (1/alphainf + (1/alpha0-1/alphainf)*exp(-Vm/dValpha))"
+  },
+  "betaDRK": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "Vm",
+    "parameters": [
+      "betainf",
+      "beta0",
+      "dVbeta"
+    ],
+    "form": "1 / (1/betainf + (1/beta0-1/betainf)*exp(-Vm/dVbeta))"
+  },
+  "tauDRK": {
+    "properties": [
+      "Independent"
+    ],
+    "children": {
+      "alphaDRK": null,
+      "betaDRK": null
+    },
+    "form": "1 / (alphaDRK+betaDRK)"
+  },
+  "gDRK": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": [
+      "mDRK"
+    ],
+    "parameters": [
+      "PDRK",
+      "zK",
+      "Ksomain",
+      "Ksomaex"
+    ],
+    "children": {
+      "gGHK": {
+        "parameters": [
+          "PDRK",
+          "zK",
+          "Ksomain",
+          "Ksomaex"
+        ]
+      }
+    },
+    "form": "mDRK**2 * gGHK"
+  },
+  "IDRK": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": "EDRK",
+    "children": {
+      "gDRK": null,
+      "I": {
+        "parameters": "EDRK",
+        "functions": "gDRK"
+      }
+    },
+    "form": "I"
+  },
+  "gA1": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": [
+      "mA",
+      "hA1"
+    ],
+    "parameters": [
+      "PA1",
+      "zK",
+      "Ksomain",
+      "Ksomaex"
+    ],
+    "children": {
+      "gGHK": {
+        "parameters": [
+          "PA1",
+          "zK",
+          "Ksomain",
+          "Ksomaex"
+        ]
+      }
+    },
+    "form": "mA**3*hA1 * gGHK"
+  },
+  "gA2": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": [
+      "mA",
+      "hA2"
+    ],
+    "parameters": [
+      "PA2",
+      "zK",
+      "Ksomain",
+      "Ksomaex"
+    ],
+    "children": {
+      "gGHK": {
+        "parameters": [
+          "PA2",
+          "zK",
+          "Ksomain",
+          "Ksomaex"
+        ]
+      }
+    },
+    "form": "mA**3*hA2 * gGHK"
+  },
+  "aA1": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "Vm",
+    "parameters": [
+      "aA1inf",
+      "VhalfaA1",
+      "dVaA1"
+    ],
+    "form": "aA1inf - (1-aA1inf) / (1+exp(-(Vm-VhalfaA1)/dVaA1))"
+  },
+  "IA1": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": "EA1",
+    "children": {
+      "gA1": null,
+      "I": {
+        "parameters": "EA1",
+        "functions": "gA1"
+      }
+    },
+    "form": "I"
+  },
+  "IA2": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": "EA2",
+    "children": {
+      "gA2": null,
+      "I": {
+        "parameters": "EA2",
+        "functions": "gA2"
+      }
+    },
+    "form": "I"
+  },
+  "IA": {
+    "properties": [
+      "Independent"
+    ],
+    "children": {
+      "aA1": null,
+      "IA1": null,
+      "IA2": null
+    },
+    "form": "aA1*IA1 + (1-aA1)*IA2"
+  },
+  "gh": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "mh",
+    "parameters": "gh1",
+    "form": "gh1 * (3*mh**3*(1-mh)+mh**3)"
+  },
+  "Ih": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": "Eh",
+    "children": {
+      "gh": null,
+      "I": {
+        "parameters": "Eh",
+        "functions": "gh"
+      }
+    },
+    "form": "I"
+  },
+  "dmDRK": {
+    "properties": [
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "mDRK",
+    "variables": "mDRK",
+    "parameters": [
+      "VhalfDRK",
+      "dVDRK",
+      "mhminDRK",
+      "mhmaxDRK",
+      "deltaDRK"
+    ],
+    "children": {
+      "mhsinf": {
+        "parameters": [
+          "VhalfDRK",
+          "dVDRK",
+          "mhminDRK",
+          "mhmaxDRK",
+          "deltaDRK"
+        ]
+      },
+      "tauDRK": null
+    },
+    "form": "(mhsinf-mDRK) / tauDRK"
+  },
+  "dmCa": {
+    "properties": [
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "mCa",
+    "variables": "mCa",
+    "parameters": [
+      "VhalfCa",
+      "dVCa",
+      "mhminCa",
+      "mhmaxCa",
+      "deltaCa",
+      "VtauCa",
+      "dVtauCa",
+      "tauVtauCa",
+      "tauinfCa",
+      "deltatauCa"
+    ],
+    "children": {
+      "dmhs": {
+        "variables": "mCa",
+        "parameters": [
+          "VhalfCa",
+          "dVCa",
+          "mhminCa",
+          "mhmaxCa",
+          "deltaCa",
+          "VtauCa",
+          "dVtauCa",
+          "tauVtauCa",
+          "tauinfCa",
+          "deltatauCa"
+        ]
+      }
+    },
+    "form": "dmhs"
+  },
+  "dhA1": {
+    "properties": [
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "hA1",
+    "variables": "hA1",
+    "parameters": [
+      "VhalfA1",
+      "dVA1",
+      "mhminA1",
+      "mhmaxA1",
+      "deltaA1",
+      "VtauA1",
+      "dVtauA1",
+      "tauVtauA1",
+      "tauinfA1",
+      "deltatauA1"
+    ],
+    "children": {
+      "dmhs": {
+        "variables": "hA1",
+        "parameters": [
+          "VhalfA1",
+          "dVA1",
+          "mhminA1",
+          "mhmaxA1",
+          "deltaA1",
+          "VtauA1",
+          "dVtauA1",
+          "tauVtauA1",
+          "tauinfA1",
+          "deltatauA1"
+        ]
+      }
+    },
+    "form": "dmhs"
+  },
+  "dhA2": {
+    "properties": [
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "hA2",
+    "variables": "hA2",
+    "parameters": [
+      "VhalfA2",
+      "dVA2",
+      "mhminA2",
+      "mhmaxA2",
+      "deltaA2",
+      "VtauA2",
+      "dVtauA2",
+      "tauVtauA2",
+      "tauinfA2",
+      "deltatauA2"
+    ],
+    "children": {
+      "dmhs": {
+        "variables": "hA2",
+        "parameters": [
+          "VhalfA2",
+          "dVA2",
+          "mhminA2",
+          "mhmaxA2",
+          "deltaA2",
+          "VtauA2",
+          "dVtauA2",
+          "tauVtauA2",
+          "tauinfA2",
+          "deltatauA2"
+        ]
+      }
+    },
+    "form": "dmhs"
+  },
+  "dmAlt": {
+    "properties": [
+      "Independent"
+    ],
+    "variable": "mA",
+    "parameters": [
+      "VhalfA",
+      "dVA",
+      "mhminA",
+      "mhmaxA",
+      "deltaA",
+      "VtauAlt",
+      "dVtauAlt",
+      "tauVtauAlt",
+      "tauinfAlt",
+      "deltatauA"
+    ],
+    "children": {
+      "dmhs": {
+        "variables": "mA",
+        "parameters": [
+          "VhalfA",
+          "dVA",
+          "mhminA",
+          "mhmaxA",
+          "deltaA",
+          "VtauAlt",
+          "dVtauAlt",
+          "tauVtauAlt",
+          "tauinfAlt",
+          "deltatauA"
+        ]
+      }
+    },
+    "form": "dmhs"
+  },
+  "dmAgt": {
+    "properties": [
+      "Independent"
+    ],
+    "variable": "mA",
+    "parameters": [
+      "VhalfA",
+      "dVA",
+      "mhminA",
+      "mhmaxA",
+      "deltaA",
+      "VtauAgt",
+      "dVtauAgt",
+      "tauVtauAgt",
+      "tauinfAgt",
+      "deltatauA"
+    ],
+    "children": {
+      "dmhs": {
+        "variables": "mA",
+        "parameters": [
+          "VhalfA",
+          "dVA",
+          "mhminA",
+          "mhmaxA",
+          "deltaA",
+          "VtauAgt",
+          "dVtauAgt",
+          "tauVtauAgt",
+          "tauinfAgt",
+          "deltatauA"
+        ]
+      }
+    },
+    "form": "dmhs"
+  },
+  "dmA": {
+    "properties": [
+      "Piecewise",
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "mA",
+    "variables": "Vm",
+    "parameters": "VmhA",
+    "pieces": [
+      "dmAlt",
+      "dmAgt"
+    ],
+    "conditions": [
+      "Vm<VmhA",
+      "Vm>=VmhA"
+    ]
+  },
+  "dmK1lt": {
+    "properties": [
+      "Independent"
+    ],
+    "variable": "mK1",
+    "parameters": [
+      "VhalfK1",
+      "dVK1",
+      "mhminK1",
+      "mhmaxK1",
+      "deltaK1",
+      "VtauK1lt",
+      "dVtauK1lt",
+      "tauVtauK1lt",
+      "tauinfK1lt",
+      "deltatauK1"
+    ],
+    "children": {
+      "dmhs": {
+        "variables": "mK1",
+        "parameters": [
+          "VhalfK1",
+          "dVK1",
+          "mhminK1",
+          "mhmaxK1",
+          "deltaK1",
+          "VtauK1lt",
+          "dVtauK1lt",
+          "tauVtauK1lt",
+          "tauinfK1lt",
+          "deltatauK1"
+        ]
+      }
+    },
+    "form": "dmhs"
+  },
+  "dmK1gt": {
+    "properties": [
+      "Independent"
+    ],
+    "variable": "mK1",
+    "parameters": [
+      "VhalfK1",
+      "dVK1",
+      "mhminK1",
+      "mhmaxK1",
+      "deltaK1",
+      "VtauK1gt",
+      "dVtauK1gt",
+      "tauVtauK1gt",
+      "tauinfK1gt",
+      "deltatauK1"
+    ],
+    "children": {
+      "dmhs": {
+        "variables": "mK1",
+        "parameters": [
+          "VhalfK1",
+          "dVK1",
+          "mhminK1",
+          "mhmaxK1",
+          "deltaK1",
+          "VtauK1gt",
+          "dVtauK1gt",
+          "tauVtauK1gt",
+          "tauinfK1gt",
+          "deltatauK1"
+        ]
+      }
+    },
+    "form": "dmhs"
+  },
+  "dmK1": {
+    "properties": [
+      "Piecewise",
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "mK1",
+    "variables": "Vm",
+    "parameters": "EK1",
+    "pieces": [
+      "dmK1lt",
+      "dmK1gt"
+    ],
+    "conditions": [
+      "Vm<EK1",
+      "Vm>=EK1"
+    ]
+  },
+  "dmhlt": {
+    "properties": [
+      "Independent"
+    ],
+    "variable": "mh",
+    "parameters": [
+      "Vhalfh",
+      "dVh",
+      "mhminh",
+      "mhmaxh",
+      "deltah",
+      "Vtauhlt",
+      "dVtauhlt",
+      "tauVtauhlt",
+      "tauinfhlt",
+      "deltatauh"
+    ],
+    "children": {
+      "dmhs": {
+        "variables": "mh",
+        "parameters": [
+          "Vhalfh",
+          "dVh",
+          "mhminh",
+          "mhmaxh",
+          "deltah",
+          "Vtauhlt",
+          "dVtauhlt",
+          "tauVtauhlt",
+          "tauinfhlt",
+          "deltatauh"
+        ]
+      }
+    },
+    "form": "dmhs"
+  },
+  "dmhgt": {
+    "properties": [
+      "Independent"
+    ],
+    "variable": "mh",
+    "parameters": [
+      "Vhalfh",
+      "dVh",
+      "mhminh",
+      "mhmaxh",
+      "deltah",
+      "Vtauhgt",
+      "dVtauhgt",
+      "tauVtauhgt",
+      "tauinfhgt",
+      "deltatauh"
+    ],
+    "children": {
+      "dmhs": {
+        "variables": "mh",
+        "parameters": [
+          "Vhalfh",
+          "dVh",
+          "mhminh",
+          "mhmaxh",
+          "deltah",
+          "Vtauhgt",
+          "dVtauhgt",
+          "tauVtauhgt",
+          "tauinfhgt",
+          "deltatauh"
+        ]
+      }
+    },
+    "form": "dmhs"
+  },
+  "dmh": {
+    "properties": [
+      "Piecewise",
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "mh",
+    "variables": "Vm",
+    "parameters": "Vmmh",
+    "pieces": [
+      "dmhlt",
+      "dmhgt"
+    ],
+    "conditions": [
+      "Vm<Vmmh",
+      "Vm>=Vmmh"
+    ]
+  },
+  "Isoma": {
+    "properties": [
+      "Independent"
+    ],
+    "children": {
+      "IA": null,
+      "IDRK": null,
+      "ICa": null,
+      "IK1": null,
+      "Ih": null,
+      "IL": null
+    },
+    "form": "IA + IDRK + ICa + IK1 + Ih + IL"
+  },
+  "Im": {
+    "properties": [
+      "Independent"
+    ],
+    "children": {
+      "Isoma": null
+    },
+    "form": "Isoma"
+  }
+}

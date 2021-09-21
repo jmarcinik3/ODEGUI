@@ -1,0 +1,27 @@
+{
+  "tauT": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": "tauT0",
+    "form": "tauT0"
+  },
+  "lambdaC": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "pT",
+    "parameters": [
+      "N",
+      "gamma",
+      "d",
+      "kB",
+      "T"
+    ],
+    "children": {
+      "kgsinf": null,
+      "tauT": null
+    },
+    "form": "N * (gamma*kgsinf*d)**2 * pT*(1-pT) * tauT / (kB*T)"
+  }
+}

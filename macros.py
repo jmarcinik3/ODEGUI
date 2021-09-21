@@ -242,16 +242,20 @@ def expression2png(name: str, expression: Expr, folder: str, filename: str, var2
     if not os.path.isdir(folder):
         os.mkdir(folder)
 
-    logpath = os.path.join(folder, "log.yml")
-    if os.path.isfile(logpath):
-        old_info = loadConfig(logpath)
+    log_filename = "log.json"
+    log_filepath = os.path.join(folder, log_filename)
+    if os.path.isfile(log_filepath):
+        old_info = loadConfig(log_filepath)
         if old_info is None:
             old_info = {}
     else:
         old_info = {}
 
     filepath = os.path.join(folder, filename)
-    overwrite = name not in old_info.keys() or expression_str != old_info[name]["expression"]
+
+    new_name = name not in old_info.keys()
+    new_expression = expression_str != old_info[name]["expression"]
+    overwrite = new_name or new_expression
 
     if overwrite:
         print(f"Overwriting {filepath:s} as {expression_str:s}")
@@ -267,7 +271,7 @@ def expression2png(name: str, expression: Expr, folder: str, filename: str, var2
         "expression": expression_str,
         "filename": filename
     }
-    saveConfig(new_info, logpath)
+    saveConfig(new_info, log_filepath)
 
     return filepath
 

@@ -1,0 +1,23 @@
+{
+  "Isoma": {
+    "properties": [
+      "Independent"
+    ],
+    "children": {
+      "IA": null,
+      "IK1": null,
+      "Ih": null,
+      "IL": null
+    },
+    "form": "IK1 + Ih + IA + IL"
+  },
+  "Im": {
+    "properties": [
+      "Independent"
+    ],
+    "children": {
+      "Isoma": null
+    },
+    "form": "Isoma"
+  }
+}

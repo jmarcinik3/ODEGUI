@@ -7,7 +7,6 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
-import yaml
 from CustomErrors import RecursiveTypeError
 from Function import Derivative, Function, Independent, Model, Parameter, Variable, \
     generateFunction, generateParameter, readFunctionsFromFiles, readParametersFromFiles

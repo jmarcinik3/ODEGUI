@@ -1,0 +1,180 @@
+{
+  "dmK1flt": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": [
+      "VhalfK1f",
+      "dVK1f",
+      "mhminK1f",
+      "mhmaxK1f",
+      "deltaK1f",
+      "VtauK1flt",
+      "dVtauK1flt",
+      "tauVtauK1flt",
+      "tauinfK1flt",
+      "deltatauK1f"
+    ],
+    "children": {
+      "dmhs": {
+        "variables": "mK1f",
+        "parameters": [
+          "VhalfK1f",
+          "dVK1f",
+          "mhminK1f",
+          "mhmaxK1f",
+          "deltaK1f",
+          "VtauK1flt",
+          "dVtauK1flt",
+          "tauVtauK1flt",
+          "tauinfK1flt",
+          "deltatauK1f"
+        ]
+      }
+    },
+    "form": "dmhs"
+  },
+  "dmK1fgt": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": [
+      "VhalfK1f",
+      "dVK1f",
+      "mhminK1f",
+      "mhmaxK1f",
+      "deltaK1f",
+      "VtauK1fgt",
+      "dVtauK1fgt",
+      "tauVtauK1fgt",
+      "tauinfK1fgt",
+      "deltatauK1f"
+    ],
+    "children": {
+      "dmhs": {
+        "variables": "mK1f",
+        "parameters": [
+          "VhalfK1f",
+          "dVK1f",
+          "mhminK1f",
+          "mhmaxK1f",
+          "deltaK1f",
+          "VtauK1fgt",
+          "dVtauK1fgt",
+          "tauVtauK1fgt",
+          "tauinfK1fgt",
+          "deltatauK1f"
+        ]
+      }
+    },
+    "form": "dmhs"
+  },
+  "dmK1f": {
+    "properties": [
+      "Piecewise",
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "mK1f",
+    "variables": "Vm",
+    "parameters": "EK1f",
+    "pieces": [
+      "dmK1flt",
+      "dmK1fgt"
+    ],
+    "conditions": [
+      "Vm<EK1f",
+      "Vm>=EK1f"
+    ]
+  },
+  "dmK1slt": {
+    "properties": [
+      "Independent"
+    ],
+    "variable": "mK1s",
+    "parameters": [
+      "VhalfK1s",
+      "dVK1s",
+      "mhminK1s",
+      "mhmaxK1s",
+      "deltaK1s",
+      "VtauK1slt",
+      "dVtauK1slt",
+      "tauVtauK1slt",
+      "tauinfK1slt",
+      "deltatauK1s"
+    ],
+    "children": {
+      "dmhs": {
+        "variables": "mK1s",
+        "parameters": [
+          "VhalfK1s",
+          "dVK1s",
+          "mhminK1s",
+          "mhmaxK1s",
+          "deltaK1s",
+          "VtauK1slt",
+          "dVtauK1slt",
+          "tauVtauK1slt",
+          "tauinfK1slt",
+          "deltatauK1s"
+        ]
+      }
+    },
+    "form": "dmhs"
+  },
+  "dmK1sgt": {
+    "properties": [
+      "Independent"
+    ],
+    "variable": "mK1s",
+    "parameters": [
+      "VhalfK1s",
+      "dVK1s",
+      "mhminK1s",
+      "mhmaxK1s",
+      "deltaK1s",
+      "VtauK1sgt",
+      "dVtauK1sgt",
+      "tauVtauK1sgt",
+      "tauinfK1sgt",
+      "deltatauK1s"
+    ],
+    "children": {
+      "dmhs": {
+        "variables": "mK1s",
+        "parameters": [
+          "VhalfK1s",
+          "dVK1s",
+          "mhminK1s",
+          "mhmaxK1s",
+          "deltaK1s",
+          "VtauK1sgt",
+          "dVtauK1sgt",
+          "tauVtauK1sgt",
+          "tauinfK1sgt",
+          "deltatauK1s"
+        ]
+      }
+    },
+    "form": "dmhs"
+  },
+  "dmK1s": {
+    "properties": [
+      "Piecewise",
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "mK1s",
+    "variables": "Vm",
+    "parameters": "EK1s",
+    "pieces": [
+      "dmK1slt",
+      "dmK1sgt"
+    ],
+    "conditions": [
+      "Vm<EK1s",
+      "Vm>=EK1s"
+    ]
+  }
+}

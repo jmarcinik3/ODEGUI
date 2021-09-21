@@ -1,0 +1,331 @@
+{
+  "kr": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "pr",
+    "parameters": [
+      "kr0",
+      "kr1"
+    ],
+    "form": "kr1 + (1-pr)*(kr0-kr1)"
+  },
+  "kgsinf": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": "ktl",
+    "children": {
+      "kr": null
+    },
+    "form": "1/ (1/ktl + 1/kr)"
+  },
+  "dxgs": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": [
+      "Xhb",
+      "xa",
+      "pT"
+    ],
+    "parameters": [
+      "gamma",
+      "xc",
+      "d"
+    ],
+    "form": "gamma*Xhb-xa+xc-pT*d"
+  },
+  "Fgs": {
+    "properties": [
+      "Independent"
+    ],
+    "children": {
+      "kgsinf": null,
+      "dxgs": null
+    },
+    "form": "kgsinf * dxgs"
+  },
+  "Fsp": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "Xhb",
+    "parameters": [
+      "ksp",
+      "xsp"
+    ],
+    "form": "ksp * (Xhb-xsp)"
+  },
+  "Fes": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "xa",
+    "parameters": [
+      "kes",
+      "xes"
+    ],
+    "form": "kes * (xa-xes)"
+  },
+  "Fhb": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": [
+      "N",
+      "gamma"
+    ],
+    "children": {
+      "Fgs": null,
+      "Fsp": null
+    },
+    "form": "N*gamma*Fgs+Fsp"
+  },
+  "Fa": {
+    "properties": [
+      "Independent"
+    ],
+    "children": {
+      "Fgs": null,
+      "Fes": null
+    },
+    "form": "Fgs - Fes"
+  },
+  "S": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "pm",
+    "parameters": [
+      "S0",
+      "S1"
+    ],
+    "form": "pm*(S1-S0) + S0"
+  },
+  "C": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "pm",
+    "parameters": [
+      "C0",
+      "C1"
+    ],
+    "form": "(1-pm)*(C0-C1) + C1"
+  },
+  "lambdahb": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": [
+      "lambdaH"
+    ],
+    "form": "lambdaH"
+  },
+  "CpT": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": [
+      "dE0",
+      "kB",
+      "T"
+    ],
+    "form": "exp(dE0/(kB*T))"
+  },
+  "dxpT": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "pr",
+    "parameters": [
+      "kB",
+      "T",
+      "d"
+    ],
+    "children": {
+      "kgsinf": null
+    },
+    "form": "kB*T / (kgsinf*d)"
+  },
+  "xpT": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": [
+      "Xhb",
+      "xa"
+    ],
+    "parameters": [
+      "gamma",
+      "xc",
+      "d"
+    ],
+    "form": "gamma*Xhb-xa+xc-d/2"
+  },
+  "pTinf": {
+    "properties": [
+      "Independent"
+    ],
+    "children": {
+      "CpT": null,
+      "xpT": null,
+      "dxpT": null
+    },
+    "form": "1 / (1+CpT*exp(-xpT/dxpT))"
+  },
+  "gTCa": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "pT",
+    "parameters": [
+      "PTCa",
+      "zCa",
+      "Cahbin",
+      "Cahbex"
+    ],
+    "children": {
+      "gGHK": {
+        "parameters": [
+          "PTCa",
+          "zCa",
+          "Cahbin",
+          "Cahbex"
+        ]
+      }
+    },
+    "form": "pT * gGHK"
+  },
+  "ITCa": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": "ETCa",
+    "children": {
+      "gTCa": null,
+      "I": {
+        "parameters": "ETCa",
+        "functions": "gTCa"
+      }
+    },
+    "form": "I"
+  },
+  "cX": {
+    "properties": [
+      "Dependent"
+    ],
+    "parameters": "F",
+    "arguments": {
+      "parameters": [
+        "z",
+        "D",
+        "r"
+      ],
+      "functions": "IX"
+    },
+    "form": "-IX / (2*pi*z*F*D*r)"
+  },
+  "cCar": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": [
+      "zCa",
+      "DCa",
+      "rr"
+    ],
+    "children": {
+      "ITCa": null,
+      "cX": {
+        "parameters": [
+          "zCa",
+          "DCa",
+          "rr"
+        ],
+        "functions": "ITCa"
+      }
+    },
+    "form": "cX"
+  },
+  "cCam": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": [
+      "zCa",
+      "DCa",
+      "rm"
+    ],
+    "children": {
+      "ITCa": null,
+      "cX": {
+        "parameters": [
+          "zCa",
+          "DCa",
+          "rm"
+        ],
+        "functions": "ITCa"
+      }
+    },
+    "form": "cX"
+  },
+  "dXhb": {
+    "properties": [
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "Xhb",
+    "children": {
+      "lambdahb": null,
+      "Fhb": null
+    },
+    "form": "-Fhb / lambdahb"
+  },
+  "dxa": {
+    "properties": [
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "xa",
+    "children": {
+      "C": null,
+      "S": null,
+      "Fa": null
+    },
+    "form": "-C + S*Fa"
+  },
+  "dpr": {
+    "properties": [
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "pr",
+    "variables": "pr",
+    "parameters": [
+      "kdr",
+      "kar"
+    ],
+    "children": {
+      "cCar": null
+    },
+    "form": "kar*cCar*(1-pr) - kdr*pr"
+  },
+  "dpm": {
+    "properties": [
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "pm",
+    "variables": "pm",
+    "parameters": [
+      "kdm",
+      "kam"
+    ],
+    "children": {
+      "cCam": null
+    },
+    "form": "kam*cCam*(1-pm) - kdm*pm"
+  }
+}

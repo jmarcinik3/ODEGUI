@@ -1,0 +1,13 @@
+{
+  "kgsinf": {
+    "properties": [
+      "Independent"
+    ],
+    "variables": "pr",
+    "parameters": [
+      "kgs0",
+      "kgs1"
+    ],
+    "form": "kgs0 + (kgs1-kgs0)*pr"
+  }
+}

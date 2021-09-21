@@ -1,0 +1,1 @@
+{"BoltzX": {"expression": "$e^{- \\frac{V_{m} q_{e} z}{T k_{B}}}$", "filename": "BoltzX.png"}, "gGHK": {"expression": "$\\frac{F P q_{e} z^{2} \\left(- [X]_{ex} \\varepsilon_{X} + [X]_{in}\\right)}{T k_{B} \\left(1 - \\varepsilon_{X}\\right)}$", "filename": "gGHK.png"}, "I": {"expression": "$g \\left(- E + V_{m}\\right)$", "filename": "I.png"}}

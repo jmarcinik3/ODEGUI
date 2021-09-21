@@ -1,0 +1,82 @@
+{
+  "tauT": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": "tauT0",
+    "children": {
+      "xpT": null,
+      "dxpT": null,
+      "CpT": null
+    },
+    "form": "tauT0 / cosh(xpT/(2*dxpT) - ln(CpT)/2 )"
+  },
+  "lambdahb": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": [
+      "lambdaH",
+      "lambdaC"
+    ],
+    "form": "lambdaH + lambdaC"
+  },
+  "lambdaC": {
+    "properties": [
+      "Independent",
+      "Parameter"
+    ],
+    "parameters": "lambdaC",
+    "form": "lambdaC"
+  },
+  "Fm": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": [
+      "gamma",
+      "Fmmax",
+      "Sm"
+    ],
+    "variables": "pT",
+    "form": "gamma * Fmmax * (1-Sm*pT)"
+  },
+  "Fa": {
+    "properties": [
+      "Independent"
+    ],
+    "children": {
+      "Fgs": null,
+      "Fes": null,
+      "Fm": null
+    },
+    "form": "Fgs - Fes - Fm"
+  },
+  "S": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": "lambdaa",
+    "form": "1 / lambdaa"
+  },
+  "C": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": "C1",
+    "form": "C1"
+  },
+  "dpT": {
+    "properties": [
+      "Derivative",
+      "Independent"
+    ],
+    "variable": "pT",
+    "variables": "pT",
+    "children": {
+      "pTinf": null,
+      "tauT": null
+    },
+    "form": "(pTinf-pT) / tauT"
+  }
+}

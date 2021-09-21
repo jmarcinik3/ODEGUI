@@ -1,0 +1,12 @@
+{
+  "gTmax": {
+    "properties": [
+      "Independent"
+    ],
+    "parameters": [
+      "N",
+      "gTmax1"
+    ],
+    "form": "N*gTmax1"
+  }
+}

@@ -1,7 +1,0 @@
-# Appends Martin2003 (10.1523/jneurosci.23-11-04533.2003)
-
-kgsinf: # gating spring stiffness
-  properties: [Independent]
-  variables: pr
-  parameters: [kgs0, kgs1]
-  form: kgs0 + (kgs1-kgs0)*pr
