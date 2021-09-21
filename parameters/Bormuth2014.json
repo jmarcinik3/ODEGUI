@@ -1,0 +1,54 @@
+{
+  "pT0": {
+    "value": 0.5,
+    "unit": null
+  },
+  "N": {
+    "value": 50,
+    "unit": null
+  },
+  "d": {
+    "value": 7,
+    "unit": "nanometer"
+  },
+  "dE0": {
+    "value": 40,
+    "unit": "zeptojoule"
+  },
+  "tauT0": {
+    "value": 500,
+    "unit": "microsecond"
+  },
+  "lambdaH": {
+    "value": 0.1,
+    "unit": "micronewton*second/meter"
+  },
+  "kgstot": {
+    "value": 0.8,
+    "unit": "millinewton/meter"
+  },
+  "ksptot": {
+    "value": 0.2,
+    "unit": "millinewton/meter"
+  },
+  "lambdaa": {
+    "value": 10,
+    "unit": "micronewton*second/meter"
+  },
+  "kestot": {
+    "value": 1.6,
+    "unit": "millinewton/meter"
+  },
+  "Sm": {
+    "value": 0.8,
+    "unit": "dimensionless"
+  },
+  "C0": {
+    "value": 0,
+    "unit": "dimensionless"
+  },
+  "C1": {
+    "value": 0,
+    "unit": "dimensionless"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "F": {
+    "value": 96490,
+    "unit": "coulomb/mole"
+  },
+  "qe": {
+    "value": 1.6e-19,
+    "unit": "coulomb"
+  },
+  "R": {
+    "value": 8.314,
+    "unit": "joule/kelvin/mole"
+  },
+  "kB": {
+    "value": 1.381e-23,
+    "unit": "joule/kelvin"
+  },
+  "T": {
+    "value": 298.15,
+    "unit": "kelvin"
+  },
+  "zCa": {
+    "value": 2,
+    "unit": null
+  },
+  "zK": {
+    "value": 1,
+    "unit": null
+  }
+}

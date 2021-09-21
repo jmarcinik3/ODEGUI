@@ -1,0 +1,14 @@
+{
+  "AVm": {
+    "value": 1,
+    "unit": "millivolt"
+  },
+  "omegaVm": {
+    "value": 1,
+    "unit": "hertz"
+  },
+  "phiVm": {
+    "value": 0,
+    "unit": "radian"
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "time_evolution_types": {
+    "Xhb": [
+      "Temporal",
+      "Equilibrium",
+      "Constant"
+    ],
+    "xa": [
+      "Temporal",
+      "Constant"
+    ],
+    "pm": [
+      "Temporal",
+      "Equilibrium",
+      "Constant"
+    ],
+    "pr": [
+      "Temporal",
+      "Equilibrium",
+      "Constant"
+    ],
+    "pT": [
+      "Temporal",
+      "Equilibrium",
+      "Constant"
+    ],
+    "Vm": [
+      "Temporal",
+      "Constant",
+      "Function"
+    ],
+    "Ca": [
+      "Temporal",
+      "Equilibrium",
+      "Constant"
+    ],
+    "mCa": [
+      "Temporal",
+      "Equilibrium",
+      "Constant"
+    ],
+    "mK1f": [
+      "Temporal",
+      "Constant"
+    ],
+    "mK1s": [
+      "Temporal",
+      "Constant"
+    ],
+    "mh": [
+      "Temporal",
+      "Equilibrium",
+      "Constant"
+    ],
+    "mA": [
+      "Temporal",
+      "Constant"
+    ],
+    "hA1": [
+      "Temporal",
+      "Equilibrium",
+      "Constant"
+    ],
+    "hA2": [
+      "Temporal",
+      "Equilibrium",
+      "Constant"
+    ],
+    "mDRK": [
+      "Temporal",
+      "Equilibrium",
+      "Constant"
+    ],
+    "hBKT": [
+      "Temporal",
+      "Equilibrium",
+      "Constant"
+    ],
+    "pC0": [
+      "Temporal",
+      "Equilibrium",
+      "Constant"
+    ],
+    "pC1": [
+      "Temporal",
+      "Equilibrium",
+      "Constant"
+    ],
+    "pC2": [
+      "Temporal",
+      "Equilibrium",
+      "Constant"
+    ],
+    "pO2": [
+      "Temporal",
+      "Equilibrium",
+      "Constant"
+    ],
+    "pO3": [
+      "Temporal",
+      "Equilibrium",
+      "Constant"
+    ]
+  },
+  "initial_condition": {
+    "Xhb": 0,
+    "xa": 0,
+    "pm": 0.02,
+    "pr": 0.9,
+    "pT": 0.5,
+    "Vm": -0.066,
+    "Ca": 0.001,
+    "mCa": 0.5,
+    "mK1f": 0.5,
+    "mK1s": 0.5,
+    "mh": 0.5,
+    "mA": 0.5,
+    "hA1": 0.5,
+    "hA2": 0.5,
+    "mDRK": 0.5,
+    "hBKT": 0.5,
+    "pC0": 0.2,
+    "pC1": 0.2,
+    "pC2": 0.2,
+    "pO2": 0.2,
+    "pO3": 0.2
+  },
+  "time": {
+    "initial": 0,
+    "step_count": 5000,
+    "final": 1
+  }
+}

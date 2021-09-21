@@ -39,9 +39,10 @@ def main():
         for filepath in listdir(eq_dir)
         if isfile(join(eq_dir, filepath))
     ]
-    time_evolution_layout = "tet_lay.yml"
-    parameter_input_layout = "param_lay.yml"
-    function_layout = "func_lay.yml"
+    
+    time_evolution_layout = "tet_lay.json"
+    parameter_input_layout = "param_lay.json"
+    function_layout = "func_lay.json"
     kwargs = {
         "name": "Hair Bundle/Soma Model",
         "parameter_filepaths": parameter_filepaths,

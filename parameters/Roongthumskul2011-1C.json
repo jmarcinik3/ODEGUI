@@ -1,0 +1,82 @@
+{
+  "rm": {
+    "value": 100,
+    "unit": "nanometer"
+  },
+  "N": {
+    "value": 45,
+    "unit": null
+  },
+  "gamma": {
+    "value": 0.14,
+    "unit": null
+  },
+  "d": {
+    "value": 7,
+    "unit": "nanometer"
+  },
+  "pT0": {
+    "value": 0.5,
+    "unit": null
+  },
+  "kam": {
+    "value": 10000000,
+    "unit": "1/(second*molar)"
+  },
+  "kdm": {
+    "value": 5000,
+    "unit": "1/second"
+  },
+  "S1": {
+    "value": 800000,
+    "unit": "meter/(second*newton)"
+  },
+  "S0": {
+    "value": 0,
+    "unit": "meter/(second*newton)"
+  },
+  "C0": {
+    "value": 4e-8,
+    "unit": "meter/second"
+  },
+  "C1": {
+    "value": 0,
+    "unit": "meter/second"
+  },
+  "xsp": {
+    "value": 200,
+    "unit": "nanometer"
+  },
+  "xes": {
+    "value": 40,
+    "unit": "nanometer"
+  },
+  "xc": {
+    "value": 16,
+    "unit": "nanometer"
+  },
+  "kes": {
+    "value": 140,
+    "unit": "micronewton/meter"
+  },
+  "ksp": {
+    "value": 550,
+    "unit": "micronewton/meter"
+  },
+  "kgs0": {
+    "value": 3000,
+    "unit": "micronewton/meter"
+  },
+  "kgs1": {
+    "value": 200,
+    "unit": "micronewton/meter"
+  },
+  "kar": {
+    "value": 60000000,
+    "unit": "1/(second*molar)"
+  },
+  "kdr": {
+    "value": 50,
+    "unit": "1/second"
+  }
+}

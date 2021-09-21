@@ -1,0 +1,26 @@
+{
+  "PDRK": {
+    "value": 4.2e-14,
+    "unit": "liter/second"
+  },
+  "PA1": {
+    "value": 1.08e-13,
+    "unit": "liter/second"
+  },
+  "PA2": {
+    "value": 1.08e-13,
+    "unit": "liter/second"
+  },
+  "gCa1": {
+    "value": 2,
+    "unit": "nanosiemens"
+  },
+  "gK11": {
+    "value": 3,
+    "unit": "nanosiemens"
+  },
+  "Cm": {
+    "value": 16,
+    "unit": "picofarad"
+  }
+}

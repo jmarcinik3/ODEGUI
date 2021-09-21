@@ -1,0 +1,138 @@
+{
+  "msf": {
+    "value": 1e-13,
+    "unit": "kilogram"
+  },
+  "xisf": {
+    "value": 100,
+    "unit": "nanonewton*second/meter"
+  },
+  "ksf": {
+    "value": 150,
+    "unit": "micronewton/meter"
+  },
+  "mhb": {
+    "value": 6e-14,
+    "unit": "kilogram"
+  },
+  "lambdaH": {
+    "value": 130,
+    "unit": "nanonewton*second/meter"
+  },
+  "N": {
+    "value": 35,
+    "unit": null
+  },
+  "gamma": {
+    "value": 0.14,
+    "unit": null
+  },
+  "ksp": {
+    "value": 200,
+    "unit": "micronewton/meter"
+  },
+  "xsp": {
+    "value": 246,
+    "unit": "nanometer"
+  },
+  "ktl": {
+    "value": 4000,
+    "unit": "micronewton/meter"
+  },
+  "d": {
+    "value": 7,
+    "unit": "nanometer"
+  },
+  "xc": {
+    "value": 12,
+    "unit": "nanometer"
+  },
+  "dE0": {
+    "value": 65,
+    "unit": "zeptojoule"
+  },
+  "kes": {
+    "value": 140,
+    "unit": "micronewton/meter"
+  },
+  "xes": {
+    "value": 0,
+    "unit": "nanometer"
+  },
+  "ETCa": {
+    "value": 0,
+    "unit": "millivolt"
+  },
+  "PTCa": {
+    "value": 1e-18,
+    "unit": "meter**3/second"
+  },
+  "Vm0": {
+    "value": -55,
+    "unit": "millivolt"
+  },
+  "DCa": {
+    "value": 800,
+    "unit": "micrometer**2/second"
+  },
+  "rm": {
+    "value": 20,
+    "unit": "nanometer"
+  },
+  "C0": {
+    "value": 0.12,
+    "unit": "micrometer/second"
+  },
+  "C1": {
+    "value": 0,
+    "unit": "micrometer/second"
+  },
+  "S1": {
+    "value": 610,
+    "unit": "kilometer/second/newton"
+  },
+  "S0": {
+    "value": 0,
+    "unit": "kilometer/second/newton"
+  },
+  "kam": {
+    "value": 1000000000,
+    "unit": "1/second/molar"
+  },
+  "kdm": {
+    "value": 200000,
+    "unit": "1/second"
+  },
+  "rr": {
+    "value": 10,
+    "unit": "nanometer"
+  },
+  "kr0": {
+    "value": 1600,
+    "unit": "micronewton/meter"
+  },
+  "kr1": {
+    "value": 100,
+    "unit": "micronewton/meter"
+  },
+  "kar": {
+    "value": 2000000000,
+    "unit": "1/second/molar"
+  },
+  "kdr": {
+    "value": 35000,
+    "unit": "1/second"
+  },
+  "Cahbin": {
+    "value": 0,
+    "unit": "micromolar"
+  },
+  "Cahbex": {
+    "value": 250,
+    "unit": "micromolar"
+  },
+  "lambdaC": {
+    "value": 0,
+    "unit": "nanonewton*second/meter"
+  }
+}

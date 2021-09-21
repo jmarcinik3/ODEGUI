@@ -1,0 +1,242 @@
+{
+  "tauinfBKT": {
+    "value": 2.1,
+    "unit": "millisecond"
+  },
+  "tauVtauBKT": {
+    "value": 11.5,
+    "unit": "millisecond"
+  },
+  "VtauBKT": {
+    "value": 66.9,
+    "unit": "millivolt"
+  },
+  "dVtauBKT": {
+    "value": 17.7,
+    "unit": "millivolt"
+  },
+  "dVBKT": {
+    "value": -3.65,
+    "unit": "millivolt"
+  },
+  "VhalfBKT": {
+    "value": -61.6,
+    "unit": "millivolt"
+  },
+  "mhmaxBKT": {
+    "value": 1,
+    "unit": null
+  },
+  "mhminBKT": {
+    "value": 0,
+    "unit": null
+  },
+  "deltaBKT": {
+    "value": 1,
+    "unit": null
+  },
+  "deltatauBKT": {
+    "value": 2,
+    "unit": null
+  },
+  "EBKT": {
+    "value": 0,
+    "unit": "millivolt"
+  },
+  "EBKS": {
+    "value": 0,
+    "unit": "millivolt"
+  },
+  "aK1f": {
+    "value": 0.7,
+    "unit": null
+  },
+  "tauinfK1fgt": {
+    "value": 0.04,
+    "unit": "millisecond"
+  },
+  "tauVtauK1fgt": {
+    "value": 0.74,
+    "unit": "millisecond"
+  },
+  "VtauK1fgt": {
+    "value": -120,
+    "unit": "millivolt"
+  },
+  "dVtauK1fgt": {
+    "value": 43.8,
+    "unit": "millivolt"
+  },
+  "tauinfK1flt": {
+    "value": 0.17,
+    "unit": "millisecond"
+  },
+  "tauVtauK1flt": {
+    "value": 7.67,
+    "unit": "millisecond"
+  },
+  "VtauK1flt": {
+    "value": -80,
+    "unit": "millivolt"
+  },
+  "dVtauK1flt": {
+    "value": -30.5,
+    "unit": "millivolt"
+  },
+  "dVK1f": {
+    "value": -11,
+    "unit": "millivolt"
+  },
+  "VhalfK1f": {
+    "value": -110,
+    "unit": "millivolt"
+  },
+  "mhmaxK1f": {
+    "value": 1,
+    "unit": null
+  },
+  "mhminK1f": {
+    "value": 0,
+    "unit": null
+  },
+  "deltaK1f": {
+    "value": 1,
+    "unit": null
+  },
+  "deltatauK1f": {
+    "value": 1,
+    "unit": null
+  },
+  "EK1f": {
+    "value": -95,
+    "unit": "millivolt"
+  },
+  "tauinfK1sgt": {
+    "value": 0.04,
+    "unit": "millisecond"
+  },
+  "tauVtauK1sgt": {
+    "value": 14.14,
+    "unit": "millisecond"
+  },
+  "VtauK1sgt": {
+    "value": -120,
+    "unit": "millivolt"
+  },
+  "dVtauK1sgt": {
+    "value": 28,
+    "unit": "millivolt"
+  },
+  "tauinfK1slt": {
+    "value": 0.17,
+    "unit": "millisecond"
+  },
+  "tauVtauK1slt": {
+    "value": 7.67,
+    "unit": "millisecond"
+  },
+  "VtauK1slt": {
+    "value": -80,
+    "unit": "millivolt"
+  },
+  "dVtauK1slt": {
+    "value": -30.5,
+    "unit": "millivolt"
+  },
+  "dVK1s": {
+    "value": -11,
+    "unit": "millivolt"
+  },
+  "VhalfK1s": {
+    "value": -110,
+    "unit": "millivolt"
+  },
+  "mhmaxK1s": {
+    "value": 1,
+    "unit": null
+  },
+  "mhminK1s": {
+    "value": 0,
+    "unit": null
+  },
+  "deltaK1s": {
+    "value": 1,
+    "unit": null
+  },
+  "deltatauK1s": {
+    "value": 1,
+    "unit": null
+  },
+  "EK1s": {
+    "value": -95,
+    "unit": "millivolt"
+  },
+  "tauinfh": {
+    "value": 63.7,
+    "unit": "millisecond"
+  },
+  "tauVtauh": {
+    "value": 199.4,
+    "unit": "millisecond"
+  },
+  "Vtauh": {
+    "value": -91.4,
+    "unit": "millivolt"
+  },
+  "dVtauh": {
+    "value": 21.2,
+    "unit": "millivolt"
+  },
+  "dVh": {
+    "value": -16.7,
+    "unit": "millivolt"
+  },
+  "Vhalfh": {
+    "value": -87,
+    "unit": "millivolt"
+  },
+  "mhmaxh": {
+    "value": 1,
+    "unit": null
+  },
+  "mhminh": {
+    "value": 0,
+    "unit": null
+  },
+  "deltah": {
+    "value": 1,
+    "unit": null
+  },
+  "deltatauh": {
+    "value": 2,
+    "unit": null
+  },
+  "Eh": {
+    "value": -45,
+    "unit": "millivolt"
+  },
+  "Ksomain": {
+    "value": 112,
+    "unit": "millimolar"
+  },
+  "Cm": {
+    "value": 10,
+    "unit": "picofarad"
+  },
+  "U": {
+    "value": 0.005,
+    "unit": "dimensionless"
+  },
+  "xiCa": {
+    "value": 0.000034,
+    "unit": "dimensionless"
+  },
+  "Cvol": {
+    "value": 1.25,
+    "unit": "picoliter"
+  },
+  "KS": {
+    "value": 2800,
+    "unit": "hertz"
+  }
+}

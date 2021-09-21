@@ -1,0 +1,118 @@
+{
+  "gCa1": {
+    "value": 4.14,
+    "unit": "nanosiemens"
+  },
+  "ECa": {
+    "value": 100,
+    "unit": "millivolt"
+  },
+  "dVkdO2": {
+    "value": 8.01,
+    "unit": "millivolt"
+  },
+  "U": {
+    "value": 0.02,
+    "unit": "dimensionless"
+  },
+  "xiCa": {
+    "value": 0.000034,
+    "unit": "dimensionless"
+  },
+  "Cvol": {
+    "value": 1.25,
+    "unit": "picoliter"
+  },
+  "KS": {
+    "value": 2800,
+    "unit": "hertz"
+  },
+  "gBK11": {
+    "value": 16.8,
+    "unit": "nanosiemens"
+  },
+  "EBK": {
+    "value": -80,
+    "unit": "millivolt"
+  },
+  "KC10": {
+    "value": 6,
+    "unit": "micromolar"
+  },
+  "deltaC1": {
+    "value": 0.2,
+    "unit": "dimensionless"
+  },
+  "kdC1": {
+    "value": 300,
+    "unit": "hertz"
+  },
+  "KC20": {
+    "value": 45,
+    "unit": "micromolar"
+  },
+  "deltaC2": {
+    "value": 0,
+    "unit": "dimensionless"
+  },
+  "kdC2": {
+    "value": 5000,
+    "unit": "hertz"
+  },
+  "KO20": {
+    "value": 20,
+    "unit": "micromolar"
+  },
+  "deltaO2": {
+    "value": 0.2,
+    "unit": "micromolar"
+  },
+  "kdO3": {
+    "value": 1500,
+    "unit": "hertz"
+  },
+  "kdO20": {
+    "value": 450,
+    "unit": "hertz"
+  },
+  "kaO2": {
+    "value": 1000,
+    "unit": "hertz"
+  },
+  "EL": {
+    "value": -30,
+    "unit": "millivolt"
+  },
+  "gL": {
+    "value": 1,
+    "unit": "nanosiemens"
+  },
+  "ET": {
+    "value": 0,
+    "unit": "millivolt"
+  },
+  "gTmax": {
+    "value": 3,
+    "unit": "nanosiemens"
+  },
+  "Cm": {
+    "value": 15,
+    "unit": "picofarad"
+  },
+  "GT1": {
+    "value": 3.14,
+    "unit": "kilojoule / mole"
+  },
+  "ZT1": {
+    "value": 41.9,
+    "unit": "giganewton / mole"
+  },
+  "GT2": {
+    "value": 1.05,
+    "unit": "kilojoule / mole"
+  },
+  "ZT2": {
+    "value": 8.4,
+    "unit": "giganewton / mole"
+  }
+}

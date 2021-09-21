@@ -1,0 +1,42 @@
+{
+  "lambdaH": {
+    "value": 85,
+    "unit": "nanonewton*second/meter"
+  },
+  "lambdaC": {
+    "value": 0,
+    "unit": "nanonewton*second/meter"
+  },
+  "lambdaa": {
+    "value": 10,
+    "unit": "micronewton*second/meter"
+  },
+  "kgstot": {
+    "value": 0.6,
+    "unit": "piconewton/nanometer"
+  },
+  "ksptot": {
+    "value": 0.3,
+    "unit": "piconewton/nanometer"
+  },
+  "d": {
+    "value": 8.4,
+    "unit": "nanometer"
+  },
+  "Fmmax": {
+    "value": 53,
+    "unit": "piconewton"
+  },
+  "Sm": {
+    "value": 0.7,
+    "unit": null
+  },
+  "tauT0": {
+    "value": 0.1,
+    "unit": "millisecond"
+  },
+  "N": {
+    "value": 50,
+    "unit": null
+  }
+}
