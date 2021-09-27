@@ -144,7 +144,7 @@ def loadResultsFromFile(
 
     return results_obj
 
-def getSimulationFromResults(
+def getSimulationFromFilepath(
     results_filepath: str, 
     parameter_directory: str = "parameters", 
     equation_directory: str = "equations"
@@ -177,11 +177,35 @@ def getSimulationFromResults(
         "Simulation from Previous Results",
         results=results_obj,
         free_parameter_values=free_parameter_values,
-        plot_choices=plot_choices
+        plot_choices=plot_choices,
+        include_simulation_tab=False
     )
 
     return simulation_window
 
+def loadSimulationFromFilepath(filepath: str) -> None:
+    simulation_window = getSimulationFromFilepath(
+        filepath,
+        parameter_directory="parameters",
+        equation_directory="equations"
+    )
+    simulation_window.runWindow()
+
+def loadSimulation() -> None:
+    file_types = (
+        ("Compressed File", "*.zip"), 
+        ("ALL files", "*.*"),
+    )
+
+    results_filepath = sg.PopupGetFile(
+        message="Enter Filename to Load",
+        title="Load Previous Results",
+        file_types=file_types,
+        multiple_files=False
+    )
+
+    loadSimulationFromFilepath(results_filepath)
+    
 
 if __name__ == "__main__":
     """# button = sg.ColorChooserButton("Color")
@@ -199,20 +223,4 @@ if __name__ == "__main__":
         suppress_raise_key_errors=False
     )
 
-    file_types = (
-        ("Compressed File", "*.zip"), 
-        ("ALL files", "*.*"),
-    )
-    res_path = sg.PopupGetFile(
-        message="Enter Filename to Load",
-        title="Load Previous Results",
-        file_types=file_types,
-        multiple_files=False
-    )
-    simulation_window = getSimulationFromResults(
-        res_path,
-        parameter_directory="parameters",
-        equation_directory="equations"
-    )
-
-    simulation_window.runWindow()
+    loadSimulation()
