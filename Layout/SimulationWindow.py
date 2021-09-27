@@ -23,7 +23,7 @@ import numpy as np
 import PySimpleGUI as sg
 import yaml
 from Function import Model
-from macros import StoredObject, recursiveMethod
+from macros import StoredObject, formatValue, getTexImage, recursiveMethod, unique
 from matplotlib import cm, colors
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -37,7 +37,7 @@ from Simulation import formatResultsAsDictionary, solveODE
 from sympy import Expr, Symbol
 from sympy.core import function
 from sympy.utilities.lambdify import lambdify
-from YML import config_file_types, getDimensions, getStates
+from YML import config_file_types, getDimensions, getStates, saveConfig
 
 from Layout.Layout import Element, Layout, Row, Tab, TabbedWindow, TabGroup, WindowRunner, getKeys, storeElement
 
@@ -1687,7 +1687,8 @@ class SimulationWindow(TabbedWindow):
             name: str,
             runner: SimulationWindowRunner,
             free_parameter_values: Dict[str, Tuple[float, float, int, Quantity]],
-            plot_choices: Dict[str, List[str]]
+            plot_choices: Dict[str, List[str]],
+            include_simulation_tab: bool = True,
     ) -> None:
         """
         Constructor for :class:`~Layout.SimulationWindow.SimulationWindow`.
@@ -1840,7 +1841,9 @@ class SimulationWindow(TabbedWindow):
         self.getSimulationTab = partial(self.getTabs, names=simulation_tab_name)
         self.getPlottingTab = partial(self.getTabs, names=plotting_tab_name)
 
-        self.addTabs(simulation_tab)
+        if include_simulation_tab:
+            self.addTabs(simulation_tab)
+        
         self.addTabs(AestheticsTabGroup("Aesthetics", self).getAsTab())
         self.addTabs(plotting_tab)
         self.addTabs(AnalysisTabGroup("Analysis", self).getAsTab())
@@ -2045,7 +2048,14 @@ class SimulationWindowRunner(WindowRunner):
     :ivar setResults: pointer to :meth:`~Results.Results.setResults`
     """
 
-    def __init__(self, name: str, model: Model = None, results: Results = None, **kwargs) -> None:
+    def __init__(
+        self, 
+        name: str, 
+        model: Model = None, 
+        results: Results = None,
+        include_simulation_tab: bool = True,
+        **kwargs
+    ) -> None:
         """
         Constructor for :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
         
@@ -2056,13 +2066,19 @@ class SimulationWindowRunner(WindowRunner):
         :param results: initial results to start simulation with
         :param **kwargs: additional arguments to pass into :class:`~Layout.SimulationWindow.SimulationWindow`
         """
-        window_object = SimulationWindow(name, self, **kwargs)
+        window_object = SimulationWindow(
+            name, 
+            self, 
+            include_simulation_tab=include_simulation_tab, 
+            **kwargs
+        )
         super().__init__(window_object)
         window_object.getWindow()
-
+        
         self.getPlotChoices = window_object.getPlotChoices
         self.getFreeParameterNames = window_object.getFreeParameterNames
 
+        self.include_simulation_tab = include_simulation_tab
         self.axis_names = ['c', 'x', 'y', 'z']
         self.timelike_species = ["Variable", "Function"]
         self.parameterlike_species = ["Parameter"]
@@ -2084,6 +2100,17 @@ class SimulationWindowRunner(WindowRunner):
         self.results = results_object
         self.resetResults = results_object.resetResults
         self.setResults = results_object.setResults
+
+    def includeSimulationTab(self) -> bool:
+        """
+        Return whether or not simulation tab is present in window.
+
+        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve tab presence from
+        :returns: True if tab is present.
+            False if tab is not present.
+        """
+        return self.include_simulation_tab
+
 
     def getModel(self) -> Model:
         """
@@ -2362,9 +2389,10 @@ class SimulationWindowRunner(WindowRunner):
         window_object: SimulationWindow = self.getWindowObject()
         window = window_object.getWindow()
 
-        # noinspection PyTypeChecker
-        simulation_tab_object: SimulationTab = window_object.getSimulationTab()
-        run_simulation_key = getKeys(simulation_tab_object.getRunButton())
+        if self.includeSimulationTab():
+            # noinspection PyTypeChecker
+            simulation_tab_object: SimulationTab = window_object.getSimulationTab()
+            run_simulation_key = getKeys(simulation_tab_object.getRunButton())
 
         toolbar_menu_key = getKeys(window_object.getMenu())
         update_plot_key = getKeys(window_object.getUpdatePlotButton())
@@ -2390,8 +2418,6 @@ class SimulationWindowRunner(WindowRunner):
                 elif "Save Animated Figure" in menu_value:
                     free_parameter_name = menu_value.split('::')[0]
                     self.saveFigure(free_parameter_name)
-            elif event == run_simulation_key:
-                self.runSimulations()
             elif fps_pre in event:
                 self.updatePlot()
             elif cc_pre in event:
@@ -2402,6 +2428,8 @@ class SimulationWindowRunner(WindowRunner):
                     window.write_event_value(update_plot_key, None)
             elif event == update_plot_key:
                 self.updatePlot()
+            elif event == run_simulation_key:
+                self.runSimulations()
         window.close()
 
     @staticmethod
