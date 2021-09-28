@@ -23,7 +23,7 @@ from sympy.core import function
 from sympy.utilities.lambdify import lambdify
 
 from CustomErrors import RecursiveTypeError
-from macros import formatQuantity, recursiveMethod, unique
+from macros import formatUnit, formatValue, recursiveMethod, unique
 from YML import config_file_extensions, loadConfig, saveConfig
 
 
@@ -507,14 +507,13 @@ class Model:
 
     def saveFunctionsToFile(self, filepath: str) -> TextIO:
         """
-        Save functions stored in model into YML file for future retrieval.
-        Accepted formats are *.yml, *.yaml, *.json, *.tex, *.pdf (with *.tex)
+        Save functions stored in model into file.
+        Accepted formats are various markup, *.tex, *.pdf (with *.tex).
 
         :param self: :class:`~Function.Model` to retrieve functions from
-        :param args: required arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
         :returns: new file
         """
-        function_objs = self.getFunctions()
+        function_objs: List[Function] = self.getFunctions()
         
         file_extension = Path(filepath).suffix
         if file_extension in config_file_extensions:
@@ -536,9 +535,9 @@ class Model:
             SymbolicVariables.switchMode("tex")
 
             save_lines = [
-                r"\documentclass{article}" + "\n",
-                r"\usepackage{amsmath, amssymb}" + "\n",
-                r"\begin{document}" + "\n", 
+                r"\documentclass{article}",
+                r"\usepackage{amsmath, amssymb}",
+                r"\begin{document}", 
             ]
 
             for function_obj in function_objs:
@@ -548,8 +547,7 @@ class Model:
                 expression_tex = latex(expression)
                 equation_tex = r"\begin{equation}" \
                     + f"{symbol_tex:s} = {expression_tex:s}" \
-                    + r"\end{equation}" \
-                    + "\n"
+                    + r"\end{equation}"
                 filestem = function_obj.getStem()
                 save_lines.append(equation_tex)
             save_lines.append(r"\end{document}")
@@ -557,7 +555,9 @@ class Model:
             SymbolicVariables.switchMode(pre_mode)
 
             with open(filepath, 'w') as file:
-                file.writelines(save_lines)
+                for line in save_lines:
+                    file.writelines(line)
+                    file.write('\n')
 
             return file
         elif file_extension == ".pdf":
@@ -566,16 +566,74 @@ class Model:
             self.saveFunctionsToFile(tex_filepath)
             subprocess.run(["latexmk", "-pdf", f"-outdir={save_directory:s}", tex_filepath])
 
-    def saveParametersToFile(self, *args, **kwargs) -> TextIO:
+    def saveParametersToFile(self, filepath: str) -> TextIO:
         """
-        Save parameters stored in model into YML file for future retrieval.
+        Save parameters stored in model into file.
+        Accepted formats are various markup, *.tex, *.pdf (with *.tex).
         
         :param self: :class:`~Function.Model` to retrieve parameters from
-        :param args: required arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
-        :param kwargs: additional arguments to pass into :meth:`~Function.Model.SaveQuantitiesToFile`
         :returns: new file
         """
-        return self.saveQuantitiesToFile(*args, **kwargs, specie="Parameter")
+        parameter_objs: List[Parameter] = self.getParameters()
+        
+        file_extension = Path(filepath).suffix
+        if file_extension in config_file_extensions:
+            save_info = {}
+            for parameter_obj in parameter_objs:
+                name = parameter_obj.getName()
+                filestem = parameter_obj.getStem()
+                if isinstance(filestem, str):
+                    if filestem not in save_info.keys():
+                        save_info[filestem] = []
+                    save_info[filestem].append(name)
+                else:
+                    save_info[name] = parameter_obj.getSaveInfo()
+            
+            file = saveConfig(save_info, filepath)
+            return file
+        elif file_extension == ".tex":
+            pre_mode = SymbolicVariables.mode
+            SymbolicVariables.switchMode("tex")
+
+            save_lines = [
+                r"\documentclass{article}",
+                r"\usepackage{amsmath, amssymb}",
+                r"\setlength\parindent{0pt}",
+                r"\begin{document}", 
+            ]
+
+            for parameter_obj in parameter_objs:
+                symbol = parameter_obj.getSymbol()
+                symbol_tex = latex(symbol)
+                quantity = parameter_obj.getQuantity()
+                value_tex = formatValue(quantity)
+                unit_tex = formatUnit(quantity, as_tex=True)
+
+                parameter_tex = f"${symbol_tex:s}$"
+                parameter_tex += f" = {value_tex:s}"
+                if len(unit_tex) >= 1:
+                    parameter_tex += f" ${unit_tex:s}$"
+                parameter_tex += r' \\'
+
+                filestem = parameter_obj.getStem()
+                save_lines.append(parameter_tex)
+            save_lines.append(r"\end{document}")
+            
+            SymbolicVariables.switchMode(pre_mode)
+
+            with open(filepath, 'w') as file:
+                for line in save_lines:
+                    file.writelines(line)
+                    file.write('\n')
+
+            return file
+        elif file_extension == ".pdf":
+            tex_filepath = filepath.replace(".pdf", ".tex")
+            save_directory = dirname(filepath)
+            self.saveParametersToFile(tex_filepath)
+            subprocess.run(["latexmk", "-pdf", f"-outdir={save_directory:s}", tex_filepath])
+        
+        # return self.saveQuantitiesToFile(*args, **kwargs, specie="Parameter")
 
     def saveTimeEvolutionTypesToFile(self, filepath: str) -> TextIO:
         """

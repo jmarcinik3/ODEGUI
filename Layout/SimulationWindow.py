@@ -164,7 +164,12 @@ def getFigure(
     else:
         axes = figure.add_subplot()
 
-    axes.set(**axes_kwargs)
+    for axes_arg, axes_value in axes_kwargs.items():
+        axes_kwarg = {axes_arg: axes_value}
+        try:
+            axes.set(**axes_kwarg)
+        except AttributeError:
+            print("axes_kwarg:", axes_kwarg)
 
     if 'c' in plot_type or 't' in plot_type:
         c = results['c'] / scale_factor['c']
@@ -194,7 +199,7 @@ def getFigure(
         inset_axes, inset_axes_plot = getParameterInsetAxes(axes, free_parameter_ranges)
         free_parameter_values = tuple(inset_parameters[name]["value"] for name in inset_parameters.keys())
         inset_axes_plot(*free_parameter_values)
-
+    
     x_length = len(x)
     if 'z' not in plot_type:
         if plot_type in ["xy", "nxy", "xny"]:
@@ -2389,7 +2394,8 @@ class SimulationWindowRunner(WindowRunner):
         window_object: SimulationWindow = self.getWindowObject()
         window = window_object.getWindow()
 
-        if self.includeSimulationTab():
+        is_simulation = self.includeSimulationTab()
+        if is_simulation:
             # noinspection PyTypeChecker
             simulation_tab_object: SimulationTab = window_object.getSimulationTab()
             run_simulation_key = getKeys(simulation_tab_object.getRunButton())
@@ -2428,7 +2434,7 @@ class SimulationWindowRunner(WindowRunner):
                     window.write_event_value(update_plot_key, None)
             elif event == update_plot_key:
                 self.updatePlot()
-            elif event == run_simulation_key:
+            elif is_simulation and event == run_simulation_key:
                 self.runSimulations()
         window.close()
 
@@ -2632,10 +2638,10 @@ class SimulationWindowRunner(WindowRunner):
                 "autoscaley_on": autoscale['y'],
                 "yscale": scale_type['y'],
 
-                # "zlim": lim['z'],
-                # "zlabel": label['z'],
-                # "autoscalez_on": autoscale['z'],
-                # "zscale": scale_type['z'],
+                "zlim": lim['z'],
+                "zlabel": label['z'],
+                "autoscalez_on": autoscale['z'],
+                "zscale": scale_type['z'],
 
                 "title": getValues(getKeys(axis_tab.getTitleInputElement("plot")))
             },
@@ -2981,7 +2987,8 @@ class SimulationWindowRunner(WindowRunner):
         )
 
         if isinstance(filename, str):
-            self.getResultsObject().saveToFile(filename)
+            results_obj = self.getResultsObject()
+            results_obj.saveToFile(filename)
 
     def saveModelParameters(self) -> None:
         """
@@ -2991,18 +2998,21 @@ class SimulationWindowRunner(WindowRunner):
         """
         file_types = (
             *config_file_types,
+            ("LaTeX", "*.tex"),
+            ("Portable Document Format", "*.pdf"),
             ("ALL Files", "*.*"),
         )
 
-        filename = sg.PopupGetFile(
+        filepath = sg.PopupGetFile(
             message="Enter Filename",
             title="Save Parameters",
             save_as=True,
             file_types=file_types
         )
-
-        if isinstance(filename, str):
-            self.getModel().saveParametersToFile(filename)
+        
+        if isinstance(filepath, str):
+            model = self.getModel()
+            model.saveParametersToFile(filepath)
 
     def saveModelFunctions(self) -> None:
         """
@@ -3017,16 +3027,16 @@ class SimulationWindowRunner(WindowRunner):
             ("ALL Files", "*.*"),
         )
         
-        filename = sg.PopupGetFile(
+        filepath = sg.PopupGetFile(
             message="Enter Filename",
             title="Save Functions",
             save_as=True,
             file_types=file_types
         )
 
-        if isinstance(filename, str):
+        if isinstance(filepath, str):
             model = self.getModel()
-            model.saveFunctionsToFile(filename)
+            model.saveFunctionsToFile(filepath)
 
     def saveModelTimeEvolutionTypes(self) -> None:
         """

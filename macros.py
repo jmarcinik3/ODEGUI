@@ -13,6 +13,7 @@ import numpy as np
 import PySimpleGUI as sg
 from numpy import ndarray
 from pint import Quantity
+from pylatexenc.latexencode import unicode_to_latex
 from sympy import Expr, latex
 from sympy.printing.preview import preview
 
@@ -165,15 +166,26 @@ def formatValue(quantity: Union[Quantity, float]) -> str:
         return scientific_full
 
 
-def formatUnit(quantity: Quantity) -> str:
+def formatUnit(quantity: Quantity, as_tex: bool = False) -> str:
     """
     Format unit as string from quantity.
     Display unit as abbreviations.
     Remove spaces between units.
     
     :param quantity: quantity to format
+    :param as_tex: set True to retrieve output compatible with LaTeX.
+        Set False to retrieve output compatible with unicode.
     """
-    return f"{quantity.units:~}".replace(' ', '')
+    unit = quantity.units
+    formatted_unit = f"{unit:~}".replace(' ', '')
+    
+    if as_tex:
+        formatted_unit = formatted_unit.replace('**', '^')
+        formatted_unit = unicode_to_latex(
+            formatted_unit,
+            non_ascii_only=True).replace("\\text", "\\")
+    
+    return formatted_unit
 
 
 def formatQuantity(quantity: Quantity) -> str:
@@ -183,7 +195,8 @@ def formatQuantity(quantity: Quantity) -> str:
     :param quantity: quantity to format
     """
     value, unit = formatValue(quantity), formatUnit(quantity)
-    formatted_quantity = f"{value:s} {unit:s}"
+    formatted_quantity = f"{value:s} {unit:s}".replace("**", '^')
+    
     return formatted_quantity
 
 
