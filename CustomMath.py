@@ -86,28 +86,30 @@ def oscillationFrequency(
         if argrelmax_count >= 1:
             lag = lags[argrelmax_correlation][0]
             delta_time = times[1] - times[0]
-            frequencies = np.array([1 / (lag * delta_time)])
+            frequency = 1 / (lag * delta_time)
         else:
-            frequencies = np.array([0])
+            frequency = 0
     else:
         raise ValueError("invalid calculation method")
 
-    frequency_count = frequencies.size
-    if frequency_count >= 1:
-        if condensing_method == "average":
-            frequency = np.mean(frequencies)
-        elif condensing_method == "maximum":
-            frequency = np.amax(frequencies)
-        elif condensing_method == "minimum":
-            frequency = np.amin(frequencies)
-        elif condensing_method == "initial":
-            frequency = frequencies[0]
-        elif condensing_method == "final":
-            frequency = frequencies[-1]
+    if not "autocorrelation" in calculation_method:
+        frequency_count = frequencies.size
+        if frequency_count >= 1:
+            if condensing_method == "average":
+                frequency = np.mean(frequencies)
+            elif condensing_method == "maximum":
+                frequency = np.amax(frequencies)
+            elif condensing_method == "minimum":
+                frequency = np.amin(frequencies)
+            elif condensing_method == "initial":
+                frequency = frequencies[0]
+            elif condensing_method == "final":
+                frequency = frequencies[-1]
+            else:
+                raise ValueError("invalid condensing method")
         else:
-            raise ValueError("invalid condensing method")
-    else:
-        frequency = 0
+            frequency = 0
+    
     return frequency
 
 
