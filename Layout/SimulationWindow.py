@@ -1490,6 +1490,163 @@ class PlottingTab(Tab):
         return layout.getLayout()
 
 
+class FilterTab(Tab, StoredObject):
+    """
+    This class contains the layout for the filter tab in the simulation window.
+        #. One or more :class:`~Layout.SimulationWindow.FilterRow`, each comprising one node of AND-gate filter
+    
+    :ivar row_count: number of rows to include in tab
+    """
+
+    def __init__(
+        self, 
+        name: str, 
+        window: SimulationWindow, 
+        row_count: int = 1,
+    ) -> None:
+        """
+        Constructor for :class:`~Layout.SimulationWindow.FilterTab`.
+
+        :param name: name of tab
+        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab is stored in.
+        """
+        Tab.__init__(self, name, window)
+        StoredObject.__init__(self, name)
+        
+        self.row_count = row_count
+
+    def getRowCount(self) -> int:
+        """
+        Get number of rows to include in tab.
+
+        :param self: :class:`~Layout.SimulationWindow.FilterTab` to retrieve count from
+        """
+        return self.row_count
+
+    def getLayout(self) -> List[List[sg.Element]]:
+        """
+        Get layout for filter tab.
+
+        :param self: :class:`~Layout.SimulationWindow.FilterTab` to retrieve layout from
+        """
+        window = self.getWindowObject()
+
+        row_count = self.getRowCount()
+        row_ids = range(row_count)
+
+        rows = []
+        for row_id in row_ids:
+            new_filter_row = FilterRow(row_id, window=window)
+            rows.append(new_filter_row)
+
+        layout = Layout(rows=rows)
+        return layout.getLayout()
+
+
+class FilterRow(Row, StoredObject):
+    """
+    This class contains the layout for the filter row in the filter tab.
+        #. Combobox to select left side of inequality (variable name)
+        #. Combobox to select type of inequality (e.g. '>', '<=')
+        #. Input field to type into  right side of inequality (float)
+        #. Checkbox to set whether filter is active or not.
+    
+    :ivar row_id: number to indicate id of row within :class:`~Layout.SimulationWindow.FilterTab`
+    """
+
+    valid_inequality_types = ('>', '<', '==', '>=', '<=', '!=')
+
+    def __init__(self, row_id: int, window: SimulationWindow) -> None:
+        row_name = f"-FILTER ROW {row_id:d}"
+        Row.__init__(self, row_name, window=window)
+        StoredObject.__init__(self, row_name)
+
+        self.row_id = row_id
+
+        elements = [
+            self.getLeftVariableElement(),
+            self.getInequalityTypeElement(),
+            self.getRightFloatElement(),
+            self.getIsActiveElement()
+        ]
+
+        self.addElements(elements)
+
+    def getRowId(self) -> int:
+        """
+        Get ID associated with row within tab.
+
+        :param self: :class:`~Layout.SimulationWindow.FilterRow` to retrieve ID from
+        """
+        return self.row_id
+
+    @storeElement
+    def getLeftVariableElement(self) -> sg.Combo:
+        """
+        Get element that allows user input for variable in inequality.
+
+        :param self: :class:`~Layout.SimulationWindow.FilterRow` to retrieve element from
+        """
+        row_id = self.getRowId()
+
+        window_obj: SimulationWindow = self.getWindowObject()
+        variable_names = window_obj.getPlotChoices(species="Variable")
+        function_names = window_obj.getPlotChoices(species="Function")
+        
+        inequality_choices = variable_names + function_names
+
+        return sg.Combo(
+            values=inequality_choices,
+            default_value=inequality_choices[0],
+            key=f"-FILTER LEFT CHOICE {row_id:d}-"
+        )
+
+    @storeElement
+    def getInequalityTypeElement(self) -> sg.Combo:
+        """
+        Get element that allows user input for inequality type.
+
+        :param self: :class:`~Layout.SimulationWindow.FilterRow` to retrieve element from
+        """
+        row_id = self.getRowId()
+        valid_inequality_types = FilterRow.valid_inequality_types
+        
+        return sg.Combo(
+            values=valid_inequality_types,
+            default_value=valid_inequality_types[0],
+            key=f"FILTER TYPE {row_id:d}"
+        )
+
+    @storeElement
+    def getRightFloatElement(self) -> sg.Input:
+        """
+        Get element that allows user input for inequality type.
+
+        :param self: :class:`~Layout.SimulationWindow.FilterRow` to retrieve element from
+        """
+        row_id = self.getRowId()
+
+        return sg.Input(
+            default_text='0',
+            key=f"-FILTER RIGHT CHOICE {row_id:d}-"
+        )
+
+    @storeElement
+    def getIsActiveElement(self) -> sg.Checkbox:
+        """
+        Get element that allows user to set whether or not filter dictating by row is active.
+
+        :param self: :class:`~Layout.SimulationWindow.FilterTab` to retrieve element from
+        """
+        row_id = self.getRowId()
+
+        return sg.Checkbox(
+            text="Active?",
+            default=False,
+            key=f"-FILTER IS ACTIVE{row_id:d}-"
+        )
+
+
 class AnalysisTabGroup(TabGroup):
     """
     This class contains the layout for the analysis tabgroup in the simulation window.
@@ -1852,6 +2009,7 @@ class SimulationWindow(TabbedWindow):
         self.addTabs(AestheticsTabGroup("Aesthetics", self).getAsTab())
         self.addTabs(plotting_tab)
         self.addTabs(AnalysisTabGroup("Analysis", self).getAsTab())
+        self.addTabs(FilterTab("Filter", self, row_count=4))
 
     def getFreeParameterNames(
         self, 
@@ -2046,7 +2204,8 @@ class SimulationWindowRunner(WindowRunner):
         Simplified as much as possible, except leave free parameters and variables as symbolic.
     :ivar results: object to store results from most recent simulation.
         This attribute greatly speeds up grabbing previously-calculated results.
-
+    :ivar include_simulation_tab: whether or not to include tab to run simulation.
+        Set True to include tab. Set False to exclude tab. Defaults to True.
     :ivar getPlotChoices: pointer to :meth:`~Layout.SimulationWindow.SimulationWindow.getPlotChoices`
     :ivar getFreeParameterNames: pointer to :meth:`~Layout.SimulationWindow.SimulationWindow.getFreeParameterNames`
     :ivar resetResults: pointer to :meth:`~Results.Results.resetResults`
@@ -2115,7 +2274,6 @@ class SimulationWindowRunner(WindowRunner):
             False if tab is not present.
         """
         return self.include_simulation_tab
-
 
     def getModel(self) -> Model:
         """
@@ -2727,6 +2885,35 @@ class SimulationWindowRunner(WindowRunner):
 
         return condensor_kwargs
 
+    def getInequalityFilters(self) -> List[Tuple[str, str, float]]:
+        """
+        Get filters to apply to results.
+        Uses present state of window.
+
+        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve filters from
+        """
+        inequality_filters = []
+        filter_rows: List[FilterRow] = FilterRow.getInstances()
+
+        for filter_row in filter_rows:
+            is_active_element = filter_row.getIsActiveElement()
+            is_active = self.getValue(getKeys(is_active_element))
+            
+            if is_active:
+                left_element = filter_row.getLeftVariableElement()
+                left_value = self.getValue(getKeys(left_element))
+
+                inequality_element = filter_row.getInequalityTypeElement()
+                inequality_type = self.getValue(getKeys(inequality_element))
+
+                right_element = filter_row.getRightFloatElement()
+                right_value = self.getValue(getKeys(right_element))
+
+                new_inequality_filter = (left_value, inequality_type, right_value)
+                inequality_filters.append(new_inequality_filter)
+        
+        return inequality_filters
+
     def updatePlot(
             self,
             index: Union[tuple, Tuple[int]] = None,
@@ -2773,7 +2960,6 @@ class SimulationWindowRunner(WindowRunner):
             transform_name = self.getValue(combobox_key)
             if transform_name is None:
                 return None
-            self.getValue(combobox_key)
 
         results_object = self.getResultsObject()
         timelike_species = self.getLikeSpecies("timelike")
@@ -2782,7 +2968,7 @@ class SimulationWindowRunner(WindowRunner):
             "index": index,
             "transform_name": transform_name
         }
-
+        
         axis2name = {
             axis: plot_quantities[axis][0] 
             for axis in plot_quantities_keys
@@ -2827,10 +3013,17 @@ class SimulationWindowRunner(WindowRunner):
         parameterlike_count = sum(is_parameterlike.values())
         condensed_count = sum(is_condensed.values())
 
+        inequality_filters = self.getInequalityFilters()
+        print(inequality_filters)
+
         results = {}
         try:
             if parameterlike_count == 0:
-                getResultsOverTime = partial(results_object.getResultsOverTime, **results_kwargs)
+                getResultsOverTime = partial(
+                    results_object.getResultsOverTime,
+                    inequality_filters=inequality_filters,
+                    **results_kwargs
+                )
 
                 for axis_name, quantity_name in axis2name.items():
                     if is_timelike[axis_name]:
@@ -2840,7 +3033,7 @@ class SimulationWindowRunner(WindowRunner):
                         results[axis_name] = getResultsOverTime(
                             quantity_names=quantity_name,
                             condensor_name=condensor_name,
-                            **self.getCondensorKwargs(condensor_name)
+                            condensor_kwargs=self.getCondensorKwargs(condensor_name)
                         )
             else:
                 parameter_names = tuple(
@@ -2854,6 +3047,7 @@ class SimulationWindowRunner(WindowRunner):
                 getResultsOverTimePerParameter = partial(
                     results_object.getResultsOverTimePerParameter,
                     parameter_names=parameter_names,
+                    inequality_filters=inequality_filters,
                     **results_kwargs
                 )
 
@@ -2870,7 +3064,7 @@ class SimulationWindowRunner(WindowRunner):
                         parameter_results, quantity_results = getResultsOverTimePerParameter(
                             quantity_names=quantity_name,
                             condensor_name=condensor_name,
-                            **self.getCondensorKwargs(condensor_name)
+                            condensor_kwargs=self.getCondensorKwargs(condensor_name)
                         )
                         results[axis_name] = quantity_results[0]
 
