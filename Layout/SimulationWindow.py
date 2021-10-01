@@ -2597,7 +2597,7 @@ class SimulationWindowRunner(WindowRunner):
         window.close()
 
     @staticmethod
-    def updateProgressMeter(title: str, current_value: int, max_value: int) -> sg.OneLineProgressMeter:
+    def updateProgressMeter(current_value: int, max_value: int, title: str = "Running Simulation") -> sg.OneLineProgressMeter:
         """
         Update progress meter.
 
@@ -2615,7 +2615,7 @@ class SimulationWindowRunner(WindowRunner):
     def runSimulation(
             self,
             index: Union[tuple, Tuple[int]],
-            parameter_values: Dict[str, float] = None,
+            parameter_values: Dict[str, float],
             variable_names: List[str] = None,
             general_derivative_vector: List[Expr] = None,
             y0: ndarray = None,
@@ -2659,10 +2659,13 @@ class SimulationWindowRunner(WindowRunner):
 
         derivatives = [derivative.subs(parameter_values) for derivative in general_derivative_vector]
         ydot = lambdify((Symbol('t'), tuple(variable_names)), derivatives, modules=["math"])
-        solution = solveODE(ydot, y0, times)
-        # noinspection PyTypeChecker
-        results = formatResultsAsDictionary(*solution, variable_names)
-        self.setResults(index=index, results=results)
+        try:
+            solution = solveODE(ydot, y0, times)
+            # noinspection PyTypeChecker
+            results = formatResultsAsDictionary(*solution, variable_names)
+            self.setResults(index=index, results=results)
+        except OverflowError:
+            print("overflow:", parameter_values)
 
     def runSimulations(self) -> None:
         """
@@ -2674,17 +2677,28 @@ class SimulationWindowRunner(WindowRunner):
         self.resetResults()
         free_parameter_names = self.getFreeParameterNames()
         model = self.getModel()
-        variable_names = model.getVariables(time_evolution_types="Temporal", return_type=str)
-        kwargs = {
-            "model": model,
-            "variable_names": variable_names,
-            "general_derivative_vector": self.getGeneralDerivativeVector(),
-            "y0": model.getInitialValues(names=variable_names, return_type=list),
-            "times": np.linspace(*self.getInputTimes())
-        }
+        variable_names = model.getVariables(
+            time_evolution_types="Temporal", 
+            return_type=str
+        )
+        times = np.linspace(*self.getInputTimes())
+        y0 = model.getInitialValues(
+            names=variable_names,
+            return_type=list
+        )
+        general_derivative_vector = self.getGeneralDerivativeVector()
+
+        runSimulation = partial(
+            self.runSimulation,
+            model=model,
+            variable_names=variable_names,
+            general_derivative_vector=general_derivative_vector,
+            y0=y0,
+            times=times
+        )
 
         if (parameter_count := len(free_parameter_names)) == 0:
-            self.runSimulation((), **kwargs)
+            runSimulation((), {})
         elif parameter_count >= 1:
             free_parameter_values = {}
             free_parameter_indicies = []
@@ -2695,16 +2709,27 @@ class SimulationWindowRunner(WindowRunner):
 
             free_parameter_index_combos = tuple(product(*free_parameter_indicies))
             total_combo_count = len(free_parameter_index_combos)
+            updateProgressMeter = partial(
+                self.updateProgressMeter,
+                max_value=total_combo_count
+            )
+
             for simulation_number, indicies in enumerate(free_parameter_index_combos):
-                if not self.updateProgressMeter("Running Simulations", simulation_number, total_combo_count):
+                if not updateProgressMeter(simulation_number):
                     break
-                parameter_simulation_values = {
-                    (free_parameter_name := free_parameter_names[free_parameter_index]):
-                        free_parameter_values[free_parameter_name][indicies[free_parameter_index]]
-                    for free_parameter_index in range(parameter_count)
-                }
-                self.runSimulation(indicies, parameter_simulation_values, **kwargs)
-            self.updateProgressMeter("Running Simulations", total_combo_count, total_combo_count)
+                
+                parameter_simulation_values = {}
+                for free_parameter_index in range(parameter_count):
+                    free_parameter_name = free_parameter_names[free_parameter_index]
+                    free_parameter_value = free_parameter_values[free_parameter_name][indicies[free_parameter_index]]
+                    parameter_simulation_values[free_parameter_name] = free_parameter_value
+
+                runSimulation(
+                    indicies, 
+                    parameter_simulation_values
+                )
+            updateProgressMeter(total_combo_count)
+        
         self.updatePlot()
 
     def getPlotAesthetics(self) -> Dict[str, Optional[Union[str, float]]]:
