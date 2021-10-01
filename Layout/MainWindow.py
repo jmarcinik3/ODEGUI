@@ -1847,6 +1847,23 @@ class MainWindowRunner(WindowRunner):
         time_evolution_row.getInitialConditionElement().update(disabled=is_either_equilibrium)
         checkbox.update(disabled=is_equilibrium)
 
+    def setIsCoreVariable(self, name: str, is_core: bool) -> None:
+        """
+        Set variable as core/non-core variable.
+
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to set variable in
+        :param name: name of variable to set
+        :param is_core: set True to set as core variable.
+            Set False to set as non-core variable.
+        """
+        variable_row: TimeEvolutionRow = TimeEvolutionRow.getInstances(names=name)
+        is_core_checkbox = variable_row.getIsCoreElement()
+        is_core_checkbox.update(is_core)
+        
+        checkbox_key = getKeys(is_core_checkbox)
+        self.getWindow().write_event_value(checkbox_key, is_core)
+        
+
     def isCoreVariable(self, name: str) -> bool:
         """
         Get whether variable is checked as core variable.
@@ -2512,6 +2529,7 @@ class MainWindowRunner(WindowRunner):
     def loadTimeEvolutionTypesFromFile(self, filepath: str = None) -> None:
         """
         Load and store time-evolution types from file.
+        Changes loaded variables to core and non-loaded variables to non-core.
         
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store time evolutions in
         :param filepath: path of file to load time evolutions from.
@@ -2532,8 +2550,19 @@ class MainWindowRunner(WindowRunner):
                 return None
         
         contents = loadConfig(filepath)
+        updated_variable_names = []
+        print(updated_variable_names)
         for time_evolution_type, variable_names in contents.items():
             self.setTimeEvolutionType(variable_names, time_evolution_type)
+            updated_variable_names.extend(variable_names)
+            print(variable_names, updated_variable_names)
+        window_variable_names = self.getVariableNames()
+        for window_variable_name in window_variable_names:
+            if window_variable_name in updated_variable_names:
+                self.setIsCoreVariable(window_variable_name, True)
+            else:
+                self.setIsCoreVariable(window_variable_name, False)
+
 
     def loadParametersFromFile(self, filepath: str = None, choose_parameters: bool = True) -> Optional[List[Parameter]]:
         """
