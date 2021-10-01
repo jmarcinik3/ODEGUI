@@ -259,6 +259,7 @@ class Results:
 
         :param self: :class:`~Results.Results` to reset results for
         """
+        self.stepcount = None
         self.results = {}
 
     def getSubstitutedResults(
