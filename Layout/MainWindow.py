@@ -1777,7 +1777,7 @@ class MainWindowRunner(WindowRunner):
             )
             is_initial_equilibrium = is_initial_equilibrium_checked or is_equilibrium
 
-            if is_initial_equilibrium:
+            if False: # is_initial_equilibrium:
                 return "Equilibrium"
             else:
                 input_field_key = getKeys(time_evolution_type_row.getInitialConditionElement())
@@ -1863,7 +1863,6 @@ class MainWindowRunner(WindowRunner):
         checkbox_key = getKeys(is_core_checkbox)
         self.getWindow().write_event_value(checkbox_key, is_core)
         
-
     def isCoreVariable(self, name: str) -> bool:
         """
         Get whether variable is checked as core variable.
