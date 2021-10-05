@@ -15,7 +15,7 @@
     "value": 0.64,
     "unit": "piconewton/nanometer"
   },
-  "ksptot": {
+  "ksp": {
     "value": 0.19,
     "unit": "piconewton/nanometer"
   },
