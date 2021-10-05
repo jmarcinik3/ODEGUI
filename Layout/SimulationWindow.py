@@ -2597,7 +2597,7 @@ class SimulationWindowRunner(WindowRunner):
         window.close()
 
     @staticmethod
-    def updateProgressMeter(current_value: int, max_value: int, title: str = "Running Simulation") -> sg.OneLineProgressMeter:
+    def updateProgressMeter(current_value: int, max_value: int, title: str) -> sg.OneLineProgressMeter:
         """
         Update progress meter.
 
@@ -2711,6 +2711,7 @@ class SimulationWindowRunner(WindowRunner):
             total_combo_count = len(free_parameter_index_combos)
             updateProgressMeter = partial(
                 self.updateProgressMeter,
+                title="Running Simulation",
                 max_value=total_combo_count
             )
 
@@ -3333,19 +3334,24 @@ class SimulationWindowRunner(WindowRunner):
                 }
                 image_count = len(parameter_values)
 
+                updateProgressMeter = partial(
+                    self.updateProgressMeter,
+                    title="Saving Animation",
+                    max_value=image_count
+                )
                 with ZipFile(zip_filepath, 'w') as zipfile:
                     with imageio.get_writer(gif_filepath, mode='I') as writer:
-                        for i in range(image_count):
-                            if not self.updateProgressMeter("Saving Animation", i, image_count):
+                        for image_index in range(image_count):
+                            if not updateProgressMeter(image_index):
                                 break
 
                             data_index = default_index
-                            data_index[parameter_index] = i
-                            parameter_value = parameter_values[i]
+                            data_index[parameter_index] = image_index
+                            parameter_value = parameter_values[image_index]
                             inset_parameters[name]["value"] = parameter_value
                             figure = self.updatePlot(index=tuple(data_index), inset_parameters=inset_parameters)
 
-                            png_filepath = join(save_directory, f"{name:s}_{i:d}.png")
+                            png_filepath = join(save_directory, f"{name:s}_{image_index:d}.png")
                             figure.savefig(png_filepath)
                             writer.append_data(imageio.imread(png_filepath))
                             zipfile.write(png_filepath, basename(png_filepath))
@@ -3362,6 +3368,6 @@ class SimulationWindowRunner(WindowRunner):
                     zipfile.write(yaml_filepath, basename(yaml_filepath))
                     os.remove(yaml_filepath)
 
-                    self.updateProgressMeter("Saving Animation", image_count, image_count)
+                    updateProgressMeter(image_count)
             else:
                 sg.PopupError("invalid filepath")

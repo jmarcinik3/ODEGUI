@@ -1,5 +1,5 @@
 """
-This modules contains wrapper and containers for PySimpleGUI elements.
+This module contains wrappers and containers for PySimpleGUI elements.
 """
 
 from __future__ import annotations
