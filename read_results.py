@@ -14,10 +14,12 @@ from pint import Quantity
 from sympy import Expr
 
 from Function import Dependent, Derivative, Function, Independent, Model, NonPiecewise, Parameter, Piecewise, Variable, \
-    generateFunction, generateParameter, readFunctionsFromFiles, readParametersFromFiles
+    generateFunction, generateParameter, readFunctionsFromFiles, readParametersFromFiles, \
+    generateVariablesFromFile as loadVariables
 from Layout.SimulationWindow import SimulationWindowRunner
 from Results import Results
 from YML import loadConfig
+
 
 def doi2bib(doi):
     """
@@ -32,8 +34,8 @@ def doi2bib(doi):
 
 
 def loadFunctions(
-    filepath: str, 
-    stem2path: Dict[str, str], 
+    filepath: str,
+    stem2path: Dict[str, str],
     archive: ZipFile = None
 ) -> List[Function]:
     assert isinstance(filepath, str)
@@ -41,24 +43,25 @@ def loadFunctions(
     contents = loadConfig(filepath, archive=archive)
 
     filestems = stem2path.keys()
-    loaded_functions = []
+    loaded_function_objs = []
     for key, value in contents.items():
         if key in filestems:
             if isinstance(value, Iterable):
                 path_from_stem = stem2path[key]
                 functions_from_file = readFunctionsFromFiles(path_from_stem, names=value).values()
-                loaded_functions.extend(functions_from_file)
+                loaded_function_objs.extend(functions_from_file)
             else:
                 sg.PopupError(f"filestem {key:d} not found for function {key:s} (skipping)")
         else:
-            loaded_functions.append(generateFunction(key, value))
+            new_function_obj = generateFunction(key, value)
+            loaded_function_objs.append(new_function_obj)
 
-    return loaded_functions
+    return loaded_function_objs
 
 
 def loadParameters(
-    filepath: str, 
-    stem2path: Dict[str, str], 
+    filepath: str,
+    stem2path: Dict[str, str],
     archive: ZipFile = None
 ) -> List[Parameter]:
     assert isinstance(filepath, str)
@@ -81,20 +84,41 @@ def loadParameters(
     return loaded_parameters
 
 
-def loadResultsFromFile(
-        results_filepath: str, parameter_directory: str, equation_directory: str
+def getResults_old(
+    results_filepath: str = None,
+    parameter_directory: str = None,
+    equation_directory: str = None
 ) -> Results:
-    parameter_filepaths = [
-        join(parameter_directory, filepath)
-        for filepath in listdir(parameter_directory)
-        if isfile(join(parameter_directory, filepath))
-    ]
+    if results_filepath is None:
+        file_types = (
+            ("Compressed File", "*.zip"),
+            ("ALL files", "*.*"),
+        )
 
-    equation_filepaths = [
-        join(equation_directory, filepath)
-        for filepath in listdir(equation_directory)
-        if isfile(join(equation_directory, filepath))
-    ]
+        results_filepath = sg.PopupGetFile(
+            message="Enter Filename to Load",
+            title="Load Previous Results",
+            file_types=file_types,
+            multiple_files=False
+        )
+
+    if parameter_directory is None:
+        parameter_filepaths = []
+    elif isinstance(parameter_directory, str):
+        parameter_filepaths = [
+            join(parameter_directory, filepath)
+            for filepath in listdir(parameter_directory)
+            if isfile(join(parameter_directory, filepath))
+        ]
+
+    if equation_directory is None:
+        equation_filepaths = []
+    elif isinstance(equation_directory, str):
+        equation_filepaths = [
+            join(equation_directory, filepath)
+            for filepath in listdir(equation_directory)
+            if isfile(join(equation_directory, filepath))
+        ]
 
     stem2path_param = {
         Path(filepath).stem: filepath
@@ -108,12 +132,12 @@ def loadResultsFromFile(
     archive = ZipFile(results_filepath, 'r')
 
     results = dill.load(
-        BytesIO(archive.read("Results.pkl")), 
+        BytesIO(archive.read("Results.pkl")),
         'rb'
     )
     free_parameters = loadConfig("FreeParameter.yml", archive=archive)
     time_evolution_types = loadConfig("TimeEvolutionType.yml", archive=archive)
-    
+
     function_objs = loadFunctions("Function.yml", stem2path_func, archive=archive)
     parameter_objs = loadParameters("Parameter.yml", stem2path_param, archive=archive)
 
@@ -132,33 +156,107 @@ def loadResultsFromFile(
 
     model = Model(
         variables=variable_objs,
-        functions=function_objs, 
+        functions=function_objs,
         parameters=parameter_objs
     )
 
     results_obj = Results(
-        model, 
-        values, 
+        model,
+        values,
         results
     )
 
-    return results_obj
+    return results_obj, archive
 
-def getSimulationFromFilepath(
-    results_filepath: str, 
-    parameter_directory: str = "parameters", 
-    equation_directory: str = "equations"
+
+def getResults(
+    results_filepath: str = None,
+    parameter_directory: str = None,
+    equation_directory: str = None
+) -> Results:
+    if results_filepath is None:
+        file_types = (
+            ("Compressed File", "*.zip"),
+            ("ALL files", "*.*"),
+        )
+
+        results_filepath = sg.PopupGetFile(
+            message="Enter Filename to Load",
+            title="Load Previous Results",
+            file_types=file_types,
+            multiple_files=False
+        )
+
+    if parameter_directory is None:
+        parameter_filepaths = []
+    elif isinstance(parameter_directory, str):
+        parameter_filepaths = [
+            join(parameter_directory, filepath)
+            for filepath in listdir(parameter_directory)
+            if isfile(join(parameter_directory, filepath))
+        ]
+
+    if equation_directory is None:
+        equation_filepaths = []
+    elif isinstance(equation_directory, str):
+        equation_filepaths = [
+            join(equation_directory, filepath)
+            for filepath in listdir(equation_directory)
+            if isfile(join(equation_directory, filepath))
+        ]
+
+    stem2path_param = {
+        Path(filepath).stem: filepath
+        for filepath in parameter_filepaths
+    }
+    stem2path_func = {
+        Path(filepath).stem: filepath
+        for filepath in equation_filepaths
+    }
+
+    archive = ZipFile(results_filepath, 'r')
+
+    results = dill.load(
+        BytesIO(archive.read("Results.pkl")),
+        'rb'
+    )
+    free_parameters = loadConfig("FreeParameter.json", archive=archive)
+    variable_objs = loadVariables("Variable.json", archive=archive)
+
+    function_objs = loadFunctions("Function.json", stem2path_func, archive=archive)
+    parameter_objs = loadParameters("Parameter.json", stem2path_param, archive=archive)
+
+    values = {}
+    for name, value in free_parameters.items():
+        values[name] = np.array(list(map(float, value["values"])))
+
+    model = Model(
+        variables=variable_objs,
+        functions=function_objs,
+        parameters=parameter_objs
+    )
+
+    results_obj = Results(
+        model,
+        values,
+        results
+    )
+
+    return results_obj, archive
+
+def getSimulation(
+    results_filepath: str = None,
+    parameter_directory: str = None,
+    equation_directory: str = None
 ) -> SimulationWindowRunner:
-    results_obj = loadResultsFromFile(
-        results_filepath,
+    results_obj, archive = getResults(
+        results_filepath=results_filepath,
         parameter_directory=parameter_directory,
         equation_directory=equation_directory
     )
-
     model = results_obj.getModel()
 
-    archive = ZipFile(results_filepath, 'r')
-    free_parameter_contents = loadConfig("FreeParameter.yml", archive=archive)
+    free_parameter_contents = loadConfig("FreeParameter.json", archive=archive)
 
     free_parameter_values = {}
     for name, value in free_parameter_contents.items():
@@ -183,38 +281,22 @@ def getSimulationFromFilepath(
 
     return simulation_window
 
-def loadSimulationFromFilepath(filepath: str) -> None:
-    simulation_window = getSimulationFromFilepath(
-        filepath,
-        parameter_directory="parameters",
-        equation_directory="equations"
+def loadSimulation(
+    results_filepath: str = None,
+    parameter_directory: str = "parameters",
+    equation_directory: str = "equations"
+) -> None:
+    simulation_window = getSimulation(
+        results_filepath=results_filepath,
+        parameter_directory=parameter_directory,
+        equation_directory=equation_directory
     )
     simulation_window.runWindow()
-
-def loadSimulation() -> None:
-    file_types = (
-        ("Compressed File", "*.zip"), 
-        ("ALL files", "*.*"),
-    )
-
-    results_filepath = sg.PopupGetFile(
-        message="Enter Filename to Load",
-        title="Load Previous Results",
-        file_types=file_types,
-        multiple_files=False
-    )
-
-    loadSimulationFromFilepath(results_filepath)
-    
 
 if __name__ == "__main__":
     """# button = sg.ColorChooserButton("Color")
     # color_input = sg.Input(visible=False, enable_events=True, disabled=True, key='-IN-')
     # window = sg.Window("Choose Button", [[color_input, button]])"""
-
-    """#dx_lamb = sym.lambdify((Symbol('t'), x), dx)
-    #print(inspect.getsource(dx_lamb))
-    dx_lamb = temp_func._lambdifygenerated"""
 
     sg.ChangeLookAndFeel("DarkGrey13")
     sg.SetOptions(

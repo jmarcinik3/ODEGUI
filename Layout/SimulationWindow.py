@@ -475,6 +475,7 @@ def getFigure(
         axes.set_xlim3d(*axes_kwargs["xlim"])
         axes.set_ylim3d(*axes_kwargs["ylim"])
         axes.set_zlim3d(*axes_kwargs["zlim"])
+        axes.set_zlabel(axes_kwargs["zlabel"])
 
     return figure
 
@@ -2099,7 +2100,7 @@ class SimulationWindow(TabbedWindow):
                         "Results::Save",
                         "Parameters::Save",
                         "Functions::Save",
-                        "Time-Evolution Types::Save"
+                        "Variables::Save"
                     ],
                     "Figure",
                     [
@@ -2575,8 +2576,8 @@ class SimulationWindowRunner(WindowRunner):
                     self.saveModelFunctions()
                 elif menu_value == "Results::Save":
                     self.saveResults()
-                elif menu_value == "Time-Evolution Types::Save":
-                    self.saveModelTimeEvolutionTypes()
+                elif menu_value == "Variables::Save":
+                    self.saveModelVariables()
                 elif menu_value == "Static::Save Figure":
                     self.saveFigure()
                 elif "Save Animated Figure" in menu_value:
@@ -2788,7 +2789,7 @@ class SimulationWindowRunner(WindowRunner):
         for axis_name in cartesian_names:
             scale_factor[axis_name] = getValues(getKeys(axis_tab.getScaleFactorInputElement(axis_name)))
             label[axis_name] = getValues(getKeys(axis_tab.getTitleInputElement(axis_name)))
-            scale_type[axis_name] = scale_type_dict[getValues(getKeys(axis_tab.getScaleTypeInputElement('x')))]
+            scale_type[axis_name] = scale_type_dict[getValues(getKeys(axis_tab.getScaleTypeInputElement(axis_name)))]
 
             autoscale[axis_name] = getValues(getKeys(axis_tab.getAutoscaleElement(axis_name)))
             if autoscale[axis_name]:
@@ -3040,7 +3041,7 @@ class SimulationWindowRunner(WindowRunner):
         condensed_count = sum(is_condensed.values())
 
         inequality_filters = self.getInequalityFilters()
-        print(inequality_filters)
+        print("filters:", inequality_filters)
 
         results = {}
         try:
@@ -3199,16 +3200,16 @@ class SimulationWindowRunner(WindowRunner):
         """
         file_types = (("Compressed File", "*.zip"), ("ALL files", "*.*"),)
 
-        filename = sg.PopupGetFile(
+        filepath = sg.PopupGetFile(
             message="Enter Filename",
             title="Save Results",
             save_as=True,
             file_types=file_types
         )
 
-        if isinstance(filename, str):
+        if isinstance(filepath, str):
             results_obj = self.getResultsObject()
-            results_obj.saveToFile(filename)
+            results_obj.saveToFile(filepath)
 
     def saveModelParameters(self) -> None:
         """
@@ -3258,7 +3259,7 @@ class SimulationWindowRunner(WindowRunner):
             model = self.getModel()
             model.saveFunctionsToFile(filepath)
 
-    def saveModelTimeEvolutionTypes(self) -> None:
+    def saveModelVariables(self) -> None:
         """
         Save time-evolution types from model into file.
 
@@ -3266,6 +3267,8 @@ class SimulationWindowRunner(WindowRunner):
         """
         file_types = (
             *config_file_types,
+            ("LaTeX", "*.tex"),
+            ("Portable Document Format", "*.pdf"),
             ("ALL Files", "*.*"),
         )
 
@@ -3277,7 +3280,8 @@ class SimulationWindowRunner(WindowRunner):
         )
 
         if isinstance(filename, str):
-            self.getModel().saveTimeEvolutionTypesToFile(filename)
+            model = self.getModel()
+            model.saveVariablesToFile(filename)
 
     def saveFigure(self, name: str = None) -> None:
         """

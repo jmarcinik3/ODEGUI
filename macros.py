@@ -147,10 +147,10 @@ def formatValue(quantity: Union[Quantity, float]) -> str:
     """
     if isinstance(quantity, Quantity):
         magnitude = quantity.magnitude
-    elif isinstance(quantity, float):
+    elif isinstance(quantity, (float, int)):
         magnitude = quantity
     else:
-        raise TypeError("quantity must be Quantity or float")
+        raise TypeError("quantity must be of type Quantity or float")
 
     decimal = f"{magnitude:f}".rstrip('0').rstrip('.')
 

@@ -151,17 +151,17 @@ class Parameter(PaperQuantity):
         ]
         return functions
 
-    def getSaveInfo(self) -> dict:
+    def getSaveContents(self) -> dict:
         """
         Get sufficient info from parameter for future recreation.
 
         :param self: :class:`~Function.Parameter` to retrieve info from
         """
-        info = {}
+        contents = {}
         quantity = self.getQuantity()
-        info["value"] = quantity.magnitude
-        info["unit"] = str(quantity.units)
-        return info
+        contents["value"] = quantity.magnitude
+        contents["unit"] = str(quantity.units)
+        return contents
 
 
 class Variable(PaperQuantity):
@@ -238,17 +238,19 @@ class Variable(PaperQuantity):
         ]
         return functions
 
-    def getSaveInfo(self) -> dict:
+    def getSaveContents(self) -> dict:
         """
         Get sufficient info from variable for future recreation.
 
         :param self: :class:`~Function.Variable` to retrieve info from
         """
         time_evolution_type = self.getTimeEvolutionType()
-        info = {
-            "time_evolution_type": time_evolution_type
+        initial_condition = self.getInitialCondition()
+        contents = {
+            "time_evolution_type": time_evolution_type,
+            "initial_condition": initial_condition
         }
-        return info
+        return contents
 
 
 class Model:
@@ -491,18 +493,18 @@ class Model:
         else:
             raise ValueError("invalid value for specie")
 
-        save_info = {}
+        save_contents = {}
         for quantity_object in quantity_objects:
             name = quantity_object.getName()
             filestem = quantity_object.getStem()
             if isinstance(filestem, str):
-                if filestem not in save_info.keys():
-                    save_info[filestem] = []
-                save_info[filestem].append(name)
+                if filestem not in save_contents.keys():
+                    save_contents[filestem] = []
+                save_contents[filestem].append(name)
             else:
-                save_info[name] = quantity_object.getSaveInfo()
+                save_contents[name] = quantity_object.getSaveContents()
             
-        file = saveConfig(save_info, filepath)
+        file = saveConfig(save_contents, filepath)
         return file
 
     def saveFunctionsToFile(self, filepath: str) -> TextIO:
@@ -517,18 +519,19 @@ class Model:
         
         file_extension = Path(filepath).suffix
         if file_extension in config_file_extensions:
-            save_info = {}
+            save_contents = {}
             for function_obj in function_objs:
                 name = function_obj.getName()
                 filestem = function_obj.getStem()
                 if isinstance(filestem, str):
-                    if filestem not in save_info.keys():
-                        save_info[filestem] = []
-                    save_info[filestem].append(name)
+                    try:
+                        save_contents[filestem].append(name)
+                    except KeyError:
+                        save_contents[filestem] = [name]
                 else:
-                    save_info[name] = function_obj.getSaveInfo()
+                    save_contents[name] = function_obj.getSaveContents()
             
-            file = saveConfig(save_info, filepath)
+            file = saveConfig(save_contents, filepath)
             return file
         elif file_extension == ".tex":
             pre_mode = SymbolicVariables.mode
@@ -578,18 +581,19 @@ class Model:
         
         file_extension = Path(filepath).suffix
         if file_extension in config_file_extensions:
-            save_info = {}
+            save_contents = {}
             for parameter_obj in parameter_objs:
                 name = parameter_obj.getName()
                 filestem = parameter_obj.getStem()
                 if isinstance(filestem, str):
-                    if filestem not in save_info.keys():
-                        save_info[filestem] = []
-                    save_info[filestem].append(name)
+                    try:
+                        save_contents[filestem].append(name)
+                    except KeyError:
+                        save_contents[filestem] = [name]
                 else:
-                    save_info[name] = parameter_obj.getSaveInfo()
+                    save_contents[name] = parameter_obj.getSaveContents()
             
-            file = saveConfig(save_info, filepath)
+            file = saveConfig(save_contents, filepath)
             return file
         elif file_extension == ".tex":
             pre_mode = SymbolicVariables.mode
@@ -632,29 +636,78 @@ class Model:
             save_directory = dirname(filepath)
             self.saveParametersToFile(tex_filepath)
             subprocess.run(["latexmk", "-pdf", f"-outdir={save_directory:s}", tex_filepath])
-        
-        # return self.saveQuantitiesToFile(*args, **kwargs, specie="Parameter")
 
-    def saveTimeEvolutionTypesToFile(self, filepath: str) -> TextIO:
+    def saveVariablesToFile(self, filepath: str) -> TextIO:
         """
-        Save time-evolution types stored in model into YML file for future retrieval.
+        Save variables stored in model for future retrieval.
 
-        :param self: :class:`~Function.Model` to retrieve time-evolution types from
-        :param filepath: path of file to save time-evolution types into
+        :param self: :class:`~Function.Model` to retrieve variables from
+        :param filepath: path of file to save variables into
         :returns: new file
         """
-        variable_objs = self.getVariables()
+        variable_objs: List[Variable] = self.getVariables()
+        
+        file_extension = Path(filepath).suffix
+        if file_extension in config_file_extensions:
+            save_contents = {
+                variable_obj.getName(): variable_obj.getSaveContents()
+                for variable_obj in variable_objs
+            }
+            file = saveConfig(save_contents, filepath)
+            return file
+        elif file_extension == ".tex":
+            pre_mode = SymbolicVariables.mode
+            SymbolicVariables.switchMode("tex")
 
-        tet2vars = {}
-        for variable_obj in variable_objs:
-            time_evolution_type = variable_obj.getTimeEvolutionType()
-            if time_evolution_type not in tet2vars.keys():
-                tet2vars[time_evolution_type] = []
-            variable_name = variable_obj.getName()
-            tet2vars[time_evolution_type].append(variable_name)
+            save_lines = [
+                r"\documentclass{article}",
+                r"\usepackage{amsmath, amssymb}",
+                r"\setlength\parindent{0pt}",
+                r"\begin{document}", 
+            ]
 
-        file = saveConfig(tet2vars, filepath)
-        return file
+            for variable_obj in variable_objs:
+                symbol = variable_obj.getSymbol()
+                symbol_tex = latex(symbol)
+
+                time_evolution_type = variable_obj.getTimeEvolutionType()
+                if time_evolution_type in ["Temporal", "Constant"]:
+                    initial_condition = variable_obj.getInitialCondition()
+                    initial_condition_tex = formatValue(initial_condition)
+                    variable_tex = f"${symbol_tex:s}(0) = {initial_condition_tex:s}$"
+                elif time_evolution_type == "Equilibrium":
+                    variable_tex = f"${symbol_tex:s}$"
+                elif time_evolution_type == "Function":
+                    variable_name = variable_obj.getName()
+                    model = variable_obj.getModel()
+                    function_obj = model.getFunctions(names=variable_name)
+                    expression = function_obj.getExpression(
+                        expanded=False, 
+                        substitute_dependents=False
+                    )
+                    expression_tex = latex(expression)
+                    variable_tex = f"${symbol_tex:s} = {expression_tex:}$"
+                
+                variable_tex += f" ({time_evolution_type:s})"
+                variable_tex += r' \\'
+
+                filestem = variable_obj.getStem()
+                save_lines.append(variable_tex)
+            save_lines.append(r"\end{document}")
+            
+            SymbolicVariables.switchMode(pre_mode)
+
+            with open(filepath, 'w') as file:
+                for line in save_lines:
+                    file.writelines(line)
+                    file.write('\n')
+
+            return file
+        elif file_extension == ".pdf":
+            tex_filepath = filepath.replace(".pdf", ".tex")
+            save_directory = dirname(filepath)
+            self.saveVariablesToFile(tex_filepath)
+            subprocess.run(["latexmk", "-pdf", f"-outdir={save_directory:s}", tex_filepath])
 
     def getDerivatives(self) -> List[Derivative]:
         """
@@ -701,7 +754,7 @@ class Model:
             equilibrium_variables = self.getVariables(
                 time_evolution_types="Equilibrium", 
                 return_type=Symbol
-            ) # list(map(Derivative.getVariable, equilibria))
+            )
         elif isinstance(names, (str, list)):
             equilibrium_variables = self.getVariables(
                 names=names,
@@ -719,12 +772,12 @@ class Model:
                 derivative_obj.getExpression(expanded=True) 
                 for derivative_obj in derivative_objs
             ]
-
+            
             bk_probs = list(symbols("pC0 pC1 pC2 pO2 pO3"))
             if set(bk_probs).issubset(set(equilibrium_variables)):
                 equilibrium_expressions.append(sum(bk_probs) - 1)
             solutions = solve(equilibrium_expressions, equilibrium_variables)
-
+            
             substitutions = {}
             if substitute_functions:
                 function_substitutions = self.getFunctionSubstitutions(
@@ -2092,11 +2145,11 @@ class SymbolicVariables:
 
 
 
-def getFunctionInfo(info: dict, model: Model = None) -> dict:
+def getFunctionInfo(contents: dict, model: Model = None) -> dict:
     """
     Get formatted dictionary of info to generate Function object.
 
-    :param info: 2/3-level dictionary of info directly from file.
+    :param contents: 2/3-level dictionary of info directly from file.
         First key is name of function.
         Second key is name of property for function.
         Value is string or 1-level dictionary, which indicates property value.
@@ -2104,13 +2157,13 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
     """
 
     # noinspection PyShadowingNames
-    def getVariables(info: dict) -> List[str]:
+    def getVariables(contents: dict) -> List[str]:
         """
         Get names of variables for function.
 
-        :param info: info for function
+        :param contents: info for function
         """
-        variable_names = info["variables"]
+        variable_names = contents["variables"]
         if isinstance(variable_names, str):
             variable_names = [variable_names]
             
@@ -2118,13 +2171,13 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
         return variable_names
 
     # noinspection PyShadowingNames
-    def getParameters(info: dict) -> List[str]:
+    def getParameters(contents: dict) -> List[str]:
         """
         Get names of parameters forfunction.
 
-        :param info: info for function
+        :param contents: info for function
         """
-        parameter_names = info["parameters"]
+        parameter_names = contents["parameters"]
         if isinstance(parameter_names, str):
             parameter_names = [parameter_names]
             
@@ -2132,22 +2185,22 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
         return parameter_names
 
     # noinspection PyShadowingNames
-    def getProperties(info: dict) -> List[str]:
+    def getProperties(contents: dict) -> List[str]:
         """
         Get properties to give function (e.g. piecewise, dependent)
 
-        :param info: info for function
+        :param contents: info for function
         """
-        return info["properties"]
+        return contents["properties"]
 
     # noinspection PyShadowingNames
-    def getArguments(info: dict) -> Dict[str, List[str]]:
+    def getArguments(contents: dict) -> Dict[str, List[str]]:
         """
         Get general arguments as string for function.
 
-        :param info: info for function
+        :param contents: info for function
         """
-        info_arguments = info["arguments"]
+        info_arguments = contents["arguments"]
 
         arguments = {}
         for specie, argument_names in info_arguments.items():
@@ -2157,38 +2210,38 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
         return arguments
 
     # noinspection PyShadowingNames
-    def getVariableName(info: dict) -> str:
+    def getVariableName(contents: dict) -> str:
         """
         Get name of associated variable for derivative.
 
-        :param info: info for function
+        :param contents: info for function
         """
-        variable_name = info["variable"]
+        variable_name = contents["variable"]
         SymbolicVariables.addVariables(names=variable_name)
         return variable_name
 
     # noinspection PyShadowingNames
-    def getChildren(info: dict) -> dict:
+    def getChildren(contents: dict) -> dict:
         """
         Get info to connect function with child.
         
-        :param info: info for function
+        :param contents: info for function
         :returns: 2-level dictionary of instance arguments for function into child.
             First key is name of child function.
             Second key is specie of instance arguments.
             Value is symbols for instance arguments.
         """
-        children_info = info["children"]
-        children_names = list(children_info.keys())
+        children_contents = contents["children"]
+        children_names = list(children_contents.keys())
         SymbolicVariables.addVariables(names=children_names)
 
         children_dict = {}
         for child_name in children_names:
-            if (child_info := children_info[child_name]) is not None:
+            if (child_contents := children_contents[child_name]) is not None:
                 children_dict[child_name] = {}
-                argument_species = child_info.keys()
+                argument_species = child_contents.keys()
                 for argument_specie in argument_species:
-                    argument_variable_names = child_info[argument_specie]
+                    argument_variable_names = child_contents[argument_specie]
                     SymbolicVariables.addVariables(names=argument_variable_names)
                     children_dict[child_name][argument_specie] = argument_variable_names
             
@@ -2197,28 +2250,28 @@ def getFunctionInfo(info: dict, model: Model = None) -> dict:
     kwargs = {}
     if model is not None:
         kwargs["model"] = model
-
-    info_keys = info.keys()
-    if "variables" in info_keys:
-        kwargs["variables"] = getVariables(info)
-    if "parameters" in info_keys:
-        kwargs["parameters"] = getParameters(info)
-    if "children" in info_keys:
-        kwargs["children"] = getChildren(info)
     
-    properties = getProperties(info)
+    contents_keys = contents.keys()
+    if "variables" in contents_keys:
+        kwargs["variables"] = getVariables(contents)
+    if "parameters" in contents_keys:
+        kwargs["parameters"] = getParameters(contents)
+    if "children" in contents_keys:
+        kwargs["children"] = getChildren(contents)
+    
+    properties = getProperties(contents)
     kwargs["properties"] = properties
     if "Dependent" in properties:
         kwargs["Dependent"] = {
-            "arguments": getArguments(info)
+            "arguments": getArguments(contents)
         }
     if "Derivative" in properties:
         kwargs["Derivative"] = {
-            "variable_name": getVariableName(info)
+            "variable_name": getVariableName(contents)
         }
     if "Piecewise" in properties:
         kwargs["Piecewise"] = {
-            "conditions": info["conditions"]
+            "conditions": contents["conditions"]
         }
     return kwargs
 
@@ -2234,8 +2287,9 @@ def generateFunctionsFromFile(filepath: str, **kwargs) -> List[Function]:
     assert isinstance(filepath, str)
 
     contents = loadConfig(filepath)
-
     filestem = Path(filepath).stem
+    function_names = contents.keys()
+
     def generateFunctionPartial(name) -> Function:
         return generateFunction(
             name,
@@ -2244,15 +2298,13 @@ def generateFunctionsFromFile(filepath: str, **kwargs) -> List[Function]:
             **kwargs
         )
     
-    function_names = contents.keys()
     function_objs = list(map(generateFunctionPartial, function_names))
-
     return function_objs
 
 
 def generateParametersFromFile(filepath: str, **kwargs) -> List[Parameter]:
     """
-    Generate all parameter from file.
+    Generate all parameters from file.
 
     :param filepath: path of file to read parameters from
     :param kwargs: additional arguments to pass into :meth:`~Function.generateParameter`
@@ -2261,8 +2313,9 @@ def generateParametersFromFile(filepath: str, **kwargs) -> List[Parameter]:
     assert isinstance(filepath, str)
 
     contents = loadConfig(filepath)
-
     filestem = Path(filepath).stem
+    parameter_names = contents.keys()
+
     def generateParameterPartial(name) -> Parameter:
         return generateParameter(
             name,
@@ -2271,10 +2324,39 @@ def generateParametersFromFile(filepath: str, **kwargs) -> List[Parameter]:
             **kwargs
         )
 
-    parameter_names = contents.keys()
     parameter_objs = list(map(generateParameterPartial, parameter_names))
-
     return parameter_objs
+
+
+def generateVariablesFromFile(
+    filepath: str, 
+    archive: str = None, 
+    **kwargs
+) -> List[Parameter]:
+    """
+    Generate all variables from file.
+
+    :param filepath: path of file to read variables from
+    :param archive: (optional) archive to load variable file from
+    :param kwargs: additional arguments to pass into :meth:`~Function.generateVariable`
+    :returns: Generated variables
+    """
+    assert isinstance(filepath, str)
+
+    contents = loadConfig(filepath, archive=archive)
+    filestem = Path(filepath).stem
+    variable_names = contents.keys()
+    
+    def generateVariablePartial(name) -> Variable:
+        return generateVariable(
+            name,
+            contents[name],
+            filestem=filestem,
+            **kwargs
+        )
+
+    variable_objs = list(map(generateVariablePartial, variable_names))
+    return variable_objs
 
 
 def getInheritance(
@@ -2308,50 +2390,93 @@ def getInheritance(
 
 
 def generateFunction(
-        name: str,
-        info: Dict[str, Union[str, dict]],
-        model: Model = None,
-        filestem: str = None
+    name: str,
+    contents: Dict[str, Union[str, dict]],
+    model: Model = None,
+    filestem: str = None
 ) -> Function:
     """
     Generate Function object.
 
     :param name: name of function to generate
-    :param info: dictionary of info needed to generate function
+    :param contents: dictionary of info needed to generate function
     :param model: :class:`~Function.Model` to add function into
     :param filestem: stem of filepath where function was loaded form, optional
     :returns: Generated function object
     """
-    kwargs = getFunctionInfo(info, model=model)
+    kwargs = getFunctionInfo(contents, model=model)
     kwargs["filestem"] = filestem
 
-    info_keys = info.keys()
-    if "form" in info_keys:
-        expression = info["form"]
-    elif "pieces" in info_keys:
-        expression = info["pieces"]
+    contents_keys = contents.keys()
+    if "form" in contents_keys:
+        expression = contents["form"]
+    elif "pieces" in contents_keys:
+        expression = contents["pieces"]
     else:
         raise ValueError("info from functions_yml file must contain either form or pieces")
 
     inheritance = getInheritance(kwargs["properties"])
     SymbolicVariables.addVariables(names=name)
-    return FunctionMaster(name, expression, inheritance=tuple(inheritance), **kwargs)
+
+    function_obj = FunctionMaster(
+        name, 
+        expression, 
+        inheritance=tuple(inheritance), 
+        **kwargs
+    )
+    return function_obj
 
 
-def generateParameter(name: str, info: Dict[str, Union[float, str]], **kwargs) -> Parameter:
+def generateParameter(
+    name: str, 
+    contents: Dict[str, Union[float, str]], 
+    **kwargs
+) -> Parameter:
     """
     Generate Parameter object.
 
-    :param name: name of function to generate
-    :param info: dictionary of info needed to generate function
+    :param name: name of parameter to generate
+    :param contents: dictionary of info needed to generate parameter
     :param kwargs: additional arguments to pass into :class:`~Function.Parameter`
-    :returns: Generated function object
+    :returns: Generated parameter object
     """
-    value = float(info["value"])
-    unit = info["unit"]
+    value = float(contents["value"])
+    unit = contents["unit"]
     quantity = value * units(unit)
     SymbolicVariables.addVariables(names=name)
-    return Parameter(name, quantity, **kwargs)
+
+    parameter_obj = Parameter(
+        name, 
+        quantity, 
+        **kwargs
+    )
+    return parameter_obj
+
+
+def generateVariable(
+    name: str,
+    contents: Dict[str, Any],
+    **kwargs
+) -> Variable:
+    """
+    Generate Variable object.
+
+    :param name: name of variable to generate
+    :param contents: dictionary of info needed to generate variable
+    :param kwargs: additional arguments to pass into :class:`~Function.Variable`
+    :returns: Generated variable object
+    """
+    time_evolution_type = contents["time_evolution_type"]
+    initial_condition = contents["initial_condition"]
+    SymbolicVariables.addVariables(names=name)
+
+    variable_obj = Variable(
+        name,
+        time_evolution_type=time_evolution_type,
+        initial_condition=initial_condition,
+        **kwargs
+    )
+    return variable_obj
 
 
 def createModel(function_ymls: Union[str, List[str]], parameter_ymls: Union[str, List[str]]) -> Model:
@@ -2400,13 +2525,13 @@ def readQuantitiesFromFiles(
 
     quantity_objects = {}
     for filepath in filepaths:
-        objects_info = loadConfig(filepath)
+        objs_contents = loadConfig(filepath)
         filestem = Path(filepath).stem
-        for name, info in objects_info.items():
+        for name, contents in objs_contents.items():
             if load_all or name in names:
                 quantity_objects[name] = generate(
                     name, 
-                    info, 
+                    contents, 
                     filestem=filestem,
                 )
     

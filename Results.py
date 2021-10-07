@@ -227,9 +227,12 @@ class Results:
         else:
             raise TypeError("name must be sp.Symbol or str")
 
-        parameter_substitutions = self.getParameterSubstitutions(index=index)
-        simplified_expression = general_expression.subs(
-            parameter_substitutions)
+        parameter_substitutions = self.getParameterSubstitutions(
+            index=index,
+            include_free=True, 
+            include_nonfree=False
+        )
+        simplified_expression = general_expression.subs(parameter_substitutions)
         return simplified_expression
 
     def getGeneralFunctionExpression(self, name: str) -> Expr:
@@ -247,7 +250,10 @@ class Results:
                 expanded=False,
                 substitute_dependents=True
             )
-            parameter_substitutions = self.getParameterSubstitutions(include_free=False)
+            parameter_substitutions = self.getParameterSubstitutions(
+                include_nonfree=True, 
+                include_free=False
+            )
             expression = expression.subs(parameter_substitutions)
             self.general_function_expressions[name] = expression
 
@@ -277,7 +283,11 @@ class Results:
         :param name: name of function where expression was derived from
         """
         parameter_substitutions = self.getParameterSubstitutions(
-            index=index, name=name)
+            index=index,
+            name=name,
+            include_nonfree=True,
+            include_free=True
+        )
         expression_sub = expression.subs(parameter_substitutions)
 
         model = self.getModel()
@@ -433,6 +443,7 @@ class Results:
                 single_results = results[quantity_names]
             except KeyError:
                 model = self.getModel()
+                
                 if quantity_names in model.getVariables(return_type=str):
                     variable_obj = model.getVariables(names=quantity_names)
                     time_evolution_type = variable_obj.getTimeEvolutionType()
@@ -441,6 +452,7 @@ class Results:
                         "Constant": self.getConstantVariableResults,
                         "Function": self.getFunctionResults,
                     }
+                    
                     # noinspection PyArgumentList
                     single_results = results_handles[time_evolution_type](
                         index,
@@ -453,7 +465,7 @@ class Results:
                     )
                 else:
                     raise ValueError("quantity_names input must correspond to either variable or function when str")
-
+                
                 # noinspection PyUnboundLocalVariable
                 self.setResults(
                     index,
@@ -667,16 +679,16 @@ class Results:
 
         path_directory = dirname(filepath)
 
-        function_filepath = join(path_directory, "Function.yml")
+        function_filepath = join(path_directory, "Function.json")
         function_file = model.saveFunctionsToFile(function_filepath)
 
-        parameter_filepath = join(path_directory, "Parameter.yml")
+        parameter_filepath = join(path_directory, "Parameter.json")
         parameter_file = model.saveParametersToFile(parameter_filepath)
 
-        time_evolution_type_filepath = join(path_directory, "TimeEvolutionType.yml")
-        time_evolution_type_file = model.saveTimeEvolutionTypesToFile(time_evolution_type_filepath)
+        variable_filepath = join(path_directory, "Variable.json")
+        variable_file = model.saveVariablesToFile(variable_filepath)
 
-        free_parameter_filepath = join(path_directory, "FreeParameter.yml")
+        free_parameter_filepath = join(path_directory, "FreeParameter.json")
         free_parameter_file = saveConfig(free_parameter_info, free_parameter_filepath)
 
         results_filepath = join(path_directory, "Results.pkl")
@@ -689,7 +701,7 @@ class Results:
             parameter_file,
             free_parameter_file,
             results_file,
-            time_evolution_type_file
+            variable_file
         ]
         
         with ZipFile(filepath, 'w') as zipfile:
