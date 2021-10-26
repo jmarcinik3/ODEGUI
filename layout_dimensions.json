@@ -249,6 +249,10 @@
         "segment_count_spin": {
           "width": 6,
           "height": 1
+        },
+        "location_combobox": {
+          "width": 6,
+          "height": 1
         }
       }
     },

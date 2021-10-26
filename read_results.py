@@ -2,7 +2,7 @@ from io import BytesIO
 from os import listdir
 from os.path import isfile, join
 from pathlib import Path
-from typing import Dict, Iterable, List, Tuple, Type, Union
+from typing import Dict, Iterable, List
 from zipfile import ZipFile
 
 import PySimpleGUI as sg
@@ -13,7 +13,7 @@ import yaml
 from pint import Quantity
 from sympy import Expr
 
-from Function import Dependent, Derivative, Function, Independent, Model, NonPiecewise, Parameter, Piecewise, Variable, \
+from Function import Function, Model, Parameter, Variable, \
     generateFunction, generateParameter, readFunctionsFromFiles, readParametersFromFiles, \
     generateVariablesFromFile as loadVariables
 from Layout.SimulationWindow import SimulationWindowRunner

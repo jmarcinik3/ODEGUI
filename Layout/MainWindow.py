@@ -1314,7 +1314,11 @@ class MainWindow(TabbedWindow):
                 [
                     "Parameters::import",
                     "Functions::import",
-                    "Time-Evolution Types::import"
+                    "Variable",
+                    [
+                        "Initial Conditions::import",
+                        "Time-Evolution Types::import"
+                    ]
                 ]
             ], [
                 "Set",
@@ -1514,6 +1518,8 @@ class MainWindowRunner(WindowRunner):
                     self.loadParametersFromFile()
                 elif event == "Functions::import":
                     self.loadFunctionsFromFile()
+                elif event == "Initial Conditions::import":
+                    self.loadInitialConditionsFromFile()
                 elif event == "Time-Evolution Types::import":
                     self.loadTimeEvolutionTypesFromFile()
                 elif "::set_time_evolution_types_to" in event:
@@ -2500,7 +2506,11 @@ class MainWindowRunner(WindowRunner):
             default_args=self.getParameterNames()
         )
 
-    def setTimeEvolutionType(self, names: Union[str, List[str]], time_evolution_type: str) -> None:
+    def setTimeEvolutionType(
+        self, 
+        names: Union[str, List[str]], 
+        time_evolution_type: str
+    ) -> None:
         """
         Set time-evolution type for a variable in window.
 
@@ -2524,6 +2534,54 @@ class MainWindowRunner(WindowRunner):
             base_method=set,
             valid_input_types=str
         )
+
+    def setInitialCondition(
+        self, 
+        name: Union[str, List[str]], 
+        initial_condition: float
+    ) -> None:
+        """
+        Set initial condition for a variable in window.
+
+        :param self: '~Layout.MainWindow.MainWindowRunner' to set initial condition in
+        :param names: name(s) of variable(s) to set initial condition for
+        :param initial_condition: initial condition to set for variable
+        """
+        assert isinstance(initial_condition, float)
+
+        time_evolution_row: TimeEvolutionRow = TimeEvolutionRow.getInstances(names=name)
+        initial_condition_field = time_evolution_row.getInitialConditionElement()
+        field_key = getKeys(initial_condition_field)
+        initial_condition_field.update(initial_condition)
+        self.getWindow().write_event_value(field_key, initial_condition)
+
+    def loadInitialConditionsFromFile(self, filepath: str = None) -> None:
+        """
+        Load and store initial conditions for variables from file.
+        
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store initial conditions in
+        :param filepath: path of file to load initial conditions from.
+            Defaults to letting user choose file.
+        """
+        if filepath is None:
+            file_types = (
+                *config_file_types,
+                ("ALL Files", "*.*"),
+            )
+            filepath = sg.PopupGetFile(
+                message="Enter Filename to Load",
+                title="Load Time-Evolution Types",
+                file_types=file_types,
+                multiple_files=False
+            )
+            if filepath is None:
+                return None
+        
+        contents = loadConfig(filepath)
+
+        for variable_name, variable_content in contents.items():
+            initial_condition = float(variable_content["initial_condition"])
+            self.setInitialCondition(variable_name, initial_condition)
 
     def loadTimeEvolutionTypesFromFile(self, filepath: str = None) -> None:
         """
@@ -2549,21 +2607,23 @@ class MainWindowRunner(WindowRunner):
                 return None
         
         contents = loadConfig(filepath)
+
         updated_variable_names = []
-        print(updated_variable_names)
-        for time_evolution_type, variable_names in contents.items():
-            self.setTimeEvolutionType(variable_names, time_evolution_type)
-            updated_variable_names.extend(variable_names)
-            print(variable_names, updated_variable_names)
+        for variable_name, variable_content in contents.items():
+            time_evolution_type = variable_content["time_evolution_type"]
+            self.setTimeEvolutionType(variable_name, time_evolution_type)
+            updated_variable_names.append(variable_name)
         window_variable_names = self.getVariableNames()
+
         for window_variable_name in window_variable_names:
-            if window_variable_name in updated_variable_names:
-                self.setIsCoreVariable(window_variable_name, True)
-            else:
-                self.setIsCoreVariable(window_variable_name, False)
+            updated = window_variable_name in updated_variable_names
+            self.setIsCoreVariable(window_variable_name, updated)
 
-
-    def loadParametersFromFile(self, filepath: str = None, choose_parameters: bool = True) -> Optional[List[Parameter]]:
+    def loadParametersFromFile(
+        self, 
+        filepath: str = None, 
+        choose_parameters: bool = True
+    ) -> Optional[List[Parameter]]:
         """
         Load and store parameter quantities from file.
         
@@ -2621,7 +2681,11 @@ class MainWindowRunner(WindowRunner):
 
         return chosen_parameters
 
-    def loadFunctionsFromFile(self, filepath: str = None, choose_functions: bool = False) -> Optional[List[Function]]:
+    def loadFunctionsFromFile(
+        self, 
+        filepath: str = None, 
+        choose_functions: bool = False
+    ) -> Optional[List[Function]]:
         """
         Load and store function objects from file.
 

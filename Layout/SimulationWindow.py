@@ -1005,7 +1005,7 @@ class ColorbarTab(Tab, StoredObject):
     @storeElement
     def getColormapInputElement(self) -> sg.InputCombo:
         """
-        Get elements that allows user to choose colormap.
+        Get element that allows user to choose colormap.
 
         :param self: :class:`~Layout.SimulationWindow.ColorbarTab` to retrieve element from
         """
@@ -1037,6 +1037,23 @@ class ColorbarTab(Tab, StoredObject):
             key="-COLORBAR SEGMENT COUNT-"
         )
 
+    @storeElement
+    def getLocationElement(self) -> sg.InputCombo:
+        """
+        Get element that allows user to choose colorbar location.
+
+        :param self: :class:`~Layout.SimulationWindow.ColorbarTab` to retrieve element from
+        """
+        locations = ("left", "right", "top", "bottom")
+
+        return sg.InputCombo(
+            values=locations,
+            default_value=locations[0],
+            tooltip="Choose colormap for colorbar.",
+            size=self.getDimensions(name="colorbar_location_combobox"),
+            key="-COLORBAR LOCATION-"
+        )
+
     def getLayout(self) -> List[List[sg.Element]]:
         """
         Get layout for tab.
@@ -1050,7 +1067,8 @@ class ColorbarTab(Tab, StoredObject):
             self.getAutoscaleElement(),
             self.getScaleFactorInputElement(),
             self.getColormapInputElement(),
-            self.getSegmentCountElement()
+            self.getSegmentCountElement(),
+            self.getLocationElement()
         ]
 
         layout = Layout(rows=header_rows)
@@ -1952,6 +1970,9 @@ class SimulationWindow(TabbedWindow):
             "colorbar_segment_count_spin": getDimensions(
                 ["simulation_window", "aesthetics_tab", "colorbar_tab", "segment_count_spin"]
             ),
+            "colorbar_location_combobox": getDimensions(
+                ["simulation_window", "aesthetics_tab", "colorbar_tab", "location_combobox"]
+            ),
             "axis_header_row_quantity_species": getDimensions(
                 ["simulation_window", "plotting_tab", "header_row", "quantity_species"]
             ),
@@ -2833,6 +2854,7 @@ class SimulationWindowRunner(WindowRunner):
 
             "colorbar_kwargs": {
                 "label": getValues(getKeys(colorbar_tab.getTitleInputElement())),
+                "location": getValues(getKeys(colorbar_tab.getLocationElement()))
             }
         }
         return aesthetics_kwargs

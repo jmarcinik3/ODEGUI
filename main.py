@@ -20,7 +20,7 @@ def main():
     """
     tex2pngFromFile("tex", "var2tex.yml")
 
-    sg.ChangeLookAndFeel("DarkGrey13")
+    sg.ChangeLookAndFeel("DarkGrey11")
     sg.SetOptions(
         element_padding=(1, 1),
         suppress_error_popups=True,
