@@ -1,0 +1,14 @@
+{
+  "Vm1": {
+    "value": -55,
+    "unit": "millivolt"
+  },
+  "Vm2": {
+    "value": -55,
+    "unit": "millivolt"
+  },
+  "Vm0t": {
+    "value": 1,
+    "unit": "second"
+  }
+}

@@ -266,9 +266,12 @@ def expression2png(name: str, expression: Expr, folder: str, filename: str, var2
 
     filepath = os.path.join(folder, filename)
 
-    new_name = name not in old_info.keys()
-    new_expression = expression_str != old_info[name]["expression"]
-    overwrite = new_name or new_expression
+    is_new_name = name not in old_info.keys()
+    if is_new_name:
+        overwrite = True
+    else:
+        is_new_expression = expression_str != old_info[name]["expression"]
+        overwrite = is_new_name or is_new_expression
 
     if overwrite:
         print(f"Overwriting {filepath:s} as {expression_str:s}")
@@ -358,4 +361,4 @@ def recursiveMethod(
         )
         return partialGet(args=default_args)
     else:
-        raise TypeError(f"args must be of type N/A, not {type(args):}")
+        raise TypeError(f"args must be of type {valid_input_types}, not {type(args):}")

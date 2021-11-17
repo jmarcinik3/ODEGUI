@@ -1,113 +1,30 @@
 {
   "Function": {
-    "Oscillating": [
-      "AVm",
-      "omegaVm",
-      "phiVm"
-    ],
-    "Vm": [
-      "Vm0",
-      "Vmout",
-      "Vmin"
-    ]
+    "Vm": ["AVm", "omegaVm", "phiVm", "Vm0", "Vm1", "Vm2", "Vm0t"]
   },
   "Refactor": {
-    "Martin": [
-      "msf",
-      "xisf",
-      "ksf",
-      "mhb",
-      "pT0"
-    ]
+    "Martin": ["msf", "xisf", "ksf", "mhb", "pT0"]
   },
   "Hair Bundle": {
-    "Xhb_M2003": [
-      "lambdaH",
-      "xsp",
-      "ksp"
-    ],
-    "Xhb_~M2018": [
-      "lambdaC",
-      "kgstot",
-      "kestot",
-      "Fmmax",
-      "Sm"
-    ],
-    "xa": [
-      "S0",
-      "S1",
-      "C0",
-      "C1",
-      "lambdaa",
-      "xes",
-      "kes"
-    ],
-    "pm": [
-      "rm",
-      "kam",
-      "kdm"
-    ],
-    "pr": [
-      "rr",
-      "kar",
-      "kdr"
-    ],
-    "pT": [
-      "dE0",
-      "tauT0"
-    ],
-    "kgs": [
-      "kgs0",
-      "kgs1",
-      "kr0",
-      "kr1",
-      "ktl"
-    ],
-    "ITCa": [
-      "Cahbin",
-      "Cahbex",
-      "ETCa",
-      "PTCa"
-    ],
-    "mutual": [
-      "gamma",
-      "N",
-      "d",
-      "xc"
-    ]
+    "Xhb_M2003": ["lambdaH", "xsp", "ksp"],
+    "Xhb_~M2018": ["lambdaC", "kgstot", "kestot", "Fmmax", "Sm"],
+    "xa": ["S0", "S1", "C0", "C1", "lambdaa", "xes", "kes"],
+    "pm": ["rm", "kam", "kdm"],
+    "pr": ["rr", "kar", "kdr"],
+    "pT": ["dE0", "tauT0"],
+    "kgs": ["kgs0", "kgs1", "kr0", "kr1", "ktl"],
+    "ITCa": ["Cahbin", "Cahbex", "ETCa", "PTCa"],
+    "mutual": ["gamma", "N", "d", "xc"]
   },
   "Soma": {
-    "Temporal": [
-      "Cm",
-      "Ksomain",
-      "Ksomaex",
-      "U",
-      "xiCa",
-      "Cvol",
-      "KS"
-    ]
+    "Temporal": ["Cm", "Ksomain", "Ksomaex", "U", "xiCa", "Cvol", "KS"]
   },
   "Current": {
-    "IT": [
-      "ET"
-    ],
-    "IT_H1988": [
-      "gTmax",
-      "GT1",
-      "ZT1",
-      "GT2",
-      "ZT2"
-    ],
-    "IT_H1986": [
-      "gTmax1"
-    ],
-    "IT_N2014": [
-      "gT1"
-    ],
-    "IL": [
-      "EL",
-      "gL"
-    ],
+    "IT": ["ET"],
+    "IT_H1988": ["gTmax", "GT1", "ZT1", "GT2", "ZT2"],
+    "IT_H1986": ["gTmax1"],
+    "IT_N2014": ["gT1"],
+    "IL": ["EL", "gL"],
     "ICa": [
       "ECa",
       "gCa1",
@@ -122,14 +39,8 @@
       "deltaCa",
       "deltatauCa"
     ],
-    "IBK_H1988": [
-      "gBK11",
-      "EBK"
-    ],
-    "IBKS_C2004": [
-      "EBKS",
-      "PBKS"
-    ],
+    "IBK_H1988": ["gBK11", "EBK"],
+    "IBKS_C2004": ["EBKS", "PBKS"],
     "IBKT_C2004": [
       "EBKT",
       "PBKT",
@@ -232,9 +143,7 @@
       "deltaA2",
       "deltatauA2"
     ],
-    "IK1_C2004": [
-      "aK1f"
-    ],
+    "IK1_C2004": ["aK1f"],
     "IK1_C2003": [
       "gK11",
       "VhalfK1",
@@ -306,14 +215,5 @@
       "dVkdO2"
     ]
   },
-  "Physical Constant": [
-    "F",
-    "qe",
-    "R",
-    "kB",
-    "T",
-    "zCa",
-    "zK",
-    "DCa"
-  ]
+  "Physical Constant": ["F", "qe", "R", "kB", "T", "zCa", "zK", "DCa"]
 }

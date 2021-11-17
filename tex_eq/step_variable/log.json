@@ -1,0 +1,1 @@
+{"Vm": {"expression": "$\\begin{cases} V_{m,0} & \\text{for}\\: t \\leq t_{V_{m,0}} \\\\V_{m,1} & \\text{otherwise} \\end{cases}$", "filename": "Vm.png"}, "Vm0_": {"expression": "$V_{m}(0)$", "filename": "Vm0_.png"}, "Vm1_": {"expression": "$V_{m,1}$", "filename": "Vm1_.png"}}

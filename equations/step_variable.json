@@ -1,0 +1,18 @@
+{
+  "Vm0_": {
+    "properties": ["Independent"],
+    "parameters": ["Vm0"],
+    "form": "Vm0"
+  },
+  "Vm1_": {
+    "properties": ["Independent"],
+    "parameters": ["Vm1"],
+    "form": "Vm1"
+  },
+  "Vm": {
+    "properties": ["Independent", "Piecewise"],
+    "variables": ["t"],
+    "pieces": ["Vm0_", "Vm1_"],
+    "conditions": ["t<=Vm0t", "t>Vm0t"]
+  }
+}

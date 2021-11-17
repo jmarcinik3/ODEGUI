@@ -4,8 +4,11 @@ omegaVm: $\omega_{V_m}$
 phiVm: $\phi_{V_m}$
 Vmin: $V_{m,in}$
 Vmout: $V_{m,out}$
-
-
+Vm1: $V_{m,1}$
+Vm2: $V_{m,2}$
+Vm0t: $t_{V_{m,0}}$
+Vm0_: $V_{m,0}$
+Vm1_: $V_{m,1}$
 
 # variables
 Xhb: $X_{hb}$
