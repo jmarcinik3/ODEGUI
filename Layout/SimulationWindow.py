@@ -170,14 +170,16 @@ def getFigure(
             axes.set(**axes_kwarg)
         except AttributeError:
             print("axes_kwarg:", axes_kwarg)
-
+    
     if 'c' in plot_type or 't' in plot_type:
+        if colormap is None:
+            colormap = "viridis"
+        if colorbar_kwargs is None:
+            colorbar_kwargs = {}
+        
         c = results['c'] / scale_factor['c']
         csize = c.size
         cshape = c.shape
-
-        if colorbar_kwargs is None:
-            colorbar_kwargs = {}
 
         if not autoscalec_on:
             vmin = c.min() if clim[0] is None else clim[0]
@@ -214,7 +216,7 @@ def getFigure(
                 norm=norm, 
                 **plot_kwargs
             )
-        elif plot_type in ["txy", "cnxy", "cxny"]:
+        elif plot_type in ["ntxy", "cnxy", "cxny"]:
             assert cshape == xshape == yshape
 
             segment_count = max(min(segment_count, cshape[-1]), 1)
@@ -248,13 +250,13 @@ def getFigure(
                     color=c_colors[line_index], 
                     **plot_kwargs
                 )
-        elif plot_type in ["tnxy", "txny"]:
-            if plot_type == "txny":
+        elif plot_type in ["ntnxy", "ntxny"]:
+            if plot_type == "ntxny":
                 assert cshape == xshape and cshape[0] == ysize
                 x_lines = x
                 y_lines = np.tile(y, (cshape[-1], 1)).T
                 line_count = ysize
-            elif plot_type == "tnxy":
+            elif plot_type == "ntnxy":
                 assert cshape == yshape and cshape[0] == xsize
                 x_lines = np.tile(x, (cshape[-1], 1)).T
                 y_lines = y
@@ -270,7 +272,7 @@ def getFigure(
         if plot_type == "xyz":
             assert xshape == yshape == zshape
             axes.plot3D(x, y, z, **plot_kwargs)
-        elif plot_type == "txyz":
+        elif plot_type == "ntxyz":
             assert cshape == xshape == yshape == zshape
 
             segment_count = max(min(segment_count, cshape[-1]), 1)
@@ -311,16 +313,16 @@ def getFigure(
                     z_lines[line_index], 
                     **plot_kwargs
                 )
-        elif plot_type in ["tnxyz", "txnyz", "txynz"]:
-            if plot_type == "tnxyz":
+        elif plot_type in ["ntnxyz", "ntxnyz", "ntxynz"]:
+            if plot_type == "ntnxyz":
                 assert cshape == yshape == zshape and yshape[0] == xsize
                 x_rots, y_rots, zs = y, z, x
                 zdir = 'x'
-            elif plot_type == "txnyz":
+            elif plot_type == "ntxnyz":
                 assert cshape == xshape == zshape and xshape[0] == ysize
                 x_rots, y_rots, zs = x, z, y
                 zdir = 'y'
-            elif plot_type == "txynz":
+            elif plot_type == "ntxynz":
                 assert cshape == xshape == yshape and xshape[0] == zsize
                 x_rots, y_rots, zs = x, y, z
                 zdir = 'z'
@@ -392,22 +394,22 @@ def getFigure(
                         color=c_color,
                         **plot_kwargs
                     )
-        elif plot_type in ["tnxnyz", "tnxynz", "txnynz"]:
-            if plot_type == "tnxnyz":
+        elif plot_type in ["ntnxnyz", "ntnxynz", "ntxnynz"]:
+            if plot_type == "ntnxnyz":
                 assert cshape[0:2] == (xsize, ysize) and cshape == zshape
                 yrot_size = xsize
                 x_rots = z
                 y_rots = np.tile(x, (cshape[2], 1)).T
                 zs, zdir = y, 'y'
                 c_rots = c
-            elif plot_type == "tnxynz":
+            elif plot_type == "ntnxynz":
                 assert cshape[0:2] == (xsize, zsize) and cshape == yshape
                 yrot_size = zsize
                 x_rots = np.transpose(y, axes=(1, 0, 2))
                 y_rots = np.tile(z, (cshape[2], 1)).T
                 zs, zdir = x, 'x'
                 c_rots = np.transpose(c, axes=(1, 0, 2))
-            elif plot_type == "txnynz":
+            elif plot_type == "ntxnynz":
                 assert cshape[0:2] == (ysize, zsize) and cshape == xshape
                 yrot_size = ysize
                 x_rots = x
@@ -417,7 +419,7 @@ def getFigure(
 
             for y_index in range(yrot_size):
                 for z_index in range(zs.size):
-                    if plot_type == "tnxnyz":
+                    if plot_type == "ntnxnyz":
                         points = np.array([y_rots[y_index], x_rots[y_index, z_index]]).T.reshape(-1, 1, 2)
                     else:
                         points = np.array([x_rots[y_index, z_index], y_rots[y_index]]).T.reshape(-1, 1, 2)
@@ -426,6 +428,16 @@ def getFigure(
                     line_collection = LineCollection(segments, cmap=colormap, norm=norm)
                     line_collection.set_array(c_rots[y_index, z_index])
                     axes.add_collection3d(line_collection, zs=zs[z_index], zdir=zdir, **plot_kwargs)
+        elif plot_type in ["nxnyz", "tnxnyz"]:
+            x_shaped, y_shaped = np.meshgrid(x, y)
+            x_shaped = x_shaped.T
+            y_shaped = y_shaped.T
+            
+            if plot_type == "nxnyz":
+                axes.plot_surface(x_shaped, y_shaped, z)
+            elif plot_type == "tnxnyz":
+                face_colors = cmap.to_rgba(c)
+                axes.plot_surface(x_shaped, y_shaped, z, facecolors=face_colors)
         elif plot_type in ["cnxnyz", "cnxynz", "cxnynz", "cnxnynz", "ncnxnyz", "ncnxynz", "ncxnynz"]:
             if plot_type == "cnxnyz":
                 assert cshape == zshape == (xsize, ysize)
@@ -1010,7 +1022,7 @@ class ColorbarTab(Tab, StoredObject):
         :param self: :class:`~Layout.SimulationWindow.ColorbarTab` to retrieve element from
         """
         cmaps = plt.colormaps()
-        default_cmap = "hsv"
+        default_cmap = "viridis"
 
         return sg.InputCombo(
             values=cmaps,
@@ -2964,11 +2976,11 @@ class SimulationWindowRunner(WindowRunner):
         return inequality_filters
 
     def updatePlot(
-            self,
-            index: Union[tuple, Tuple[int]] = None,
-            plot_quantities: Dict[str, Tuple[str, str]] = None,
-            transform_name: str = None,
-            **figure_kwargs
+        self,
+        index: Union[tuple, Tuple[int]] = None,
+        plot_quantities: Dict[str, Tuple[str, str]] = None,
+        transform_name: str = None,
+        **figure_kwargs
     ) -> Optional[Figure]:
         """
         Update window-embedded plot.
@@ -3120,30 +3132,68 @@ class SimulationWindowRunner(WindowRunner):
         except (UnboundLocalError, KeyError, IndexError, AttributeError, ValueError):
             print("data:", traceback.print_exc())
 
-        if timelike_count == 1:
+        exist_parameterlike = parameterlike_count >= 1
+        multiple_parameterlikes = parameterlike_count >= 2
+        exist_cartesian_parameterlike = is_parameterlike['x'] or is_parameterlike['y'] or is_parameterlike['z']
+        exist_condensed = condensed_count >= 1
+        multiple_condenseds = condensed_count >= 2
+        exist_timelike = timelike_count >= 1
+        multiple_timelikes = timelike_count >= 2
+        print(exist_parameterlike, multiple_parameterlikes, exist_condensed, multiple_condenseds, exist_timelike)
+        
+        
+        if is_nonelike['x'] or is_nonelike['y']:
             plot_type = ''
-        elif condensed_count >= 1 and parameterlike_count == 0:
+        elif exist_timelike and not multiple_timelikes:
             plot_type = ''
-        elif timelike_count >= 1 and condensed_count >= 1:
+        elif exist_timelike and exist_condensed:
             plot_type = ''
-        elif is_nonelike['x'] or is_nonelike['y']:
+        elif exist_condensed and not exist_parameterlike:
             plot_type = ''
         else:
             if is_parameterlike['c']:
-                plot_type = f"nc"
+                if exist_timelike:
+                    plot_type = 'nc'
+                elif exist_condensed:
+                    if multiple_parameterlikes:
+                        plot_type = 'nc'
+                    elif exist_parameterlike:
+                        plot_type = 'nt'
             elif is_condensed['c']:
-                plot_type = 'c'
+                assert exist_cartesian_parameterlike
+                if multiple_condenseds:
+                    if multiple_parameterlikes:
+                        plot_type = 't'
+                    else:
+                        plot_type = 'nt'
+                elif exist_condensed:
+                    plot_type = 'c'
             elif is_timelike['c']:
-                plot_type = 't'
+                plot_type = 'nt'
             elif is_nonelike['c']:
-                plot_type = ''
-            else:
                 plot_type = ''
 
             for axis_name in ['x', 'y', 'z']:
                 if is_parameterlike[axis_name]:
-                    plot_type += f"n{axis_name:s}"
-                elif is_condensed[axis_name] or is_timelike[axis_name]:
+                    if exist_condensed:
+                        if multiple_parameterlikes:
+                            plot_type += f"n{axis_name:s}"
+                        elif exist_parameterlike:
+                            plot_type += axis_name
+                    elif exist_timelike:
+                        plot_type += f"n{axis_name:s}"
+                elif is_condensed[axis_name]:
+                    if is_parameterlike['c']:
+                        plot_type += axis_name
+                    elif multiple_parameterlikes:
+                        plot_type += axis_name
+                    else:
+                        assert exist_parameterlike
+                        if multiple_condenseds:
+                            plot_type += axis_name
+                        else:
+                            plot_type += f"n{axis_name:s}"
+                elif is_timelike[axis_name]:
                     plot_type += axis_name
                 elif is_nonelike[axis_name]:
                     pass
