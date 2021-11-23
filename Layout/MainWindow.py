@@ -67,8 +67,10 @@ class TimeEvolutionRow(TabRow, StoredObject):
         elements = [
             self.getRowLabel(),
             self.getTimeEvolutionTypeElement(),
-            self.getInitialConditionElement(),
-            self.getInitialEquilibriumElement(),
+            sg.Column([[
+                self.getInitialConditionElement(),
+                self.getInitialEquilibriumElement()
+            ]]),
             self.getIsCoreElement()
         ]
 
@@ -624,6 +626,9 @@ class ParameterSection(Element):
         :param self: :class:`~Layout.MainWindow.ParameterSection` to retrieve layout from
         """
         header_row = self.getHeaderRow()
+        header_column = header_row.getAsColumn()
+        header_row_obj = Row(elements=header_column)
+
         collapsable_section = generateCollapsableSection(
             layout=list(map(ParameterRow.getRow, self.getParameterRows())),
             size=self.getDimensions(name="parameter_section"),
@@ -631,7 +636,7 @@ class ParameterSection(Element):
         )
 
         layout = Layout()
-        layout.addRows(rows=header_row)
+        layout.addRows(rows=header_row_obj)
         layout.addRows(rows=Row(window=self.getWindowObject(), elements=collapsable_section))
         return layout.getLayout()
 
@@ -2150,7 +2155,9 @@ class MainWindowRunner(WindowRunner):
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve type from
         :param name: name of parameter to retrieve type for
         """
-        combobox_key = getKeys(ParameterRow.getInstances(names=name).getParameterTypeElement())
+        parameter_row = ParameterRow.getInstances(names=name)
+        parameter_type_element = parameter_row.getParameterTypeElement()
+        combobox_key = getKeys(parameter_type_element)
         parameter_type = self.getValue(combobox_key)
         return parameter_type
 
