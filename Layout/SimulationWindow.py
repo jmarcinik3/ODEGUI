@@ -107,36 +107,139 @@ def getFigure(
     :param plot_kwargs: additional arguments to pass into axes plot method
     """
 
-    def getLimits(data: ndarray, axis_name: str) -> Tuple[float, float]:
+    def getLimits(data: ndarray, axis_name: str, relative_padding: float=0.05) -> Tuple[float, float]:
         """
-        Get axis limits
+        Get axis limits.
 
         :param data: data to retrieve limits for.
         :param axis_name: name of axis to check for limits in axes_kwargs
+        :param padding: proportion of space (out of full range) to leave between data and line.
+            Only called if at least one limit is not given.
         :returns: Tuple of (minimum, maximum) range for plot axis.
             Defaults to (data.min(), data.max())
         """
         try:
-            limits = list(axes_kwargs[f"{axis_name:s}lim"])
-            if limits[0] is None:
-                limits[0] = data.min()
-            if limits[1] is None:
-                limits[1] = data.max()
-            limits = tuple(limits)
+            min_limit, max_limit = list(axes_kwargs[f"{axis_name:s}lim"])
+            
+            exist_min_limit = isinstance(min_limit, float)
+            exist_max_limit = isinstance(max_limit, float)
+            
+            if exist_min_limit and exist_max_limit:
+                revised_limits = (min_limit, max_limit)
+            else:
+                revised_limits = [None, None]
+                data_min = data.min()
+                data_max = data.max()
+                data_range = data_max - data_min
+                absolute_padding = relative_padding * data_range
+                
+                revised_limits = (
+                    min_limit if exist_min_limit else data_min - absolute_padding,
+                    max_limit if exist_max_limit else data_max + absolute_padding
+                )
+            
+            revised_limits = tuple(revised_limits)
         except KeyError:
-            limits = (data.min(), data.max())
+            data_min = data.min()
+            data_max = data.max()
+            data_range = data_max - data_min
+            absolute_padding = relative_padding * data_range
+            
+            revised_limits = (data_min - absolute_padding, data_max + absolute_padding)
 
-        return limits
+        return revised_limits
 
+    def coordinates2lines(
+        x: ndarray, 
+        y: ndarray, 
+        z: ndarray=None, 
+        c: ndarray=None, 
+        cmap: str=None, 
+        norm=None,
+        segment_count: int=None
+    ) -> LineCollection:
+        """
+        Convert coordinates from x, y(, z) into collection of line segment counts for plotting.
+        x, y, z, c must be ordered to correspond to each other.
+        
+        :param x: x values of coordinates, 1D numpy array
+        :param y: y values of coordinates, 1D numpy array
+        :param z: z values of coordinates, 1D numpy array.
+            Defaults to 2D-(xy-)plane if None.
+        :param c: colors of coordinates, 1D numpy array
+        :param cmap: name of colormap corresponding to :paramref:`~Layout.SimulationWindow.getFigure.coordinates2lines.c`
+        :param norm: normalization of colormap corresponding to :paramref:`~Layout.SimulationWindow.getFigure.coordinates2lines.c`
+        :param segment_count: number of line segments to interpolate from data.
+            Defaults to all segments if None.
+        """
+        for array in [x, y, z, c]:
+            if isinstance(array, ndarray):
+                assert array.ndim == 1
+        
+        x_interpolate, y_interpolate = interpolateLines((x, y), segment_count)    
+        if isinstance(z, ndarray):
+            z_interpolate = interpolateLines(z, segment_count)
+            points = np.array([x_interpolate, y_interpolate, z_interpolate]).T.reshape(-1, 1, 3)
+            segments = np.concatenate([points[:-1], points[1:]], axis=1)
+            line_collection = Line3DCollection(segments, cmap=cmap, norm=norm)
+        elif z is None:
+            points = np.array([x_interpolate, y_interpolate]).T.reshape(-1, 1, 2)
+            segments = np.concatenate([points[:-1], points[1:]], axis=1)
+            line_collection = LineCollection(segments, cmap=cmap, norm=norm)
+        
+        if isinstance(c, ndarray):
+            c_interpolate = interpolateLines(c, segment_count)
+            line_collection.set_array(c_interpolate)
+        
+        return line_collection
+    
+    def interpolateLines(xs, segment_count=None) -> Union[ndarray, Tuple[ndarray]]:
+        """
+        Get subarray(s) of given array(s).
+        
+        :param xs: (tuple of) array(s) to interpolate
+        :param segment_count: number of segments (>0) in resultant subarray.
+            Defaults to entire array if None.
+        :returns: ndarray if xs is ndarray.
+            Tuple of ndarray if xs is tuple of ndarray.
+        """
+        if segment_count is None:
+            return xs
+        assert isinstance(segment_count, int)
+        assert segment_count >= 0
+        
+        if isinstance(xs, ndarray):
+            xsize = xs.shape[0]
+            if segment_count >= xsize:
+                return xs
+            elif segment_count < xsize:
+                index_linspace = np.linspace(0, xsize-1, segment_count+1, dtype=np.int32)
+                index_interpolate = np.round(index_linspace)
+                x_interpolate = xs[index_interpolate]
+                return x_interpolate
+        elif isinstance(xs, tuple):
+            xsize = xs[0].size
+            for x in xs:
+                assert isinstance(x, ndarray)
+                assert x.ndim == 1
+                assert x.size == xsize
+            
+            interpolateLinesPartial = partial(interpolateLines, segment_count=segment_count)
+            xs_interpolate = tuple(list(map(interpolateLinesPartial, xs)))
+            
+            return xs_interpolate
+    
     if plot_kwargs is None:
         plot_kwargs = {}
     if axes_kwargs is None:
         axes_kwargs = {}
-
-    axis_names = results.keys()
-
     if scale_factor is None:
         scale_factor = {}
+    if segment_count is not None:
+        assert isinstance(segment_count, int)
+        assert segment_count >= 0
+
+    axis_names = results.keys()
     for axis_name in axis_names:
         if axis_name not in scale_factor.keys():
             scale_factor[axis_name] = 1
@@ -202,15 +305,15 @@ def getFigure(
         free_parameter_values = tuple(inset_parameters[name]["value"] for name in inset_parameters.keys())
         inset_axes_plot(*free_parameter_values)
     
-    x_length = len(x)
     if 'z' not in plot_type:
         if plot_type in ["xy", "nxy", "xny"]:
             assert xshape == yshape
             axes.plot(x, y, **plot_kwargs)
         elif plot_type == "cnxny":
             assert cshape == (xsize, ysize)
+            c_shaped = c.T
             axes.contourf(
-                x, y, c.T, 
+                x, y, c_shaped, 
                 levels=segment_count, 
                 cmap=colormap, 
                 norm=norm, 
@@ -218,17 +321,18 @@ def getFigure(
             )
         elif plot_type in ["ntxy", "cnxy", "cxny"]:
             assert cshape == xshape == yshape
-
-            segment_count = max(min(segment_count, cshape[-1]), 1)
-            segment_length = round(x_length / segment_count)
-
-            if segment_length == 0:
+            
+            if segment_count == 0:
                 axes.scatter(x, y, color=c_colors)
-            else:
-                points = np.array([x, y]).T.reshape(-1, 1, 2)
-                segments = np.concatenate([points[:-1], points[1:]], axis=1)
-                line_collection = LineCollection(segments, cmap=colormap, norm=norm)
-                line_collection.set_array(c)
+            elif segment_count > 0:
+                line_collection = coordinates2lines(
+                    x,
+                    y,
+                    c=c,
+                    cmap=colormap,
+                    norm=norm,
+                    segment_count=segment_count
+                )
                 axes.add_collection(line_collection, **plot_kwargs)
         elif plot_type in ["ncxy", "ncxny", "ncnxy"]:
             if plot_type == "ncxy":
@@ -263,10 +367,14 @@ def getFigure(
                 line_count = xsize
 
             for line_index in range(line_count):
-                points = np.array([x_lines[line_index], y_lines[line_index]]).T.reshape(-1, 1, 2)
-                segments = np.concatenate([points[:-1], points[1:]], axis=1)
-                line_collection = LineCollection(segments, cmap=colormap, norm=norm)
-                line_collection.set_array(c[line_index])
+                line_collection = coordinates2lines(
+                    x_lines[line_index], 
+                    y_lines[line_index], 
+                    c=c[line_index], 
+                    cmap=colormap, 
+                    norm=norm,
+                    segment_count=segment_count
+                )
                 axes.add_collection(line_collection, **plot_kwargs)
     elif 'z' in plot_type:
         if plot_type == "xyz":
@@ -275,16 +383,18 @@ def getFigure(
         elif plot_type == "ntxyz":
             assert cshape == xshape == yshape == zshape
 
-            segment_count = max(min(segment_count, cshape[-1]), 1)
-            segment_length = round(x_length / segment_count)
-
-            if segment_length == 0:
+            if segment_count == 0:
                 axes.scatter3D(x, y, z, color=c_colors)
             else:
-                points = np.array([x, y, z]).T.reshape(-1, 1, 3)
-                segments = np.concatenate([points[:-1], points[1:]], axis=1)
-                line_collection = Line3DCollection(segments, cmap=colormap, norm=norm)
-                line_collection.set_array(c)
+                line_collection = coordinates2lines(
+                    x, 
+                    y, 
+                    z, 
+                    c=c,
+                    cmap=colormap,
+                    norm=norm,
+                    segment_count=segment_count
+                )
                 axes.add_collection(line_collection, **plot_kwargs)
         elif plot_type in ["nxyz", "xnyz", "xynz"]:
             if plot_type == "nxyz":
@@ -328,10 +438,14 @@ def getFigure(
                 zdir = 'z'
 
             for line_index in range(zs.size):
-                points = np.array([x_rots[line_index], y_rots[line_index]]).T.reshape(-1, 1, 2)
-                segments = np.concatenate([points[:-1], points[1:]], axis=1)
-                line_collection = LineCollection(segments, cmap=colormap, norm=norm)
-                line_collection.set_array(c[line_index])
+                line_collection = coordinates2lines(
+                    x_rots[line_index], 
+                    y_rots[line_index], 
+                    c=c[line_index], 
+                    cmap=colormap, 
+                    norm=norm,
+                    segment_count=segment_count
+                )
                 axes.add_collection3d(
                     line_collection, 
                     zs=zs[line_index], 
@@ -420,14 +534,27 @@ def getFigure(
             for y_index in range(yrot_size):
                 for z_index in range(zs.size):
                     if plot_type == "ntnxnyz":
-                        points = np.array([y_rots[y_index], x_rots[y_index, z_index]]).T.reshape(-1, 1, 2)
-                    else:
-                        points = np.array([x_rots[y_index, z_index], y_rots[y_index]]).T.reshape(-1, 1, 2)
-                    segments = np.concatenate([points[:-1], points[1:]], axis=1)
-
-                    line_collection = LineCollection(segments, cmap=colormap, norm=norm)
-                    line_collection.set_array(c_rots[y_index, z_index])
-                    axes.add_collection3d(line_collection, zs=zs[z_index], zdir=zdir, **plot_kwargs)
+                        x_shaped = y_rots[y_index]
+                        y_shaped = x_rots[y_index, z_index]
+                    elif plot_type in ["ntnxynz", "ntxnynz"]:
+                        x_shaped = x_rots[y_index, z_index]
+                        y_shaped = y_rots[y_index]
+                    c_shaped = c_rots[y_index, z_index]
+                    
+                    line_collection = coordinates2lines(
+                        x_shaped,
+                        y_shaped,
+                        c=c_shaped,
+                        cmap=colormap,
+                        norm=norm,
+                        segment_count=segment_count
+                    )
+                    axes.add_collection3d(
+                        line_collection, 
+                        zs=zs[z_index], 
+                        zdir=zdir, 
+                        **plot_kwargs
+                    )
         elif plot_type in ["nxnyz", "tnxnyz"]:
             x_shaped, y_shaped = np.meshgrid(x, y)
             x_shaped = x_shaped.T
@@ -436,9 +563,13 @@ def getFigure(
             if plot_type == "nxnyz":
                 axes.plot_surface(x_shaped, y_shaped, z)
             elif plot_type == "tnxnyz":
-                face_colors = cmap.to_rgba(c)
-                axes.plot_surface(x_shaped, y_shaped, z, facecolors=face_colors)
-        elif plot_type in ["cnxnyz", "cnxynz", "cxnynz", "cnxnynz", "ncnxnyz", "ncnxynz", "ncxnynz"]:
+                axes.plot_surface(
+                    x_shaped, 
+                    y_shaped, 
+                    z,
+                    facecolors=c_colors
+                )
+        elif plot_type in ["cnxnyz", "cnxynz", "cxnynz", "cnxnynz"]:
             if plot_type == "cnxnyz":
                 assert cshape == zshape == (xsize, ysize)
                 c_shaped = c.reshape(csize)
@@ -463,27 +594,41 @@ def getFigure(
                 x_shaped = np.transpose(np.tile(x, (ysize, zsize, 1)), axes=(2, 0, 1))
                 y_shaped = np.transpose(np.tile(y, (zsize, xsize, 1)), axes=(1, 2, 0))
                 z_shaped = np.tile(z, (xsize, ysize, 1))
-            elif plot_type == "ncnxnyz":
+
+            axes.scatter3D(
+                x_shaped, 
+                y_shaped, 
+                z_shaped, 
+                color=cmap.to_rgba(c_shaped)
+            )
+        elif plot_type in ["ncnxnyz", "ncnxynz", "ncxnynz"]:
+            if plot_type == "ncnxnyz":
                 assert zshape == (csize, xsize, ysize)
-                c_shaped = np.transpose(np.tile(c, (xsize, ysize, 1)), axes=(2, 0, 1)).reshape(zsize)
+                #c_shaped = np.transpose(np.tile(c, (xsize, ysize, 1)), axes=(2, 0, 1)).reshape(zshape)
                 x_shaped = np.transpose(np.tile(x, (ysize, csize, 1)), axes=(1, 2, 0))
                 y_shaped = np.tile(y, (csize, xsize, 1))
                 z_shaped = z
             elif plot_type == "ncnxynz":
                 assert yshape == (csize, xsize, zsize)
-                c_shaped = np.transpose(np.tile(c, (xsize, zsize, 1)), axes=(2, 0, 1)).reshape(ysize)
+                #c_shaped = np.transpose(np.tile(c, (xsize, zsize, 1)), axes=(2, 0, 1)).reshape(ysize)
                 x_shaped = np.transpose(np.tile(x, (zsize, csize, 1)), axes=(1, 2, 0))
                 y_shaped = y
                 z_shaped = np.tile(z, (csize, xsize, 1))
             elif plot_type == "ncxnynz":
                 assert xshape == (csize, ysize, zsize)
-                c_shaped = np.transpose(np.tile(c, (ysize, zsize, 1)), axes=(2, 0, 1)).reshape(xsize)
+                #c_shaped = np.transpose(np.tile(c, (ysize, zsize, 1)), axes=(2, 0, 1)).reshape(xsize)
                 x_shaped = x
                 y_shaped = np.transpose(np.tile(y, (zsize, csize, 1)), axes=(1, 2, 0))
                 z_shaped = np.tile(z, (csize, ysize, 1))
 
-            axes.scatter3D(x_shaped, y_shaped, z_shaped, color=cmap.to_rgba(c_shaped))
-
+            for c_index in range(csize):
+                axes.plot_wireframe(
+                    x_shaped[c_index],
+                    y_shaped[c_index],
+                    z[c_index],
+                    color=c_colors[c_index]
+                )
+            
         axes.set_xlim3d(*axes_kwargs["xlim"])
         axes.set_ylim3d(*axes_kwargs["ylim"])
         axes.set_zlim3d(*axes_kwargs["zlim"])
@@ -2643,7 +2788,8 @@ class SimulationWindowRunner(WindowRunner):
             title=title,
             orientation="horizontal",
             current_value=current_value,
-            max_value=max_value
+            max_value=max_value,
+            keep_on_top=True
         )
 
     def runSimulation(
@@ -3139,8 +3285,6 @@ class SimulationWindowRunner(WindowRunner):
         multiple_condenseds = condensed_count >= 2
         exist_timelike = timelike_count >= 1
         multiple_timelikes = timelike_count >= 2
-        print(exist_parameterlike, multiple_parameterlikes, exist_condensed, multiple_condenseds, exist_timelike)
-        
         
         if is_nonelike['x'] or is_nonelike['y']:
             plot_type = ''
@@ -3355,13 +3499,14 @@ class SimulationWindowRunner(WindowRunner):
             model = self.getModel()
             model.saveVariablesToFile(filename)
 
-    def saveFigure(self, name: str = None) -> None:
+    def saveFigure(self, name: str = None, dpi: int=300) -> None:
         """
         Save displayed figure as image file if name is None.
         Save animation of figures while sweeping over a free parameter if name is str.
         
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve figure from
         :param name: name of parameter to loop over for GIF
+        :param dpi: DPI to save figure as
         """
         if name is None:
             figure = self.getFigure()
@@ -3381,7 +3526,7 @@ class SimulationWindowRunner(WindowRunner):
 
             if isinstance(filepath, str):
                 try:
-                    figure.savefig(filepath)
+                    figure.savefig(filepath, dpi=dpi)
                 except OSError:
                     sg.PopupError(f"cannot save figure as {filepath:s}")
         elif isinstance(name, str):
@@ -3428,7 +3573,8 @@ class SimulationWindowRunner(WindowRunner):
                             figure = self.updatePlot(index=tuple(data_index), inset_parameters=inset_parameters)
 
                             png_filepath = join(save_directory, f"{name:s}_{image_index:d}.png")
-                            figure.savefig(png_filepath)
+                            figure.savefig(png_filepath, dpi=dpi)
+                            
                             writer.append_data(imageio.imread(png_filepath))
                             zipfile.write(png_filepath, basename(png_filepath))
                             os.remove(png_filepath)
