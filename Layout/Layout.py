@@ -34,6 +34,36 @@ def generateEmptySpace(layout: List[List[sg.Element]]) -> sg.pin:
     return sg.pin(sg.Column(layout, visible=False, expand_x=True), expand_x=True)
 
 
+def rowsToColumnsLayout(row_objs: Iterable[Row]):
+    """
+    Align rows by column.
+    E.g. first items of each row are aligned in same column.
+
+    :param row_objs: rows to align by column. Each row must have equal number of elements.
+    """
+    rows = list(map(Row.getRow, row_objs))
+    row_count = len(rows)
+
+    if row_count == 0:
+        layout = [[]]
+    elif row_count >= 1:
+        row_length = len(rows[0])
+        for row in rows:
+            print(len(row), row_length, getKeys(row))
+            assert len(row) == row_length
+
+        columns = [[] for _ in range(row_length)]
+
+        for row in rows:
+            for index, element in enumerate(row):
+                columns[index].append([element])
+
+        layout = [
+            list(map(sg.Column, columns))
+        ]
+    return layout 
+
+
 # noinspection PyPep8Naming
 def storeElement(instantiateElement):
     def wrapper(self, *args, **kwargs):
@@ -220,6 +250,16 @@ class Row:
         """
         return self.window
 
+    def getAsColumn(self) -> sg.Column:
+        """
+        Get elements in rows as single :class:`~PySimpleGUI.Column` object.
+
+        :param self: :class:`~Layout.Row.Row` to retrieve object from
+        """
+        layout = self.getLayout()
+        column = sg.Column(layout)
+        return column
+
 
 class Layout:
     """
@@ -276,9 +316,13 @@ class Layout:
 
         :param self: :class:`~Layout.Layout.Layout` to retrieve layout from
         """
-        layout = [[]]
-        for row in self.getRows():
-            layout += row.getLayout()
+        try:
+            assert False
+            layout = rowsToColumnsLayout(self.getRows())
+        except AssertionError:
+            layout = [[]]
+            for row_obj in self.getRows():
+                layout += row_obj.getLayout()
         return layout
 
 
