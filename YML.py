@@ -86,6 +86,9 @@ def loadConfig(filepath: str, archive: ZipFile = None) -> Union[dict, list]:
 
     :param filepath: path of file to load contents from.
         Must be relative to *.zip file if :paramref:`~YML.loadConfig.archive` is given.
+    :param archive: zip file to load file from
+
+        
     """
     assert isinstance(filepath, str)
 
