@@ -604,30 +604,33 @@ def getFigure(
         elif plot_type in ["ncnxnyz", "ncnxynz", "ncxnynz"]:
             if plot_type == "ncnxnyz":
                 assert zshape == (csize, xsize, ysize)
-                #c_shaped = np.transpose(np.tile(c, (xsize, ysize, 1)), axes=(2, 0, 1)).reshape(zshape)
                 x_shaped = np.transpose(np.tile(x, (ysize, csize, 1)), axes=(1, 2, 0))
                 y_shaped = np.tile(y, (csize, xsize, 1))
                 z_shaped = z
             elif plot_type == "ncnxynz":
                 assert yshape == (csize, xsize, zsize)
-                #c_shaped = np.transpose(np.tile(c, (xsize, zsize, 1)), axes=(2, 0, 1)).reshape(ysize)
                 x_shaped = np.transpose(np.tile(x, (zsize, csize, 1)), axes=(1, 2, 0))
                 y_shaped = y
                 z_shaped = np.tile(z, (csize, xsize, 1))
             elif plot_type == "ncxnynz":
                 assert xshape == (csize, ysize, zsize)
-                #c_shaped = np.transpose(np.tile(c, (ysize, zsize, 1)), axes=(2, 0, 1)).reshape(xsize)
                 x_shaped = x
                 y_shaped = np.transpose(np.tile(y, (zsize, csize, 1)), axes=(1, 2, 0))
                 z_shaped = np.tile(z, (csize, ysize, 1))
 
             for c_index in range(csize):
-                axes.plot_wireframe(
+                axes.scatter3D(
+                    x_shaped[c_index],
+                    y_shaped[c_index],
+                    z_shaped[c_index],
+                    color=c_colors[c_index]
+                )
+                """axes.plot_wireframe(
                     x_shaped[c_index],
                     y_shaped[c_index],
                     z[c_index],
                     color=c_colors[c_index]
-                )
+                )"""
             
         axes.set_xlim3d(*axes_kwargs["xlim"])
         axes.set_ylim3d(*axes_kwargs["ylim"])
@@ -3346,7 +3349,7 @@ class SimulationWindowRunner(WindowRunner):
             print(plot_type, {key: value.shape for key, value in results.items()})
             if plot_type != '':
                 figure = self.getFigure(results, plot_type=plot_type, **figure_kwargs)
-            self.updateFigureCanvas(figure)
+                self.updateFigureCanvas(figure)
             return figure
         except UnboundLocalError:
             print("todo plots:", plot_quantities, traceback.print_exc())
