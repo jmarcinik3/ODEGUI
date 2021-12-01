@@ -4,6 +4,7 @@ from functools import partial
 from os.path import dirname, join
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from zipfile import ZipFile
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
@@ -1317,6 +1318,7 @@ class MainWindow(TabbedWindow):
             [
                 "Import",
                 [
+                    "Model::import",
                     "Parameters::import",
                     "Functions::import",
                     "Variable",
@@ -1519,7 +1521,9 @@ class MainWindowRunner(WindowRunner):
             menu_value = self.getValue(toolbar_menu_key)
 
             if menu_value is not None:
-                if event == "Parameters::import":
+                if event == "Model::import":
+                    self.loadModelFromFile()
+                elif event == "Parameters::import":
                     self.loadParametersFromFile()
                 elif event == "Functions::import":
                     self.loadFunctionsFromFile()
@@ -2562,35 +2566,46 @@ class MainWindowRunner(WindowRunner):
         initial_condition_field.update(initial_condition)
         self.getWindow().write_event_value(field_key, initial_condition)
 
-    def loadInitialConditionsFromFile(self, filepath: str = None) -> None:
+    def loadInitialConditionsFromFile(
+        self, 
+        filepath: str = None,
+        contents: dict = None
+    ) -> None:
         """
         Load and store initial conditions for variables from file.
         
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store initial conditions in
         :param filepath: path of file to load initial conditions from.
             Defaults to letting user choose file.
+            Only referenced if :paramref:`~Layout.MainWindow.loadInitialConditionsFromFile.contents` is None.
+        :param contents: dictionary of contents for variables, preloaded from file
         """
-        if filepath is None:
-            file_types = (
-                *config_file_types,
-                ("ALL Files", "*.*"),
-            )
-            filepath = sg.PopupGetFile(
-                message="Enter Filename to Load",
-                title="Load Time-Evolution Types",
-                file_types=file_types,
-                multiple_files=False
-            )
+        if contents is None:
             if filepath is None:
-                return None
-        
-        contents = loadConfig(filepath)
+                file_types = (
+                    *config_file_types,
+                    ("ALL Files", "*.*"),
+                )
+                filepath = sg.PopupGetFile(
+                    message="Enter Filename to Load",
+                    title="Load Time-Evolution Types",
+                    file_types=file_types,
+                    multiple_files=False
+                )
+                if filepath is None:
+                    return None
+            
+            contents = loadConfig(filepath)
 
         for variable_name, variable_content in contents.items():
             initial_condition = float(variable_content["initial_condition"])
             self.setInitialCondition(variable_name, initial_condition)
 
-    def loadTimeEvolutionTypesFromFile(self, filepath: str = None) -> None:
+    def loadTimeEvolutionTypesFromFile(
+        self, 
+        filepath: str = None,
+        contents: dict = None
+    ) -> None:
         """
         Load and store time-evolution types from file.
         Changes loaded variables to core and non-loaded variables to non-core.
@@ -2598,22 +2613,25 @@ class MainWindowRunner(WindowRunner):
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store time evolutions in
         :param filepath: path of file to load time evolutions from.
             Defaults to letting user choose file.
+            Only referenced if :paramref:`~Layout.MainWindow.loadTimeEvolutionTypesFromFile.contents` is None.
+        :param contents: dictionary of contents for variables, preloaded from file
         """
-        if filepath is None:
-            file_types = (
-                *config_file_types,
-                ("ALL Files", "*.*"),
-            )
-            filepath = sg.PopupGetFile(
-                message="Enter Filename to Load",
-                title="Load Time-Evolution Types",
-                file_types=file_types,
-                multiple_files=False
-            )
+        if contents is None:
             if filepath is None:
-                return None
-        
-        contents = loadConfig(filepath)
+                file_types = (
+                    *config_file_types,
+                    ("ALL Files", "*.*"),
+                )
+                filepath = sg.PopupGetFile(
+                    message="Enter Filename to Load",
+                    title="Load Time-Evolution Types",
+                    file_types=file_types,
+                    multiple_files=False
+                )
+                if filepath is None:
+                    return None
+            
+            contents = loadConfig(filepath)
 
         updated_variable_names = []
         for variable_name, variable_content in contents.items():
@@ -2629,7 +2647,8 @@ class MainWindowRunner(WindowRunner):
     def loadParametersFromFile(
         self, 
         filepath: str = None, 
-        choose_parameters: bool = True
+        choose_parameters: bool = True,
+        contents: dict = None
     ) -> Optional[List[Parameter]]:
         """
         Load and store parameter quantities from file.
@@ -2637,28 +2656,32 @@ class MainWindowRunner(WindowRunner):
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store quantities in
         :param filepath: path of file to load parameters from.
             Defaults to letting user choose file.
+            Only referenced if :paramref:`~Layout.MainWindow.loadParametersFromFile.contents` is None.
+        :param contents: dictionary of contents for parameters, preloaded from file
         :param choose_parameters: set True to allow user to choose which parameters to actually load.
             Set False to automatically load all parameters from file.
         :returns: parameter objects for chosen parameters
         """
-        if filepath is None:
-            file_types = (
-                *config_file_types,
-                ("ALL Files", "*.*"),
-            )
-            filepath = sg.PopupGetFile(
-                message="Enter Filename to Load",
-                title="Load Parameters",
-                file_types=file_types,
-                multiple_files=False
-            )
+        if contents is None:
             if filepath is None:
-                return None
+                file_types = (
+                    *config_file_types,
+                    ("ALL Files", "*.*"),
+                )
+                filepath = sg.PopupGetFile(
+                    message="Enter Filename to Load",
+                    title="Load Parameters",
+                    file_types=file_types,
+                    multiple_files=False
+                )
+                if filepath is None:
+                    return None
 
-        info = loadConfig(filepath)
+            contents = loadConfig(filepath)
+        
         filestems = self.getParameterStems()
         loaded_parameters = []
-        for key, value in info.items():
+        for key, value in contents.items():
             if key in filestems:
                 if isinstance(value, Iterable):
                     path_from_stem = self.getPathsFromParameterStems(key)
@@ -2691,7 +2714,8 @@ class MainWindowRunner(WindowRunner):
     def loadFunctionsFromFile(
         self, 
         filepath: str = None, 
-        choose_functions: bool = False
+        choose_functions: bool = False,
+        contents: dict = None
     ) -> Optional[List[Function]]:
         """
         Load and store function objects from file.
@@ -2699,28 +2723,32 @@ class MainWindowRunner(WindowRunner):
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store objects in
         :param filepath: path of file to load functions from.
             Defaults to letting user choose file.
+            Only referenced if :paramref:`~Layout.MainWindow.loadFunctionsFromFile.contents` is None.
+        :param contents: dictionary of contents for functions, preloaded from file
         :param choose_functions: set True to allow user to choose which functions to actually load.
             Set False to automatically load all functions from file.
         :returns: function objects for chosen functions
         """
-        if filepath is None:
-            file_types = (
-                *config_file_types, 
-                ("ALL Files", "*.*"),
-            )
-            filepath = sg.PopupGetFile(
-                message="Enter Filename to Load",
-                title="Load Function",
-                file_types=file_types,
-                multiple_files=False
-            )
+        if contents is None:
             if filepath is None:
-                return None
+                file_types = (
+                    *config_file_types, 
+                    ("ALL Files", "*.*"),
+                )
+                filepath = sg.PopupGetFile(
+                    message="Enter Filename to Load",
+                    title="Load Function",
+                    file_types=file_types,
+                    multiple_files=False
+                )
+                if filepath is None:
+                    return None
 
-        info = loadConfig(filepath)
+            contents = loadConfig(filepath)
+            
         filestems = self.getFunctionStems()
         loaded_functions = []
-        for key, value in info.items():
+        for key, value in contents.items():
             if key in filestems:
                 if isinstance(value, Iterable):
                     path_from_stem = self.getPathsFromFunctionStems(key)
@@ -2748,6 +2776,34 @@ class MainWindowRunner(WindowRunner):
 
         return chosen_functions
 
+    def loadModelFromFile(
+        self,
+        filepath: str = None
+    ):
+        if filepath is None:
+            file_types = (
+                ("ZIP File", "*.zip"), 
+                ("ALL Files", "*.*"),
+            )
+            filepath = sg.PopupGetFile(
+                message="Enter Filename to Load",
+                title="Load Function",
+                file_types=file_types,
+                multiple_files=False
+            )
+            if filepath is None:
+                return None
+        
+        archive = ZipFile(filepath, 'r')
+        variable_contents = loadConfig("Variable.json", archive=archive)
+        parameter_contents = loadConfig("Parameter.json", archive=archive)
+        function_contents = loadConfig("Function.json", archive=archive)
+        
+        self.loadTimeEvolutionTypesFromFile(contents=variable_contents)
+        self.loadInitialConditionsFromFile(contents=variable_contents)
+        self.loadParametersFromFile(contents=parameter_contents)
+        self.loadFunctionsFromFile(contents=function_contents)
+    
     def getFreeParameterValues(self) -> Tuple[str, Dict[str, Tuple[float, float, int, Quantity]]]:
         """
         Open window allowing user to set minimum, maximum, and step count for each selected free parameter.
