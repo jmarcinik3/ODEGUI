@@ -995,7 +995,7 @@ class SimulationTab(Tab):
         """
         text = "Run Simulation"
 
-        return sg.Button(
+        return sg.Submit(
             button_text=text,
             key=f"-{text.upper():s}-"
         )
@@ -1517,7 +1517,7 @@ class PlottingTab(Tab):
 
         :param self: :class:`~Layout.SimulationWindow.PlottingTab` to retrieve element from
         """
-        transform_types = ["None", "Fourier"]
+        transform_types = ["None", "Fourier", "Autocorrelation"]
 
         return sg.InputCombo(
             values=transform_types,
@@ -1896,8 +1896,7 @@ class FrequencyTab(Tab, StoredObject):
             "Separation of Maxima",
             "Separation of Minima",
             "Separation of Extrema",
-            "Separation of Fourier Maxima",
-            "Argument of Autocorrelation Maximum"
+            "Separation of Autocorrelation Maxima"
         ]
         
         return sg.InputCombo(

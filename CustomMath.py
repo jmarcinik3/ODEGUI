@@ -14,15 +14,12 @@ def oscillationFrequency(
     Calculate oscillation frequency for array.
 
     :param data: array to calculate frequency for
-    :param times: array of times corresponding to :paramref:`~CustomMath.oscillationFrequency`
+    :param times: array of times corresponding to :paramref:`~CustomMath.oscillationFrequency.data`
     :param calculation_method: method used to calculate frequencies.
         "maxima_separation" uses peak-to-peak separation of waveform.
         "minima_separation" uses trough-to-trough separation of waveform.
         "extrema_separation" uses peaks and troughs separation of waveform.
-        "maxima_fourier_[n]" uses peak-to-peak separation of Fourier transform (i.e. separation of harmonics).
-        This method uses separations for the first n maxima.
-        "autocorrelation" uses autocorrelation of waveform.
-        This method uses the argument of the first local maximum, excluding zero.
+        "autocorrelation" uses peak-to-peak separation for autocorrelation of waveform.
     :param condensing_method: method used to "average" frequencies.
         "average" uses arithmetic mean of frequencies.
         "maximum" uses maximum of frequencies.
@@ -32,8 +29,35 @@ def oscillationFrequency(
     """
     calculation_method = calculation_method.lower()
     condensing_method = condensing_method.lower()
+    
+    if "autocorrelation" in calculation_method:
+        results_count = data.size
+        autocorrelation = signal.correlate(
+            data,
+            data,
+            mode="same"
+        )[results_count // 2:]
+        lags = signal.correlation_lags(
+            results_count,
+            results_count,
+            mode="same"
+        )[results_count // 2:]
 
-    if "separation" in calculation_method:
+        argrelmax_correlation = signal.argrelmax(autocorrelation)[0]
+
+        if argrelmax_correlation.size >= 1:
+            argrelmax_lags = lags[argrelmax_correlation]
+            delta_lags = argrelmax_lags[1:] - argrelmax_lags[:-1]
+            delta_time = times[1] - times[0]
+            frequencies = 1 / (delta_lags * delta_time)
+            
+            fourier_temp = fourierTransform(autocorrelation)
+            fourier_frequencies = fourierFrequencies(times)
+            argrelmax_fourier = signal.argrelmax(fourier_temp)
+            relmax_frequencies = fourier_frequencies[argrelmax_fourier]
+        else:
+            frequencies = np.array([])
+    elif "separation" in calculation_method:
         if "max" in calculation_method or "min" in calculation_method:
             def time_to_frequency(initial_time: float, final_time: float) -> float:
                 return 1 / (final_time - initial_time)
@@ -50,65 +74,28 @@ def oscillationFrequency(
         if "min" in calculation_method or "extrema" in calculation_method:
             minima_indicies = signal.find_peaks(-data)[0]
             extrema_indicies = np.append(extrema_indicies, minima_indicies)
+        extrema_indicies.sort()
+        
         extrema_times = times[extrema_indicies]
-        frequencies = time_to_frequency(
-            extrema_times[0:-1], extrema_times[1:])
-    elif "max" in calculation_method and "fourier" in calculation_method:
-        harmonic_count = int(calculation_method.split("_")[-1])
-        time_count = times.size
-        time_resolution = (times[-1] - times[0]) / (time_count - 1)
-        fourier_results, frequencies = abs(fft.rfft(data)), fft.rfftfreq(time_count, time_resolution)
-
-        maxima_indicies = signal.find_peaks(fourier_results)[0]
-        if maxima_indicies.size >= 1:
-            harmonic_frequencies = frequencies[maxima_indicies]
-            harmonic_frequencies = np.insert(harmonic_frequencies, 0, 0)
-            n_harmonic_frequencies = harmonic_frequencies[:harmonic_count]
-            frequencies = n_harmonic_frequencies[1:] - n_harmonic_frequencies[0:-1]
-        else:
-            frequencies = np.array([])
-    elif "autocorrelation" in calculation_method:
-        results_count = data.size
-        correlation = signal.correlate(
-            data,
-            data,
-            mode="same"
-        )[results_count // 2:]
-        lags = signal.correlation_lags(
-            results_count,
-            results_count,
-            mode="same"
-        )[results_count // 2:]
-
-        argrelmax_correlation = signal.argrelmax(correlation)[0]
-        argrelmax_count = argrelmax_correlation.size
-
-        if argrelmax_count >= 1:
-            lag = lags[argrelmax_correlation][0]
-            delta_time = times[1] - times[0]
-            frequency = 1 / (lag * delta_time)
-        else:
-            frequency = 0
+        frequencies = time_to_frequency(extrema_times[0:-1], extrema_times[1:]) 
     else:
         raise ValueError("invalid calculation method")
 
-    if not "autocorrelation" in calculation_method:
-        frequency_count = frequencies.size
-        if frequency_count >= 1:
-            if condensing_method == "average":
-                frequency = np.mean(frequencies)
-            elif condensing_method == "maximum":
-                frequency = np.amax(frequencies)
-            elif condensing_method == "minimum":
-                frequency = np.amin(frequencies)
-            elif condensing_method == "initial":
-                frequency = frequencies[0]
-            elif condensing_method == "final":
-                frequency = frequencies[-1]
-            else:
-                raise ValueError("invalid condensing method")
+    if frequencies.size >= 1:
+        if condensing_method == "average":
+            frequency = np.mean(frequencies)
+        elif condensing_method == "maximum":
+            frequency = np.amax(frequencies)
+        elif condensing_method == "minimum":
+            frequency = np.amin(frequencies)
+        elif condensing_method == "initial":
+            frequency = frequencies[0]
+        elif condensing_method == "final":
+            frequency = frequencies[-1]
         else:
-            frequency = 0
+            raise ValueError("invalid condensing method")
+    else:
+        frequency = 0
     
     return frequency
 
@@ -156,12 +143,46 @@ def fourierFrequencies(times: ndarray) -> ndarray:
     """
     Calculate Fourier frequencies from times.
 
-    :param times: array of times to calculate frequencies for
+    :param times: array of times to calculate frequencies from
     """
-    N = times.size
+    times_count = times.size
 
-    initial_time, final_time = times[0], times[-1]
-    time_resolution = (final_time - initial_time) / (N - 1)
-    frequencies = fft.rfftfreq(N, time_resolution)
+    initial_time = times[0]
+    final_time = times[-1]
+    time_resolution = (final_time - initial_time) / (times_count - 1)
+    frequencies = fft.rfftfreq(times_count, time_resolution)
 
     return frequencies
+
+
+def correlationTransform(data: ndarray) -> ndarray:
+    """
+    Get autocorrelation function of given data.
+    
+    :param data: array for function to retrieve autocorrelation from
+    """
+    data_count = data.size
+    correlation = signal.correlate(
+        data,
+        data,
+        mode="same"
+    )[data_count // 2:]
+    
+    return correlation
+
+
+def correlationLags(times: ndarray) -> ndarray:
+    """
+    Get lag times association with autocorrelation function.
+    
+    :param times: array of times to retrieve lag times from
+    """
+    times_count = times.size
+    """lags = signal.correlation_lags(
+        times_count,
+        times_count,
+        mode="same"
+    )[times_count // 2:]"""
+    
+    lag_times = times[:times_count // 2] - times[0]
+    return lag_times
