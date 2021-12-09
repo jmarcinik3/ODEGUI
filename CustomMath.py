@@ -32,29 +32,20 @@ def oscillationFrequency(
     
     if "autocorrelation" in calculation_method:
         results_count = data.size
-        autocorrelation = signal.correlate(
-            data,
-            data,
-            mode="same"
-        )[results_count // 2:]
-        lags = signal.correlation_lags(
-            results_count,
-            results_count,
-            mode="same"
-        )[results_count // 2:]
+        autocorrelation = correlationTransform(data)
+        lags = correlationLags(times)
 
         argrelmax_correlation = signal.argrelmax(autocorrelation)[0]
 
         if argrelmax_correlation.size >= 1:
             argrelmax_lags = lags[argrelmax_correlation]
             delta_lags = argrelmax_lags[1:] - argrelmax_lags[:-1]
-            delta_time = times[1] - times[0]
-            frequencies = 1 / (delta_lags * delta_time)
+            frequencies = 1 / delta_lags
             
-            fourier_temp = fourierTransform(autocorrelation)
+            """fourier_temp = fourierTransform(autocorrelation)
             fourier_frequencies = fourierFrequencies(times)
             argrelmax_fourier = signal.argrelmax(fourier_temp)
-            relmax_frequencies = fourier_frequencies[argrelmax_fourier]
+            relmax_frequencies = fourier_frequencies[argrelmax_fourier]"""
         else:
             frequencies = np.array([])
     elif "separation" in calculation_method:

@@ -1,4 +1,4 @@
-from CustomMath import fourierFrequencies, fourierTransform, holderMean, oscillationFrequency
+from CustomMath import correlationLags, correlationTransform, fourierFrequencies, fourierTransform, holderMean, oscillationFrequency
 import itertools
 from os import remove
 from os.path import basename, dirname, join
@@ -493,15 +493,7 @@ class Results:
                         )
 
                     single_results = single_results[filter_intersection]
-
-            if transform_name != "None":
-                if transform_name == "Fourier":
-                    is_time = quantity_names == 't'
-                    fourierFunction = fourierFrequencies if is_time else fourierTransform
-                    return fourierFunction(single_results)
-                else:
-                    raise ValueError(f"invalid transform name ({transform_name:s})")
-
+            
             if condensor_name != "None":
                 if condensor_name == "Frequency":
                     times = self.getResultsOverTime(
@@ -521,6 +513,17 @@ class Results:
                     return np.std(single_results)
                 else:
                     raise ValueError(f"invalid condensor name ({condensor_name:s})")
+
+            if transform_name != "None":
+                is_time = quantity_names == 't'
+                if transform_name == "Fourier":
+                    fourierFunction = fourierFrequencies if is_time else fourierTransform
+                    return fourierFunction(single_results)
+                elif transform_name == "Autocorrelation":
+                    correlationFunction = correlationLags if is_time else correlationTransform
+                    return correlationFunction(single_results)
+                else:
+                    raise ValueError(f"invalid transform name ({transform_name:s})")
             
             return single_results
         elif isinstance(quantity_names, list):
@@ -583,7 +586,7 @@ class Results:
         elif isinstance(times, ndarray):
             single_result_size = (*per_parameter_stepcounts, *times.shape)
         else:
-            raise TypeError(f"invalid type ({type(times):s})")
+            raise TypeError(f"invalid type ({type(times):})")
 
         results = np.zeros((len(quantity_names), *single_result_size))
         for quantity_location, quantity_name in enumerate(quantity_names):

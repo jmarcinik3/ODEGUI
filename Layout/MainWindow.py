@@ -1316,38 +1316,38 @@ class MainWindow(TabbedWindow):
 
         menu_definition = [
             [
-                "Import",
+                "&Import",
                 [
-                    "Model::import",
-                    "Parameters::import",
-                    "Functions::import",
-                    "Variable",
+                    "&Model::import",
+                    "&Parameters::import",
+                    "&Functions::import",
+                    "&Variable",
                     [
-                        "Initial Conditions::import",
-                        "Time-Evolution Types::import"
+                        "&Initial Conditions::import",
+                        "&Time-Evolution Types::import"
                     ]
                 ]
             ], [
-                "Set",
+                "&Set",
                 [
-                    "Parameter",
+                    "&Parameter",
                     [
-                        "Filestems",
+                        "&Filestems",
                         param_stems_keyed,
-                        "Types",
+                        "&Types",
                         param_types_keyed
                     ],
-                    "Variable",
+                    "&Variable",
                     [
-                        "Time-Evolution Types",
+                        "&Time-Evolution Types",
                         tet_types_keyed,
-                        "Core",
+                        "&Core",
                         [
-                            "Check All::set_variable_cores_to",
-                            "Uncheck All::set_variable_cores_to"
+                            "&Check All::set_variable_cores_to",
+                            "&Uncheck All::set_variable_cores_to"
                         ]
                     ],
-                    "Function Filestems",
+                    "&Function Filestems",
                     func_stems_keyed
                 ]
             ]
@@ -1509,10 +1509,14 @@ class MainWindowRunner(WindowRunner):
         window_object: MainWindow = self.getWindowObject()
         window = window_object.getWindow()
 
+        
         toolbar_menu_key = getKeys(window_object.getMenu())
         open_simulation_key = getKeys(window_object.getOpenSimulationButton())
         generate_graph_key = getKeys(window_object.getGenerateGraphButton())
 
+        window.bind("<Control-r>", open_simulation_key)
+        window.bind("<Control-g>", generate_graph_key)
+        
         while True:
             event, self.values = window.read()
             print(event)
