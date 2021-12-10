@@ -4,6 +4,19 @@ from scipy import fft, signal
 from scipy.stats import stats
 
 
+def normalizeArray(data: ndarray) -> ndarray:
+    """
+    Normalize data in array, i.e. scale data such that it fits between -1 and 1, inclusively.
+    
+    :param data: array of data to normalize
+    """
+    data_abs = np.abs(data)
+    data_maxabs = data_abs.max()
+    data_normalized = data / data_maxabs
+    
+    return data_normalized
+    
+
 def oscillationFrequency(
     data: ndarray,
     times: ndarray,
@@ -31,7 +44,6 @@ def oscillationFrequency(
     condensing_method = condensing_method.lower()
     
     if "autocorrelation" in calculation_method:
-        results_count = data.size
         autocorrelation = correlationTransform(data)
         lags = correlationLags(times)
 
