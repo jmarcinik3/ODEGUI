@@ -12,6 +12,8 @@ from numpy import ndarray
 
 from CustomMath import normalizeArray
 
+all_axis_names = ('x', 'y', 'z', 'c', 'X', 'Y')
+
 
 def getParameterInsetAxes(
     axes: Axes,
@@ -27,7 +29,7 @@ def getParameterInsetAxes(
     """
     Get inset axes object and partially-completed plot for inset axes.
     This inset plot displays values for up to two free parameters during a parameter sweep.
-    
+
     :param axes: axes to nest inset plot inside into
     :param parameter_values: dictionary of parameter values.
         Key is name of parameter.
@@ -70,7 +72,7 @@ def getParameterInsetAxes(
         axins.spines["left"].set_visible(False)
         axins.spines["bottom"].set_position(("axes", 0.5))
         ylim = -1, 1
-        axins_plot = lambda x: axins.plot(x, 0, **axins_kwargs)
+        def axins_plot(x): return axins.plot(x, 0, **axins_kwargs)
     else:
         raise ValueError("must have exactly one or two parameters in inset plot")
 
@@ -84,10 +86,10 @@ def getParameterInsetAxes(
 
 
 def getLimits(
-    data: ndarray, 
+    data: ndarray,
     limits: Tuple[Optional[float], Optional[float]],
-    autoscale_on: bool=False,
-    relative_padding: float=0.05
+    autoscale_on: bool = False,
+    relative_padding: float = 0.05
 ) -> Tuple[float, float]:
     """
     Get axis limits.
@@ -104,18 +106,23 @@ def getLimits(
     :returns: Tuple of (minimum, maximum) range for plot axis.
         Defaults to (data.min(), data.max()) with proportional padding
     """
+    if data is None:
+        return (None, None)
+    else:
+        assert isinstance(data, ndarray)
+
     min_limit, max_limit = limits
-    
+
     exist_min_limit = isinstance(min_limit, float)
     exist_max_limit = isinstance(max_limit, float)
-    
+
     data_min = data.min()
     data_max = data.max()
     data_range = data_max - data_min
     absolute_padding = relative_padding * data_range
-    
+
     scaled_limits = [
-        data_min - absolute_padding, 
+        data_min - absolute_padding,
         data_max + absolute_padding
     ]
     if not autoscale_on:
@@ -123,93 +130,53 @@ def getLimits(
             scaled_limits[0] = min_limit
         if exist_max_limit:
             scaled_limits[1] = max_limit
-    
+
     scaled_limits = tuple(scaled_limits)
     return scaled_limits
 
 
-def getFigure(
-    results: Dict[str, ndarray],
-    scale_factor: Dict[str, float] = None,
-    normalize: Dict[str, bool] = None,
+def plotOnAxes(
+    axes,
+    x: ndarray,
+    y: ndarray,
+    z: ndarray = None,
+    c: ndarray = None,
     plot_type: str = "xy",
-    segment_count: int = 100,
-    clim: Tuple[Optional[float], Optional[float]] = (None, None),
-    autoscalec_on: bool = True,
+    clim: Tuple[float, float] = None,
     colormap: str = None,
-    colorbar_kwargs: Dict[str, Any] = None,
-    axes_kwargs: Dict[str, Any] = None,
-    plot_kwargs: Dict[str, Any] = None,
-    inset_parameters: Dict[str, Dict[str, Union[float, Tuple[float, float]]]] = None
-) -> Figure:
-    """
-    Get matplotlib figure from data.
-
-    :param results: dictionary of results.
-        Key is name of axis.
-        Value is values to to plot along axis.
-    :param scale_factor: dictionary of scale factor for each axis.
-        Key is name of axis.
-        Value is scale factor.
-        Result along corresponding axis is divided by this factor.
-        Defaults to 1 for each axis not given.
-        Overriden by :paramref:`~SimulationWindow.getFigure.normalize` if set to True.
-    :param normalize: dictionary of boolean indicating whether to normalize each axis.
-        Key is name of axis.
-        Set True to normalize axis values by maximum absolute value.
-        Set False to retain original scaling.
-        Defaults to False.
-    :param clim: axis bounds for colorbar.
-        First element gives lower limit.
-        Defaults to minium of :paramref:`~SimulationWindow.getFigure.c`.
-        Second element gives upper limit.
-        Defaults to maximum of :paramref:`~SimulationWindow.getFigure.c`.
-    :param autoscalec_on: set True to autoscale colorbar axis.
-        Set False otherwise.
-        Overrides :paramref:`~SimulationWindow.getFigure.clim` when set True.
-    :param colormap: colormap to use for colorbar.
-    :param plot_type: type of plot to display.
-        This could include a single curve, multiple curves, scatter plot.
-    :param segment_count: number of segments for colorbar.
-        Only called when a single line is multicolored.
-    :param inset_parameters: 2-level dictionary of parameters to show on inset plot.
-        Key is name of parameter.
-        Subkeys are "range" and "value"
-            "range": value is tuple (minimum, maximum) for parameter
-            "value": value is value for parameter within range
-    :param colorbar_kwargs: additional arguments to pass into :class:`matplotlib.pyplot.colorbar`
-    :param axes_kwargs: additional arguments to pass into :class:`matplotlib.axes.Axes'
-    :param plot_kwargs: additional arguments to pass into axes plot method
-    """
-
+    plot_kwargs: Dict = None,
+    segment_count: int = 0
+):
     def coordinates2lines(
-        x: ndarray, 
-        y: ndarray, 
-        z: ndarray=None, 
-        c: ndarray=None, 
-        cmap: str=None, 
+        x: ndarray,
+        y: ndarray,
+        z: ndarray = None,
+        c: ndarray = None,
         norm=None,
-        segment_count: int=None
+        cmap: Union[str, cm.ScalarMappable] = None,
+        segment_count: int = None
     ) -> LineCollection:
         """
         Convert coordinates from x, y(, z) into collection of line segment counts for plotting.
         x, y, z, c must be ordered to correspond to each other.
-        
+
         :param x: x values of coordinates, 1D numpy array
         :param y: y values of coordinates, 1D numpy array
         :param z: z values of coordinates, 1D numpy array.
             Defaults to 2D-(xy-)plane if None.
         :param c: colors of coordinates, 1D numpy array
-        :param cmap: name of colormap corresponding to :paramref:`~Layout.SimulationWindow.getFigure.coordinates2lines.c`
+        :param cmap: (name of) colormap corresponding to :paramref:`~Layout.SimulationWindow.getFigure.coordinates2lines.c`
         :param norm: normalization of colormap corresponding to :paramref:`~Layout.SimulationWindow.getFigure.coordinates2lines.c`
         :param segment_count: number of line segments to interpolate from data.
             Defaults to all segments if None.
         """
+        
+        
         for array in [x, y, z, c]:
             if isinstance(array, ndarray):
                 assert array.ndim == 1
-        
-        x_interpolate, y_interpolate = interpolateLines((x, y), segment_count)    
+
+        x_interpolate, y_interpolate = interpolateLines((x, y), segment_count)
         if isinstance(z, ndarray):
             z_interpolate = interpolateLines(z, segment_count)
             points = np.array([x_interpolate, y_interpolate, z_interpolate]).T.reshape(-1, 1, 3)
@@ -219,17 +186,17 @@ def getFigure(
             points = np.array([x_interpolate, y_interpolate]).T.reshape(-1, 1, 2)
             segments = np.concatenate([points[:-1], points[1:]], axis=1)
             line_collection = LineCollection(segments, cmap=cmap, norm=norm)
-        
+
         if isinstance(c, ndarray):
             c_interpolate = interpolateLines(c, segment_count)
             line_collection.set_array(c_interpolate)
-        
+
         return line_collection
-    
+
     def interpolateLines(xs, segment_count=None) -> Union[ndarray, Tuple[ndarray]]:
         """
         Get subarray(s) of given array(s).
-        
+
         :param xs: (tuple of) array(s) to interpolate
         :param segment_count: number of segments (>0) in resultant subarray.
             Defaults to entire array if None.
@@ -240,13 +207,13 @@ def getFigure(
             return xs
         assert isinstance(segment_count, int)
         assert segment_count >= 0
-        
+
         if isinstance(xs, ndarray):
             xsize = xs.shape[0]
             if segment_count >= xsize:
                 return xs
             elif segment_count < xsize:
-                index_linspace = np.linspace(0, xsize-1, segment_count+1, dtype=np.int32)
+                index_linspace = np.linspace(0, xsize - 1, segment_count + 1, dtype=np.int32)
                 index_interpolate = np.round(index_linspace)
                 x_interpolate = xs[index_interpolate]
                 return x_interpolate
@@ -256,127 +223,45 @@ def getFigure(
                 assert isinstance(x, ndarray)
                 assert x.ndim == 1
                 assert x.size == xsize
-            
+
             interpolateLinesPartial = partial(interpolateLines, segment_count=segment_count)
             xs_interpolate = tuple(list(map(interpolateLinesPartial, xs)))
-            
+
             return xs_interpolate
-    
+
     if plot_kwargs is None:
         plot_kwargs = {}
-    if axes_kwargs is None:
-        axes_kwargs = {}
-    if scale_factor is None:
-        scale_factor = {}
-    if segment_count is not None:
-        assert isinstance(segment_count, int)
-        assert segment_count >= 0
-    if normalize is None:
-        normalize = {}
-    
-    axis_names = results.keys()
-    for axis_name in axis_names:
-        if axis_name not in normalize.keys():
-            normalize[axis_name] = False
-        elif normalize[axis_name]:
-            abs_max = np.max(np.abs(results[axis_name]))
-            scale_factor[axis_name] = abs_max
-        elif axis_name not in scale_factor.keys():
-            scale_factor[axis_name] = 1
 
-    figure = plt.figure()
-
-    if 'x' in plot_type:
-        if normalize['x']:
-            x = np.apply_along_axis(normalizeArray, -1, results['x'])
-        else:
-            x = results['x'] / scale_factor['x']
-            
-        xsize = x.size
-        xshape = x.shape
-        
-        axes_kwargs["xlim"] = getLimits(
-            x, 
-            limits=axes_kwargs['xlim'], 
-            autoscale_on=axes_kwargs["autoscalex_on"]
-        )
-
-    if 'y' in plot_type:
-        if normalize['y']:
-            y = np.apply_along_axis(normalizeArray, -1, results['y'])
-        else:
-            y = results['y'] / scale_factor['y']
-        
-        ysize = y.size
-        yshape = y.shape
-        axes_kwargs["ylim"] = getLimits(
-            y, 
-            limits=axes_kwargs['ylim'], 
-            autoscale_on=axes_kwargs["autoscaley_on"]
-        )
+    try:
+        xsize, xshape = x.size, x.shape
+        ysize, yshape = y.size, y.shape
+    except AttributeError:
+        return axes
 
     if 'z' in plot_type:
-        if normalize['z']:
-            z = np.apply_along_axis(normalizeArray, -1, results['z'])
-        else:
-            z = results['z'] / scale_factor['z']
-        
-        zsize = z.size
-        zshape = z.shape
-        axes_kwargs["zlim"] = getLimits(
-            z, 
-            limits=axes_kwargs['zlim'], 
-            autoscale_on=axes_kwargs["autoscalez_on"]
-        )
-        axes = figure.add_subplot(projection="3d")
-    else:
-        axes = figure.add_subplot()
-
-    for axes_arg, axes_value in axes_kwargs.items():
-        axes_kwarg = {axes_arg: axes_value}
+        assert isinstance(z, ndarray)
         try:
-            axes.set(**axes_kwarg)
+            zsize, zshape = z.size, z.shape
         except AttributeError:
-            print("axes_kwarg:", axes_kwarg)
-    
+            return axes
+
     if 'c' in plot_type or 't' in plot_type:
-        if colormap is None:
-            colormap = "viridis"
-        if colorbar_kwargs is None:
-            colorbar_kwargs = {}
-        
-        if normalize['c']:
-            if 't' in plot_type:
-                c = np.apply_along_axis(normalizeArray, -1, results['c'])
-            elif 'c' in plot_type:
-                c = normalizeArray(results['c'])
-        else:
-            c = results['c'] / scale_factor['c']
-            
-        csize = c.size
-        cshape = c.shape
+        assert isinstance(c, ndarray)
+        assert isinstance(clim[0], float) and isinstance(clim[1], float)
+        assert colormap is None or isinstance(colormap, str)
+        try:
+            csize, cshape = c.size, c.shape
+        except AttributeError:
+            return axes
 
-        vmin, vmax = getLimits(
-            c, 
-            limits=clim, 
-            autoscale_on=autoscalec_on
-        )
-
+        vmin, vmax = clim
         norm = colors.Normalize(vmin=vmin, vmax=vmax)
-        # noinspection PyUnresolvedReferences
         cmap = cm.ScalarMappable(norm=norm, cmap=colormap)
-        figure.colorbar(cmap, **colorbar_kwargs)
         try:
             c_colors = cmap.to_rgba(c)
         except ValueError:
             pass
 
-    if inset_parameters is not None:
-        free_parameter_ranges = {name: inset_parameters[name]["range"] for name in inset_parameters.keys()}
-        inset_axes, inset_axes_plot = getParameterInsetAxes(axes, free_parameter_ranges)
-        free_parameter_values = tuple(inset_parameters[name]["value"] for name in inset_parameters.keys())
-        inset_axes_plot(*free_parameter_values)
-    
     if 'z' not in plot_type:
         if plot_type in ["xy", "nxy", "xny"]:
             assert xshape == yshape
@@ -385,15 +270,15 @@ def getFigure(
             assert cshape == (xsize, ysize)
             c_shaped = c.T
             axes.contourf(
-                x, y, c_shaped, 
-                levels=segment_count, 
-                cmap=colormap, 
-                norm=norm, 
+                x, y, c_shaped,
+                levels=segment_count,
+                cmap=colormap,
+                norm=norm,
                 **plot_kwargs
             )
         elif plot_type in ["ntxy", "cnxy", "cxny"]:
             assert cshape == xshape == yshape
-            
+
             if segment_count == 0:
                 axes.scatter(x, y, color=c_colors)
             elif segment_count > 0:
@@ -420,8 +305,8 @@ def getFigure(
             for line_index in range(csize):
                 axes.plot(
                     x_lines[line_index],
-                    y_lines[line_index], 
-                    color=c_colors[line_index], 
+                    y_lines[line_index],
+                    color=c_colors[line_index],
                     **plot_kwargs
                 )
         elif plot_type in ["ntnxy", "ntxny"]:
@@ -438,10 +323,10 @@ def getFigure(
 
             for line_index in range(line_count):
                 line_collection = coordinates2lines(
-                    x_lines[line_index], 
-                    y_lines[line_index], 
-                    c=c[line_index], 
-                    cmap=colormap, 
+                    x_lines[line_index],
+                    y_lines[line_index],
+                    c=c[line_index],
+                    cmap=colormap,
                     norm=norm,
                     segment_count=segment_count
                 )
@@ -457,9 +342,9 @@ def getFigure(
                 axes.scatter3D(x, y, z, color=c_colors)
             else:
                 line_collection = coordinates2lines(
-                    x, 
-                    y, 
-                    z, 
+                    x,
+                    y,
+                    z,
                     c=c,
                     cmap=colormap,
                     norm=norm,
@@ -488,9 +373,9 @@ def getFigure(
 
             for line_index in range(rot_size):
                 axes.plot3D(
-                    x_rots[line_index], 
-                    y_rots[line_index], 
-                    z_lines[line_index], 
+                    x_rots[line_index],
+                    y_rots[line_index],
+                    z_lines[line_index],
                     **plot_kwargs
                 )
         elif plot_type in ["ntnxyz", "ntxnyz", "ntxynz"]:
@@ -509,17 +394,17 @@ def getFigure(
 
             for line_index in range(zs.size):
                 line_collection = coordinates2lines(
-                    x_rots[line_index], 
-                    y_rots[line_index], 
-                    c=c[line_index], 
-                    cmap=colormap, 
+                    x_rots[line_index],
+                    y_rots[line_index],
+                    c=c[line_index],
+                    cmap=colormap,
                     norm=norm,
                     segment_count=segment_count
                 )
                 axes.add_collection3d(
-                    line_collection, 
-                    zs=zs[line_index], 
-                    zdir=zdir, 
+                    line_collection,
+                    zs=zs[line_index],
+                    zdir=zdir,
                     **plot_kwargs
                 )
         elif plot_type in ["ncxyz", "ncnxyz", "ncxnyz", "ncxynz"]:
@@ -610,7 +495,7 @@ def getFigure(
                         x_shaped = x_rots[y_index, z_index]
                         y_shaped = y_rots[y_index]
                     c_shaped = c_rots[y_index, z_index]
-                    
+
                     line_collection = coordinates2lines(
                         x_shaped,
                         y_shaped,
@@ -620,22 +505,22 @@ def getFigure(
                         segment_count=segment_count
                     )
                     axes.add_collection3d(
-                        line_collection, 
-                        zs=zs[z_index], 
-                        zdir=zdir, 
+                        line_collection,
+                        zs=zs[z_index],
+                        zdir=zdir,
                         **plot_kwargs
                     )
         elif plot_type in ["nxnyz", "tnxnyz"]:
             x_shaped, y_shaped = np.meshgrid(x, y)
             x_shaped = x_shaped.T
             y_shaped = y_shaped.T
-            
+
             if plot_type == "nxnyz":
                 axes.plot_surface(x_shaped, y_shaped, z)
             elif plot_type == "tnxnyz":
                 axes.plot_surface(
-                    x_shaped, 
-                    y_shaped, 
+                    x_shaped,
+                    y_shaped,
                     z,
                     facecolors=c_colors
                 )
@@ -666,9 +551,9 @@ def getFigure(
                 z_shaped = np.tile(z, (xsize, ysize, 1))
 
             axes.scatter3D(
-                x_shaped, 
-                y_shaped, 
-                z_shaped, 
+                x_shaped,
+                y_shaped,
+                z_shaped,
                 color=cmap.to_rgba(c_shaped)
             )
         elif plot_type in ["ncnxnyz", "ncnxynz", "ncxnynz"]:
@@ -701,10 +586,232 @@ def getFigure(
                     z[c_index],
                     color=c_colors[c_index]
                 )"""
-            
-        axes.set_xlim3d(*axes_kwargs["xlim"])
-        axes.set_ylim3d(*axes_kwargs["ylim"])
-        axes.set_zlim3d(*axes_kwargs["zlim"])
-        axes.set_zlabel(axes_kwargs["zlabel"])
+
+    return axes
+
+
+def getFigure(
+    results: Dict[str, ndarray],
+    scale_factor: Dict[str, float] = None,
+    normalize: Dict[str, bool] = None,
+    plot_type: str = "xy",
+    segment_count: int = 100,
+    colormap: str = None,
+    axes_kwargs: Dict[str, Any] = None,
+    plot_kwargs: Dict[str, Any] = None,
+    inset_parameters: Dict[str, Dict[str, Union[float, Tuple[float, float]]]] = None
+) -> Figure:
+    """
+    Get matplotlib figure from data.
+
+    :param results: dictionary of results.
+        Key is name of axis.
+        Value is values to to plot along axis.
+    :param scale_factor: dictionary of scale factor for each axis.
+        Key is name of axis.
+        Value is scale factor.
+        Result along corresponding axis is divided by this factor.
+        Defaults to 1 for each axis not given.
+        Overriden by :paramref:`~SimulationWindow.getFigure.normalize` if set to True.
+    :param normalize: dictionary of boolean indicating whether to normalize each axis.
+        Key is name of axis.
+        Set True to normalize axis values by maximum absolute value.
+        Set False to retain original scaling.
+        Defaults to False.
+    :param colormap: colormap to use for colorbar.
+    :param plot_type: type of plot to display.
+        This could include a single curve, multiple curves, scatter plot.
+    :param segment_count: number of segments for colorbar.
+        Only called when a single line is multicolored.
+    :param inset_parameters: 2-level dictionary of parameters to show on inset plot.
+        Key is name of parameter.
+        Subkeys are "range" and "value"
+            "range": value is tuple (minimum, maximum) for parameter
+            "value": value is value for parameter within range
+    :param axes_kwargs: axis-based arguments; additional arguments to pass into :class:`matplotlib.axes.Axes'.
+        Supports lim for x,y,z,c,X,Y; use "{axis_name}lim".
+        Supports autoscale_on for relevant axes; use "autoscale{axis_name}_on".
+        Supports label for x,y,z,c,X,Y; use "{axis_name}label".
+        Supports scale type for x,y,z; use "{axis_name}scale".
+        Support colorbar location (see matplotlib Colorbar); use "cloc".
+        Use "title" for plot title.
+    :param plot_kwargs: additional arguments to pass into axes plot method
+    """
+
+    if plot_kwargs is None:
+        plot_kwargs = {}
+    if axes_kwargs is None:
+        axes_kwargs = {}
+    if scale_factor is None:
+        scale_factor = {}
+    if segment_count is not None:
+        assert isinstance(segment_count, int)
+        assert segment_count >= 0
+    if normalize is None:
+        normalize = {}
+
+    result_axis_names = results.keys()
+    for axis_name in all_axis_names:
+        if axis_name not in normalize.keys():
+            normalize[axis_name] = False
+        if axis_name not in scale_factor.keys():
+            scale_factor[axis_name] = 1
+
+    def getScaledResults(axis_name):
+        result = np.nan_to_num(results[axis_name])
+
+        if normalize[axis_name]:
+            x = np.apply_along_axis(normalizeArray, -1, result)
+        else:
+            x = None if result is None else result / scale_factor[axis_name]
+
+        return x
+
+    for axis_name in all_axis_names:
+        results[axis_name] = getScaledResults(axis_name) if axis_name in result_axis_names else None
+
+    for axis_name in result_axis_names:
+        lim_str = f"{axis_name:s}lim"
+        try:
+            axes_kwargs[lim_str] = getLimits(
+                results[axis_name],
+                limits=axes_kwargs[lim_str],
+                autoscale_on=axes_kwargs[f"autoscale{axis_name:s}_on"]
+            )
+        except KeyError:
+            pass
+
+    def getSubsetResults(axis_name, x_index=None, y_index=None):
+        result = results[axis_name]
+
+        if result is None:
+            pass
+        elif len(result.shape) > 1:
+            if 'X' in plot_type:
+                result = result[x_index]
+            if 'Y' in plot_type:
+                result = result[y_index]
+
+        return result
+
+    def setAxesKwargs(axes):
+        if 'z' in plot_type:
+            axes.set_xlim3d(*axes_kwargs["xlim"])
+            axes.set_ylim3d(*axes_kwargs["ylim"])
+            axes.set_zlim3d(*axes_kwargs["zlim"])
+            axes.set_zlabel(axes_kwargs["zlabel"])
+            axes.set_zscale(axes_kwargs["zscale"])
+            axes.set_autoscalez_on(axes_kwargs["autoscalez_on"])
+        elif 'z' not in plot_type:
+            try:
+                axes.set_xlim(*axes_kwargs["xlim"])
+            except TypeError:
+                axes.set_xlim((None, None))
+            try:
+                axes.set_ylim(*axes_kwargs["ylim"])
+            except TypeError:
+                axes.set_ylim((None, None))
+
+        axes.set_xlabel(axes_kwargs["xlabel"])
+        axes.set_ylabel(axes_kwargs["ylabel"])
+        axes.set_xscale(axes_kwargs["xscale"])
+        axes.set_yscale(axes_kwargs["yscale"])
+        axes.set_autoscalex_on(axes_kwargs["autoscalex_on"])
+        axes.set_autoscaley_on(axes_kwargs["autoscaley_on"])
+
+    figure = plt.figure()
+
+    if 'X' in plot_type:
+        X = getScaledResults('X')
+        Xsize = X.size
+    elif 'X' not in plot_type:
+        Xsize = 1
+
+    if 'Y' in plot_type:
+        Y = getScaledResults('Y')
+        Ysize = Y.size
+    elif 'Y' not in plot_type:
+        Ysize = 1
+
+    if 'z' in plot_type:
+        projection = "3d"
+    elif 'z' not in plot_type:
+        projection = None
+
+    full_figure_axis = figure.add_subplot(
+        Ysize,
+        Xsize,
+        (1, Xsize * Ysize),
+        frameon=False
+    )
+    full_figure_axis.xaxis.set_ticks([])
+    full_figure_axis.yaxis.set_ticks([])
+    full_figure_axis.set_title(axes_kwargs["title"])
+    full_figure_axis.set_xlabel(axes_kwargs["Xlabel"])
+    full_figure_axis.set_ylabel(axes_kwargs["Ylabel"])
+
+    if inset_parameters is not None:
+        free_parameter_ranges = {name: inset_parameters[name]["range"] for name in inset_parameters.keys()}
+        inset_axes, inset_axes_plot = getParameterInsetAxes(full_figure_axis, free_parameter_ranges)
+        free_parameter_values = tuple(inset_parameters[name]["value"] for name in inset_parameters.keys())
+        inset_axes_plot(*free_parameter_values)
+
+    axes = np.zeros((Xsize, Ysize), dtype=object)
+
+    for x_index in range(Xsize):
+        for y_index in range(Ysize):
+            if x_index == 0 and y_index == 0:
+                sharex = None
+                sharey = None
+            else:
+                sharex = axes[0, 0]
+                sharey = axes[0, 0]
+
+            axis = figure.add_subplot(
+                Ysize,
+                Xsize,
+                Xsize * (Ysize - y_index - 1) + x_index + 1,
+                projection=projection,
+                sharex=sharex,
+                sharey=sharey
+            )
+
+            axis_visible = (x_index == 0) & (y_index == 0)
+            axis.yaxis.set_visible(axis_visible)
+            axis.xaxis.set_visible(axis_visible)
+            axes[x_index, y_index] = axis
+
+    setAxesKwargs(axes[0, 0])
+
+    if 'c' in plot_type or 't' in plot_type:
+        assert colormap is None or isinstance(colormap, str)
+
+        vmin, vmax = axes_kwargs["clim"]
+        cnorm = colors.Normalize(vmin=vmin, vmax=vmax)
+        cmap = cm.ScalarMappable(norm=cnorm, cmap=colormap)
+
+        figure.colorbar(
+            mappable=cmap,
+            ax=axes.ravel().tolist(),
+            label=axes_kwargs["clabel"],
+            location=axes_kwargs["cloc"]
+        )
+
+    sub_plot_type = plot_type.split('_')[0]
+    for x_index in range(Xsize):
+        for y_index in range(Ysize):
+            axis = axes[x_index, y_index]
+            plotOnAxes(
+                axis,
+                getSubsetResults('x', x_index, y_index),
+                getSubsetResults('y', x_index, y_index),
+                getSubsetResults('z', x_index, y_index),
+                getSubsetResults('c', x_index, y_index),
+                plot_type=sub_plot_type,
+                clim=axes_kwargs["clim"],
+                colormap=colormap,
+                segment_count=segment_count,
+                plot_kwargs=plot_kwargs
+            )
 
     return figure

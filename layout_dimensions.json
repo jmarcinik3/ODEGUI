@@ -122,7 +122,7 @@
   "simulation_window": {
     "window": {
       "width": 1280,
-      "height": "480 * 1.1"
+      "height": 720
     },
     "parameter_slider": {
       "name_label": {

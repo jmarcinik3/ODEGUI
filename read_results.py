@@ -66,11 +66,11 @@ def loadParameters(
 ) -> List[Parameter]:
     assert isinstance(filepath, str)
 
-    info = loadConfig(filepath, archive=archive)
+    contents = loadConfig(filepath, archive=archive)
 
     filestems = stem2path.keys()
     loaded_parameters = []
-    for key, value in info.items():
+    for key, value in contents.items():
         if key in filestems:
             if isinstance(value, Iterable):
                 path_from_stem = stem2path[key]

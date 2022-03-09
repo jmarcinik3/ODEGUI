@@ -595,12 +595,16 @@ class Results:
                 new_index = default_index
                 new_index[per_parameter_locations] = partial_index
 
-                single_result = self.getResultsOverTime(
-                    index=tuple(new_index),
-                    quantity_names=quantity_name,
-                    **kwargs
-                )
-                single_results[partial_index] = single_result
+                try:
+                    single_result = self.getResultsOverTime(
+                        index=tuple(new_index),
+                        quantity_names=quantity_name,
+                        **kwargs
+                    )
+                    single_results[partial_index] = single_result
+                except KeyError:
+                    single_results[partial_index] = None
+            
             results[quantity_location] = single_results
 
         return per_parameter_base_values, results

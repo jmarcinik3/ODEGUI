@@ -649,13 +649,13 @@ class AxisTab(Tab, StoredObject):
             default_text='',
             tooltip=f"Enter lower limit for {name:s}-axis",
             size=self.getDimensions(name="axis_lower_limit_input_field"),
-            key=f"-LOWER LIMIT {name.upper():s}_AXIS-"
+            key=f"-LOWER LIMIT {name:s}_AXIS-"
         )
         upper_limit = sg.InputText(
             default_text='',
             tooltip=f"Enter upper limit for {name:s}-axis",
             size=self.getDimensions(name="axis_upper_limit_input_field"),
-            key=f"-UPPER LIMIT {name.upper():s}_AXIS-"
+            key=f"-UPPER LIMIT {name:s}_AXIS-"
         )
 
         return lower_limit, upper_limit
@@ -672,7 +672,7 @@ class AxisTab(Tab, StoredObject):
             default_text='',
             tooltip=f"Enter label for {name:s}-axis",
             size=self.getDimensions(name="axis_row_title_input_field"),
-            key=f"-TITLE {name.upper():s}_AXIS-"
+            key=f"-TITLE {name:s}_AXIS-"
         )
 
     @storeElement
@@ -690,7 +690,7 @@ class AxisTab(Tab, StoredObject):
                 f"When set False, limits inputs will be used if available.",
             default=True,
             size=self.getDimensions(name="autoscale_toggle_checkbox"),
-            key=f"-AUTOSCALE {name.upper():s}_AXIS-"
+            key=f"-AUTOSCALE {name:s}_AXIS-"
         )
 
     @storeElement
@@ -708,7 +708,7 @@ class AxisTab(Tab, StoredObject):
             initial_value="1e0",
             tooltip=f"Choose scale factor for {name:s}-axis. Data is divided by this factor.",
             size=self.getDimensions(name="scale_factor_spin"),
-            key=f"-SCALE FACTOR {name.upper():s}_AXIS-"
+            key=f"-SCALE FACTOR {name:s}_AXIS-"
         )
 
     @storeElement
@@ -724,7 +724,7 @@ class AxisTab(Tab, StoredObject):
             default_value="Linear",
             tooltip=f"Choose scale type for {name:s}-axis",
             size=self.getDimensions(name="scale_type_combobox"),
-            key=f"-SCALE TYPE {name.upper():s}_AXIS-"
+            key=f"-SCALE TYPE {name:s}_AXIS-"
         )
 
     @storeElement
@@ -769,10 +769,12 @@ class AxisTab(Tab, StoredObject):
         """
         header_rows = self.getHeaderRows()
         axis_input_rows = [
-            self.getInputRow("plot"),
+            self.getInputRow("plot", is_cartesian=False),
             self.getInputRow('x', is_cartesian=True),
             self.getInputRow('y', is_cartesian=True),
             self.getInputRow('z', is_cartesian=True),
+            self.getInputRow('X', is_cartesian=False),
+            self.getInputRow('Y', is_cartesian=False)
         ]
 
         layout = Layout(rows=header_rows)
@@ -890,7 +892,7 @@ class PlottingTab(Tab, StoredObject):
             tooltip=f"Choose condensor for quantity on {name:s}-axis of plot",
             enable_events=True,
             size=self.getDimensions(name="axis_condensor_combobox"),
-            key=f"-{cc_pre:s} CONDENSOR {name.upper():s}_AXIS-"
+            key=f"-{cc_pre:s} CONDENSOR {name:s}_AXIS-"
         )
 
     @storeElement
@@ -907,7 +909,7 @@ class PlottingTab(Tab, StoredObject):
             "tooltip": f"Choose quantity to display on {name:s}-axis of plot",
             "enable_events": True,
             "size": self.getDimensions(name="axis_quantity_combobox"),
-            "key": f"-{cc_pre:s} QUANTITY {name.upper():s}_AXIS-"
+            "key": f"-{cc_pre:s} QUANTITY {name:s}_AXIS-"
         }
         sg_kwargs.update(kwargs)
 
@@ -922,7 +924,8 @@ class PlottingTab(Tab, StoredObject):
     def getAxisQuantitySpeciesElement(
         self, 
         name: str, 
-        include_none: bool = False
+        include_none: bool = False,
+        include_continuous: bool = True
     ) -> sg.InputCombo:
         """
         Get element to take user input for an axis quantity type.
@@ -936,7 +939,9 @@ class PlottingTab(Tab, StoredObject):
         axis_quantity_species = []
         if include_none:
             axis_quantity_species.append("None")
-        axis_quantity_species.extend(["Variable", "Function"])
+        if include_continuous:
+            axis_quantity_species.extend(["Variable", "Function"])
+        
         if len(self.getPlotChoices(species="Parameter")) >= 1:
             axis_quantity_species.append("Parameter")
 
@@ -946,7 +951,7 @@ class PlottingTab(Tab, StoredObject):
             tooltip=f"Choose quantity type to display on {name:s}-axis of plot",
             enable_events=True,
             size=self.getDimensions(name="axis_quantity_species_combobox"),
-            key=f"-{ccs_pre:s} {name.upper():s}_AXIS-"
+            key=f"-{ccs_pre:s} {name:s}_AXIS-"
         )
 
     @storeElement
@@ -981,7 +986,8 @@ class PlottingTab(Tab, StoredObject):
     def getAxisInputRow(
         self, 
         name: str, 
-        include_none: bool = True
+        include_none: bool = True,
+        include_continuous: bool = True
     ) -> Row:
         """
         Get row that allows user input for a single axis.
@@ -994,7 +1000,11 @@ class PlottingTab(Tab, StoredObject):
         row = Row(window=self.getWindowObject())
 
         name_label = self.getAxisLabelElement(name)
-        axis_specie_combobox = self.getAxisQuantitySpeciesElement(name, include_none=include_none)
+        axis_specie_combobox = self.getAxisQuantitySpeciesElement(
+            name,
+            include_none=include_none,
+            include_continuous=include_continuous
+        )
         row.addElements([name_label, axis_specie_combobox])
 
         if include_none:
@@ -1022,7 +1032,9 @@ class PlottingTab(Tab, StoredObject):
             self.getAxisInputRow('x', include_none=False),
             self.getAxisInputRow('y', include_none=False),
             self.getAxisInputRow('z', include_none=True),
-            self.getAxisInputRow('c', include_none=True)
+            self.getAxisInputRow('c', include_none=True),
+            self.getAxisInputRow('X', include_none=True, include_continuous=False),
+            self.getAxisInputRow('Y', include_none=True, include_continuous=False)
         ]
         transform_combobox = self.getTransformElement()
 
@@ -1789,7 +1801,11 @@ class SimulationWindowRunner(WindowRunner):
         self.getFreeParameterNames = window_object.getFreeParameterNames
 
         self.include_simulation_tab = include_simulation_tab
-        self.axis_names = ['c', 'x', 'y', 'z']
+        self.axis_names = {
+            "grid": ('X', 'Y'),
+            "color": ('c'),
+            "cartesian": ('x', 'y', 'z')
+        }
         self.timelike_species = ["Variable", "Function"]
         self.parameterlike_species = ["Parameter"]
         self.values = None
@@ -1860,15 +1876,29 @@ class SimulationWindowRunner(WindowRunner):
         """
         return self.results
 
-    def getAxisNames(self) -> List[str]:
+    def getAxisNames(self, filter: str = None) -> List[str]:
         """
         Get names for axes.
 
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve names from
+        :param filter: only include axis types that satisfy this filter.
+            Must be "cartesian", "grid", or "color".
         :returns: List of axis names (e.g. ['x', 'y', 'c'])
         """
-        return self.axis_names
-
+        
+        if filter is None:
+            all_names = (
+                axis_name
+                for axis_names in self.axis_names.values()
+                for axis_name in axis_names
+            )
+            return all_names
+        elif isinstance(filter, str):
+            filter = filter.lower()
+            return self.axis_names[filter]
+        else:
+            raise TypeError("filter must be str")
+            
     def getFreeParameterIndex(self, name: str) -> int:
         """
         Get index of free parameter in collection of free-parameter names.
@@ -2132,7 +2162,7 @@ class SimulationWindowRunner(WindowRunner):
                 self.updatePlot()
             elif cc_pre in event:
                 if ccs_pre in event:
-                    axis_name = event.split(' ')[-1].replace("_AXIS", '').replace('-', '').lower()
+                    axis_name = event.split(' ')[-1].replace("_AXIS", '').replace('-', '')
                     self.updatePlotChoices(axis_name)
                 else:
                     window.write_event_value(update_plot_key, None)
@@ -2317,7 +2347,11 @@ class SimulationWindowRunner(WindowRunner):
                 output_type=tuple
             )
 
-        cartesian_names = ('x', 'y', 'z')
+        all_names = self.getAxisNames()
+        grid_names = self.getAxisNames("grid")
+        cartesian_names = self.getAxisNames("cartesian")
+        color_name = self.getAxisNames("color")[0]
+        
         scale_type_dict = {
             "Linear": "linear",
             "Logarithmic": "log"
@@ -2329,65 +2363,71 @@ class SimulationWindowRunner(WindowRunner):
         colorbar_tab: ColorbarTab = ColorbarTab.getInstances()[0]
         # noinspection PyTypeChecker
         plotting_tab: PlottingTab = PlottingTab.getInstances()[0]
-
-        scale_factor = {}
-        normalize = {}
-        autoscale = {}
-        lim = {}
-        label = {}
+        
         scale_type = {}
+        
+        normalize = {
+            axis_name: getValues(plotting_tab.getAxisNormalizeElement(axis_name))
+            for axis_name in all_names
+        }
+        
+        scale_factor = {
+            axis_name: getValues(axis_tab.getScaleFactorInputElement(axis_name))
+            for axis_name in cartesian_names
+        }
+        scale_factor[color_name] = getValues(colorbar_tab.getScaleFactorInputElement())
+        
+        label = {
+            axis_name: getValues(axis_tab.getTitleInputElement(axis_name))
+            for axis_name in (*cartesian_names, *grid_names)
+        }
+        label[color_name] = getValues(colorbar_tab.getTitleInputElement())
+        
+        autoscale_on = {
+            axis_name: getValues(axis_tab.getAutoscaleElement(axis_name))
+            for axis_name in cartesian_names
+        }
+        autoscale_on[color_name] = getValues(colorbar_tab.getAutoscaleElement())
+        
+        lim = {}
         for axis_name in cartesian_names:
-            normalize[axis_name] = getValues(plotting_tab.getAxisNormalizeElement(axis_name))
-            
-            scale_factor[axis_name] = getValues(axis_tab.getScaleFactorInputElement(axis_name))
-            label[axis_name] = getValues(axis_tab.getTitleInputElement(axis_name))
+            lim[axis_name] = (None, None) if autoscale_on[axis_name] else getValues(axis_tab.getLimitInputElements(axis_name))
+        lim[color_name] = (None, None) if autoscale_on[color_name] else getValues(colorbar_tab.getLimitInputElements())
+        
+        for axis_name in cartesian_names:
             scale_type[axis_name] = scale_type_dict[getValues(axis_tab.getScaleTypeInputElement(axis_name))]
-
-            autoscale[axis_name] = getValues(axis_tab.getAutoscaleElement(axis_name))
-            if autoscale[axis_name]:
-                lim[axis_name] = (None, None)
-            else:
-                lim[axis_name] = getValues(axis_tab.getLimitInputElements(axis_name))
-
-        normalize['c'] = getValues(plotting_tab.getAxisNormalizeElement('c'))
-        autoscale['c'] = getValues(colorbar_tab.getAutoscaleElement())
-        if autoscale['c']:
-            lim['c'] = (None, None)
-        else:
-            lim['c'] = getValues(colorbar_tab.getLimitInputElements())
-        scale_factor['c'] = getValues(colorbar_tab.getScaleFactorInputElement())
 
         aesthetics_kwargs = {
             "scale_factor": scale_factor,
             "normalize": normalize,
-
-            "clim": lim['c'],
-            "autoscalec_on": autoscale['c'],
+            
             "segment_count": int(getValues(colorbar_tab.getSegmentCountElement())),
             "colormap": getValues(colorbar_tab.getColormapInputElement()),
 
             "axes_kwargs": {
                 "xlim": lim['x'],
                 "xlabel": label['x'],
-                "autoscalex_on": autoscale['x'],
+                "autoscalex_on": autoscale_on['x'],
                 "xscale": scale_type['x'],
 
                 "ylim": lim['y'],
                 "ylabel": label['y'],
-                "autoscaley_on": autoscale['y'],
+                "autoscaley_on": autoscale_on['y'],
                 "yscale": scale_type['y'],
 
                 "zlim": lim['z'],
                 "zlabel": label['z'],
-                "autoscalez_on": autoscale['z'],
+                "autoscalez_on": autoscale_on['z'],
                 "zscale": scale_type['z'],
 
-                "title": getValues(axis_tab.getTitleInputElement("plot"))
-            },
+                "clim": lim['c'],
+                "clabel": label['c'],
+                "autoscalec_on": autoscale_on['c'],
+                "cloc": getValues(colorbar_tab.getLocationElement()),
 
-            "colorbar_kwargs": {
-                "label": getValues(colorbar_tab.getTitleInputElement()),
-                "location": getValues(colorbar_tab.getLocationElement())
+                "Xlabel": label['X'],
+                "Ylabel": label['Y'],
+                "title": getValues(axis_tab.getTitleInputElement("plot"))
             }
         }
         return aesthetics_kwargs
@@ -2649,7 +2689,6 @@ class SimulationWindowRunner(WindowRunner):
                             condensor_kwargs=self.getCondensorKwargs(condensor_name)
                         )
                         results[axis_name] = quantity_results[0]
-
         except (UnboundLocalError, KeyError, IndexError, AttributeError, ValueError):
             print("data:", traceback.print_exc())
 
@@ -2716,7 +2755,15 @@ class SimulationWindowRunner(WindowRunner):
                     plot_type += axis_name
                 elif is_nonelike[axis_name]:
                     pass
-
+            
+            if is_parameterlike['X'] or is_parameterlike['Y']:
+                plot_type += '_'
+                for axis_name in ['X', 'Y']:
+                    if is_parameterlike[axis_name]:
+                        plot_type += axis_name
+                    elif is_nonelike[axis_name]:
+                        pass
+            
         try:
             print(plot_type, {key: value.shape for key, value in results.items()})
             if plot_type != '':
