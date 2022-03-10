@@ -1,5 +1,6 @@
-from CustomMath import correlationLags, correlationTransform, fourierFrequencies, fourierTransform, holderMean, oscillationFrequency
+from functools import partial
 import itertools
+from math import prod
 from os import remove
 from os.path import basename, dirname, join
 from typing import Dict, Iterable, List, Tuple, Union
@@ -7,11 +8,12 @@ from zipfile import ZipFile
 
 import dill
 import numpy as np
-import yaml
-from numpy import DataSource, ndarray
+import PySimpleGUI as sg
+from numpy import ndarray
 from sympy import Expr, Symbol
 from sympy.utilities.lambdify import lambdify
 
+from CustomMath import correlationLags, correlationTransform, fourierFrequencies, fourierTransform, holderMean, oscillationFrequency
 from Function import Model, Parameter
 from macros import recursiveMethod
 from YML import saveConfig
@@ -57,11 +59,28 @@ class Results:
         if results is not None:
             for index, result in results.items():
                 self.setResults(index, result)
-        
+
         self.model = model
         self.general_function_expressions = {}
         self.free_parameter_values = free_parameter_values
         self.general_equilibrium_expressions = {}
+
+    @staticmethod
+    def updateProgressMeter(current_value: int, max_value: int, title: str) -> sg.OneLineProgressMeter:
+        """
+            Update progress meter.
+
+            :param title: title to display in progress meter window
+            :param current_value: present number of simulation being calculated
+            :param max_value: total number of simulations to calculate
+            """
+        return sg.OneLineProgressMeter(
+            title=title,
+            orientation="horizontal",
+            current_value=current_value,
+            max_value=max_value,
+            keep_on_top=True
+        )
 
     def getModel(self) -> Model:
         """
@@ -229,7 +248,7 @@ class Results:
 
         parameter_substitutions = self.getParameterSubstitutions(
             index=index,
-            include_free=True, 
+            include_free=True,
             include_nonfree=False
         )
         simplified_expression = general_expression.subs(parameter_substitutions)
@@ -251,7 +270,7 @@ class Results:
                 substitute_dependents=True
             )
             parameter_substitutions = self.getParameterSubstitutions(
-                include_nonfree=True, 
+                include_nonfree=True,
                 include_free=False
             )
             expression = expression.subs(parameter_substitutions)
@@ -292,7 +311,7 @@ class Results:
 
         model = self.getModel()
         variables = model.getVariables(
-            time_evolution_types="Temporal", 
+            time_evolution_types="Temporal",
             return_type=Symbol
         )
         expression_lambda = lambdify(
@@ -307,13 +326,13 @@ class Results:
             quantity_names=variable_names
         )
         times = self.getResultsOverTime(
-            index, 
+            index,
             quantity_names="t"
         )
         times = times.reshape((1, times.size))
         arguments = np.append(
-            times, 
-            temporal_results, 
+            times,
+            temporal_results,
             axis=0
         )
         results = expression_lambda(arguments)
@@ -357,7 +376,7 @@ class Results:
                 quantity_names=free_symbol_names
             )
             updated_results = expression_lambda(substitutions_results)
-        
+
         return updated_results
 
     def getEquilibriumVariableResults(
@@ -443,7 +462,7 @@ class Results:
                 single_results = results[quantity_names]
             except KeyError:
                 model = self.getModel()
-                
+
                 if quantity_names in model.getVariables(return_type=str):
                     variable_obj = model.getVariables(names=quantity_names)
                     time_evolution_type = variable_obj.getTimeEvolutionType()
@@ -452,7 +471,7 @@ class Results:
                         "Constant": self.getConstantVariableResults,
                         "Function": self.getFunctionResults,
                     }
-                    
+
                     # noinspection PyArgumentList
                     single_results = results_handles[time_evolution_type](
                         index,
@@ -465,7 +484,7 @@ class Results:
                     )
                 else:
                     raise ValueError("quantity_names input must correspond to either variable or function when str")
-                
+
                 # noinspection PyUnboundLocalVariable
                 self.setResults(
                     index,
@@ -488,12 +507,12 @@ class Results:
 
                         new_filter_indicies = eval(f"np.where(filter_results{filter_inequality_type:s}{filter_float:})")
                         filter_intersection = np.intersect1d(
-                            filter_intersection, 
+                            filter_intersection,
                             new_filter_indicies
                         )
 
                     single_results = single_results[filter_intersection]
-            
+
             if condensor_name != "None":
                 if condensor_name == "Frequency":
                     times = self.getResultsOverTime(
@@ -502,7 +521,7 @@ class Results:
                         transform_name=transform_name
                     )
                     frequency = oscillationFrequency(
-                        single_results, 
+                        single_results,
                         times,
                         **condensor_kwargs
                     )
@@ -524,7 +543,7 @@ class Results:
                     return correlationFunction(single_results)
                 else:
                     raise ValueError(f"invalid transform name ({transform_name:s})")
-            
+
             return single_results
         elif isinstance(quantity_names, list):
             new_results = np.array([
@@ -588,10 +607,27 @@ class Results:
         else:
             raise TypeError(f"invalid type ({type(times):})")
 
-        results = np.zeros((len(quantity_names), *single_result_size))
+        quantity_count = len(quantity_names)
+        simulation_count_per_quantity = prod(list(per_parameter_stepcounts))
+        simulation_count = quantity_count * simulation_count_per_quantity
+
+        results = np.zeros((quantity_count, *single_result_size))
+        updateProgressMeter = partial(
+            self.updateProgressMeter,
+            title="Calculating Simulation",
+            max_value=simulation_count
+        )
+
+        simulation_index_flat = 0
         for quantity_location, quantity_name in enumerate(quantity_names):
             single_results = np.zeros(single_result_size)
-            for partial_index in per_parameter_partial_indicies:
+            for partial_index_flat, partial_index in enumerate(per_parameter_partial_indicies):
+                simulation_index_flat += 1  # quantity_location * simulation_count_per_quantity + partial_index_flat + 1
+
+                if simulation_index_flat % 100 == 0:
+                    if not updateProgressMeter(simulation_index_flat):
+                        break
+
                 new_index = default_index
                 new_index[per_parameter_locations] = partial_index
 
@@ -604,8 +640,10 @@ class Results:
                     single_results[partial_index] = single_result
                 except KeyError:
                     single_results[partial_index] = None
-            
+
             results[quantity_location] = single_results
+
+        updateProgressMeter(simulation_count)
 
         return per_parameter_base_values, results
 
@@ -648,13 +686,13 @@ class Results:
             results_size = results.size
             if self.getStepcount() is None:
                 self.setStepcount(results_size)
-            
+
             stepcount = self.getStepcount()
             assert results_size == stepcount
 
             if index not in self.results.keys():
                 self.results[index] = {}
-            
+
             self.results[index][name] = results
         elif name is None:
             for name, result in results.items():
@@ -710,7 +748,7 @@ class Results:
             results_file,
             variable_file
         ]
-        
+
         with ZipFile(filepath, 'w') as zipfile:
             for file in files:
                 filepath = file.name
