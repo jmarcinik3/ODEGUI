@@ -1,6 +1,6 @@
 from io import BytesIO
 from os import listdir
-from os.path import isfile, join
+from os.path import dirname, isfile, join
 from pathlib import Path
 from typing import Dict, Iterable, List
 from zipfile import ZipFile
@@ -8,10 +8,7 @@ from zipfile import ZipFile
 import PySimpleGUI as sg
 import dill
 import numpy as np
-import requests
-import yaml
 from pint import Quantity
-from sympy import Expr
 
 from Function import Function, Model, Parameter, Variable, \
     generateFunction, generateParameter, readFunctionsFromFiles, readParametersFromFiles, \
@@ -20,17 +17,6 @@ from Layout.SimulationWindow import SimulationWindowRunner
 from Results import Results
 from YML import loadConfig
 
-
-def doi2bib(doi):
-    """
-    Return a bibTeX string of metadata for a given DOI.
-    """
-    url = "http://dx.doi.org/" + doi
-    headers = {
-        "accept": "application/x-bibtex"
-    }
-    r = requests.get(url, headers=headers)
-    return r.text
 
 
 def loadFunctions(
@@ -169,7 +155,7 @@ def getResults_old(
     return results_obj, archive
 
 
-def getResults(
+def getResults_old2(
     results_filepath: str = None,
     parameter_directory: str = None,
     equation_directory: str = None
@@ -244,19 +230,91 @@ def getResults(
 
     return results_obj, archive
 
+
+def getResults(
+    results_folderpath: str = None,
+    parameter_directory: str = None,
+    equation_directory: str = None
+) -> Results:
+    if results_folderpath is None:
+        results_folderpath = sg.PopupGetFolder(
+            message="Enter Folder to Load",
+            title="Load Previous Results"
+        )
+
+    if parameter_directory is None:
+        parameter_filepaths = []
+    elif isinstance(parameter_directory, str):
+        parameter_filepaths = [
+            join(parameter_directory, filepath)
+            for filepath in listdir(parameter_directory)
+            if isfile(join(parameter_directory, filepath))
+        ]
+
+    if equation_directory is None:
+        equation_filepaths = []
+    elif isinstance(equation_directory, str):
+        equation_filepaths = [
+            join(equation_directory, filepath)
+            for filepath in listdir(equation_directory)
+            if isfile(join(equation_directory, filepath))
+        ]
+
+    stem2path_param = {
+        Path(filepath).stem: filepath
+        for filepath in parameter_filepaths
+    }
+    stem2path_func = {
+        Path(filepath).stem: filepath
+        for filepath in equation_filepaths
+    }
+    
+    free_parameters_filepath = join(results_folderpath, "FreeParameter.json")
+    free_parameters = loadConfig(free_parameters_filepath)
+    
+    variable_objs_filepath = join(results_folderpath, "Variable.json")
+    variable_objs = loadVariables(variable_objs_filepath)
+
+    functions_objs_filepath = join(results_folderpath, "Function.json")
+    function_objs = loadFunctions(functions_objs_filepath, stem2path_func)
+    
+    parameter_objs_filepath = join(results_folderpath, "Parameter.json")
+    parameter_objs = loadParameters(parameter_objs_filepath, stem2path_param)
+
+    values = {}
+    for name, value in free_parameters.items():
+        values[name] = np.array(list(map(float, value["values"])))
+
+    model = Model(
+        variables=variable_objs,
+        functions=function_objs,
+        parameters=parameter_objs
+    )
+    
+    results_obj = Results(
+        model,
+        folderpath = results_folderpath,
+        free_parameter_values = values
+    )
+
+    return results_obj, results_folderpath
+
+
+
 def getSimulation(
     results_filepath: str = None,
     parameter_directory: str = None,
     equation_directory: str = None
 ) -> SimulationWindowRunner:
-    results_obj, archive = getResults(
-        results_filepath=results_filepath,
+    results_obj, results_filepath = getResults(
+        results_folderpath=results_filepath,
         parameter_directory=parameter_directory,
         equation_directory=equation_directory
     )
     model = results_obj.getModel()
 
-    free_parameter_contents = loadConfig("FreeParameter.json", archive=archive)
+    free_parameters_filepath = join(results_filepath, "FreeParameter.json")
+    free_parameter_contents = loadConfig(free_parameters_filepath)
 
     free_parameter_values = {}
     for name, value in free_parameter_contents.items():
@@ -270,7 +328,7 @@ def getSimulation(
         "Function": model.getFunctionNames(),
         "Parameter": list(free_parameter_values.keys())
     }
-
+    
     simulation_window = SimulationWindowRunner(
         "Simulation from Previous Results",
         results=results_obj,
@@ -280,6 +338,7 @@ def getSimulation(
     )
 
     return simulation_window
+
 
 def loadSimulation(
     results_filepath: str = None,
@@ -292,6 +351,7 @@ def loadSimulation(
         equation_directory=equation_directory
     )
     simulation_window.runWindow()
+
 
 if __name__ == "__main__":
     """# button = sg.ColorChooserButton("Color")

@@ -8,24 +8,25 @@ from zipfile import ZipFile
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
-
 from CustomErrors import RecursiveTypeError
-from Function import Derivative, Function, Independent, Model, Parameter, Variable, \
-    generateFunction, generateParameter, readFunctionsFromFiles, readParametersFromFiles
+from Function import (Derivative, Function, Independent, Model, Parameter,
+                      Variable, generateFunction, generateParameter,
+                      readFunctionsFromFiles, readParametersFromFiles)
 # from colour import Color
-from igraph import Graph, plot
-from macros import StoredObject, \
-    expression2png, formatQuantity, getTexImage, recursiveMethod, unique
+from igraph import plot
+from macros import (StoredObject, expression2png, formatQuantity, getTexImage,
+                    recursiveMethod, unique)
 from numpy import ndarray
 from pint import Quantity
-from YML import config_file_extensions, config_file_types, \
-    getDimensions, getStates, loadConfig, readLayout, readStates
+from YML import (config_file_extensions, config_file_types, getDimensions,
+                 getStates, loadConfig, readLayout, readStates)
 
 from Layout.ChooseGraphLayoutWindow import ChooseGraphLayoutWindowRunner
 from Layout.ChooseParametersWindow import ChooseParametersWindowRunner
 from Layout.ChooseVariablesWindow import ChooseVariablesWindowRunner
-from Layout.Layout import Element, Layout, Row, Tab, TabbedWindow, TabGroup, TabRow, WindowRunner, \
-    generateCollapsableSection, getKeys, getNameFromElementKey, storeElement
+from Layout.Layout import (Element, Layout, Row, Tab, TabbedWindow, TabGroup,
+                           TabRow, WindowRunner, generateCollapsableSection,
+                           getKeys, getNameFromElementKey, storeElement)
 from Layout.SetFreeParametersWindow import SetFreeParametersWindowRunner
 from Layout.SimulationWindow import SimulationWindowRunner
 
@@ -2782,31 +2783,28 @@ class MainWindowRunner(WindowRunner):
 
     def loadModelFromFile(
         self,
-        filepath: str = None
+        folderpath: str = None
     ):
-        if filepath is None:
-            file_types = (
-                ("ZIP File", "*.zip"), 
-                ("ALL Files", "*.*"),
+        """
+        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to load model into
+        :param folderpath: folderpath to load model from
+        """
+        if folderpath is None:
+            folderpath = sg.PopupGetFolder(
+                message="Enter Folder to Load",
+                title="Load Model"
             )
-            filepath = sg.PopupGetFile(
-                message="Enter Filename to Load",
-                title="Load Function",
-                file_types=file_types,
-                multiple_files=False
-            )
-            if filepath is None:
+            if folderpath is None:
                 return None
         
-        archive = ZipFile(filepath, 'r')
-        variable_contents = loadConfig("Variable.json", archive=archive)
-        parameter_contents = loadConfig("Parameter.json", archive=archive)
-        function_contents = loadConfig("Function.json", archive=archive)
+        variable_objs_filepath = join(folderpath, "Variable.json")
+        parameter_objs_filepath = join(folderpath, "Parameter.json")
+        function_objs_filepath = join(folderpath, "Function.json")
         
-        self.loadTimeEvolutionTypesFromFile(contents=variable_contents)
-        self.loadInitialConditionsFromFile(contents=variable_contents)
-        self.loadParametersFromFile(contents=parameter_contents)
-        self.loadFunctionsFromFile(contents=function_contents)
+        self.loadTimeEvolutionTypesFromFile(filepath=variable_objs_filepath)
+        self.loadInitialConditionsFromFile(filepath=variable_objs_filepath)
+        self.loadParametersFromFile(filepath=parameter_objs_filepath)
+        self.loadFunctionsFromFile(filepath=function_objs_filepath)
     
     def getFreeParameterValues(self) -> Tuple[str, Dict[str, Tuple[float, float, int, Quantity]]]:
         """
@@ -2851,86 +2849,6 @@ class MainWindowRunner(WindowRunner):
                 )
                 simulation_window.runWindow()
 
-    def generateFunction2ArgumentGraph(self) -> Graph:
-        """
-        Generate directional graph from (1) derivative variable to (2) variables in derivative.
-
-        :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve derivatives from
-        :returns: Generated graph
-        """
-        model = self.getModel()
-        variable_objs = model.getVariables()
-        var2vars = {}
-        for variable_obj_from in variable_objs:
-            time_evolution_type = variable_obj_from.getTimeEvolutionType()
-            variable_name_from = variable_obj_from.getName()
-
-            if time_evolution_type == "Temporal":
-                derivative_obj_from = model.getDerivativesFromVariables(variable_name_from)
-                variable_names_to = derivative_obj_from.getVariables(
-                    expanded=True, 
-                    return_type=str
-                )
-            elif time_evolution_type == "Equilibrium":
-                derivative_obj_from = model.getDerivativesFromVariables(variable_name_from)
-                variable_names_to = derivative_obj_from.getVariables(
-                    expanded=True, 
-                    return_type=str
-                )
-                variable_names_to.remove(variable_name_from)
-            elif time_evolution_type == "Function":
-                function_obj_from = model.getFunctions(names=variable_name_from)
-                variable_names_to = function_obj_from.getVariables(
-                    expanded=True, 
-                    return_type=str
-                )
-            elif time_evolution_type == "Constant":
-                variable_names_to = []
-
-            variable_objs_to = model.getVariables(names=variable_names_to)
-            var2vars[variable_obj_from] = variable_objs_to
-
-        variable_objs_from = sorted(
-            var2vars.keys(), 
-            key=lambda k: len(var2vars[k])
-        )
-        variable_count = len(variable_objs_from)
-
-        graph = Graph(
-            n=variable_count,
-            directed=True
-        )
-        # colors = Color(color1).range_to(Color(color2), len(var2vars.keys()))
-        # vertex2color = [color.rgb for color in colors]
-        evolution2color = {
-            "Temporal": "red",
-            "Equilibrium": "orange",
-            "Function": "green",
-            "Constant": "violet"
-        }
-
-        variable_names = list(map(Variable.getName, variable_objs_from))
-        for variable_index_from in range(variable_count):
-            variable_from = variable_objs_from[variable_index_from]
-            variable_name_from = variable_from.getName()
-            time_evolution_type_from = variable_from.getTimeEvolutionType()
-
-            color_from = evolution2color[time_evolution_type_from]
-            graph.vs[variable_index_from]["name"] = variable_name_from
-            graph.vs[variable_index_from]["color"] = color_from
-
-            variable_objs_to = var2vars[variable_from]
-            for variable_obj_to in variable_objs_to:
-                variable_name_to = variable_obj_to.getName()
-                variable_index_to = variable_names.index(variable_name_to)
-
-                graph.add_edges([(variable_index_from, variable_index_to)])
-                graph.es[-1]["color"] = color_from
-        
-        graph.vs["label"] = graph.vs["name"]
-
-        return graph
-
     def openFunction2ArgumentGraph(self) -> None:
         """
         Open plot showing function-to-argument directional graph.
@@ -2940,6 +2858,7 @@ class MainWindowRunner(WindowRunner):
         choose_graph_layout_window = ChooseGraphLayoutWindowRunner("Choose Graph Layout")
         event, layout_code = choose_graph_layout_window.getLayoutCode()
         if event == "Submit":
-            graph = self.generateFunction2ArgumentGraph()
+            model = self.getModel()
+            graph = model.getFunction2ArgumentGraph()
             layout = graph.layout(layout_code)
             plot(graph, layout=layout)

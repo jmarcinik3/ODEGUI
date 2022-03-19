@@ -1,10 +1,9 @@
-from functools import partial
 import itertools
+from functools import partial
 from math import prod
-from os import remove
-from os.path import basename, dirname, join
+from os import makedirs
+from os.path import dirname, exists, join
 from typing import Dict, Iterable, List, Tuple, Union
-from zipfile import ZipFile
 
 import dill
 import numpy as np
@@ -13,7 +12,9 @@ from numpy import ndarray
 from sympy import Expr, Symbol
 from sympy.utilities.lambdify import lambdify
 
-from CustomMath import correlationLags, correlationTransform, fourierFrequencies, fourierTransform, holderMean, oscillationFrequency
+from CustomMath import (correlationLags, correlationTransform,
+                        fourierFrequencies, fourierTransform, holderMean,
+                        oscillationFrequency)
 from Function import Model, Parameter
 from macros import recursiveMethod
 from YML import saveConfig
@@ -44,6 +45,7 @@ class Results:
         self,
         model: Model,
         free_parameter_values: Dict[str, ndarray],
+        folderpath: str = None,
         results: dict = None
     ) -> None:
         """
@@ -53,7 +55,12 @@ class Results:
         :param free_parameter_values: dictionary of values for free parameters.
             Key is name of free parameter.
             Value is possible values for free parameter.
+        :param folderpath: folder path (*.por) containing relevant Results files.
+            Save and load here.
         """
+        
+        self.folderpath = folderpath
+        self.data_foldername = "data"
         self.stepcount = None
         self.results = {}
         if results is not None:
@@ -61,10 +68,13 @@ class Results:
                 self.setResults(index, result)
 
         self.model = model
+        self.variable_names = model.getVariables(return_type=str)
+        self.function_names = model.getFunctionNames()
+        
         self.general_function_expressions = {}
         self.free_parameter_values = free_parameter_values
         self.general_equilibrium_expressions = {}
-
+        
     @staticmethod
     def updateProgressMeter(current_value: int, max_value: int, title: str) -> sg.OneLineProgressMeter:
         """
@@ -82,6 +92,32 @@ class Results:
             keep_on_top=True
         )
 
+    def getFolderpath(self) -> str:
+        """
+        Get folderpath to save/load results into/from.
+        
+        :param self: :class:`~Results.Results` to retrieve folderpath from
+        """
+        if self.folderpath is not None:
+            folderpath = self.folderpath
+        else:
+            folderpath = sg.PopupGetFolder(
+                message="Enter Folder to Load",
+                title="Load Previous Results"
+            )
+            self.folderpath = folderpath
+        
+        return folderpath
+    
+    def setFolderpath(self, folderpath: str) -> None:
+        """
+        Set folderpath to save/load results into/from.
+        
+        :param self: :class:`~Results.Results` to retrieve folderpath from
+        :param folderpath: folderpath to save/load 
+        """
+        self.folderpath  = folderpath
+        
     def getModel(self) -> Model:
         """
         Get associated :class:`~Function.Model`.
@@ -417,6 +453,35 @@ class Results:
         results = np.repeat(initial_condition, time_count)
         return results
 
+    def getResultFilepath(
+        self,
+        index: Union[tuple, Tuple[int, ...]],
+        quantity_name: str,
+        folderpath: str = None
+    ):
+        """
+        Get filepath to save/load result from.
+
+        :param self: :class:`~Results.Results` to retrieve filepath from
+        :param index: index of parameter value for free parameter
+        :param quantity_name: name of quantity to retrieve filepath for
+        :param folderpath: path of folder to save result into.
+            Defaults to loaded folder path.
+        """
+        if folderpath is None:
+            folderpath = self.getFolderpath()
+        
+        result_folderpath = join(
+            folderpath,
+            self.data_foldername,
+            *list(map(str, index))
+        )
+        file_extension = ".pkl"
+        filename = quantity_name + file_extension
+        filepath = join(result_folderpath, filename)
+
+        return filepath
+
     def getResultsOverTime(
         self,
         index: Union[tuple, Tuple[int, ...]],
@@ -456,14 +521,13 @@ class Results:
             Example: ('t', '>', 1.0) includes only data where time (t) is greater than 1
         """
         if isinstance(quantity_names, str):
-            results = self.results[index]
-
             try:
-                single_results = results[quantity_names]
-            except KeyError:
+                filepath = self.getResultFilepath(index, quantity_names)
+                file = open(filepath, 'rb')
+                single_results = dill.load(file)
+            except FileNotFoundError:
                 model = self.getModel()
-
-                if quantity_names in model.getVariables(return_type=str):
+                if quantity_names in self.variable_names:
                     variable_obj = model.getVariables(names=quantity_names)
                     time_evolution_type = variable_obj.getTimeEvolutionType()
                     results_handles = {
@@ -477,7 +541,7 @@ class Results:
                         index,
                         quantity_names
                     )
-                elif quantity_names in model.getFunctionNames():
+                elif quantity_names in self.function_names:
                     single_results = self.getFunctionResults(
                         index,
                         quantity_names
@@ -486,18 +550,15 @@ class Results:
                     raise ValueError("quantity_names input must correspond to either variable or function when str")
 
                 # noinspection PyUnboundLocalVariable
-                self.setResults(
+                self.saveResult(
                     index,
-                    single_results,
-                    quantity_names
+                    quantity_names,
+                    single_results
                 )
 
             if inequality_filters is not None:
-                stepcount = self.getStepcount()
-                filter_intersection = np.arange(stepcount)
-
                 if len(inequality_filters) >= 1:
-                    for inequality_filter in inequality_filters:
+                    for inequality_index, inequality_filter in enumerate(inequality_filters):
                         filter_quantity_name, filter_inequality_type, filter_float = inequality_filter
                         filter_results = self.getResultsOverTime(
                             index=index,
@@ -505,6 +566,10 @@ class Results:
                             inequality_filters=None
                         )
 
+                        if inequality_index == 0:
+                            stepcount = filter_results.shape[-1]
+                            filter_intersection = np.arange(stepcount)
+                        
                         new_filter_indicies = eval(f"np.where(filter_results{filter_inequality_type:s}{filter_float:})")
                         filter_intersection = np.intersect1d(
                             filter_intersection,
@@ -513,6 +578,17 @@ class Results:
 
                     single_results = single_results[filter_intersection]
 
+            if transform_name != "None":
+                is_time = quantity_names == 't'
+                if transform_name == "Fourier":
+                    fourierFunction = fourierFrequencies if is_time else fourierTransform
+                    single_results = fourierFunction(single_results)
+                elif transform_name == "Autocorrelation":
+                    correlationFunction = correlationLags if is_time else correlationTransform
+                    single_results = correlationFunction(single_results)
+                else:
+                    raise ValueError(f"invalid transform name ({transform_name:s})")
+            
             if condensor_name != "None":
                 if condensor_name == "Frequency":
                     times = self.getResultsOverTime(
@@ -532,17 +608,6 @@ class Results:
                     return np.std(single_results)
                 else:
                     raise ValueError(f"invalid condensor name ({condensor_name:s})")
-
-            if transform_name != "None":
-                is_time = quantity_names == 't'
-                if transform_name == "Fourier":
-                    fourierFunction = fourierFrequencies if is_time else fourierTransform
-                    return fourierFunction(single_results)
-                elif transform_name == "Autocorrelation":
-                    correlationFunction = correlationLags if is_time else correlationTransform
-                    return correlationFunction(single_results)
-                else:
-                    raise ValueError(f"invalid transform name ({transform_name:s})")
 
             return single_results
         elif isinstance(quantity_names, list):
@@ -698,16 +763,53 @@ class Results:
             for name, result in results.items():
                 self.setResults(index, result, name=name)
 
-    def saveToFile(
+    def saveResult(
         self,
-        filepath: str
+        index: Union[tuple, Tuple[int]],
+        name: str,
+        result: ndarray,
+        folderpath: str = None
     ) -> None:
         """
-        Save results object (self) into *.zip file.
+        Save single result into file.
+        :param self: :class:`~Results.Results` to retrieve save folder from
+        :param index: index of parameter value for free parameter
+        :param name: name of quantity to set results for
+        :param result: single array of results for quantity
+        :param folderpath: path of folder to save results into.
+            Defaults to loaded folder path.
+        """
+        if folderpath is None:
+            folderpath = self.getFolderpath()
+
+        result_filepath = self.getResultFilepath(
+            index,
+            name,
+            folderpath=folderpath
+        )
+
+        result_folderpath = dirname(result_filepath)
+        if not exists(result_folderpath):
+            makedirs(result_folderpath)
+
+        if not exists(result_filepath):
+            with open(result_filepath, 'wb') as result_file:
+                dill.dump(result, result_file)
+
+    def saveResults(
+        self,
+        folderpath: str = None
+    ) -> None:
+        """
+        Save results object (self) into folder.
 
         :param self: :class:`~Results.Results` to save into file
-        :param filepath: path of file to save object into
+        :param folderpath: path of folder to save results into.
+            Defaults to loaded folder path.
         """
+        if folderpath is None:
+            folderpath = self.getFolderpath()
+
         model = self.getModel()
         parameter_values = self.getFreeParameterValues(output_type=dict)
 
@@ -722,38 +824,18 @@ class Results:
                 "unit": unit
             }
 
-        path_directory = dirname(filepath)
+        function_filepath = join(folderpath, "Function.json")
+        if not exists(function_filepath):
+            function_file = model.saveFunctionsToFile(function_filepath)
 
-        function_filepath = join(path_directory, "Function.json")
-        function_file = model.saveFunctionsToFile(function_filepath)
+        parameter_filepath = join(folderpath, "Parameter.json")
+        if not exists(parameter_filepath):
+            parameter_file = model.saveParametersToFile(parameter_filepath)
 
-        parameter_filepath = join(path_directory, "Parameter.json")
-        parameter_file = model.saveParametersToFile(parameter_filepath)
+        variable_filepath = join(folderpath, "Variable.json")
+        if not exists(variable_filepath):
+            variable_file = model.saveVariablesToFile(variable_filepath)
 
-        variable_filepath = join(path_directory, "Variable.json")
-        variable_file = model.saveVariablesToFile(variable_filepath)
-
-        free_parameter_filepath = join(path_directory, "FreeParameter.json")
-        free_parameter_file = saveConfig(free_parameter_info, free_parameter_filepath)
-
-        results_filepath = join(path_directory, "Results.pkl")
-        results_file = open(results_filepath, 'wb')
-        dill.dump(self.results, results_file)
-        results_file.close()
-
-        files = [
-            function_file,
-            parameter_file,
-            free_parameter_file,
-            results_file,
-            variable_file
-        ]
-
-        with ZipFile(filepath, 'w') as zipfile:
-            for file in files:
-                filepath = file.name
-                filename = basename(filepath)
-                zipfile.write(filepath, filename)
-
-        for file in files:
-            remove(file.name)
+        free_parameter_filepath = join(folderpath, "FreeParameter.json")
+        if not exists(free_parameter_filepath):
+            free_parameter_file = saveConfig(free_parameter_info, free_parameter_filepath)

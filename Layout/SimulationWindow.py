@@ -66,8 +66,8 @@ def clearFigure(figure_canvas: FigureCanvasTkAgg) -> None:
 
 
 def calculateResolution(
-    minimum: float, 
-    maximum: float, 
+    minimum: float,
+    maximum: float,
     step_count: int
 ) -> float:
     """
@@ -88,7 +88,7 @@ def calculateResolution(
 
 
 def getUnitConversionFactor(
-    old_units: Union[Unit, Quantity], 
+    old_units: Union[Unit, Quantity],
     new_units: Union[Unit, Quantity] = None
 ) -> float:
     """
@@ -112,7 +112,7 @@ class ParameterSlider(Element, StoredObject):
         #. Four labels. One for parameter name. One for minimum parameter value. One for maximum parameter value.
         One for number of distinct parameter values
         #. Slider. This allows the user to choose which parameter value to plot a simulation for.
-    
+
     :ivar name: name of parameter
     :ivar minimum: minimum value of parameter
     :ivar maximum: maximum value of parameter
@@ -123,7 +123,7 @@ class ParameterSlider(Element, StoredObject):
     def __init__(self, name: str, window: SimulationWindow, values: Tuple[float, float, int, Unit]) -> None:
         """
         Constuctor for :class:`~Layout.SimulationWindow.ParameterSlider`.
-        
+
         :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to initialize
         :param name: name of parameter
         :param window: window in which slider object will be displayed
@@ -144,7 +144,7 @@ class ParameterSlider(Element, StoredObject):
     def getName(self) -> str:
         """
         Get name of parameter.
-        
+
         :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve name of
         """
         return self.name
@@ -152,7 +152,7 @@ class ParameterSlider(Element, StoredObject):
     def getMinimum(self) -> float:
         """
         Get minimum value of parameter.
-        
+
         :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve minimum value of
         """
         return self.minimum
@@ -184,7 +184,7 @@ class ParameterSlider(Element, StoredObject):
     def getNameLabel(self) -> Union[sg.Image, sg.Text]:
         """
         Get label to display parameter name.
-        
+
         :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve label for
         """
         return getTexImage(
@@ -279,7 +279,7 @@ class SimulationTab(Tab):
     def __init__(self, name: str, window: SimulationWindow) -> None:
         """
         Constructor for :class:`~Layout.SimulationWindow.SimulationTab`.
-        
+
         :param name: name of tab
         :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab is stored in.
         """
@@ -290,7 +290,7 @@ class SimulationTab(Tab):
         """
         Get element to take user input for initial time.
         This allows user to choose what time to start the simulation at.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationTab` to retrieve element from
         """
         return sg.InputText(
@@ -334,7 +334,7 @@ class SimulationTab(Tab):
     def getRunButton(self) -> sg.Button:
         """
         Get element allowing user to start simulation.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationTab` to retrieve element from
         """
         text = "Run Simulation"
@@ -347,7 +347,7 @@ class SimulationTab(Tab):
     def getLayout(self) -> List[List[sg.Element]]:
         """
         Get layout for simulation tab.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationTab` to retrieve layout from
         """
         time_inputs = [
@@ -419,7 +419,7 @@ class ColorbarTab(Tab, StoredObject):
                 justification="left"
             )
             bottom_row.addElements(text_element)
-        
+
         return [top_row, bottom_row]
 
     @storeElement
@@ -467,8 +467,8 @@ class ColorbarTab(Tab, StoredObject):
         return sg.Checkbox(
             text='',
             tooltip="Choose boolean for colorbar."
-                "When set True, colorbar will be autoscaled and limit inputs will be ignored."
-                "When set False, limits inputs will be used if available.",
+            "When set True, colorbar will be autoscaled and limit inputs will be ignored."
+            "When set False, limits inputs will be used if available.",
             default=True,
             size=self.getDimensions(name="autoscale_toggle_checkbox"),
             key="-COLORBAR AUTOSCALE-"
@@ -686,8 +686,8 @@ class AxisTab(Tab, StoredObject):
         return sg.Checkbox(
             text='',
             tooltip=f"Choose boolean for {name:s}-axis."
-                f"When set True, {name:s}-axis will be autoscaled and limit inputs will be ignored."
-                f"When set False, limits inputs will be used if available.",
+            f"When set True, {name:s}-axis will be autoscaled and limit inputs will be ignored."
+            f"When set False, limits inputs will be used if available.",
             default=True,
             size=self.getDimensions(name="autoscale_toggle_checkbox"),
             key=f"-AUTOSCALE {name:s}_AXIS-"
@@ -922,8 +922,8 @@ class PlottingTab(Tab, StoredObject):
 
     @storeElement
     def getAxisQuantitySpeciesElement(
-        self, 
-        name: str, 
+        self,
+        name: str,
         include_none: bool = False,
         include_continuous: bool = True
     ) -> sg.InputCombo:
@@ -941,7 +941,7 @@ class PlottingTab(Tab, StoredObject):
             axis_quantity_species.append("None")
         if include_continuous:
             axis_quantity_species.extend(["Variable", "Function"])
-        
+
         if len(self.getPlotChoices(species="Parameter")) >= 1:
             axis_quantity_species.append("Parameter")
 
@@ -984,8 +984,8 @@ class PlottingTab(Tab, StoredObject):
         )
 
     def getAxisInputRow(
-        self, 
-        name: str, 
+        self,
+        name: str,
         include_none: bool = True,
         include_continuous: bool = True
     ) -> Row:
@@ -1015,10 +1015,10 @@ class PlottingTab(Tab, StoredObject):
 
         axis_condensor_combobox = self.getAxisCondensorElement(name)
         row.addElements(axis_condensor_combobox)
-        
+
         axis_normalize_checkbox = self.getAxisNormalizeElement(name)
         row.addElements(axis_normalize_checkbox)
-        
+
         return row
 
     def getLayout(self) -> List[List[sg.Element]]:
@@ -1050,14 +1050,14 @@ class FilterTab(Tab, StoredObject):
     """
     This class contains the layout for the filter tab in the simulation window.
         #. One or more :class:`~Layout.SimulationWindow.FilterRow`, each comprising one node of AND-gate filter
-    
+
     :ivar row_count: number of rows to include in tab
     """
 
     def __init__(
-        self, 
-        name: str, 
-        window: SimulationWindow, 
+        self,
+        name: str,
+        window: SimulationWindow,
         row_count: int = 1,
     ) -> None:
         """
@@ -1068,7 +1068,7 @@ class FilterTab(Tab, StoredObject):
         """
         Tab.__init__(self, name, window)
         StoredObject.__init__(self, name)
-        
+
         self.row_count = row_count
 
     def getRowCount(self) -> int:
@@ -1106,7 +1106,7 @@ class FilterRow(Row, StoredObject):
         #. Combobox to select type of inequality (e.g. '>', '<=')
         #. Input field to type into  right side of inequality (float)
         #. Checkbox to set whether filter is active or not.
-    
+
     :ivar row_id: number to indicate id of row within :class:`~Layout.SimulationWindow.FilterTab`
     """
 
@@ -1148,7 +1148,7 @@ class FilterRow(Row, StoredObject):
         window_obj: SimulationWindow = self.getWindowObject()
         variable_names = window_obj.getPlotChoices(species="Variable")
         function_names = window_obj.getPlotChoices(species="Function")
-        
+
         inequality_choices = variable_names + function_names
 
         return sg.Combo(
@@ -1166,7 +1166,7 @@ class FilterRow(Row, StoredObject):
         """
         row_id = self.getRowId()
         valid_inequality_types = FilterRow.valid_inequality_types
-        
+
         return sg.Combo(
             values=valid_inequality_types,
             default_value=valid_inequality_types[0],
@@ -1203,79 +1203,31 @@ class FilterRow(Row, StoredObject):
         )
 
 
-class AnalysisTabGroup(TabGroup):
-    """
-    This class contains the layout for the analysis tabgroup in the simulation window.
-        #. :class:`~Layout.SimulationWindow.FrequencyTab`
-        #. :class:`~Layout.SimulationWindow.MeanTab`
-    """
-
+class AnalysisTab(Tab, StoredObject):
     def __init__(self, name: str, window: SimulationWindow) -> None:
         """
-        Constructor for :class:`~Layout.SimulationWindow.AnalysisTabGroup`.
-
-        :param name: name of tab group
-        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab group is stored in.
-        """
-        tabs = [
-            FrequencyTab("Frequency", window),
-            MeanTab("Holder Mean", window)
-        ]
-        super().__init__(tabs, name=name)
-
-
-class FrequencyTab(Tab, StoredObject):
-    """
-    This class contains the layout for the frequency tab in the analysis tabgroup.
-        #. Header row
-        #. Combobox to choose calculation method
-        #. Combobox to choose condensor method
-    """
-
-    def __init__(self, name: str, window: SimulationWindow) -> None:
-        """
-        Constructor for :class:`~Layout.SimulationWindow.FrequencyTab`.
+        Constructor for :class:`~Layout.SimulationWindow.AnalysisTab`.
 
         :param name: name of tab
-        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab is stored in.
+        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab group is stored in.
         """
         Tab.__init__(self, name, window)
         StoredObject.__init__(self, name)
 
-    def getHeaderRow(self) -> Row:
-        """
-        Get row that labels the function of each input column.
-
-        :param self: :class:`~Layout.SimulationWindow.MeanTab` to retrieve row for
-        """
-        row = Row(window=self.getWindowObject())
-        texts = ["Method", "Condensor"]
-        dimension_keys = [f"frequency_header_row_{string:s}" for string in ["method_name", "condensor_name"]]
-
-        for index in range(len(texts)):
-            text_element = sg.Text(
-                text=texts[index],
-                size=self.getDimensions(name=dimension_keys[index]),
-                justification="left"
-            )
-            row.addElements(text_element)
-        return row
-
     @storeElement
-    def getMethodElement(self) -> sg.InputCombo:
+    def getFrequencyMethodElement(self) -> sg.InputCombo:
         """
         Get element to take user input for calculation method.
         This allows user to choose which method to calculate frequency with.
 
-        :param self: :class:`~Layout.SimulationWindow.FrequencyTab` to retrieve element from
+        :param self: :class:`~Layout.SimulationWindow.AnalysisTab` to retrieve element from
         """
         frequency_method = [
             "Separation of Maxima",
             "Separation of Minima",
-            "Separation of Extrema",
-            "Separation of Autocorrelation Maxima"
+            "Separation of Extrema"
         ]
-        
+
         return sg.InputCombo(
             values=frequency_method,
             default_value=frequency_method[0],
@@ -1286,83 +1238,65 @@ class FrequencyTab(Tab, StoredObject):
         )
 
     @storeElement
-    def getCondensorElement(self) -> sg.InputCombo:
+    def getFrequencyCondensorElement(self) -> sg.InputCombo:
         """
         Get element to take user input for condensor.
         This allows user to choose which condensor to reduce frequency with.
 
-        :param self: :class:`~Layout.SimulationWindow.FrequencyTab` to retrieve element from
+        :param self: :class:`~Layout.SimulationWindow.AnalysisTab` to retrieve element from
+        :param condensor_name: name of condensor to retrieve element for.
+            Must be "frequency".
         """
         axis_condensor = ["Average", "Maximum", "Minimum", "Initial", "Final"]
 
         return sg.InputCombo(
             values=axis_condensor,
             default_value=axis_condensor[0],
-            tooltip="Choose method to condense frequency",
+            tooltip=f"Choose method to condense frequency",
             enable_events=True,
-            size=self.getDimensions(name="frequency_condensor_combobox"),
-            key="ANALYSIS CONDENSOR FREQUENCY"
+            size=self.getDimensions(name=f"frequency_condensor_combobox"),
+            key=f"ANALYSIS CONDENSOR FREQUENCY"
         )
 
-    def getLayout(self) -> List[List[sg.Element]]:
+    def getFrequencyRow(self) -> Row:
         """
-        Get layout for frequency tab.
+        Get row to take user input for frequency condensor.
 
-        :param self: :class:`~Layout.SimulationWindow.FrequencyTab` to retrieve layout from
+        :param self: `~Layout.SimulationWindow.AnalysisTab` to retrieve row from
         """
-        header_row = self.getHeaderRow()
-        method_combobox = self.getMethodElement()
-        condensor_combobox = self.getCondensorElement()
+        frequency_text = sg.Text(
+            text="Frequency -",
+            justification="left"
+        )
+        method_text = sg.Text(
+            text="Method:",
+            justification="right"
+        )
+        condensor_text = sg.Text(
+            text="Condensor:",
+            justification="right"
+        )
 
-        layout = Layout()
-        layout.addRows(header_row)
-        layout.addRows(Row(window=self.getWindowObject(), elements=[method_combobox, condensor_combobox]))
-        return layout.getLayout()
+        method_element = self.getFrequencyMethodElement()
+        condensor_element = self.getFrequencyCondensorElement()
 
-
-class MeanTab(Tab, StoredObject):
-    """
-    This class contains the layout for the mean tab in the analysis tabgroup.
-        #. Header row
-        #. Spinner to select order for Holder mean
-    """
-
-    def __init__(self, name: str, window: SimulationWindow) -> None:
-        """
-        Constructor for :class:`~Layout.SimulationWindow.MeanTab`.
-
-        :param name: name of tab
-        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab is stored in.
-        """
-        Tab.__init__(self, name, window)
-        StoredObject.__init__(self, name)
-
-    def getHeaderRow(self) -> Row:
-        """
-        Get row that labels the function of each input column.
-
-        :param self: :class:`~Layout.SimulationWindow.MeanTab` to retrieve row for
-        """
-        row = Row(window=self.getWindowObject())
-        texts = ["Order"]
-        dimension_keys = [f"mean_header_row_{string:s}" for string in ["order"]]
-        
-        for index in range(len(texts)):
-            text_element = sg.Text(
-                text=texts[index],
-                size=self.getDimensions(name=dimension_keys[index]),
-                justification="left"
-            )
-            row.addElements(text_element)
+        elements = [
+            frequency_text,
+            method_text,
+            method_element,
+            condensor_text,
+            condensor_element
+        ]
+        row = Row(window=self.getWindowObject(), elements=elements)
         return row
 
     @storeElement
-    def getOrderElement(self) -> sg.Spin:
+    def getMeanOrderElement(self) -> sg.Spin:
         """
         Get element to take user input for order.
         This allows user to choose order of Holder mean.
 
-        :param self: :class:`~Layout.SimulationWindow.MeanTab` to retrieve element from
+        :param self: :class:`~Layout.SimulationWindow.AnalysisTab` to retrieve element from
         """
         values = ['-inf', '-1', '0', '1', '2', 'inf']
 
@@ -1373,18 +1307,41 @@ class MeanTab(Tab, StoredObject):
             key=f"-ANALYSIS ORDER MEAN-"
         )
 
+    def getMeanRow(self) -> Row:
+        """
+        Get row to take user input for Holder mean condensor.
+
+        :param self: `~Layout.SimulationWindow.AnalysisTab` to retrieve row from
+        """
+        mean_text = sg.Text(
+            text="Holder Mean -",
+            justification="left"
+        )
+        order_text = sg.Text(
+            text="Order:",
+            justification="right"
+        )
+
+        order_element = self.getMeanOrderElement()
+
+        elements = [
+            mean_text,
+            order_text,
+            order_element
+        ]
+        row = Row(window=self.getWindowObject(), elements=elements)
+        return row
+
     def getLayout(self) -> List[List[sg.Element]]:
         """
-        Get layout for frequency tab.
+        Get layout for analysis tab.
 
-        :param self: :class:`~Layout.SimulationWindow.FrequencyTab` to retrieve layout from
+        :param self: :class:`~Layout.SimulationWindow.AnalysisTab` to retrieve layout from
         """
-        header_row = self.getHeaderRow()
-        order_spin = self.getOrderElement()
-
         layout = Layout()
-        layout.addRows(header_row)
-        layout.addRows(Row(window=self.getWindowObject(), elements=order_spin))
+        layout.addRows(self.getFrequencyRow())
+        layout.addRows(self.getMeanRow())
+
         return layout.getLayout()
 
 
@@ -1394,7 +1351,7 @@ class SimulationWindow(TabbedWindow):
         #. Simulation tab. This tab allows the user to run the simulation and display desired results.
         #. Aesthetics tab. This tab allows the user to set plot aesthetic for the displayed figure.
         #. Analysis tabgroup. This tabgroup allows the user to determine how to execute analysis for plot.
-    
+
     :ivar plot_choices: name(s) of variable(s) and/or function(s) that the user may choose to plot
     :ivar free_parameters: name(s) of parameter(s) that the user may choose multiple values for in model
     """
@@ -1409,7 +1366,7 @@ class SimulationWindow(TabbedWindow):
     ) -> None:
         """
         Constructor for :class:`~Layout.SimulationWindow.SimulationWindow`.
-        
+
         :param name: title of window
         :param runner: :class:`~Layout.SimulationWindow.SimulationWindowRunner` that window is stored in
         :param free_parameter_values: dictionary of free-parameter values.
@@ -1563,14 +1520,14 @@ class SimulationWindow(TabbedWindow):
 
         if include_simulation_tab:
             self.addTabs(simulation_tab)
-        
+
         self.addTabs(AestheticsTabGroup("Aesthetics", self).getAsTab())
         self.addTabs(plotting_tab)
-        self.addTabs(AnalysisTabGroup("Analysis", self).getAsTab())
+        self.addTabs(AnalysisTab("Analysis", self))
         self.addTabs(FilterTab("Filter", self, row_count=4))
 
     def getFreeParameterNames(
-        self, 
+        self,
         indicies: Union[int, List[int]] = None
     ) -> Union[str, List[str]]:
         """
@@ -1617,12 +1574,12 @@ class SimulationWindow(TabbedWindow):
             raise TypeError("name must be str")
 
     def getPlotChoices(
-        self, 
+        self,
         species: Union[str, List[str]] = None
     ) -> Union[List[str], Dict[str, List[str]]]:
         """
         Get stored names for quantities the user may choose to plot.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindow` to retrieve choices from
         :param species: specie(s) of quantities (e.g. "Variable", "Function", "Parameter")
         """
@@ -1668,7 +1625,7 @@ class SimulationWindow(TabbedWindow):
                 ]
             ]
         ]
-        
+
         return sg.Menu(
             menu_definition=menu_definition,
             key="-TOOLBAR MENU-"
@@ -1704,7 +1661,7 @@ class SimulationWindow(TabbedWindow):
                 values=(minimum_value, maximum_value, value_stepcount, default_unit)
             )
             slider_rows.append(Row(window=self, elements=parameter_slider.getElement()))
-        
+
         return slider_rows
 
     @storeElement
@@ -1715,7 +1672,7 @@ class SimulationWindow(TabbedWindow):
         :param self: :class:`~Layout.SimulationWindow.AestheticsTab` to retrieve element from
         """
         text = "Update Plot"
-        
+
         return sg.Button(
             button_text=text,
             tooltip="Click to update plot with new axis settings.",
@@ -1725,7 +1682,7 @@ class SimulationWindow(TabbedWindow):
     def getLayout(self) -> List[List[sg.Element]]:
         """
         Get layout for simulation window.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindow` to retrieve layout from
         """
         menu = self.getMenu()
@@ -1754,7 +1711,7 @@ class SimulationWindowRunner(WindowRunner):
     This window allows the user to...
         #. Choose which variable/function to plot on each x-axis and y-axis
         #. Choose which value of free parameters to assume for present plot
-    
+
     :ivar values: present values for all elements in window
     :ivar figure_canvas: object storing (1) canvas on which figure is plotted and (2) figure containing plot data
     :ivar model: :class:`~Function.Model` to simulate
@@ -1771,16 +1728,16 @@ class SimulationWindowRunner(WindowRunner):
     """
 
     def __init__(
-        self, 
-        name: str, 
-        model: Model = None, 
+        self,
+        name: str,
+        model: Model = None,
         results: Results = None,
         include_simulation_tab: bool = True,
         **kwargs
     ) -> None:
         """
         Constructor for :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
-        
+
         :param name: title of window
         :param model: :class:`~Function.Model` to simulate.
             Only called and required
@@ -1789,14 +1746,14 @@ class SimulationWindowRunner(WindowRunner):
         :param **kwargs: additional arguments to pass into :class:`~Layout.SimulationWindow.SimulationWindow`
         """
         window_object = SimulationWindow(
-            name, 
-            self, 
-            include_simulation_tab=include_simulation_tab, 
+            name,
+            self,
+            include_simulation_tab=include_simulation_tab,
             **kwargs
         )
         super().__init__(window_object)
         window_object.getWindow()
-        
+
         self.getPlotChoices = window_object.getPlotChoices
         self.getFreeParameterNames = window_object.getFreeParameterNames
 
@@ -1826,6 +1783,9 @@ class SimulationWindowRunner(WindowRunner):
         self.results = results_object
         self.resetResults = results_object.resetResults
         self.setResults = results_object.setResults
+        self.saveResult = results_object.saveResult
+        self.saveResults = results_object.saveResults
+        self.setResultsFolderpath = results_object.setFolderpath
 
     def includeSimulationTab(self) -> bool:
         """
@@ -1840,7 +1800,7 @@ class SimulationWindowRunner(WindowRunner):
     def getModel(self) -> Model:
         """
         Get model to simulate.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from
         """
         return self.model
@@ -1849,7 +1809,7 @@ class SimulationWindowRunner(WindowRunner):
         """
         Get function handle for derivative vector.
         Solve for and save derivative vector if it has not been called previously.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve derivative vector from
         """
         general_derivative_vector = self.general_derivative_vector
@@ -1865,7 +1825,7 @@ class SimulationWindowRunner(WindowRunner):
                 skip_parameters=self.getFreeParameterNames()
             )
             self.results.setEquilibriumExpressions(equilibrium_expressions=equilibrium_substitutions)
-        
+
         return self.general_derivative_vector
 
     def getResultsObject(self) -> Results:
@@ -1885,7 +1845,7 @@ class SimulationWindowRunner(WindowRunner):
             Must be "cartesian", "grid", or "color".
         :returns: List of axis names (e.g. ['x', 'y', 'c'])
         """
-        
+
         if filter is None:
             all_names = (
                 axis_name
@@ -1898,11 +1858,11 @@ class SimulationWindowRunner(WindowRunner):
             return self.axis_names[filter]
         else:
             raise TypeError("filter must be str")
-            
+
     def getFreeParameterIndex(self, name: str) -> int:
         """
         Get index of free parameter in collection of free-parameter names.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve free parameter names from
         :param name: name of free parameter to retrieve index of
         """
@@ -1915,7 +1875,7 @@ class SimulationWindowRunner(WindowRunner):
         Get possible values for free-parameter slider.
         This corresponds to the values the parameter is simulated at.
         Uses present state of :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve values from
         :param name: name of parameter to retrieve values
         """
@@ -1926,14 +1886,14 @@ class SimulationWindowRunner(WindowRunner):
         return np.linspace(slider_min, slider_max, step_count)
 
     def getClosestSliderIndex(
-        self, 
+        self,
         names: Union[str, List[str]] = None
     ) -> Union[int, Tuple[int, ...]]:
         """
         Get location/index of slider closest to value of free parameter.
         Location is discretized from zero to the number of free-parameter values.
         Uses present state of :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve slider from.
         :param names: name(s) of parameter(s) associated with slider.
             Defaults to names of all free parameters.
@@ -1962,7 +1922,7 @@ class SimulationWindowRunner(WindowRunner):
     def getLikeSpecies(self, like: str):
         """
         Get collection of quantity species that may be treated as over-time.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve species from
         :param like: species type to retrieve collection of species of.
             Can be "timelike" or "parameterlike".
@@ -1977,7 +1937,7 @@ class SimulationWindowRunner(WindowRunner):
     def getAxisQuantity(self, axis_name: str) -> Tuple[str, str, str]:
         """
         Get selected quantity name, specie, and condensor for desired axis.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve quantity name from
         :param axis_name: name of axis to retrieve quantity name from
         :returns: Tuple of quantity info.
@@ -2009,12 +1969,12 @@ class SimulationWindowRunner(WindowRunner):
         """
         Get selected method to calculate frequency.
         Uses present state of window runner.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve method from
         """
         # noinspection PyTypeChecker
-        frequency_tab: FrequencyTab = FrequencyTab.getInstances()[0]
-        method_key = getKeys(frequency_tab.getMethodElement())
+        analysis_tab: AnalysisTab = AnalysisTab.getInstances()[0]
+        method_key = getKeys(analysis_tab.getFrequencyMethodElement())
         method = self.getValue(method_key)
         return method
 
@@ -2026,8 +1986,8 @@ class SimulationWindowRunner(WindowRunner):
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve condensor from
         """
         # noinspection PyTypeChecker
-        frequency_tab: FrequencyTab = FrequencyTab.getInstances()[0]
-        condensor_key = getKeys(frequency_tab.getCondensorElement())
+        analysis_tab: AnalysisTab = AnalysisTab.getInstances()[0]
+        condensor_key = getKeys(analysis_tab.getFrequencyCondensorElement())
         condensor = self.getValue(condensor_key)
         return condensor
 
@@ -2039,8 +1999,8 @@ class SimulationWindowRunner(WindowRunner):
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve order from
         """
         # noinspection PyTypeChecker
-        mean_tab: MeanTab = MeanTab.getInstances()[0]
-        order_key = getKeys(mean_tab.getOrderElement())
+        analysis_tab: AnalysisTab = AnalysisTab.getInstances()[0]
+        order_key = getKeys(analysis_tab.getMeanOrderElement())
         order = float(self.getValue(order_key))
         return order
 
@@ -2048,7 +2008,7 @@ class SimulationWindowRunner(WindowRunner):
         """
         Get info about time steps to run simulation.
         Uses present state of :class:`~Layout.SimulationWindow.SimulationWindowRunner` to determine info.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve time info from
         :returns: Tuple of time info.
             First element is initial time for simulation.
@@ -2073,7 +2033,7 @@ class SimulationWindowRunner(WindowRunner):
         """
         Get present value of parameter slider.
         Uses present state of :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve slider from
         :param name: name of parameter associated with slider
         """
@@ -2121,7 +2081,7 @@ class SimulationWindowRunner(WindowRunner):
         Run simulation window.
         This function links each possible event to an action.
         When an event is triggered, its corresponding action is executed.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to run
         """
         # noinspection PyTypeChecker
@@ -2202,7 +2162,7 @@ class SimulationWindowRunner(WindowRunner):
         """
         Run simulation for a single set of free-parameter values.
         Save results in :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from and save results in
         :param index: index for free-parameter values.
             Results are saved at this index.
@@ -2235,12 +2195,21 @@ class SimulationWindowRunner(WindowRunner):
             parameter_values = {}
 
         derivatives = [derivative.subs(parameter_values) for derivative in general_derivative_vector]
-        ydot = lambdify((Symbol('t'), tuple(variable_names)), derivatives, modules=["math"])
+        ydot = lambdify(
+            (Symbol('t'), tuple(variable_names)),
+            derivatives,
+            modules=["math"]
+        )
         try:
             solution = solveODE(ydot, y0, times)
             # noinspection PyTypeChecker
             results = formatResultsAsDictionary(*solution, variable_names)
-            self.setResults(index=index, results=results)
+            for variable_name, result in results.items():
+                self.saveResult(
+                    index=index,
+                    name=variable_name,
+                    result=result
+                )
         except OverflowError:
             print("overflow:", parameter_values)
 
@@ -2248,14 +2217,14 @@ class SimulationWindowRunner(WindowRunner):
         """
         Run simulations for all possible combinations of free-parameter values.
         Save results in :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from and save results in
         """
         self.resetResults()
         free_parameter_names = self.getFreeParameterNames()
         model = self.getModel()
         variable_names = model.getVariables(
-            time_evolution_types="Temporal", 
+            time_evolution_types="Temporal",
             return_type=str
         )
         times = np.linspace(*self.getInputTimes())
@@ -2273,6 +2242,14 @@ class SimulationWindowRunner(WindowRunner):
             y0=y0,
             times=times
         )
+
+        save_folderpath = sg.PopupGetFolder(
+            message="Enter Folder to Save Into",
+            title="Run Simulation"
+        )
+
+        self.setResultsFolderpath(save_folderpath)
+        self.saveResults()
 
         if (parameter_count := len(free_parameter_names)) == 0:
             runSimulation((), {})
@@ -2295,7 +2272,7 @@ class SimulationWindowRunner(WindowRunner):
             for simulation_number, indicies in enumerate(free_parameter_index_combos):
                 if not updateProgressMeter(simulation_number):
                     break
-                
+
                 parameter_simulation_values = {}
                 for free_parameter_index in range(parameter_count):
                     free_parameter_name = free_parameter_names[free_parameter_index]
@@ -2303,24 +2280,24 @@ class SimulationWindowRunner(WindowRunner):
                     parameter_simulation_values[free_parameter_name] = free_parameter_value
 
                 runSimulation(
-                    indicies, 
+                    indicies,
                     parameter_simulation_values
                 )
             updateProgressMeter(total_combo_count)
-        
+
         self.updatePlot()
 
     def getPlotAesthetics(self) -> Dict[str, Optional[Union[str, float]]]:
         """
         Get plot-aesthetics input by user.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationTab` to retrieve aesthetic inputs from
         """
 
         def getValues(elements: Union[str, Iterable[str]]) -> Optional[Union[str, float, bool, tuple]]:
             """
             Get value for plot aesthetic from element key.
-            
+
             :param elements: :class:`~PySimpleGUI.Element`(s) to retrieve value(s) from
             """
 
@@ -2351,7 +2328,7 @@ class SimulationWindowRunner(WindowRunner):
         grid_names = self.getAxisNames("grid")
         cartesian_names = self.getAxisNames("cartesian")
         color_name = self.getAxisNames("color")[0]
-        
+
         scale_type_dict = {
             "Linear": "linear",
             "Logarithmic": "log"
@@ -2363,44 +2340,44 @@ class SimulationWindowRunner(WindowRunner):
         colorbar_tab: ColorbarTab = ColorbarTab.getInstances()[0]
         # noinspection PyTypeChecker
         plotting_tab: PlottingTab = PlottingTab.getInstances()[0]
-        
+
         scale_type = {}
-        
+
         normalize = {
             axis_name: getValues(plotting_tab.getAxisNormalizeElement(axis_name))
             for axis_name in all_names
         }
-        
+
         scale_factor = {
             axis_name: getValues(axis_tab.getScaleFactorInputElement(axis_name))
             for axis_name in cartesian_names
         }
         scale_factor[color_name] = getValues(colorbar_tab.getScaleFactorInputElement())
-        
+
         label = {
             axis_name: getValues(axis_tab.getTitleInputElement(axis_name))
             for axis_name in (*cartesian_names, *grid_names)
         }
         label[color_name] = getValues(colorbar_tab.getTitleInputElement())
-        
+
         autoscale_on = {
             axis_name: getValues(axis_tab.getAutoscaleElement(axis_name))
             for axis_name in cartesian_names
         }
         autoscale_on[color_name] = getValues(colorbar_tab.getAutoscaleElement())
-        
+
         lim = {}
         for axis_name in cartesian_names:
             lim[axis_name] = (None, None) if autoscale_on[axis_name] else getValues(axis_tab.getLimitInputElements(axis_name))
         lim[color_name] = (None, None) if autoscale_on[color_name] else getValues(colorbar_tab.getLimitInputElements())
-        
+
         for axis_name in cartesian_names:
             scale_type[axis_name] = scale_type_dict[getValues(axis_tab.getScaleTypeInputElement(axis_name))]
 
         aesthetics_kwargs = {
             "scale_factor": scale_factor,
             "normalize": normalize,
-            
+
             "segment_count": int(getValues(colorbar_tab.getSegmentCountElement())),
             "colormap": getValues(colorbar_tab.getColormapInputElement()),
 
@@ -2435,7 +2412,7 @@ class SimulationWindowRunner(WindowRunner):
     def getFigure(self, data: Dict[str, ndarray] = None, **kwargs) -> Figure:
         """
         Get matplotlib figure for results.
-        
+
         :param data: data to plot.
             Key is name of axis.
             Value is data to plot along axis.
@@ -2466,7 +2443,7 @@ class SimulationWindowRunner(WindowRunner):
         """
         Update figure-canvas aggregate in simulation window.
         This plots the most up-to-date data and aesthetics on the plot.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to update figure-canvas in
         :param figure: new figure (containing most up-to-date info) to plot
         :returns: New figure-canvas stored in window runner.
@@ -2520,7 +2497,7 @@ class SimulationWindowRunner(WindowRunner):
         for filter_row in filter_rows:
             is_active_element = filter_row.getIsActiveElement()
             is_active = self.getValue(getKeys(is_active_element))
-            
+
             if is_active:
                 left_element = filter_row.getLeftVariableElement()
                 left_value = self.getValue(getKeys(left_element))
@@ -2533,7 +2510,7 @@ class SimulationWindowRunner(WindowRunner):
 
                 new_inequality_filter = (left_value, inequality_type, right_value)
                 inequality_filters.append(new_inequality_filter)
-        
+
         return inequality_filters
 
     def updatePlot(
@@ -2546,7 +2523,7 @@ class SimulationWindowRunner(WindowRunner):
         """
         Update window-embedded plot.
         Do nothing if simulation has never been run.
-        
+
         :param index: index of parameter value for free parameter(s)
         :param plot_quantities: dictionary storing info for plot quantities.
             Key is name of axis to plot quantity on.
@@ -2590,30 +2567,30 @@ class SimulationWindowRunner(WindowRunner):
             "index": index,
             "transform_name": transform_name
         }
-        
+
         axis2name = {
-            axis: plot_quantities[axis][0] 
+            axis: plot_quantities[axis][0]
             for axis in plot_quantities_keys
         }
 
         axis2specie = {
-            axis: plot_quantities[axis][1] 
+            axis: plot_quantities[axis][1]
             for axis in plot_quantities_keys
         }
         axis2condensor_name = {
-            axis: plot_quantities[axis][2] 
+            axis: plot_quantities[axis][2]
             for axis in plot_quantities_keys
         }
         is_timelike = {
             axis: (
-                axis2specie[axis] in timelike_species and 
+                axis2specie[axis] in timelike_species and
                 axis2condensor_name[axis] == "None"
             )
             for axis in plot_quantities_keys
         }
         is_condensed = {
             axis: (
-                axis2specie[axis] in timelike_species and 
+                axis2specie[axis] in timelike_species and
                 axis2condensor_name[axis] != "None"
             )
             for axis in plot_quantities_keys
@@ -2624,8 +2601,8 @@ class SimulationWindowRunner(WindowRunner):
         }
         is_nonelike = {
             axis: (
-                not is_timelike[axis] and 
-                not is_condensed[axis] and 
+                not is_timelike[axis] and
+                not is_condensed[axis] and
                 not is_parameterlike[axis]
             )
             for axis in plot_quantities_keys
@@ -2699,7 +2676,7 @@ class SimulationWindowRunner(WindowRunner):
         multiple_condenseds = condensed_count >= 2
         exist_timelike = timelike_count >= 1
         multiple_timelikes = timelike_count >= 2
-        
+
         if is_nonelike['x'] or is_nonelike['y']:
             plot_type = ''
         elif exist_timelike and not multiple_timelikes:
@@ -2755,7 +2732,7 @@ class SimulationWindowRunner(WindowRunner):
                     plot_type += axis_name
                 elif is_nonelike[axis_name]:
                     pass
-            
+
             if is_parameterlike['X'] or is_parameterlike['Y']:
                 plot_type += '_'
                 for axis_name in ['X', 'Y']:
@@ -2763,7 +2740,7 @@ class SimulationWindowRunner(WindowRunner):
                         plot_type += axis_name
                     elif is_nonelike[axis_name]:
                         pass
-            
+
         try:
             print(plot_type, {key: value.shape for key, value in results.items()})
             if plot_type != '':
@@ -2779,7 +2756,7 @@ class SimulationWindowRunner(WindowRunner):
         """
         Update plot choices for desired axis(es).
         This allows user to select new set of quantities to plot.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to change plot choices in
         :param names: name(s) of axis(es) to update choices for.
             Updates all axes by default.
@@ -2836,23 +2813,19 @@ class SimulationWindowRunner(WindowRunner):
 
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve results from
         """
-        file_types = (("Compressed File", "*.zip"), ("ALL files", "*.*"),)
-
-        filepath = sg.PopupGetFile(
-            message="Enter Filename",
-            title="Save Results",
-            save_as=True,
-            file_types=file_types
+        folderpath = sg.PopupGetFolder(
+            message="Enter Folderpath",
+            title="Save Results"
         )
 
-        if isinstance(filepath, str):
+        if isinstance(folderpath, str):
             results_obj = self.getResultsObject()
-            results_obj.saveToFile(filepath)
+            results_obj.saveResults(folderpath)
 
     def saveModelParameters(self) -> None:
         """
         Save parameter values from model into file.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve model from
         """
         file_types = (
@@ -2868,7 +2841,7 @@ class SimulationWindowRunner(WindowRunner):
             save_as=True,
             file_types=file_types
         )
-        
+
         if isinstance(filepath, str):
             model = self.getModel()
             model.saveParametersToFile(filepath)
@@ -2885,7 +2858,7 @@ class SimulationWindowRunner(WindowRunner):
             ("Portable Document Format", "*.pdf"),
             ("ALL Files", "*.*"),
         )
-        
+
         filepath = sg.PopupGetFile(
             message="Enter Filename",
             title="Save Functions",
@@ -2921,11 +2894,15 @@ class SimulationWindowRunner(WindowRunner):
             model = self.getModel()
             model.saveVariablesToFile(filename)
 
-    def saveFigure(self, name: str = None, dpi: int=300) -> None:
+    def saveFigure(
+        self,
+        name: str = None,
+        dpi: int = 300
+    ) -> None:
         """
         Save displayed figure as image file if name is None.
         Save animation of figures while sweeping over a free parameter if name is str.
-        
+
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve figure from
         :param name: name of parameter to loop over for GIF
         :param dpi: DPI to save figure as
@@ -2951,8 +2928,15 @@ class SimulationWindowRunner(WindowRunner):
                     figure.savefig(filepath, dpi=dpi)
                 except OSError:
                     sg.PopupError(f"cannot save figure as {filepath:s}")
+            elif filepath is None:
+                pass
+            else:
+                sg.PopupError("invalid filepath")
         elif isinstance(name, str):
-            file_types = [("Compressed File", "*.zip"), ("ALL Files", "*.*")]
+            file_types = [
+                ("Compressed File", "*.zip"),
+                ("ALL Files", "*.*"),
+            ]
 
             zip_filepath = sg.PopupGetFile(
                 message="Enter Filename",
@@ -2992,11 +2976,14 @@ class SimulationWindowRunner(WindowRunner):
                             data_index[parameter_index] = image_index
                             parameter_value = parameter_values[image_index]
                             inset_parameters[name]["value"] = parameter_value
-                            figure = self.updatePlot(index=tuple(data_index), inset_parameters=inset_parameters)
+                            figure = self.updatePlot(
+                                index=tuple(data_index),
+                                inset_parameters=inset_parameters
+                            )
 
                             png_filepath = join(save_directory, f"{name:s}_{image_index:d}.png")
                             figure.savefig(png_filepath, dpi=dpi)
-                            
+
                             writer.append_data(imageio.imread(png_filepath))
                             zipfile.write(png_filepath, basename(png_filepath))
                             os.remove(png_filepath)
@@ -3013,5 +3000,7 @@ class SimulationWindowRunner(WindowRunner):
                     os.remove(yaml_filepath)
 
                     updateProgressMeter(image_count)
+            elif filepath is None:
+                pass
             else:
                 sg.PopupError("invalid filepath")
