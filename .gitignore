@@ -3,8 +3,7 @@ __pycache__/
 Recreation/
 .vscode/
 genRST.py
-convert_res.py
+convert_res*.py
 plot_types.csv
-temp.csv
-temp.py
-temp.tex
+temp.*
+temp*.*
