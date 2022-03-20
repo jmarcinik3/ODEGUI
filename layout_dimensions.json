@@ -290,7 +290,7 @@
         }
       },
       "transform_type_combobox": {
-        "width": 10,
+        "width": 24,
         "height": 10
       }
     },
@@ -307,7 +307,7 @@
           }
         },
         "method_combobox": {
-          "width": 30,
+          "width": 24,
           "height": 1
         },
         "condensor_combobox": {

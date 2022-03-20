@@ -1,26 +1,27 @@
 import numpy as np
 from numpy import ndarray
-from scipy import fft, signal
+from scipy.fft import rfft, rfftfreq
+from scipy.signal import correlate, find_peaks, hilbert
 from scipy.stats import stats
 
 
 def normalizeArray(data: ndarray) -> ndarray:
     """
     Normalize data in array, i.e. scale data such that it fits between -1 and 1, inclusively.
-    
+
     :param data: array of data to normalize
     """
     data_abs = np.abs(data)
     data_maxabs = data_abs.max()
     data_normalized = data / data_maxabs
-    
+
     return data_normalized
-    
+
 
 def oscillationFrequency(
     data: ndarray,
     times: ndarray,
-    calculation_method: str = "autocorrelation",
+    calculation_method: str = "maxima_separation",
     condensing_method: str = "average"
 ) -> float:
     """
@@ -32,7 +33,6 @@ def oscillationFrequency(
         "maxima_separation" uses peak-to-peak separation of waveform.
         "minima_separation" uses trough-to-trough separation of waveform.
         "extrema_separation" uses peaks and troughs separation of waveform.
-        "autocorrelation" uses peak-to-peak separation for autocorrelation of waveform.
     :param condensing_method: method used to "average" frequencies.
         "average" uses arithmetic mean of frequencies.
         "maximum" uses maximum of frequencies.
@@ -42,25 +42,8 @@ def oscillationFrequency(
     """
     calculation_method = calculation_method.lower()
     condensing_method = condensing_method.lower()
-    
-    if "autocorrelation" in calculation_method:
-        autocorrelation = correlationTransform(data)
-        lags = correlationLags(times)
 
-        argrelmax_correlation = signal.argrelmax(autocorrelation)[0]
-
-        if argrelmax_correlation.size >= 1:
-            argrelmax_lags = lags[argrelmax_correlation]
-            delta_lags = argrelmax_lags[1:] - argrelmax_lags[:-1]
-            frequencies = 1 / delta_lags
-            
-            """fourier_temp = fourierTransform(autocorrelation)
-            fourier_frequencies = fourierFrequencies(times)
-            argrelmax_fourier = signal.argrelmax(fourier_temp)
-            relmax_frequencies = fourier_frequencies[argrelmax_fourier]"""
-        else:
-            frequencies = np.array([])
-    elif "separation" in calculation_method:
+    if "separation" in calculation_method:
         if "max" in calculation_method or "min" in calculation_method:
             def time_to_frequency(initial_time: float, final_time: float) -> float:
                 return 1 / (final_time - initial_time)
@@ -72,15 +55,15 @@ def oscillationFrequency(
 
         extrema_indicies = np.array([], dtype=np.int32)
         if "max" in calculation_method or "extrema" in calculation_method:
-            maxima_indicies = signal.find_peaks(data)[0]
+            maxima_indicies = find_peaks(data)[0]
             extrema_indicies = np.append(extrema_indicies, maxima_indicies)
         if "min" in calculation_method or "extrema" in calculation_method:
-            minima_indicies = signal.find_peaks(-data)[0]
+            minima_indicies = find_peaks(-data)[0]
             extrema_indicies = np.append(extrema_indicies, minima_indicies)
         extrema_indicies.sort()
-        
+
         extrema_times = times[extrema_indicies]
-        frequencies = time_to_frequency(extrema_times[0:-1], extrema_times[1:]) 
+        frequencies = time_to_frequency(extrema_times[0:-1], extrema_times[1:])
     else:
         raise ValueError("invalid calculation method")
 
@@ -99,7 +82,7 @@ def oscillationFrequency(
             raise ValueError("invalid condensing method")
     else:
         frequency = 0
-    
+
     return frequency
 
 
@@ -137,7 +120,7 @@ def fourierTransform(data: ndarray) -> ndarray:
 
     :param data: array to calculate Fourier transform for
     """
-    fourier_data = fft.rfft(data)
+    fourier_data = rfft(data)
     fourier_data = abs(fourier_data)
     return fourier_data
 
@@ -148,12 +131,12 @@ def fourierFrequencies(times: ndarray) -> ndarray:
 
     :param times: array of times to calculate frequencies from
     """
-    times_count = times.size
+    times_size = times.size
 
     initial_time = times[0]
     final_time = times[-1]
-    time_resolution = (final_time - initial_time) / (times_count - 1)
-    frequencies = fft.rfftfreq(times_count, time_resolution)
+    time_resolution = (final_time - initial_time) / (times_size - 1)
+    frequencies = rfftfreq(times_size, time_resolution)
 
     return frequencies
 
@@ -161,31 +144,60 @@ def fourierFrequencies(times: ndarray) -> ndarray:
 def correlationTransform(data: ndarray) -> ndarray:
     """
     Get autocorrelation function of given data.
-    
+
     :param data: array for function to retrieve autocorrelation from
     """
-    data_count = data.size
-    correlation = signal.correlate(
+    data_size = data.size
+    correlation = correlate(
         data,
         data,
         mode="same"
-    )[data_count // 2:]
-    
+    )[data_size // 2:]
+
     return correlation
 
 
 def correlationLags(times: ndarray) -> ndarray:
     """
     Get lag times association with autocorrelation function.
-    
+
     :param times: array of times to retrieve lag times from
     """
-    times_count = times.size
+    times_size = times.size
     """lags = signal.correlation_lags(
-        times_count,
-        times_count,
+        times_size,
+        times_size,
         mode="same"
-    )[times_count // 2:]"""
-    
-    lag_times = times[:times_count // 2] - times[0]
+    )[times_size // 2:]"""
+
+    lag_times = times[:times_size // 2] - times[0]
     return lag_times
+
+
+def analyticSignal(data: ndarray) -> ndarray:
+    mean_data = holderMean(data)
+    centered_data = data - mean_data
+    analytic_signal = hilbert(centered_data)
+    return analytic_signal
+
+
+def instantaneousAmplitude(data: ndarray) -> ndarray:
+    analytic_signal = analyticSignal(data)
+    instantaneous_amplitude = np.abs(analytic_signal)
+    return instantaneous_amplitude
+
+
+def instantaneousPhase(data: ndarray) -> ndarray:
+    analytic_signal = analyticSignal(data)
+    instantaneous_phase = np.unwrap(np.angle(analytic_signal))
+    return instantaneous_phase
+
+
+def instantaneousFrequency(
+    data: ndarray,
+    times: ndarray
+) -> ndarray:
+    instantaneous_phase = instantaneousPhase(data)
+    instantaneous_frequency = np.diff(instantaneous_phase) / (2 * np.pi * (times[1:] - times[:-1]))
+
+    return instantaneous_frequency

@@ -864,7 +864,14 @@ class PlottingTab(Tab, StoredObject):
 
         :param self: :class:`~Layout.SimulationWindow.PlottingTab` to retrieve element from
         """
-        transform_types = ["None", "Fourier", "Autocorrelation"]
+        transform_types = [
+            "None", 
+            "Fourier", 
+            "Autocorrelation",
+            "Instantaneous Amplitude",
+            "Instantaneous Frequency",
+            "Instantaneous Phase"
+        ]
 
         return sg.InputCombo(
             values=transform_types,

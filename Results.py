@@ -12,9 +12,7 @@ from numpy import ndarray
 from sympy import Expr, Symbol
 from sympy.utilities.lambdify import lambdify
 
-from CustomMath import (correlationLags, correlationTransform,
-                        fourierFrequencies, fourierTransform, holderMean,
-                        oscillationFrequency)
+from CustomMath import *
 from Function import Model, Parameter
 from macros import recursiveMethod
 from YML import saveConfig
@@ -581,11 +579,31 @@ class Results:
             if transform_name != "None":
                 is_time = quantity_names == 't'
                 if transform_name == "Fourier":
-                    fourierFunction = fourierFrequencies if is_time else fourierTransform
-                    single_results = fourierFunction(single_results)
+                    if is_time:
+                        single_results = fourierFrequencies(single_results)
+                    else:
+                        single_results = fourierTransform(single_results)
                 elif transform_name == "Autocorrelation":
-                    correlationFunction = correlationLags if is_time else correlationTransform
-                    single_results = correlationFunction(single_results)
+                    if is_time:
+                        single_results = correlationLags(single_results)
+                    else:
+                        single_results = correlationTransform(single_results)
+                elif transform_name == "Instantaneous Amplitude":
+                    if not is_time:
+                        single_results = instantaneousAmplitude(single_results)
+                elif transform_name == "Instantaneous Frequency":
+                    if is_time:
+                        single_results = (single_results[1:] + single_results[:-1]) / 2
+                    else:
+                        times = self.getResultsOverTime(
+                            index=index,
+                            quantity_names='t',
+                            inequality_filters=inequality_filters
+                        )
+                        single_results = instantaneousFrequency(single_results, times)
+                elif transform_name == "Instantaneous Phase":
+                    if not is_time:
+                        single_results = instantaneousPhase(single_results)
                 else:
                     raise ValueError(f"invalid transform name ({transform_name:s})")
             
@@ -594,7 +612,8 @@ class Results:
                     times = self.getResultsOverTime(
                         index=index,
                         quantity_names="t",
-                        transform_name=transform_name
+                        transform_name=transform_name,
+                        inequality_filters=inequality_filters
                     )
                     frequency = oscillationFrequency(
                         single_results,
@@ -603,7 +622,10 @@ class Results:
                     )
                     return frequency
                 elif condensor_name == "Mean":
-                    return holderMean(single_results)
+                    return holderMean(
+                        single_results, 
+                        **condensor_kwargs
+                    )
                 elif condensor_name == "Standard Deviation":
                     return np.std(single_results)
                 else:
