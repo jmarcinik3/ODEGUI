@@ -1,5 +1,4 @@
 import json
-from functools import partial
 from io import BytesIO
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
@@ -93,7 +92,11 @@ def loadConfig(filepath: str, archive: ZipFile = None) -> Union[dict, list]:
     assert isinstance(filepath, str)
 
     if archive is None:
-        file = open(filepath, 'r')
+        try:
+            file = open(filepath, 'r')
+        except FileNotFoundError as error:
+            print(str(error))
+            return None
     else:
         assert isinstance(archive, ZipFile)
         file = BytesIO(archive.read(filepath))
