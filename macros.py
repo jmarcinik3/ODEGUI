@@ -11,6 +11,7 @@ from typing import Any, Callable, Iterable, List, Type, Union
 import numpy as np
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
+from more_itertools import locate
 from numpy import ndarray
 from pint import Quantity
 from pylatexenc.latexencode import unicode_to_latex
@@ -64,9 +65,27 @@ def unique(nonunique: List[Any]) -> List[Any]:
     unique_list = [element for element in nonunique if not (element in seen or seen.add(element))]
     return unique_list
 
+def removeAtIndicies(
+    elements: List[Any],
+    indicies: List[int]
+):
+    """
+    Get list with elements at indicated indicies removed.
+    
+    :param elements: collection elements to remove from
+    :param indicies: collection of inidicies to remove at
+    """
+    large_to_small = sorted(indicies, reverse=True)
+    for index in large_to_small:
+        if index < len(elements):
+            elements.pop(index)
+    
+    return elements
 
 def getIndicies(
-        elements: Union[Any, List[Any]], element_list: list, element_class: type = None
+        elements: Union[Any, List[Any]],
+        element_list: list,
+        element_class: type = None
 ) -> Union[int, List[int]]:
     """
     Get indicies of specified element(s) in list.
@@ -78,18 +97,24 @@ def getIndicies(
     :param element_list: collection to search for indicies in
     :param element_class: return only elements of this type.
         Acts as a filter.
-    :returns: int if elements is a list.
-        list of int if elements is not a list.
+    :returns: list of int if elements is not a list.
+        list of list of int if elements is a list.
     """
     if isinstance(elements, list):
-        return [getIndicies(element, element_list) for element in elements]
+        return [
+            getIndicies(element, element_list)
+            for element in elements
+        ]
     elif element_class is None or isinstance(elements, element_class):
-        return element_list.index(elements)
+        return list(locate(element_list, lambda x: x == elements))
     else:
-        raise TypeError("element input must be {element_class:s} or list")
+        raise TypeError(f"element input must be {element_class:s} or list")
 
 
-def getElements(indicies: Union[int, List[int]], element_list: list) -> Union[Any, List[Any]]:
+def getElements(
+    indicies: Union[int, List[int]], 
+    element_list: list
+) -> Union[Any, List[Any]]:
     """
     Get element(s) at index(es) in list.
     
