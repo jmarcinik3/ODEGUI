@@ -65,13 +65,14 @@ def unique(nonunique: List[Any]) -> List[Any]:
     unique_list = [element for element in nonunique if not (element in seen or seen.add(element))]
     return unique_list
 
+
 def removeAtIndicies(
     elements: List[Any],
     indicies: List[int]
 ):
     """
     Get list with elements at indicated indicies removed.
-    
+
     :param elements: collection elements to remove from
     :param indicies: collection of inidicies to remove at
     """
@@ -79,8 +80,9 @@ def removeAtIndicies(
     for index in large_to_small:
         if index < len(elements):
             elements.pop(index)
-    
+
     return elements
+
 
 def getIndicies(
         elements: Union[Any, List[Any]],
@@ -89,10 +91,10 @@ def getIndicies(
 ) -> Union[int, List[int]]:
     """
     Get indicies of specified element(s) in list.
-    
+
     __Recursion Base__
         return single index: elements [element_class] or element_class [None]
-    
+
     :param elements: elements to retreive indicies of
     :param element_list: collection to search for indicies in
     :param element_class: return only elements of this type.
@@ -112,15 +114,15 @@ def getIndicies(
 
 
 def getElements(
-    indicies: Union[int, List[int]], 
+    indicies: Union[int, List[int]],
     element_list: list
 ) -> Union[Any, List[Any]]:
     """
     Get element(s) at index(es) in list.
-    
+
     __Recursion Base__
         return single element: indicies [int]
-    
+
     :param indicies: index(es) to retrieve element(s) at
     :param element_list: list to retrieve element(s) from
     :returns: object if indicies is int.
@@ -135,7 +137,7 @@ def getElements(
 def commonElement(set1: set, set2: set, n: int = 1) -> bool:
     """
     Determine whether list1 and list2 have at least n common elements.
-        
+
     :param set1: first arbitrary set of elements
     :param set2: second arbitrary set of elements
     :param n: minimum number of common elements
@@ -148,7 +150,7 @@ def commonElement(set1: set, set2: set, n: int = 1) -> bool:
 def toList(obj: Any, object_class: type = None) -> list:
     """
     Convert input to list.
-    
+
     :param obj: object to convert to a list
     :param object_class: class of object if not list
     :returns: object itself if object is a list.
@@ -167,7 +169,7 @@ def formatValue(quantity: Union[Quantity, float]) -> str:
     Format value for quantity or float.
     Display full precision.
     Remove trailing zeros.
-    
+
     :param quantity: quantity or float to format
     """
     if isinstance(quantity, Quantity):
@@ -196,32 +198,32 @@ def formatUnit(quantity: Quantity, as_tex: bool = False) -> str:
     Format unit as string from quantity.
     Display unit as abbreviations.
     Remove spaces between units.
-    
+
     :param quantity: quantity to format
     :param as_tex: set True to retrieve output compatible with LaTeX.
         Set False to retrieve output compatible with unicode.
     """
     unit = quantity.units
     formatted_unit = f"{unit:~}".replace(' ', '')
-    
+
     if as_tex:
         formatted_unit = formatted_unit.replace('**', '^')
         formatted_unit = unicode_to_latex(
             formatted_unit,
             non_ascii_only=True).replace("\\text", "\\")
-    
+
     return formatted_unit
 
 
 def formatQuantity(quantity: Quantity) -> str:
     """
     Format quantity as string with value and unit.
-    
+
     :param quantity: quantity to format
     """
     value, unit = formatValue(quantity), formatUnit(quantity)
     formatted_quantity = f"{value:s} {unit:s}".replace("**", '^')
-    
+
     return formatted_quantity
 
 
@@ -244,7 +246,7 @@ def getTexImage(name: str, tex_folder: str = "tex", **kwargs) -> Union[sg.Image,
 def tex2png(tex_text: str, filepath: str, overwrite: bool = False) -> None:
     """
     Save tex for given text as PNG.
-    
+
     :param tex_text: tex expression of text
     :param filepath: location to save PNG file
     :param overwrite: set True to overwrite existing quantity if name already exists.
@@ -265,7 +267,7 @@ def tex2png(tex_text: str, filepath: str, overwrite: bool = False) -> None:
 def expression2png(name: str, expression: Expr, folder: str, filename: str, var2tex: str) -> str:
     """
     Generate PNG image of tex for variable.
-    
+
     :param name: name of variable to generate image for
     :param expression: tex expression to generate image for
     :param folder: output folder for image

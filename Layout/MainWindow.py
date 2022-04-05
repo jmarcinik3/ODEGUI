@@ -355,11 +355,11 @@ class ParameterRow(TabRow, StoredObject):
     """
 
     def __init__(
-            self,
-            name: str,
-            section: ParameterSection,
-            parameters: List[Parameter],
-            parameter_types: Tuple[str] = p_types
+        self,
+        name: str,
+        section: ParameterSection,
+        parameters: List[Parameter],
+        parameter_types: Tuple[str] = p_types
     ) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.ParameterRow`.
@@ -919,10 +919,10 @@ class FunctionTab(Tab):
     """
 
     def __init__(
-            self,
-            name: str,
-            window: MainWindow,
-            blueprint: Dict[str, List[Function]]
+        self,
+        name: str,
+        window: MainWindow,
+        blueprint: Dict[str, List[Function]]
     ) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.FunctionTab`.
@@ -1054,11 +1054,11 @@ class MainWindow(TabbedWindow):
     """
 
     def __init__(
-            self,
-            name: str,
-            runner: MainWindowRunner,
-            blueprint: dict,
-            stem2name2obj: Dict[str, Dict[str, Any]]
+        self,
+        name: str,
+        runner: MainWindowRunner,
+        blueprint: dict,
+        stem2name2obj: Dict[str, Dict[str, Any]]
     ) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.MainWindow`.
@@ -1457,13 +1457,13 @@ class MainWindowRunner(WindowRunner):
     """
 
     def __init__(
-            self,
-            name: str,
-            parameter_filepaths: Union[str, Iterable[str]],
-            function_filepaths: Union[str, Iterable[str]],
-            time_evolution_layout: str,
-            parameter_layout: str,
-            function_layout: str
+        self,
+        name: str,
+        parameter_filepaths: Union[str, Iterable[str]],
+        function_filepaths: Union[str, Iterable[str]],
+        time_evolution_layout: str,
+        parameter_layout: str,
+        function_layout: str
     ) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.MainWindowRunner`.
@@ -2179,7 +2179,8 @@ class MainWindowRunner(WindowRunner):
         return list(self.custom_parameters.keys())
 
     def getCustomParameterQuantities(
-            self, names: Union[str, Iterable[str]] = None
+        self, 
+        names: Union[str, Iterable[str]] = None
     ) -> Union[Quantity, Dict[str, Quantity]]:
         """
         Get custom value for parameter.
@@ -2244,7 +2245,9 @@ class MainWindowRunner(WindowRunner):
         )
 
     def getParameterNames(
-            self, parameter_types: Union[str, Iterable[str]] = None, custom_type: bool = None
+        self, 
+        parameter_types: Union[str, Iterable[str]] = None, 
+        custom_type: bool = None
     ) -> List[str]:
         """
         Get name(s) of parameter(s) in model.
@@ -2286,7 +2289,9 @@ class MainWindowRunner(WindowRunner):
             raise RecursiveTypeError(parameter_types)
 
     def getParameterQuantities(
-            self, names: Union[str, Iterable[str]] = None, form: str = "quantity"
+        self,
+        names: Union[str, Iterable[str]] = None,
+        form: str = "quantity"
     ) -> Optional[Union[Quantity, Dict[str, Quantity]]]:
         """
         Get parameter(s), including value and unit

@@ -263,10 +263,10 @@ class Model:
     """
 
     def __init__(
-            self,
-            variables: Union[Variable, List[Variable]] = None,
-            functions: Union[Function, List[Function]] = None,
-            parameters: Union[Parameter, List[Parameter]] = None
+        self,
+        variables: Union[Variable, List[Variable]] = None,
+        functions: Union[Function, List[Function]] = None,
+        parameters: Union[Parameter, List[Parameter]] = None
     ) -> None:
         """
         Constructor for :class:`~Function.Model`.
@@ -416,9 +416,9 @@ class Model:
         )
 
     def getFunctions(
-            self,
-            names: Union[str, List[str]] = None,
-            filter_type: Type[Union[Derivative, Dependent, Independent, Piecewise, NonPiecewise]] = None
+        self,
+        names: Union[str, List[str]] = None,
+        filter_type: Type[Union[Derivative, Dependent, Independent, Piecewise, NonPiecewise]] = None
     ) -> Union[Function, List[Function]]:
         """
         Get functions stored in model.
@@ -720,12 +720,12 @@ class Model:
         return derivative_objs
 
     def getEquilibriumSolutions(
-            self,
-            names: Union[str, List[str]] = None,
-            substitute_parameters: bool = True,
-            skip_parameters: Union[str, List[str]] = None,
-            substitute_constants: bool = True,
-            substitute_functions: bool = True
+        self,
+        names: Union[str, List[str]] = None,
+        substitute_parameters: bool = True,
+        skip_parameters: Union[str, List[str]] = None,
+        substitute_constants: bool = True,
+        substitute_functions: bool = True
     ) -> Dict[Symbol, Expr]:
         """
         Get equilibria solutions from derivatives, to substitute into variables.
@@ -810,12 +810,12 @@ class Model:
             return solutions
 
     def getEquilibriumFunction(
-            self,
-            name: str,
-            substitute_parameters: bool = True,
-            skip_parameters: Union[str, List[str]] = None,
-            substitute_constants: bool = True,
-            substitute_functions: bool = True
+        self,
+        name: str,
+        substitute_parameters: bool = True,
+        skip_parameters: Union[str, List[str]] = None,
+        substitute_constants: bool = True,
+        substitute_functions: bool = True
     ) -> Expr:
         """
         Get equilibrium function corresponding to derivative, to substitute into variable.
@@ -842,11 +842,11 @@ class Model:
         return equilibrium
 
     def getFunctionSubstitutions(
-            self,
-            names: Union[str, List[str]] = None,
-            substitute_parameters: bool = True,
-            skip_parameters: Union[str, List[str]] = None,
-            substitute_constants: bool = True
+        self,
+        names: Union[str, List[str]] = None,
+        substitute_parameters: bool = True,
+        skip_parameters: Union[str, List[str]] = None,
+        substitute_constants: bool = True
     ) -> Dict[Symbol, Expr]:
         """
         Get functions to substitute into variables.
@@ -920,7 +920,9 @@ class Model:
             return substitutions
 
     def getParameterSubstitutions(
-            self, names: Union[str, List[str]] = None, skip_parameters: Union[str, List[str]] = None
+        self,
+        names: Union[str, List[str]] = None,
+        skip_parameters: Union[str, List[str]] = None
     ) -> Dict[Symbol, float]:
         """
         Get parameter values to substitute into parameters.
@@ -943,14 +945,14 @@ class Model:
         return substitutions
 
     def getDerivativeVector(
-            self,
-            names: List[str] = None,
-            substitute_parameters: bool = True,
-            skip_parameters: Union[str, List[str]] = None,
-            substitute_equilibria: bool = True,
-            substitute_constants: bool = True,
-            substitute_functions: bool = True,
-            lambdified: bool = False
+        self,
+        names: List[str] = None,
+        substitute_parameters: bool = True,
+        skip_parameters: Union[str, List[str]] = None,
+        substitute_equilibria: bool = True,
+        substitute_constants: bool = True,
+        substitute_functions: bool = True,
+        lambdified: bool = False
     ) -> Tuple[Union[List[Expr], function], Optional[Dict[Symbol, Expr]]]:
         """
         Get derivative vector corresponding to derivatives in :class:`~Function.Model`
@@ -1031,8 +1033,7 @@ class Model:
             derivative_vector.append(expression)
 
         Function.setUseMemory(use_memory)
-
-        print("derivative vector:", derivative_vector)
+        
         if lambdified:
             derivative_vector = lambdify((Symbol('t'), tuple(names)), derivative_vector, modules=["math"])
         if substitute_equilibria:
@@ -1041,10 +1042,10 @@ class Model:
             return derivative_vector
 
     def getInitialValues(
-            self,
-            names: Union[str, List[str]] = None,
-            return_type: Type[Union[dict, list, ndarray]] = dict,
-            initial_values: Dict[Symbol, float] = None
+        self,
+        names: Union[str, List[str]] = None,
+        return_type: Type[Union[dict, list, ndarray]] = dict,
+        initial_values: Dict[Symbol, float] = None
     ) -> Union[float, List[float], ndarray, dict]:
         """
         Get initial values for variables in model.
@@ -1093,10 +1094,10 @@ class Model:
             raise RecursiveTypeError(names, [str, Symbol])
 
     def getVariables(
-            self,
-            names: Union[str, List[str]] = None,
-            time_evolution_types: Union[str, List[str]] = None,
-            return_type: Type[Union[Variable, Symbol, str]] = Variable
+        self,
+        names: Union[str, List[str]] = None,
+        time_evolution_types: Union[str, List[str]] = None,
+        return_type: Type[Union[Variable, Symbol, str]] = Variable
     ) -> Union[List[Variable], List[Symbol], List[str]]:
         """
         Get variables stored in model.
@@ -1154,8 +1155,8 @@ class Model:
             raise ValueError("return_type must be of type Variable, Symbol, str")
 
     def getDerivativesFromVariables(
-            self,
-            variables: Union[str, Symbol, Variable, List[Union[str, Symbol, Variable]]]
+        self,
+        variables: Union[str, Symbol, Variable, List[Union[str, Symbol, Variable]]]
     ) -> Union[Derivative, List[Derivative]]:
         """
         Get derivative corresponding to variable.
@@ -1460,13 +1461,13 @@ class Function(Child, Parent, PaperQuantity):
     functions = []
 
     def __init__(
-            self,
-            name: str,
-            properties: List[str],
-            children: Dict[str, Dict[str, Union[Symbol, List[Symbol]]]] = None,
-            model: Model = None,
-            filestem: str = '',
-            **kwargs
+        self,
+        name: str,
+        properties: List[str],
+        children: Dict[str, Dict[str, Union[Symbol, List[Symbol]]]] = None,
+        model: Model = None,
+        filestem: str = '',
+        **kwargs
     ) -> None:
         """
         Constructor for :class:`~Function.Function`.
@@ -1560,10 +1561,10 @@ class Function(Child, Parent, PaperQuantity):
         return self.getFreeSymbols(species="Function", **kwargs)
 
     def getFreeSymbols(
-            self,
-            species: str = None,
-            return_type: Type[Union[str, Symbol]] = Symbol,
-            **kwargs
+        self,
+        species: str = None,
+        return_type: Type[Union[str, Symbol]] = Symbol,
+        **kwargs
     ) -> Union[List[str], List[Symbol]]:
         """
         Get symbols in expression for function.
@@ -1711,9 +1712,9 @@ class Dependent:
         self.setGeneralArguments(arguments)
 
     def setGeneralArguments(
-            self,
-            arguments: Union[Union[str, List[str]], Dict[str, Union[Symbol, List[Symbol]]]],
-            specie: str = None
+        self,
+        arguments: Union[Union[str, List[str]], Dict[str, Union[Symbol, List[Symbol]]]],
+        specie: str = None
     ) -> None:
         """
         Format stored general arguments.
@@ -1996,7 +1997,8 @@ class Piecewise:
         return symbolic_conditions
 
     def getPieces(
-            self, return_type: Type[Union[str, Symbol, Function]] = Symbol
+        self,
+        return_type: Type[Union[str, Symbol, Function]] = Symbol
     ) -> Union[List[str], List[Symbol], List[Function]]:
         """
         Get pieces constituting piecewise function.
@@ -2078,10 +2080,10 @@ class NonPiecewise:
         self.expression = expression
 
     def getExpression(
-            self,
-            parent: Function = None,
-            substitute_dependents: bool = None,
-            expanded: Union[int, str] = False
+        self,
+        parent: Function = None,
+        substitute_dependents: bool = None,
+        expanded: Union[int, str] = False
     ) -> Expr:
         """
         Get symbol expression for function.

@@ -74,10 +74,10 @@ class ChooseVariablesWindow(ChooseChecksWindow):
     """
 
     def __init__(
-            self,
-            name: str,
-            variable_names: str,
-            runner: ChooseVariablesWindowRunner
+        self,
+        name: str,
+        variable_names: str,
+        runner: ChooseVariablesWindowRunner
     ):
         """
         Constructor for :class:`~Layout.ChooseVariablesWindow.ChooseVariablesWindow`.

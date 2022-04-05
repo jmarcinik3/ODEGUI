@@ -73,7 +73,10 @@ class SetParameterRow(Row):
 
 class SetFreeParametersWindow(Window):
     def __init__(
-            self, name: str, runner: SetFreeParametersWindowRunner, free_parameter_quantities: Dict[str, Quantity]
+        self,
+        name: str,
+        runner: SetFreeParametersWindowRunner,
+        free_parameter_quantities: Dict[str, Quantity]
     ) -> None:
         dimensions = {
             "window": (600, 700),
@@ -149,13 +152,14 @@ class SetFreeParametersWindowRunner(WindowRunner):
         self.getFreeParameterNames = window_object.getFreeParameterNames
 
     def getFreeParameterValues(
-            self, names: Union[str, Iterable[str]] = None
+        self,
+        names: Union[str, Iterable[str]] = None
     ) -> Union[List[float, float, int], Dict[str, List[float, float, int]]]:
         """
         Get info about free parameter values for simulation.
         Uses present state of window.
         Spawns popup error message if values are (1) of incorrect type or (2) missing.
-        
+
         :param self: :class:`~Layout.SetFreeParametersWindow.SetFreeParametersWindowRunner` to retrieve values from
         :param names: names of parameters to retrieve info for
         :returns: Dictionary of info for free parameters

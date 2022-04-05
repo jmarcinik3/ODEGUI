@@ -108,11 +108,11 @@ class ChooseParametersWindow(ChooseChecksWindow):
     """
 
     def __init__(
-            self,
-            name: str,
-            parameters: List[Parameter],
-            runner: ChooseParametersWindowRunner,
-            filename: str = None
+        self,
+        name: str,
+        parameters: List[Parameter],
+        runner: ChooseParametersWindowRunner,
+        filename: str = None
     ):
         """
         Constructor for :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow`.
@@ -233,7 +233,7 @@ class ChooseParametersWindowRunner(WindowRunner):
         parameter_names = self.getParameterNames()
         checked_parameter_names = [parameter_name for parameter_name in parameter_names if self.getValue(parameter_name)]
         return checked_parameter_names
-        
+
     def getChosenParameters(self) -> List[str]:
         """
         Get parameters chosen by user.
