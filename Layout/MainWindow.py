@@ -297,7 +297,7 @@ class TimeEvolutionTab(Tab):
         :param self: :class:`~Layout.MainWindow.TimeEvolutionTab` to retrieve as column
         """
         header_row = self.getHeaderRow()
-        rows = list(map(TimeEvolutionRow.getRow, self.getVariableRows()))
+        rows = list(map(TimeEvolutionRow.getElements, self.getVariableRows()))
         layout = header_row.getLayout() + rows
         return sg.Column(
             layout=layout,
@@ -632,7 +632,7 @@ class ParameterSection(Element):
         header_row_obj = Row(elements=header_column)
 
         collapsable_section = generateCollapsableSection(
-            layout=list(map(ParameterRow.getRow, self.getParameterRows())),
+            layout=list(map(ParameterRow.getElements, self.getParameterRows())),
             size=self.getDimensions(name="parameter_section"),
             key=f"-{psc_pre:s} {self.getName():s}-"
         )
@@ -976,7 +976,7 @@ class FunctionTab(Tab):
         :param self: :class:`~Layout.MainWindow.FunctionTab` to retrieve as column
         """
         header_row = self.getHeaderRow()
-        rows = list(map(FunctionRow.getRow, self.getFunctionRows()))
+        rows = list(map(FunctionRow.getElements, self.getFunctionRows()))
         layout = header_row.getLayout() + rows
 
         return sg.Column(
@@ -1520,7 +1520,7 @@ class MainWindowRunner(WindowRunner):
         
         while True:
             event, self.values = window.read()
-            print(event)
+            print('event:', event)
             if event in [sg.WIN_CLOSED, event == 'Exit']:
                 break
             menu_value = self.getValue(toolbar_menu_key)

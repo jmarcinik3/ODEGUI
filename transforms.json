@@ -1,0 +1,54 @@
+{
+    "None": {
+        "function": "identity",
+        "requires_times": false,
+        "module": "CustomMath",
+        "arguments": 1,
+        "point_mode": "full"
+    },
+    "Autocorrelation": {
+        "function": "correlationTransform",
+        "requires_times": false,
+        "time_function": "correlationLags",
+        "module": "CustomMath",
+        "arguments": 1,
+        "point_mode": "half_round"
+    },
+    "Fourier": {
+        "function": "fourierTransform",
+        "requires_times": false,
+        "time_function": "fourierFrequencies",
+        "module": "CustomMath",
+        "arguments": 1,
+        "point_mode": "half_roundup"
+    },
+    "Instantaneous Frequency": {
+        "function": "instantaneousFrequency",
+        "requires_times": true,
+        "time_function": "interpolateMidpoint",
+        "module": "CustomMath",
+        "arguments": 1,
+        "point_mode": "lose_one"
+    },
+    "Imaginary Exponentiation": {
+        "function": "imaginaryExponentiation",
+        "requires_times": false,
+        "module": "CustomMath",
+        "arguments": 1,
+        "point_mode": "full"
+    },
+    "Interpolate Midpoint": {
+        "function": "interpolateMidpoint",
+        "requires_times": false,
+        "module": "CustomMath",
+        "arguments": 1,
+        "point_mode": "lose_one"
+    },
+    "Phase-Locking Value": {
+        "function": "phaseLockingValue",
+        "requires_times": false,
+        "module": "CustomMath",
+        "arguments": 2,
+        "point_mode": "full"
+    }
+}

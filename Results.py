@@ -1,9 +1,10 @@
 import itertools
+import sys
 from functools import partial
 from math import prod
 from os import makedirs
 from os.path import dirname, exists, join
-from typing import Dict, Iterable, List, Tuple, Union
+from typing import Callable, Dict, Iterable, List, Tuple, Union
 
 import dill
 import numpy as np
@@ -14,8 +15,78 @@ from sympy.utilities.lambdify import lambdify
 
 from CustomMath import *
 from Function import Model, Parameter
-from macros import recursiveMethod
-from YML import saveConfig
+from macros import StoredObject, recursiveMethod
+from YML import loadConfig, saveConfig
+
+
+class Transform(StoredObject):
+    def __init__(self, name: str, transform_info: dict) -> None:
+        """
+        Constructor for :class:`~Results.Transform`.
+
+        :param name: name of transform
+        :param transform_info: dictionary of information to generate transform object
+        """
+        super().__init__(name)
+
+        transform_info_keys = list(transform_info.keys())
+        
+        module_name = transform_info["module"]
+        module = sys.modules[module_name]
+        
+        transform_function_name = transform_info["function"]
+        transform_function = getattr(module, transform_function_name)
+        
+        if "time_function" in transform_info_keys:
+            time_function_name = transform_info["time_function"]
+        else:
+            time_function_name = transform_function_name
+        time_function = getattr(module, time_function_name)
+
+        if "requires_times" in transform_info_keys:
+            requires_times = transform_info["requires_times"]
+        else:
+            requires_times = False
+        
+        argument_count = transform_info["arguments"]
+        
+        self.module = module
+        self.transform_function = transform_function
+        self.time_function = time_function
+        self.argument_count = argument_count
+        self.requires_times = requires_times
+
+    def getFunction(self) -> Callable:
+        return self.transform_function
+
+    def getTimeFunction(self) -> Callable:
+        return self.time_function
+
+    def getArgumentCount(self) -> int:
+        return self.argument_count
+
+    def requiresTimes(self) -> bool:
+        return self.requires_times
+
+class Coordinate(StoredObject):
+    def __init__(self, name: str, coordinate_info: dict) -> None:
+        """
+        Constructor for :class:`~Results.Transform`.
+
+        :param name: name of coordinate (e.g. "Cartesian")
+        :param transform_info: dictionary of information to generate coordinate object
+        """
+        super().__init__(name)
+
+        module_name = coordinate_info["module"]
+        module = sys.modules[module_name]
+        coordinate_function_name = coordinate_info["function"]
+        coordinate_function = getattr(module, coordinate_function_name)
+
+        self.coordinate_function = coordinate_function
+
+    def getFunction(self) -> Callable:
+        return self.coordinate_function
 
 
 class Results:
@@ -43,6 +114,8 @@ class Results:
         self,
         model: Model,
         free_parameter_values: Dict[str, ndarray],
+        transform_config_filepath: str = "transforms.json",
+        coordinate_config_filepath: str = "coordinates.json",
         folderpath: str = None,
         results: dict = None
     ) -> None:
@@ -53,10 +126,10 @@ class Results:
         :param free_parameter_values: dictionary of values for free parameters.
             Key is name of free parameter.
             Value is possible values for free parameter.
-        :param folderpath: folder path (*.por) containing relevant Results files.
+        :param folderpath: folder path containing relevant Results files.
             Save and load here.
         """
-        
+
         self.folderpath = folderpath
         self.data_foldername = "data"
         self.stepcount = None
@@ -65,14 +138,22 @@ class Results:
             for index, result in results.items():
                 self.setResults(index, result)
 
+        transform_config = loadConfig(transform_config_filepath)
+        for transform_name, transform_info in transform_config.items():
+            transform_obj = Transform(transform_name, transform_info)
+
+        coordinate_config = loadConfig(coordinate_config_filepath)
+        for coordinate_name, coordinate_info in coordinate_config.items():
+            coordinate_obj = Coordinate(coordinate_name, coordinate_info)
+
         self.model = model
         self.variable_names = model.getVariables(return_type=str)
         self.function_names = model.getFunctionNames()
-        
+
         self.general_function_expressions = {}
         self.free_parameter_values = free_parameter_values
         self.general_equilibrium_expressions = {}
-        
+
     @staticmethod
     def updateProgressMeter(current_value: int, max_value: int, title: str) -> sg.OneLineProgressMeter:
         """
@@ -93,7 +174,7 @@ class Results:
     def getFolderpath(self) -> str:
         """
         Get folderpath to save/load results into/from.
-        
+
         :param self: :class:`~Results.Results` to retrieve folderpath from
         """
         if self.folderpath is not None:
@@ -104,18 +185,18 @@ class Results:
                 title="Load Previous Results"
             )
             self.folderpath = folderpath
-        
+
         return folderpath
-    
+
     def setFolderpath(self, folderpath: str) -> None:
         """
         Set folderpath to save/load results into/from.
-        
+
         :param self: :class:`~Results.Results` to retrieve folderpath from
         :param folderpath: folderpath to save/load 
         """
-        self.folderpath  = folderpath
-        
+        self.folderpath = folderpath
+
     def getModel(self) -> Model:
         """
         Get associated :class:`~Function.Model`.
@@ -144,9 +225,9 @@ class Results:
         return list(self.free_parameter_values.keys())
 
     def getFreeParameterValues(
-            self,
-            names: Union[str, Iterable[str]] = None,
-            output_type: type = list
+        self,
+        names: Union[str, Iterable[str]] = None,
+        output_type: type = list
     ) -> Union[ndarray, Dict[str, ndarray]]:
         """
         Get values for a free parameter.
@@ -169,14 +250,14 @@ class Results:
         )
 
     def getFreeParameterSubstitutions(
-            self,
-            index: Union[tuple, Tuple[int, ...]]
+        self,
+        index: Union[tuple, Tuple[int, ...]]
     ) -> Dict[Symbol, float]:
         """
         Get substitutions for free parameters at index.
 
         :param self: :class:`~Results.Results` to retrieve substitutions from
-        :param index: index of free parameters to retrieve free-parameter values from
+        :param index: see :meth:`~Results.Results.getResultsOverTime`
         """
         free_parameter_names = self.getFreeParameterNames()
         free_parameter_substitutions = {}
@@ -199,7 +280,7 @@ class Results:
         Get substitutions from parameter symbol to parameter value.
 
         :param self: :class:`~Results.Results` to retrieve values from
-        :param index: index of free parameters to retrieve free-parameter values from
+        :param index: see :meth:`~Results.Results.getResultsOverTime`
         :param name: name of function to retrieve parameter names from.
             Returns substitutions for all parameters in model if None.
             Returns substitutions only for parameters in function if str.
@@ -266,7 +347,7 @@ class Results:
         Get equilibrium expression for a variable.
 
         :param self: :class:`~Results.Results` to retrieve equilibrium from
-        :param index: index of free parameters to retrieve free-parameter values from
+        :param index: see :meth:`~Results.Results.getResultsOverTime`
         :param name: name of variable to retrieve equilibrium for
         """
         if len(self.general_equilibrium_expressions.keys()) == 0:
@@ -331,7 +412,7 @@ class Results:
         Get results from simulation for function, after substituting results from variables.
 
         :param self: :class:`~Results.Results` to retrieve results from
-        :param index: index of free parameters to retrieve substitutive results at
+        :param index: see :meth:`~Results.Results.getResultsOverTime`
         :param expression: function to substitute results into
         :param name: name of function where expression was derived from
         """
@@ -382,7 +463,7 @@ class Results:
         Get results from simulation for function.
 
         :param self: :class:`~Results.Results` to retrieve results from
-        :param index: index of parameter value for free parameter
+        :param index: :meth:`~Results.Results.getResultsOverTime`
         :param name: name of function to retrieve results of
         """
         expression = self.getGeneralFunctionExpression(name)
@@ -422,7 +503,7 @@ class Results:
         Get results from simulation for variable in equilibrium.
 
         :param self: :class:`~Results.Results` to retrieve results from
-        :param index: index of parameter value for free parameter
+        :param index: :meth:`~Results.Results.getResultsOverTime`
         :param name: name of variable to retrieve results of
         """
         equilibrium_expression = self.getEquilibriumExpression(index, name)
@@ -441,7 +522,7 @@ class Results:
         Get results from simulation for constant variable.
 
         :param self: :class:`~Results.Results` to retrieve results from
-        :param index: index of parameter value for free parameter
+        :param index: :meth:`~Results.Results.getResultsOverTime`
         :param name: name of variable to retrieve results of
         """
         model = self.getModel()
@@ -461,14 +542,14 @@ class Results:
         Get filepath to save/load result from.
 
         :param self: :class:`~Results.Results` to retrieve filepath from
-        :param index: index of parameter value for free parameter
+        :param index: :meth:`~Results.Results.getResultsOverTime`
         :param quantity_name: name of quantity to retrieve filepath for
         :param folderpath: path of folder to save result into.
             Defaults to loaded folder path.
         """
         if folderpath is None:
             folderpath = self.getFolderpath()
-        
+
         result_folderpath = join(
             folderpath,
             self.data_foldername,
@@ -480,14 +561,75 @@ class Results:
 
         return filepath
 
+    @staticmethod
+    def getCoordinateTransformOfResults(
+        results: ndarray,
+        coordinate_name: str
+    ) -> ndarray:
+        """
+        Get coordinate transform of results.
+
+        :param results: 1D ndarray of results
+        :param coordinate_name: see :class:`~Results.Results.getResultsOverTime`
+        """
+        coordinate_obj = Coordinate.getInstances(names=coordinate_name)
+        coordinate_function = coordinate_obj.getFunction()
+        coordinate_results = coordinate_function(results)
+        return coordinate_results
+
+    def getTransformOfResults(
+        self,
+        results: ndarray,
+        transform_name: str,
+        is_time: bool,
+        index: Tuple[tuple, Tuple[int, ...]] = None,
+        inequality_filters: Iterable[Tuple[str, str, float]] = None
+    ) -> ndarray:
+        """
+        Get math transform of results.
+
+        :param self: :class:`~Results.Results` to retrieve transform from
+        :param results: 1D ndarray if :paramref:`~Results.Results.getTransformOfResults.argument_count`==1;
+            tuple of two 1D-ndarrays with same shape if :paramref:`~Results.Results.getTransformOfResults.argument_count`==2.
+        :param transform_name: see :class:`~Results.Results.getResultsOverTime`
+        :param is_time: set True if results are times for simulation. Set False otherwise.
+        :param index: see :meth:`~Results.Results.getResultsOverTime`.
+            Only called if corresponding :class:`~Results.Results.Transform` requires time as input.
+        :param inequality_filters: see :meth:`~Results.Results.getResultsOverTime`
+            Only called if corresponding :class:`~Results.Results.Transform` requires time as input.
+        """
+        if transform_name != "None":
+            transform_obj: Transform = Transform.getInstances(names=transform_name)
+            argument_count = transform_obj.getArgumentCount()
+            transform_requires_times = transform_obj.requiresTimes()
+
+            if is_time:
+                transform_time_function = transform_obj.getTimeFunction()
+                transform_results = transform_time_function(results)
+            else:
+                transform_function = transform_obj.getFunction()
+
+                if transform_requires_times:
+                    times = self.getResultsOverTime(
+                        index=index,
+                        quantity_names='t',
+                        inequality_filters=inequality_filters
+                    )
+                    transform_results = transform_function(results, times)
+                else:
+                    transform_results = transform_function(results)
+
+        return transform_results
+
     def getResultsOverTime(
         self,
         index: Union[tuple, Tuple[int, ...]],
         quantity_names: Union[str, List[str]] = None,
         inequality_filters: Iterable[Tuple[str, str, float]] = None,
+        coordinate_name: str = "None",
         transform_name: str = "None",
-        condensor_name: str = "None",
-        condensor_kwargs: dict = None
+        functional_name: str = "None",
+        functional_kwargs: dict = None
     ) -> Union[float, ndarray]:
         """
         Get results for variable or function over time.
@@ -505,13 +647,14 @@ class Results:
             The index of the tuple corresponds to the parameter in free parameters.
             The index within the tuple corresponds to the value of the parameter in its set of possible values.
         :param quantity_names: name(s) of variable/function(s) to retrieve results for
+        :param coordinate_name: name of coordinate transform to perform on results.
         :param transform_name: transform to perform on results.
             "Fourier" - Fourier transform.
-        :param condensor_name: analysis to perform on results to reduce into one (or few) floats.
+        :param functional_name: analysis to perform on results to reduce into one (or few) floats.
             "Frequency" - calculate frequency of results.
             "Mean" - calculate Holder mean of results.
             "Standard Deviation" - calculate standard deviation of results.
-        :param condensor_kwargs: dictionary of optional arguments to pass into corresponding condensing function
+        :param functional_kwargs: dictionary of optional arguments to pass into corresponding condensing function
         :param inequality_filters: iterable of tuples indicating filters for results.
             First element of tuple is variable/function name.
             Second element of tuple is inequality sign as string.
@@ -567,7 +710,7 @@ class Results:
                         if inequality_index == 0:
                             stepcount = filter_results.shape[-1]
                             filter_intersection = np.arange(stepcount)
-                        
+
                         new_filter_indicies = eval(f"np.where(filter_results{filter_inequality_type:s}{filter_float:})")
                         filter_intersection = np.intersect1d(
                             filter_intersection,
@@ -576,39 +719,24 @@ class Results:
 
                     single_results = single_results[filter_intersection]
 
+            if coordinate_name != "None":
+                single_results = self.getCoordinateTransformOfResults(
+                    single_results,
+                    coordinate_name=coordinate_name
+                )
+
             if transform_name != "None":
                 is_time = quantity_names == 't'
-                if transform_name == "Fourier":
-                    if is_time:
-                        single_results = fourierFrequencies(single_results)
-                    else:
-                        single_results = fourierTransform(single_results)
-                elif transform_name == "Autocorrelation":
-                    if is_time:
-                        single_results = correlationLags(single_results)
-                    else:
-                        single_results = correlationTransform(single_results)
-                elif transform_name == "Instantaneous Amplitude":
-                    if not is_time:
-                        single_results = instantaneousAmplitude(single_results)
-                elif transform_name == "Instantaneous Frequency":
-                    if is_time:
-                        single_results = (single_results[1:] + single_results[:-1]) / 2
-                    else:
-                        times = self.getResultsOverTime(
-                            index=index,
-                            quantity_names='t',
-                            inequality_filters=inequality_filters
-                        )
-                        single_results = instantaneousFrequency(single_results, times)
-                elif transform_name == "Instantaneous Phase":
-                    if not is_time:
-                        single_results = instantaneousPhase(single_results)
-                else:
-                    raise ValueError(f"invalid transform name ({transform_name:s})")
-            
-            if condensor_name != "None":
-                if condensor_name == "Frequency":
+                single_results = self.getTransformOfResults(
+                    single_results,
+                    transform_name=transform_name,
+                    is_time=is_time,
+                    index=index,
+                    inequality_filters=inequality_filters
+                )
+
+            if functional_name != "None":
+                if functional_name == "Frequency":
                     times = self.getResultsOverTime(
                         index=index,
                         quantity_names="t",
@@ -618,29 +746,33 @@ class Results:
                     frequency = oscillationFrequency(
                         single_results,
                         times,
-                        **condensor_kwargs
+                        **functional_kwargs
                     )
                     return frequency
-                elif condensor_name == "Mean":
+                elif functional_name == "Mean":
                     return holderMean(
-                        single_results, 
-                        **condensor_kwargs
+                        single_results,
+                        **functional_kwargs
                     )
-                elif condensor_name == "Standard Deviation":
+                elif functional_name == "Standard Deviation":
                     return np.std(single_results)
                 else:
-                    raise ValueError(f"invalid condensor name ({condensor_name:s})")
+                    raise ValueError(f"invalid functional name ({functional_name:s})")
 
             return single_results
         elif isinstance(quantity_names, list):
-            new_results = np.array([
-                self.getResultsOverTime(
-                    index=index,
-                    quantity_names=name,
-                    transform_name=transform_name
-                )
-                for name in quantity_names
-            ])
+            print("multi:", quantity_names, transform_name)
+            if transform_name == "None":
+                new_results = np.array([
+                    self.getResultsOverTime(
+                        index=index,
+                        quantity_names=name
+                    )
+                    for name in quantity_names
+                ])
+                print("shape:", new_results.shape)
+            else:
+                pass
             return new_results
         else:
             raise TypeError("names input must be str or list")
@@ -656,10 +788,7 @@ class Results:
         Get free-parameter values and "averaged" quantity values.
 
         :param self: :class:`~Results.Results` to retrieve results from
-        :param index: index of results.
-            This is a tuple of indicies.
-            The index of the tuple corresponds to the parameter in free parameters.
-            The index within the tuple corresponds to the value of the parameter in its set of possible values.
+        :param index: see :meth:`~Results.Results.getResultsOverTime`
         :param parameter_names: name(s) of free parameter(s) to retrieve quantity results over.
         :param quantity_names: name(s) of quantity(s) to average results over
         :param kwargs: additional arguments to pass into :meth:`~Results.Results.getResultsOverTime`
@@ -761,7 +890,7 @@ class Results:
         Save results from simulation.
 
         :param self: :class:`~Results.Results` to save results in
-        :param index: index of parameter value for free parameter
+        :param index: see :meth:`~Results.Results.getResultsOverTime`
         :param results: results to save at :paramref:`~Results.Results.setResults.index`.
             This must be a list of floats if name is specified.
             This must be a dictionary if name is not specified.
@@ -795,7 +924,7 @@ class Results:
         """
         Save single result into file.
         :param self: :class:`~Results.Results` to retrieve save folder from
-        :param index: index of parameter value for free parameter
+        :param index: see :meth:`~Results.Results.getResultsOverTime`
         :param name: name of quantity to set results for
         :param result: single array of results for quantity
         :param folderpath: path of folder to save results into.

@@ -5,6 +5,10 @@ from scipy.signal import correlate, find_peaks, hilbert
 from scipy.stats import stats
 
 
+def identity(data: ndarray) -> ndarray:
+    return data
+
+
 def normalizeArray(data: ndarray) -> ndarray:
     """
     Normalize data in array, i.e. scale data such that it fits between -1 and 1, inclusively.
@@ -111,7 +115,8 @@ def holderMean(
     else:
         mean = np.mean(data**order)**(1 / order)
 
-    return mean
+    modulus = np.absolute(mean)
+    return modulus
 
 
 def fourierTransform(data: ndarray) -> ndarray:
@@ -121,8 +126,8 @@ def fourierTransform(data: ndarray) -> ndarray:
     :param data: array to calculate Fourier transform for
     """
     fourier_data = rfft(data)
-    fourier_data = abs(fourier_data)
-    return fourier_data
+    abs_fourier_data = abs(fourier_data)
+    return abs_fourier_data
 
 
 def fourierFrequencies(times: ndarray) -> ndarray:
@@ -170,12 +175,12 @@ def correlationLags(times: ndarray) -> ndarray:
         mode="same"
     )[times_size // 2:]"""
 
-    lag_times = times[:times_size // 2] - times[0]
+    lag_times = times[:(times_size + 1) // 2] - times[0]
     return lag_times
 
 
 def analyticSignal(data: ndarray) -> ndarray:
-    mean_data = holderMean(data)
+    mean_data = np.mean(data)
     centered_data = data - mean_data
     analytic_signal = hilbert(centered_data)
     return analytic_signal
@@ -201,3 +206,28 @@ def instantaneousFrequency(
     instantaneous_frequency = np.diff(instantaneous_phase) / (2 * np.pi * (times[1:] - times[:-1]))
 
     return instantaneous_frequency
+
+
+def interpolateMidpoint(data: ndarray) -> ndarray:
+    midpoint_data = (data[1:] + data[:-1]) / 2
+    return midpoint_data
+
+
+def phaseDifference(data1, data2) -> ndarray:
+    phase1 = instantaneousPhase(data1)
+    phase2 = instantaneousPhase(data2)
+    phase_difference = phase2 - phase1
+    return phase_difference
+
+
+def imaginaryExponentiation(phase: ndarray) -> ndarray:
+    imaginary_exponent = np.exp(phase * 1j)
+    return imaginary_exponent
+
+
+def phaseLockingValue(data1, data2):
+    assert data1.shape == data2.shape
+
+    phase_difference = phaseDifference(data1, data2)
+    imaginary_exponent = imaginaryExponentiation(phase_difference)
+    return imaginary_exponent

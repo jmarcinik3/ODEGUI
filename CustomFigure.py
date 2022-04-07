@@ -644,11 +644,14 @@ def getFigure(
         axes_kwargs = {}
     if scale_factor is None:
         scale_factor = {}
-    if segment_count is not None:
-        assert isinstance(segment_count, int)
-        assert segment_count >= 0
     if normalize is None:
         normalize = {}
+
+    assert isinstance(plot_kwargs, dict)
+    assert isinstance(axes_kwargs, dict)
+    assert isinstance(scale_factor, dict)
+    assert isinstance(segment_count, int) and segment_count >= 0
+    assert isinstance(normalize, dict)
 
     result_axis_names = results.keys()
     for axis_name in all_axis_names:

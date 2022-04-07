@@ -16,7 +16,7 @@ from macros import recursiveMethod
 def generateCollapsableSection(layout: List[List[sg.Element]], **kwargs) -> sg.pin:
     """
     Create collapsable section of elements.
-    
+
     :param layout: layout to generate collapsable section of
     :param kwargs: arguments to pass into :class:`~PySimpleGUI.PySimpleGUI.Column`
     :returns: collapsable section of elements.
@@ -41,7 +41,7 @@ def rowsToColumnsLayout(row_objs: Iterable[Row]):
 
     :param row_objs: rows to align by column. Each row must have equal number of elements.
     """
-    rows = list(map(Row.getRow, row_objs))
+    rows = list(map(Row.getElements, row_objs))
     row_count = len(rows)
 
     if row_count == 0:
@@ -49,7 +49,7 @@ def rowsToColumnsLayout(row_objs: Iterable[Row]):
     elif row_count >= 1:
         row_length = len(rows[0])
         for row in rows:
-            print(len(row), row_length, getKeys(row))
+            print("temp:", len(row), row_length, getKeys(row))
             assert len(row) == row_length
 
         columns = [[] for _ in range(row_length)]
@@ -61,10 +61,9 @@ def rowsToColumnsLayout(row_objs: Iterable[Row]):
         layout = [
             list(map(sg.Column, columns))
         ]
-    return layout 
+    return layout
 
 
-# noinspection PyPep8Naming
 def storeElement(instantiateElement):
     def wrapper(self, *args, **kwargs):
         method_name = instantiateElement.__name__
@@ -72,11 +71,16 @@ def storeElement(instantiateElement):
             self.stored_elements
         except AttributeError:
             self.stored_elements = {}
+
         try:
-            element = self.stored_elements[(method_name, *args)]
+            element = self.stored_elements[method_name][(*args,)]
         except KeyError:
             element = instantiateElement(self, *args, **kwargs)
-            self.stored_elements[(method_name, *args)] = element
+
+            if method_name not in self.stored_elements.keys():
+                self.stored_elements[method_name] = {}
+            self.stored_elements[method_name][(*args,)] = element
+
         return element
 
     return wrapper
@@ -126,7 +130,11 @@ class Element:
     :ivar getKey: pointer to :meth:`~Layout.Layout.Window.getKey`
     """
 
-    def __init__(self, window: Window) -> None:
+    def __init__(
+        self,
+        window: Window,
+        name: str = None
+    ) -> None:
         """
         Constructor for :class:`~Layout.Layout.Element`.
 
@@ -134,9 +142,20 @@ class Element:
         """
         self.window = window
 
+        if isinstance(name, str):
+            self.name = name
+
         self.getWindowRunner = window.getWindowRunner
         self.getDimensions = window.getDimensions
         self.getKey = window.getKey
+
+    def getName(self) -> str:
+        """
+        Get name of element.
+
+        :param self: :class:`~Layout.Layout.Element` to retrieve name from
+        """
+        return self.name
 
     def getWindowObject(self) -> Window:
         """
@@ -170,10 +189,10 @@ class Row:
     """
 
     def __init__(
-            self,
-            name: str = None,
-            elements: Union[sg.Element, Iterable[sg.Element]] = None,
-            window: Window = None
+        self,
+        name: str = None,
+        elements: Union[sg.Element, Iterable[sg.Element]] = None,
+        window: Window = None
     ) -> None:
         """
         Constructor for :class:`~Layout.Layout.Row`.
@@ -226,7 +245,7 @@ class Row:
             output_type=list
         )
 
-    def getRow(self) -> List[sg.Element]:
+    def getElements(self) -> List[sg.Element]:
         """
         Get elements contained in row.
 
@@ -240,7 +259,7 @@ class Row:
 
         :param self: :class:`~Layout.Layout.Row` to retrieve layout from
         """
-        return [self.getRow()]
+        return [self.getElements()]
 
     def getWindowObject(self) -> Window:
         """
@@ -356,7 +375,7 @@ class TabRow(Row):
         return self.tab
 
 
-class Tab:
+class Tab(Element):
     """
     Wrapper for PySimpleGUI Tab.
 
@@ -374,28 +393,7 @@ class Tab:
         :param name: name of tab
         :param window: :class:`~Layout.Layout.Window` that contains tab
         """
-        self.name = name
-        self.window = window
-
-        self.getDimensions = window.getDimensions
-        self.getWindowRunner = window.getWindowRunner
-        self.getKey = window.getKey
-
-    def getName(self) -> str:
-        """
-        Get name of tab.
-
-        :param self: :class:`~Layout.Layout.Tab` to retrieve name from
-        """
-        return self.name
-
-    def getWindowObject(self) -> Window:
-        """
-        Get :class:`~Layout.Layout.Window` that contains tab.
-
-        :param self: :class:`~Layout.Layout.Tab` to retrieve window from
-        """
-        return self.window
+        super().__init__(window, name=name)
 
     def getTab(self) -> sg.Tab:
         """
@@ -410,7 +408,30 @@ class Tab:
         )
 
 
-class TabGroup:
+class Frame(Element):
+    def __init__(self, name: str, window: Window) -> None:
+        """
+        Constructor for :class:`~Layout.Layout.Frame`.
+
+        :param name: name of tab
+        :param window: :class:`~Layout.Layout.Window` that contains frame
+        """
+        super().__init__(window, name=name)
+
+    def getFrame(self) -> sg.Frame:
+        """
+        Get PySimpleGUI Frame for frame.
+
+        :param self: :class:`~Layout.Layout.Frame` to retrieve frame from
+        """
+        return sg.Frame(
+            title=self.getName(),
+            layout=self.getLayout(),
+            pad=(0, 0)
+        )
+
+
+class TabGroup(Element):
     """
     Wrapper for PySimpleGUI TabGroup and container for :class:`~Layout.Layout.Tab`.
 
@@ -420,10 +441,10 @@ class TabGroup:
     """
 
     def __init__(
-            self,
-            tabs: Union[Union[sg.Tab, Tab], Iterable[Union[sg.Tab, Tab]]],
-            name: str = None,
-            suffix_layout: Layout = None
+        self,
+        tabs: Union[Union[sg.Tab, Tab], Iterable[Union[sg.Tab, Tab]]],
+        name: str = None,
+        suffix_layout: Layout = None
     ) -> None:
         """
         Constructor for :class:`~Layout.Layout.Tabgroup`.
@@ -505,6 +526,67 @@ class TabGroup:
         )
 
 
+class RadioGroup(Row):
+    """
+    Wrapper for :class:`~PySimpleGUI.Radio`.
+    """
+
+    def __init__(
+        self,
+        radios: Union[sg.Radio, List[sg.Radio]],
+        group_id: str,
+        window: Window
+    ):
+        """
+        Constructor for :class:`~Layout.Layout.Tabgroup`.
+
+        :param radios: collection of radio elements
+        :param group_id: id of radio group
+        :param window: :class:`~Layout.Layout.Window` that contains group
+        """
+        super().__init__(
+            name=group_id,
+            elements=radios,
+            window=window
+        ) 
+
+    def getGroupId(self) -> str:
+        """
+        Get id of radio group.
+
+        :param self: :class:`~Layout.Layout.RadioGroup` to retrieve id from
+        """
+        return self.getName()
+
+    def getRadios(self) -> List[sg.Radio]:
+        """
+        Get radio elements that constitute group.
+
+        :param self: :class:`~Layout.Layout.RadioGroup` to retrieve radios from
+        """
+        return self.getElements()
+
+    def getChosenRadio(self) -> sg.Radio:
+        """
+        Get radio in group that is set to true.
+
+        :param self: :class:`~Layout.Layout.RadioGroup` to retrieve radio from
+        """
+        radios = self.getRadios()
+        window_obj = self.getWindowObject()
+        window_runner = window_obj.getWindowRunner()
+
+        for radio in radios:
+            radio_key = getKeys(radio)
+            radio_value = window_runner.getValue(radio_key)
+            if radio_value:
+                chosen_radio = radio
+                break
+
+        assert isinstance(chosen_radio, sg.Radio)
+        return chosen_radio
+
+
 class Window:
     """
     Wrapper for PySimpleGUI Window.
@@ -519,10 +601,10 @@ class Window:
     """
 
     def __init__(
-            self,
-            name: str,
-            runner: WindowRunner,
-            dimensions: Dict[str, Tuple[Optional[float], Optional[float]]] = None
+        self,
+        name: str,
+        runner: WindowRunner,
+        dimensions: Dict[str, Tuple[Optional[float], Optional[float]]] = None
     ) -> None:
         """
         Constructor for :class:`~Layout.Layout.Window`.
@@ -559,7 +641,8 @@ class Window:
         return self.runner
 
     def getDimensions(
-            self, name: str = None
+        self,
+        name: str = None
     ) -> Union[dict, Tuple[Optional[float], Optional[float]]]:
         """
         Get dimensions for elements in window.
@@ -605,11 +688,11 @@ class ChooseChecksWindow(Window):
     """
 
     def __init__(
-            self,
-            name: str,
-            runner: WindowRunner,
-            get_rows: Callable,
-            header_text: str = ''
+        self,
+        name: str,
+        runner: WindowRunner,
+        get_rows: Callable,
+        header_text: str = ''
     ):
         """
         Constructor for :class:`~Layout.Layout.ChooseChecksWindow`.
@@ -705,7 +788,10 @@ class TabbedWindow(Window):
     """
 
     def __init__(
-            self, name: str, runner: WindowRunner, dimensions: Dict[str, Tuple[Optional[int], Optional[int]]] = None
+        self,
+        name: str,
+        runner: WindowRunner,
+        dimensions: Dict[str, Tuple[Optional[int], Optional[int]]] = None
     ) -> None:
         """
         Constructor for :class:`~Layout.Layout.TabbedWindow`.
@@ -832,7 +918,7 @@ class WindowRunner:
     def getElements(self, keys: Union[str, Iterable[str]]) -> Union[sg.Element, Iterable[Element]]:
         """
         Get element(s) in window runner from key
-        
+
         :param self: :class:`~Layout.Layout.WindowRunner` to retrieve element(s) from
         :param keys: key(s) of element(s) to retrieve
         """
