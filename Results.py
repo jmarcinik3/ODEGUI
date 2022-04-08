@@ -797,9 +797,7 @@ class Results:
                     quantity_names=quantity_name,
                     inequality_filters=inequality_filters,
                     coordinate_name=coordinate_name,
-                    transform_name=transform_name,
-                    functional_name=functional_name,
-                    functional_kwargs=functional_kwargs
+                    transform_name=transform_name
                 )
             else:
                 multiple_results = [
@@ -866,6 +864,7 @@ class Results:
                 nth index of this matrix gives values for nth quantity in
                 :paramref:`~Results.Results.getResultsOverTimePerParameter.quantity_names`.
         """
+        
         if isinstance(quantity_names, str):
             quantity_names = [quantity_names]
         if isinstance(parameter_names, str):
@@ -879,18 +878,19 @@ class Results:
         per_parameter_partial_indicies = list(itertools.product(*map(range, per_parameter_stepcounts)))
 
         default_index = np.array(index)
-        times = self.getResultsOverTime(
+        
+        sample_result = self.getResultsOverTime(
             index=index,
-            quantity_names="t",
+            quantity_names=quantity_names,
             transform_name=transform_name,
             **kwargs
         )
-        if isinstance(times, (float, int)):
+        if isinstance(sample_result, (float, int)):
             single_result_size = per_parameter_stepcounts
-        elif isinstance(times, ndarray):
-            single_result_size = (*per_parameter_stepcounts, *times.shape)
+        elif isinstance(sample_result, ndarray):
+            single_result_size = (*per_parameter_stepcounts, *sample_result.shape)
         else:
-            raise TypeError(f"invalid type ({type(times):})")
+            raise TypeError(f"invalid type ({type(sample_result):})")
 
         quantity_count = len(quantity_names)
         simulation_count_per_quantity = prod(list(per_parameter_stepcounts))
@@ -902,7 +902,7 @@ class Results:
             title="Calculating Simulation",
             max_value=simulation_count
         )
-
+        print("per_param:", quantity_count, quantity_names, results.shape)
         simulation_index_flat = 0
         for quantity_location, quantity_name in enumerate(quantity_names):
             single_results = np.zeros(single_result_size)
