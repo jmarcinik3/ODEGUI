@@ -624,7 +624,7 @@ class Results:
         self,
         results: Union[ndarray, Tuple[ndarray]],
         transform_name: str,
-        is_time: bool,
+        is_time: bool = False,
         index: Tuple[tuple, Tuple[int, ...]] = None,
         inequality_filters: Iterable[Tuple[str, str, float]] = None
     ) -> ndarray:
@@ -635,7 +635,8 @@ class Results:
         :param results: 1D ndarray if transform function requires exactly one nontime argument;
             tuple of two 1D-ndarrays each with same size, if transform requires two or more nontime arguments.
         :param transform_name: see :class:`~Results.Results.getResultsOverTime`
-        :param is_time: set True if results are times for simulation. Set False otherwise.
+        :param is_time: set True if result is times for simulation. Set False otherwise.
+            Only called if transform function requires exactly one nontime argument.
         :param index: see :meth:`~Results.Results.getResultsOverTime`.
             Only called if corresponding :class:`~Results.Results.Transform` requires time as input.
         :param inequality_filters: see :meth:`~Results.Results.getResultsOverTime`
@@ -652,12 +653,12 @@ class Results:
                 raise ValueError(f"results ({results.__class__:s}) must be either 1D ndarray or tuple of 1D-ndarrays")
             argument_count = transform_obj.getArgumentCount()
             assert argument_count == quantity_count
-            
-            if is_time:
+
+            if is_time and argument_count == 1:
                 transform_function = transform_obj.getTimeFunction()
             else:
                 transform_function = transform_obj.getFunction()
-                            
+
                 transform_requires_times = transform_obj.requiresTimes()
                 if transform_requires_times:
                     times = self.getResultsOverTime(
@@ -789,34 +790,46 @@ class Results:
 
             results = single_results
         elif isinstance(quantity_names, list):
-            multiple_results = [
-                self.getResultsOverTime(
+            if len(quantity_names) == 1:
+                quantity_name = quantity_names[0]
+                results = self.getResultsOverTime(
                     index=index,
-                    quantity_names=name,
-                    inequality_filters=inequality_filters
+                    quantity_names=quantity_name,
+                    inequality_filters=inequality_filters,
+                    coordinate_name=coordinate_name,
+                    transform_name=transform_name,
+                    functional_name=functional_name,
+                    functional_kwargs=functional_kwargs
                 )
-                for name in quantity_names
-            ]
-
-            if coordinate_name != "None":
+            else:
                 multiple_results = [
-                    self.getCoordinateTransformOfResults(
-                        single_results,
-                        coordinate_name=coordinate_name
+                    self.getResultsOverTime(
+                        index=index,
+                        quantity_names=name,
+                        inequality_filters=inequality_filters
                     )
-                    for single_results in multiple_results
+                    for name in quantity_names
                 ]
 
-            if transform_name == "None":
-                results = np.array(multiple_results)
-            elif transform_name != "None":
-                results = self.getTransformOfResults(
-                    results=tuple(multiple_results),
-                    transform_name=transform_name,
-                    is_time=False,
-                    index=index,
-                    inequality_filters=inequality_filters
-                )
+                if coordinate_name != "None":
+                    multiple_results = [
+                        self.getCoordinateTransformOfResults(
+                            single_results,
+                            coordinate_name=coordinate_name
+                        )
+                        for single_results in multiple_results
+                    ]
+
+                if transform_name == "None":
+                    results = np.array(multiple_results)
+                elif transform_name != "None":
+                    results = self.getTransformOfResults(
+                        results=tuple(multiple_results),
+                        transform_name=transform_name,
+                        is_time=False,
+                        index=index,
+                        inequality_filters=inequality_filters
+                    )
         else:
             raise TypeError("names input must be str or list")
 
@@ -896,7 +909,7 @@ class Results:
             for partial_index_flat, partial_index in enumerate(per_parameter_partial_indicies):
                 simulation_index_flat += 1  # quantity_location * simulation_count_per_quantity + partial_index_flat + 1
 
-                if simulation_index_flat % 100 == 0:
+                if simulation_index_flat % 100 == 0 and simulation_index_flat >= 100:
                     if not updateProgressMeter(simulation_index_flat):
                         break
 
