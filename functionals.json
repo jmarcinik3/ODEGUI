@@ -1,0 +1,22 @@
+{
+    "None": {
+        "function": "identity",
+        "module": "CustomMath"
+    },
+    "Arithmetic Mean": {
+        "function": "arithmeticMean",
+        "module": "CustomMath"
+    },
+    "Geometric Mean": {
+        "function": "geometricMean",
+        "module": "CustomMath"
+    },
+    "Root-Mean-Square": {
+        "function": "rootMeanSquare",
+        "module": "CustomMath"
+    },
+    "Standard Deviation": {
+        "function": "standardDeviation",
+        "module": "CustomMath"
+    }
+}

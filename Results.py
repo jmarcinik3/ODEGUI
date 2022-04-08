@@ -19,24 +19,44 @@ from macros import StoredObject, recursiveMethod
 from YML import loadConfig, saveConfig
 
 
-class Transform(StoredObject):
+class FunctionOnResult:
+    def __init__(self, name: str, info: dict) -> None:
+        """
+        Constructor for :class:`~Results.FunctionOnResult`.
+
+        :param name: name of function
+        :param info: dictionary of information to generate object
+        """
+        module_name = info["module"]
+        module = sys.modules[module_name]
+        function_name = info["function"]
+        function = getattr(module, function_name)
+
+        self.function = function
+
+    def getFunction(self) -> Callable:
+        return self.function
+
+
+class Transform(FunctionOnResult, StoredObject):
     def __init__(self, name: str, transform_info: dict) -> None:
         """
         Constructor for :class:`~Results.Transform`.
 
         :param name: name of transform
-        :param transform_info: dictionary of information to generate transform object
+        :param transform_info: dictionary of information to generate transform object.
+            See :class:`~Results.TransformResult`.
         """
-        super().__init__(name)
+        FunctionOnResult.__init__(self, name, transform_info)
+        StoredObject.__init__(self, name)
 
         transform_info_keys = list(transform_info.keys())
-        
+
         module_name = transform_info["module"]
         module = sys.modules[module_name]
-        
+
         transform_function_name = transform_info["function"]
-        transform_function = getattr(module, transform_function_name)
-        
+
         if "time_function" in transform_info_keys:
             time_function_name = transform_info["time_function"]
         else:
@@ -47,17 +67,13 @@ class Transform(StoredObject):
             requires_times = transform_info["requires_times"]
         else:
             requires_times = False
-        
+
         argument_count = transform_info["arguments"]
-        
+
         self.module = module
-        self.transform_function = transform_function
         self.time_function = time_function
         self.argument_count = argument_count
         self.requires_times = requires_times
-
-    def getFunction(self) -> Callable:
-        return self.transform_function
 
     def getTimeFunction(self) -> Callable:
         return self.time_function
@@ -68,25 +84,31 @@ class Transform(StoredObject):
     def requiresTimes(self) -> bool:
         return self.requires_times
 
-class Coordinate(StoredObject):
+
+class Coordinate(FunctionOnResult, StoredObject):
     def __init__(self, name: str, coordinate_info: dict) -> None:
         """
-        Constructor for :class:`~Results.Transform`.
+        Constructor for :class:`~Results.Coordinate`.
 
         :param name: name of coordinate (e.g. "Cartesian")
-        :param transform_info: dictionary of information to generate coordinate object
+        :param coordinate_info: dictionary of information to generate coordinate object.
+            See :class:`~Results.TransformResult`.
         """
-        super().__init__(name)
+        FunctionOnResult.__init__(self, name, coordinate_info)
+        StoredObject.__init__(self, name)
 
-        module_name = coordinate_info["module"]
-        module = sys.modules[module_name]
-        coordinate_function_name = coordinate_info["function"]
-        coordinate_function = getattr(module, coordinate_function_name)
 
-        self.coordinate_function = coordinate_function
+class Functional(FunctionOnResult, StoredObject):
+    def __init__(self, name: str, functional_info: dict):
+        """
+        Constructor for :class:`~Results.Functional`.
 
-    def getFunction(self) -> Callable:
-        return self.coordinate_function
+        :param name: name of functional
+        :param functional_info: dictionary of information to generate functional object.
+            See :class:`~Results.TransformResult`.
+        """
+        FunctionOnResult.__init__(self, name, functional_info)
+        StoredObject.__init__(self, name)
 
 
 class Results:
@@ -116,6 +138,7 @@ class Results:
         free_parameter_values: Dict[str, ndarray],
         transform_config_filepath: str = "transforms.json",
         coordinate_config_filepath: str = "coordinates.json",
+        functional_config_filepath: str = "functionals.json",
         folderpath: str = None,
         results: dict = None
     ) -> None:
@@ -145,6 +168,10 @@ class Results:
         coordinate_config = loadConfig(coordinate_config_filepath)
         for coordinate_name, coordinate_info in coordinate_config.items():
             coordinate_obj = Coordinate(coordinate_name, coordinate_info)
+
+        functional_config = loadConfig(functional_config_filepath)
+        for functional_name, functional_info in functional_config.items():
+            functional_obj = Functional(functional_name, functional_info)
 
         self.model = model
         self.variable_names = model.getVariables(return_type=str)
@@ -577,9 +604,25 @@ class Results:
         coordinate_results = coordinate_function(results)
         return coordinate_results
 
+    @staticmethod
+    def getFunctionalOfResults(
+        results: ndarray,
+        functional_name: str
+    ) -> float:
+        """
+        Get funcional of results.
+
+        :param results: 1D ndarray of results
+        :param functional_name: see :class:`~Results.Results.getResultsOverTime`
+        """
+        functional_obj = Functional.getInstances(names=functional_name)
+        funcional_function = functional_obj.getFunction()
+        functional_results = funcional_function(results)
+        return functional_results
+
     def getTransformOfResults(
         self,
-        results: ndarray,
+        results: Union[ndarray, Tuple[ndarray]],
         transform_name: str,
         is_time: bool,
         index: Tuple[tuple, Tuple[int, ...]] = None,
@@ -589,8 +632,8 @@ class Results:
         Get math transform of results.
 
         :param self: :class:`~Results.Results` to retrieve transform from
-        :param results: 1D ndarray if :paramref:`~Results.Results.getTransformOfResults.argument_count`==1;
-            tuple of two 1D-ndarrays with same shape if :paramref:`~Results.Results.getTransformOfResults.argument_count`==2.
+        :param results: 1D ndarray if transform function requires exactly one nontime argument;
+            tuple of two 1D-ndarrays each with same size, if transform requires two or more nontime arguments.
         :param transform_name: see :class:`~Results.Results.getResultsOverTime`
         :param is_time: set True if results are times for simulation. Set False otherwise.
         :param index: see :meth:`~Results.Results.getResultsOverTime`.
@@ -600,14 +643,22 @@ class Results:
         """
         if transform_name != "None":
             transform_obj: Transform = Transform.getInstances(names=transform_name)
+
+            if isinstance(results, tuple):
+                quantity_count = len(results)
+            elif isinstance(results, ndarray):
+                quantity_count = 1
+            else:
+                raise ValueError(f"results ({results.__class__:s}) must be either 1D ndarray or tuple of 1D-ndarrays")
             argument_count = transform_obj.getArgumentCount()
-            transform_requires_times = transform_obj.requiresTimes()
+            assert argument_count == quantity_count
 
             if is_time:
                 transform_time_function = transform_obj.getTimeFunction()
                 transform_results = transform_time_function(results)
             else:
                 transform_function = transform_obj.getFunction()
+                transform_requires_times = transform_obj.requiresTimes()
 
                 if transform_requires_times:
                     times = self.getResultsOverTime(
@@ -615,7 +666,10 @@ class Results:
                         quantity_names='t',
                         inequality_filters=inequality_filters
                     )
-                    transform_results = transform_function(results, times)
+                    transform_function = partial(transform_function, times=times)
+
+                if isinstance(results, tuple):
+                    transform_results = transform_function(*results)
                 else:
                     transform_results = transform_function(results)
 
@@ -690,11 +744,10 @@ class Results:
                 else:
                     raise ValueError("quantity_names input must correspond to either variable or function when str")
 
-                # noinspection PyUnboundLocalVariable
                 self.saveResult(
-                    index,
-                    quantity_names,
-                    single_results
+                    index=index,
+                    name=quantity_names,
+                    result=single_results
                 )
 
             if inequality_filters is not None:
@@ -735,53 +788,52 @@ class Results:
                     inequality_filters=inequality_filters
                 )
 
-            if functional_name != "None":
-                if functional_name == "Frequency":
-                    times = self.getResultsOverTime(
-                        index=index,
-                        quantity_names="t",
-                        transform_name=transform_name,
-                        inequality_filters=inequality_filters
-                    )
-                    frequency = oscillationFrequency(
-                        single_results,
-                        times,
-                        **functional_kwargs
-                    )
-                    return frequency
-                elif functional_name == "Mean":
-                    return holderMean(
-                        single_results,
-                        **functional_kwargs
-                    )
-                elif functional_name == "Standard Deviation":
-                    return np.std(single_results)
-                else:
-                    raise ValueError(f"invalid functional name ({functional_name:s})")
-
-            return single_results
+            results = single_results
         elif isinstance(quantity_names, list):
-            print("multi:", quantity_names, transform_name)
-            if transform_name == "None":
-                new_results = np.array([
-                    self.getResultsOverTime(
-                        index=index,
-                        quantity_names=name
+            multiple_results = [
+                self.getResultsOverTime(
+                    index=index,
+                    quantity_names=name,
+                )
+                for name in quantity_names
+            ]
+
+            if coordinate_name != "None":
+                multiple_results = [
+                    self.getCoordinateTransformOfResults(
+                        single_results,
+                        coordinate_name=coordinate_name
                     )
-                    for name in quantity_names
-                ])
-                print("shape:", new_results.shape)
+                    for single_results in multiple_results
+                ]
+
+            if transform_name == "None":
+                results = np.array(multiple_results)
             else:
-                pass
-            return new_results
+                results = self.getTransformOfResults(
+                    results=tuple(multiple_results),
+                    transform_name=transform_name,
+                    is_time=False,
+                    index=index,
+                    inequality_filters=inequality_filters
+                )
         else:
             raise TypeError("names input must be str or list")
+
+        if functional_name != "None":
+            results = self.getFunctionalOfResults(
+                results,
+                functional_name=functional_name
+            )
+
+        return results
 
     def getResultsOverTimePerParameter(
         self,
         index: Union[tuple, Tuple[int]],
         parameter_names: str,
         quantity_names: Union[str, List[str]],
+        transform_name: str = "None",
         **kwargs
     ) -> Tuple[tuple, ndarray]:
         """
@@ -790,7 +842,8 @@ class Results:
         :param self: :class:`~Results.Results` to retrieve results from
         :param index: see :meth:`~Results.Results.getResultsOverTime`
         :param parameter_names: name(s) of free parameter(s) to retrieve quantity results over.
-        :param quantity_names: name(s) of quantity(s) to average results over
+        :param quantity_names: name(s) of quantity(s) to pass into :meth:`~Results.Results.getResultsOverTime`
+        :param transform_name: see :class:`~Results.Results.getResultsOverTime`
         :param kwargs: additional arguments to pass into :meth:`~Results.Results.getResultsOverTime`
         :returns: tuple of results.
             First index gives array of parameter base values.
@@ -804,6 +857,8 @@ class Results:
             quantity_names = [quantity_names]
         if isinstance(parameter_names, str):
             parameter_names = [parameter_names]
+        if transform_name != "None":
+            quantity_names = [quantity_names]
 
         per_parameter_locations = np.array(list(map(self.getFreeParameterIndex, parameter_names)))
         per_parameter_base_values = tuple(list(self.getFreeParameterValues(names=parameter_names)))
@@ -851,6 +906,7 @@ class Results:
                     single_result = self.getResultsOverTime(
                         index=tuple(new_index),
                         quantity_names=quantity_name,
+                        transform_name=transform_name,
                         **kwargs
                     )
                     single_results[partial_index] = single_result

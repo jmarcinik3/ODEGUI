@@ -119,6 +119,45 @@ def holderMean(
     return modulus
 
 
+def arithmeticMean(data: ndarray) -> float:
+    """
+    Calculate arithmetic mean for array.
+
+    :param data: array to calculate mean for
+    """
+    mean = np.mean(data)
+    return np.absolute(mean)
+
+
+def geometricMean(data: ndarray):
+    """
+    Calculate geometric mean for array.
+
+    :param data: array to calculate mean for
+    """
+    mean = stats.gmean(data)
+    return mean
+
+
+def rootMeanSquare(data: ndarray) -> float:
+    """
+    Calculate root-mean-square for array.
+
+    :param data: array to calculate RMS for
+    """
+    rms = np.sqrt(np.mean(data**2))
+    return rms
+
+
+def standardDeviation(data: ndarray) -> float:
+    """
+    Calculate standard deviation for array.
+
+    :param data: array to calculate deviation for
+    """
+    standard_deviation = np.std(data)
+    return standard_deviation
+
 def fourierTransform(data: ndarray) -> ndarray:
     """
     Calculate Fourier tranform for array.

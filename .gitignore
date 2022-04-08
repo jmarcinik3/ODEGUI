@@ -2,6 +2,7 @@
 __pycache__/
 Recreation/
 .vscode/
+docs/
 genRST.py
 convert_res*.py
 plot_types.csv

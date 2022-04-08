@@ -808,7 +808,8 @@ class AxisQuantityElement:
         self,
         quantity_count_per_axis: int = 2,
         transform_names: List[str] = None,
-        coordinate_names: List[str] = None
+        coordinate_names: List[str] = None,
+        functional_names: List[str] = None
     ):
         """
         Constructor for :class:`~Layout.SimulationWindow.AxisQuantityElement`.
@@ -823,6 +824,8 @@ class AxisQuantityElement:
 
         self.transform_names = ["None"] if transform_names is None else transform_names
         self.coordinate_names = ["None"] if coordinate_names is None else coordinate_names
+        self.functional_names = ["None"] if functional_names is None else functional_names
+        
 
     def getQuantityCountPerAxis(self) -> int:
         """
@@ -848,6 +851,13 @@ class AxisQuantityElement:
         """
         return self.coordinate_names
 
+    def getFunctionalNames(self) -> List[str]:
+        """
+        Get names of functionals.
+
+        :param self: :class:`~Layout.SimulationWindow.AxisQuantityElement` to retrieve names from
+        """
+        return self.functional_names
 
 class AxisQuantityTabGroup(TabGroup, AxisQuantityElement):
     def __init__(
@@ -868,21 +878,24 @@ class AxisQuantityTabGroup(TabGroup, AxisQuantityElement):
         quantity_count_per_axis = self.getQuantityCountPerAxis()
         transform_names = self.getTransformNames()
         coordinate_names = self.getCoordinateNames()
-
+        functional_names = self.getFunctionalNames()
+        
         tabs = [
             StandardTab(
                 "Standard",
                 window,
                 quantity_count_per_axis=quantity_count_per_axis,
                 transform_names=transform_names,
-                coordinate_names=coordinate_names
+                coordinate_names=coordinate_names,
+                functional_names=functional_names
             ),
             NonStandardTab(
                 "Other",
                 window,
                 quantity_count_per_axis=quantity_count_per_axis,
                 transform_names=transform_names,
-                coordinate_names=coordinate_names
+                coordinate_names=coordinate_names,
+                functional_names=functional_names
             )
         ]
         TabGroup.__init__(self, tabs, name=name)
@@ -945,6 +958,7 @@ class StandardTab(AxisQuantityTab):
         quantity_count_per_axis = self.getQuantityCountPerAxis()
         coordinate_names = self.getCoordinateNames()
         transform_names = self.getTransformNames()
+        functional_names = self.getFunctionalNames()
         window_object = self.getWindowObject()
 
         axis_frames = []
@@ -958,7 +972,8 @@ class StandardTab(AxisQuantityTab):
                 include_none=include_none,
                 include_continuous=True,
                 transform_names=transform_names,
-                coordinate_names=coordinate_names
+                coordinate_names=coordinate_names,
+                functional_names=functional_names
             )
             axis_frames.append(axis_frame.getFrame())
 
@@ -995,6 +1010,7 @@ class NonStandardTab(AxisQuantityTab):
         quantity_count_per_axis = self.getQuantityCountPerAxis()
         coordinate_names = self.getCoordinateNames()
         transform_names = self.getTransformNames()
+        functional_names = self.getFunctionalNames()
         window_object = self.getWindowObject()
 
         axis_frames = []
@@ -1008,7 +1024,8 @@ class NonStandardTab(AxisQuantityTab):
                 include_none=True,
                 include_continuous=include_continuous,
                 transform_names=transform_names,
-                coordinate_names=coordinate_names
+                coordinate_names=coordinate_names,
+                functional_names=functional_names
             )
             axis_frames.append(axis_frame.getFrame())
 
@@ -1100,11 +1117,12 @@ class AxisQuantityFrame(Frame, AxisQuantityElement, StoredObject):
         :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retrieve element from
         """
         name = self.getName()
-        axis_functional = ["None", "Mean", "Frequency", "Standard Deviation"]
+        functional_names = self.getFunctionalNames()
+        default_value = functional_names[0]
 
         return sg.InputCombo(
-            values=axis_functional,
-            default_value=axis_functional[0],
+            values=functional_names,
+            default_value=default_value,
             tooltip=f"Choose functional to perform on {name:s}-axis of plot",
             enable_events=True,
             size=self.getDimensions(name="axis_functional_combobox"),
@@ -1126,7 +1144,7 @@ class AxisQuantityFrame(Frame, AxisQuantityElement, StoredObject):
         )
 
     @storeElement
-    def getCoordinateGroup(self) -> RadioGroup:
+    def getAxisCoordinateGroup(self) -> RadioGroup:
         """
         Get element to take user input for coordinate system (e.g. "Cartesian").
 
@@ -1165,7 +1183,7 @@ class AxisQuantityFrame(Frame, AxisQuantityElement, StoredObject):
             sg.Text("Normalize:"),
             self.getAxisNormalizeElement()
         ]
-        coordinate_row = self.getCoordinateGroup()
+        coordinate_row = self.getAxisCoordinateGroup()
 
         rows.append(coordinate_row)
         rows.append(Row(elements=row_elements))
@@ -1726,7 +1744,8 @@ class SimulationWindow(TabbedWindow):
         plot_choices: Dict[str, List[str]],
         include_simulation_tab: bool = True,
         transform_config_filepath: str = "transforms.json",
-        coordinate_config_filepath: str = "coordinates.json"
+        coordinate_config_filepath: str = "coordinates.json",
+        functional_config_filepath: str = "functionals.json",
     ) -> None:
         """
         Constructor for :class:`~Layout.SimulationWindow.SimulationWindow`.
@@ -1739,6 +1758,8 @@ class SimulationWindow(TabbedWindow):
             Leave as empty dictionary if there exist zero free parameters.
         :param plot_choices: collection of quantities that may be plotted along each axis.
         :param transform_config_filepath: filepath for file containing info about transforms
+        :param coordinate_config_filepath: filepath for file containing info about coordinate transformations
+        :param functional_config_filepath: filepath for file containing info about functionals
         """
         dimensions = {
             "window": getDimensions(
@@ -1885,11 +1906,15 @@ class SimulationWindow(TabbedWindow):
         transform_names = list(transform_config.keys())
         coordinate_config = loadConfig(coordinate_config_filepath)
         coordinate_names = list(coordinate_config.keys())
+        functional_config = loadConfig(functional_config_filepath)
+        functional_names = list(functional_config.keys())
+        
         plotting_tabgroup = AxisQuantityTabGroup(
             plotting_tabgroup_name,
             self,
             transform_names=transform_names,
-            coordinate_names=coordinate_names
+            coordinate_names=coordinate_names,
+            functional_names=functional_names
         )
         self.getQuantityCountPerAxis = plotting_tabgroup.getQuantityCountPerAxis
         self.getTransformNames = plotting_tabgroup.getTransformNames
@@ -2306,21 +2331,6 @@ class SimulationWindowRunner(WindowRunner):
             output_type=tuple,
             default_args=self.getFreeParameterNames()
         )
-
-    def getLikeSpecies(self, like: str):
-        """
-        Get collection of quantity species that may be treated as over-time.
-
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve species from
-        :param like: species type to retrieve collection of species of.
-            Can be "timelike" or "parameterlike".
-        """
-        if like == "timelike":
-            return self.timelike_species
-        elif like == "parameterlike":
-            return self.parameterlike_species
-        else:
-            raise ValueError("like must be 'timelike' or 'parameterlike'")
 
     def getFrequencyMethod(self) -> str:
         """
@@ -2843,14 +2853,16 @@ class SimulationWindowRunner(WindowRunner):
                 "calculation_method": self.getFrequencyMethod(),
                 "condensing_method": self.getFrequencyFunctional()
             }
-        elif functional_specie == "Mean":
+        elif functional_specie == "Holder Mean":
             functional_kwargs = {
                 "order": self.getMeanOrder()
             }
         elif functional_specie == "Standard Deviation":
             functional_kwargs = {}
+        elif functional_specie in ["None", "Arithmetic Mean", "Geometric Mean", "Root-Mean-Square"]:
+            functional_kwargs = {}
         else:
-            raise TypeError(f"invalid value for functional specie ({functional_specie:s})")
+            sg.PopupError(f"invalid value for functional specie ({functional_specie:s})")
 
         return functional_kwargs
 
@@ -2910,17 +2922,13 @@ class SimulationWindowRunner(WindowRunner):
         valid_axis_names = plot_quantities.getValidAxisNames()
 
         results_object = self.getResultsObject()
-        timelike_species = self.getLikeSpecies("timelike")
-        parameterlike_species = self.getLikeSpecies("parameterlike")
-        results_kwargs = {
-            "index": index
-        }
 
         axis2names = {}
         axis2species = {}
         axis2coordinate = {}
         axis2transform = {}
         axis2functional = {}
+        is_transformed = {}
         is_timelike = {}
         is_functional = {}
         is_parameterlike = {}
@@ -2931,11 +2939,7 @@ class SimulationWindowRunner(WindowRunner):
             is_functional[axis_name] = False
             is_timelike[axis_name] = False
             is_parameterlike[axis_name] = False
-
-            if axis_name in valid_axis_names:
-                is_nonelike[axis_name] = False
-            else:
-                is_nonelike[axis_name] = True
+            is_nonelike[axis_name] = axis_name not in valid_axis_names
 
         for valid_axis_name in valid_axis_names:
             quantity_names = plot_quantities.getAxisQuantityNames(
@@ -2948,72 +2952,103 @@ class SimulationWindowRunner(WindowRunner):
             )
             coordinate_name = plot_quantities.getAxisCoordinateName(valid_axis_name)
             functional_name = plot_quantities.getAxisFunctionalName(valid_axis_name)
+            axis_is_transformed = transform_name != "None"
 
             axis2names[valid_axis_name] = quantity_names
             axis2species[valid_axis_name] = specie_names
             axis2coordinate[valid_axis_name] = coordinate_name
             axis2functional[valid_axis_name] = functional_name
             axis2transform[valid_axis_name] = plot_quantities.getAxisTransformName(valid_axis_name)
-
-            if functional_name != "None":
+            is_transformed[valid_axis_name] = axis_is_transformed
+            
+            exists_timelike_subaxis = plot_quantities.existsLikeSpecies(
+                specie_names,
+                "timelike"
+            )
+            exists_parameterlike_subaxis = plot_quantities.existsLikeSpecies(
+                specie_names,
+                "parameterlike"
+            )
+            
+            if exists_timelike_subaxis and exists_parameterlike_subaxis:
+                is_nonelike[valid_axis_name] = True
+            elif functional_name != "None":
                 is_functional[valid_axis_name] = True
-            elif functional_name == "None":
-                assert len(specie_names) == 1
-                specie_name = specie_names[0]
-                quantity_name = quantity_names[0]
-
-                if specie_name in timelike_species:
+            else:                
+                if exists_timelike_subaxis and exists_parameterlike_subaxis:
+                    is_nonelike[valid_axis_name] = True
+                elif exists_timelike_subaxis:
                     is_timelike[valid_axis_name] = True
-                elif specie_name in parameterlike_species:
-                    is_parameterlike[valid_axis_name] = True
-                    parameter_names.append(quantity_name)
+                elif exists_parameterlike_subaxis:
+                    parameterlike_count_subaxis = plot_quantities.getLikeCount(
+                        specie_names,
+                        "parameterlike"
+                    )
+                    if parameterlike_count_subaxis == 1:
+                        is_parameterlike[valid_axis_name] = True
+                        parameter_names.append(quantity_names[0])
+                    elif parameterlike_count_subaxis >= 2:
+                        is_nonelike[valid_axis_name] = True
                 else:
                     is_nonelike[valid_axis_name] = True
-
+        
         timelike_count = sum(is_timelike.values())
         parameterlike_count = sum(is_parameterlike.values())
         functional_count = sum(is_functional.values())
 
+        exists_parameterlike = parameterlike_count >= 1
+        multiple_parameterlikes = parameterlike_count >= 2
+        exists_cartesian_parameterlike = any([
+            is_parameterlike[cartesian_axis_name]
+            for cartesian_axis_name in cartesian_axis_names
+        ])
+        exists_functional = functional_count >= 1
+        multiple_functionals = functional_count >= 2
+        exists_timelike = timelike_count >= 1
+        multiple_timelikes = timelike_count >= 2
+        
         inequality_filters = self.getInequalityFilters()
         print('filters:', inequality_filters)
 
         results = {}
         try:
-            if parameterlike_count == 0:
+            if not exists_parameterlike:
                 getResultsOverTime = partial(
                     results_object.getResultsOverTime,
                     inequality_filters=inequality_filters,
-                    **results_kwargs
+                    index=index
                 )
 
                 for valid_axis_name, quantity_names in axis2names.items():
                     coordinate_name = axis2coordinate[valid_axis_name]
                     transform_name = axis2transform[valid_axis_name]
-
+                    axis_is_transformed = is_transformed[valid_axis_name]
+                    
+                    if not axis_is_transformed or len(quantity_names) == 1:
+                        quantity_names = quantity_names[0]
+                            
                     if is_timelike[valid_axis_name]:
-                        assert len(quantity_names) == 1
-                        quantity_name = quantity_names[0]
-
                         results[valid_axis_name] = getResultsOverTime(
-                            quantity_names=quantity_name,
+                            quantity_names=quantity_names,
                             coordinate_name=coordinate_name,
                             transform_name=transform_name
                         )
                     elif is_functional[valid_axis_name]:
                         functional_name = axis2functional[valid_axis_name]
+                        functional_kwargs=self.getFunctionalKwargs(functional_name)
                         results[valid_axis_name] = getResultsOverTime(
-                            quantity_names=quantity_name,
+                            quantity_names=quantity_names,
                             coordinate_name=coordinate_name,
                             transform_name=transform_name,
                             functional_name=functional_name,
-                            functional_kwargs=self.getFunctionalKwargs(functional_name)
+                            functional_kwargs=functional_kwargs
                         )
             else:
                 getResultsOverTimePerParameter = partial(
                     results_object.getResultsOverTimePerParameter,
                     parameter_names=parameter_names,
                     inequality_filters=inequality_filters,
-                    **results_kwargs
+                    index=index
                 )
 
                 for valid_axis_name, quantity_names in axis2names.items():
@@ -3031,58 +3066,51 @@ class SimulationWindowRunner(WindowRunner):
                         )
                         results[valid_axis_name] = quantity_results[0]
                     else:
-                        assert len(quantity_names) == 1
-                        quantity_name = quantity_names[0]
+                        if not axis_is_transformed or len(quantity_names) == 1:
+                            quantity_names = quantity_names[0]
 
                         if is_timelike[valid_axis_name]:
+                            functional_name = axis2functional[valid_axis_name]
+                            functional_kwargs=self.getFunctionalKwargs(functional_name)
                             parameter_results, quantity_results = getResultsOverTimePerParameter(
-                                quantity_names=quantity_name,
+                                quantity_names=quantity_names,
                                 coordinate_name=coordinate_name,
-                                transform_name=transform_name
+                                transform_name=transform_name,
+                                functional_name=functional_name,
+                                functional_kwargs=functional_kwargs
                             )
                             results[valid_axis_name] = quantity_results[0]
                         elif is_parameterlike[valid_axis_name]:
-                            results[valid_axis_name] = results_object.getFreeParameterValues(names=quantity_name)
+                            results[valid_axis_name] = results_object.getFreeParameterValues(names=quantity_names)
 
-        except (UnboundLocalError, KeyError, IndexError, AttributeError, ValueError):
+        except (UnboundLocalError, KeyError, IndexError, AttributeError, ValueError, AssertionError):
             print('data:', traceback.print_exc())
-
-        exist_parameterlike = parameterlike_count >= 1
-        multiple_parameterlikes = parameterlike_count >= 2
-        exist_cartesian_parameterlike = any([
-            is_parameterlike[cartesian_axis_name]
-            for cartesian_axis_name in cartesian_axis_names
-        ])
-        exist_functional = functional_count >= 1
-        multiple_functionals = functional_count >= 2
-        exist_timelike = timelike_count >= 1
-        multiple_timelikes = timelike_count >= 2
 
         if is_nonelike['x'] or is_nonelike['y']:
             plot_type = ''
-        elif exist_timelike and not multiple_timelikes:
+        elif exists_timelike and not multiple_timelikes:
             plot_type = ''
-        elif exist_timelike and exist_functional:
+        elif exists_timelike and exists_functional:
             plot_type = ''
-        elif exist_functional and not exist_parameterlike:
+        elif exists_functional and not exists_parameterlike:
             plot_type = ''
         else:
             if is_parameterlike['c']:
-                if exist_timelike:
+                if exists_timelike:
                     plot_type = 'nc'
-                elif exist_functional:
+                elif exists_functional:
                     if multiple_parameterlikes:
                         plot_type = 'nc'
-                    elif exist_parameterlike:
+                    elif exists_parameterlike:
                         plot_type = 'nt'
             elif is_functional['c']:
-                assert exist_cartesian_parameterlike
+                assert exists_cartesian_parameterlike
                 if multiple_functionals:
                     if multiple_parameterlikes:
                         plot_type = 't'
                     else:
                         plot_type = 'nt'
-                elif exist_functional:
+                elif exists_functional:
                     plot_type = 'c'
             elif is_timelike['c']:
                 plot_type = 'nt'
@@ -3091,12 +3119,12 @@ class SimulationWindowRunner(WindowRunner):
 
             for cartesian_axis_name in cartesian_axis_names:
                 if is_parameterlike[cartesian_axis_name]:
-                    if exist_functional:
+                    if exists_functional:
                         if multiple_parameterlikes:
                             plot_type += f"n{cartesian_axis_name:s}"
-                        elif exist_parameterlike:
+                        elif exists_parameterlike:
                             plot_type += cartesian_axis_name
-                    elif exist_timelike:
+                    elif exists_timelike:
                         plot_type += f"n{cartesian_axis_name:s}"
                 elif is_functional[cartesian_axis_name]:
                     if is_parameterlike['c']:
@@ -3104,7 +3132,7 @@ class SimulationWindowRunner(WindowRunner):
                     elif multiple_parameterlikes:
                         plot_type += cartesian_axis_name
                     else:
-                        assert exist_parameterlike
+                        assert exists_parameterlike
                         if multiple_functionals:
                             plot_type += cartesian_axis_name
                         else:
@@ -3184,14 +3212,31 @@ class SimulationWindowRunner(WindowRunner):
                     else:
                         quantity_names_combobox.update(**kwargs)
 
-            parameterlike_species = self.getLikeSpecies("parameterlike")
-            functional_disabled = False
-            for parameterlike_specie in parameterlike_species:
-                if parameterlike_specie in species:
-                    functional_disabled = True
+            timelike_species = plot_quantities.getSpecies("timelike") + plot_quantities.getSpecies("nonelike")
+            all_species = plot_quantities.getSpecies()
+            nontimelike_species = [
+                specie
+                for specie in all_species
+                if specie not in timelike_species
+            ]
+            
+            exists_nontimelike = False
+            for nontimelike_specie in nontimelike_species:
+                if nontimelike_specie in species:
+                    exists_nontimelike = True
                     break
+            coordinate_disabled = transform_disabled = functional_disabled = exists_nontimelike
+            
             functional_combobox = axis_quantity_frame.getAxisFunctionalElement()
             functional_combobox.update(disabled=functional_disabled)
+            
+            coordinate_radio_group = axis_quantity_frame.getAxisCoordinateGroup()
+            coordinate_radios = coordinate_radio_group.getRadios()
+            for coordinate_radio in coordinate_radios:
+                coordinate_radio.update(disabled=coordinate_disabled)
+            
+            transform_combobox = axis_quantity_frame.getAxisTransformElement()
+            transform_combobox.update(disabled=transform_disabled)
 
         return recursiveMethod(
             args=names,
@@ -3411,6 +3456,11 @@ class PlotQuantities:
         self.axis2coordinate = {}
         self.axis2transform = {}
         self.axis2functional = {}
+        
+        self.specie_types = ["timelike", "parameterlike", "nonelike"]
+        self.timelike_species = ["Variable", "Function"]
+        self.parameterlike_species = ["Parameter"]
+        self.nonelike_species = ["None"]
 
     def reset(self) -> None:
         """
@@ -3432,6 +3482,70 @@ class PlotQuantities:
         :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve window runner from
         """
         return self.window_runner
+
+    def getSpecies(self, like: str = None) -> List[str]:
+        """
+        Get collection of quantity species that may be treated as over-time.
+
+        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve species from
+        :param like: species type to retrieve collection of species of.
+            Can be "timelike", "parameterlike", "nonelike".
+            Defaults to all species.
+        """
+        if like == "timelike":
+            return self.timelike_species
+        elif like == "parameterlike":
+            return self.parameterlike_species
+        elif like == "nonelike":
+            return self.nonelike_species
+        elif like == None:
+            all_species = []
+            for specie_type in self.specie_types:
+                species_of_type = self.getSpecies(specie_type)
+                all_species.extend(species_of_type)
+            return all_species
+        else:
+            raise ValueError("like must be 'timelike', 'parameterlike', or 'nonelike'")
+
+    def getLikeCount(
+        self,
+        species: List[str],
+        like: str
+    ):
+        """
+        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve like-species from
+        :param species: names of species to count like-type in
+        :param like: type of species to check for in collection of species.
+            See :meth:`~Layout.SimulationWindow.PlotQuantities.getSpecies`.
+        """
+        like_species = self.getSpecies(like)
+        like_count = 0
+        for specie_name in species:
+            if specie_name in like_species:
+                like_count += 1
+        
+        return like_count
+
+    def existsLikeSpecies(
+        self,
+        species: List[str],
+        like: str
+    ):
+        """
+        Get whether at least one specie is of like-type.
+        
+        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve like-species from
+        :param species: names of species to check for like-type in
+        :param like: type of species to check for in collection of species.
+            See :meth:`~Layout.SimulationWindow.PlotQuantities.getSpecies`.
+        """
+        like_species = self.getSpecies(like)
+        exists_like = False
+        for specie_name in species:
+            if specie_name in like_species:
+                exists_like = True
+        
+        return exists_like
 
     def getValidAxisNames(self) -> List[str]:
         """
@@ -3476,11 +3590,16 @@ class PlotQuantities:
         if axis_name in axis2coordinate.keys():
             coordinate_name = axis2coordinate[axis_name]
         else:
-            coordinate_radio_group: CoordinateRadioGroup = CoordinateRadioGroup.getInstances(names=axis_name)
+            exists_nontimelike = self.existsNontimelikeSpecies(axis_name)
+            
+            if exists_nontimelike:
+                coordinate_name = "Cartesian"
+            else:
+                coordinate_radio_group: CoordinateRadioGroup = CoordinateRadioGroup.getInstances(names=axis_name)
 
-            chosen_radio = coordinate_radio_group.getChosenRadio()
-            chosen_radio_text = vars(chosen_radio)["Text"]
-            coordinate_name = chosen_radio_text
+                chosen_radio = coordinate_radio_group.getChosenRadio()
+                chosen_radio_text = vars(chosen_radio)["Text"]
+                coordinate_name = chosen_radio_text
 
             self.axis2coordinate[axis_name] = coordinate_name
 
@@ -3497,12 +3616,17 @@ class PlotQuantities:
         if axis_name in axis2functional.keys():
             functional_name = axis2functional[axis_name]
         else:
-            window_runner = self.getWindowRunner()
-            axis_quantity_frame: AxisQuantityFrame = AxisQuantityFrame.getInstances(names=axis_name)
+            exists_nontimelike = self.existsNontimelikeSpecies(axis_name)
+            
+            if exists_nontimelike:
+                functional_name = "None"
+            else:
+                window_runner = self.getWindowRunner()
+                axis_quantity_frame: AxisQuantityFrame = AxisQuantityFrame.getInstances(names=axis_name)
 
-            functional_element = axis_quantity_frame.getAxisFunctionalElement()
-            functional_key = getKeys(functional_element)
-            functional_name = window_runner.getValue(functional_key)
+                functional_element = axis_quantity_frame.getAxisFunctionalElement()
+                functional_key = getKeys(functional_element)
+                functional_name = window_runner.getValue(functional_key)
 
             self.axis2functional[axis_name] = functional_name
 
@@ -3519,12 +3643,17 @@ class PlotQuantities:
         if axis_name in axis2transform.keys():
             transform_name = axis2transform[axis_name]
         else:
-            window_runner = self.getWindowRunner()
-            axis_quantity_frame: AxisQuantityFrame = AxisQuantityFrame.getInstances(names=axis_name)
+            exists_nontimelike = self.existsNontimelikeSpecies(axis_name)
+            
+            if exists_nontimelike:
+                transform_name = "None"
+            else:
+                window_runner = self.getWindowRunner()
+                axis_quantity_frame: AxisQuantityFrame = AxisQuantityFrame.getInstances(names=axis_name)
 
-            transform_element = axis_quantity_frame.getAxisTransformElement()
-            transform_key = getKeys(transform_element)
-            transform_name = window_runner.getValue(transform_key)
+                transform_element = axis_quantity_frame.getAxisTransformElement()
+                transform_key = getKeys(transform_element)
+                transform_name = window_runner.getValue(transform_key)
 
             self.axis2transform[axis_name] = transform_name
 
@@ -3591,6 +3720,26 @@ class PlotQuantities:
 
         return quantity_name
 
+    def existsNontimelikeSpecies(self, axis_name: str) -> bool:
+        """
+        Get whether axis has some nontimelike species.
+
+        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve name from
+        :param axis_name: name of axis to retrieve name from
+        :returns: True if axis contains at least one nontimelike species.
+            False if all species are timelike.
+        """
+        specie_names = self.getAxisQuantitySpecies(axis_name)
+        timelike_species = self.getSpecies("timelike") + self.getSpecies("nonelike")
+        
+        exists_nontimelike_specie = False
+        for specie_name in specie_names:
+            if specie_name not in timelike_species:
+                exists_nontimelike_specie = True
+                break
+        
+        return exists_nontimelike_specie
+    
     def getAxisQuantitySpecies(
         self,
         axis_name: str,
