@@ -3054,6 +3054,7 @@ class SimulationWindowRunner(WindowRunner):
                 for valid_axis_name, quantity_names in axis2names.items():
                     coordinate_name = axis2coordinate[valid_axis_name]
                     transform_name = axis2transform[valid_axis_name]
+                    functional_kwargs=self.getFunctionalKwargs(functional_name)
 
                     if is_functional[valid_axis_name]:
                         functional_name = axis2functional[valid_axis_name]
@@ -3062,7 +3063,7 @@ class SimulationWindowRunner(WindowRunner):
                             coordinate_name=coordinate_name,
                             transform_name=transform_name,
                             functional_name=functional_name,
-                            functional_kwargs=self.getFunctionalKwargs(functional_name)
+                            functional_kwargs=functional_kwargs
                         )
                         results[valid_axis_name] = quantity_results[0]
                     else:
@@ -3071,7 +3072,6 @@ class SimulationWindowRunner(WindowRunner):
 
                         if is_timelike[valid_axis_name]:
                             functional_name = axis2functional[valid_axis_name]
-                            functional_kwargs=self.getFunctionalKwargs(functional_name)
                             parameter_results, quantity_results = getResultsOverTimePerParameter(
                                 quantity_names=quantity_names,
                                 coordinate_name=coordinate_name,

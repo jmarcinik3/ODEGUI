@@ -652,14 +652,13 @@ class Results:
                 raise ValueError(f"results ({results.__class__:s}) must be either 1D ndarray or tuple of 1D-ndarrays")
             argument_count = transform_obj.getArgumentCount()
             assert argument_count == quantity_count
-
+            
             if is_time:
-                transform_time_function = transform_obj.getTimeFunction()
-                transform_results = transform_time_function(results)
+                transform_function = transform_obj.getTimeFunction()
             else:
                 transform_function = transform_obj.getFunction()
+                            
                 transform_requires_times = transform_obj.requiresTimes()
-
                 if transform_requires_times:
                     times = self.getResultsOverTime(
                         index=index,
@@ -668,10 +667,10 @@ class Results:
                     )
                     transform_function = partial(transform_function, times=times)
 
-                if isinstance(results, tuple):
-                    transform_results = transform_function(*results)
-                else:
-                    transform_results = transform_function(results)
+            if isinstance(results, tuple):
+                transform_results = transform_function(*results)
+            else:
+                transform_results = transform_function(results)
 
         return transform_results
 
@@ -794,6 +793,7 @@ class Results:
                 self.getResultsOverTime(
                     index=index,
                     quantity_names=name,
+                    inequality_filters=inequality_filters
                 )
                 for name in quantity_names
             ]
@@ -809,7 +809,7 @@ class Results:
 
             if transform_name == "None":
                 results = np.array(multiple_results)
-            else:
+            elif transform_name != "None":
                 results = self.getTransformOfResults(
                     results=tuple(multiple_results),
                     transform_name=transform_name,
@@ -869,6 +869,7 @@ class Results:
         times = self.getResultsOverTime(
             index=index,
             quantity_names="t",
+            transform_name=transform_name,
             **kwargs
         )
         if isinstance(times, (float, int)):
