@@ -535,7 +535,8 @@ class RadioGroup(Row):
         self,
         radios: Union[sg.Radio, List[sg.Radio]],
         group_id: str,
-        window: Window
+        window: Window,
+        name: str = None
     ):
         """
         Constructor for :class:`~Layout.Layout.Tabgroup`.
@@ -543,12 +544,15 @@ class RadioGroup(Row):
         :param radios: collection of radio elements
         :param group_id: id of radio group
         :param window: :class:`~Layout.Layout.Window` that contains group
+        :param name: name of radio group qua row
         """
         super().__init__(
-            name=group_id,
+            name=name,
             elements=radios,
             window=window
-        ) 
+        )
+
+        self.group_id = group_id
 
     def getGroupId(self) -> str:
         """
@@ -556,7 +560,7 @@ class RadioGroup(Row):
 
         :param self: :class:`~Layout.Layout.RadioGroup` to retrieve id from
         """
-        return self.getName()
+        return self.group_id
 
     def getRadios(self) -> List[sg.Radio]:
         """
