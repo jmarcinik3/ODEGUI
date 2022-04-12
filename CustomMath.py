@@ -115,8 +115,7 @@ def holderMean(
     else:
         mean = np.mean(data**order)**(1 / order)
 
-    modulus = np.absolute(mean)
-    return modulus
+    return mean
 
 
 def arithmeticMean(data: ndarray) -> float:
@@ -126,7 +125,7 @@ def arithmeticMean(data: ndarray) -> float:
     :param data: array to calculate mean for
     """
     mean = np.mean(data)
-    return np.absolute(mean)
+    return mean
 
 
 def geometricMean(data: ndarray):
@@ -264,9 +263,26 @@ def imaginaryExponentiation(phase: ndarray) -> ndarray:
     return imaginary_exponent
 
 
-def phaseLockingValue(data1, data2):
+def phaseLockingValue(data1: ndarray, data2: ndarray) -> ndarray:
     assert data1.shape == data2.shape
 
     phase_difference = phaseDifference(data1, data2)
     imaginary_exponent = imaginaryExponentiation(phase_difference)
     return imaginary_exponent
+
+def complexMagnitude(data: ndarray) -> ndarray:
+    magnitude = np.absolute(data)
+    return magnitude
+
+def complexPhase(data: ndarray) -> ndarray:
+    phase = np.angle(data)
+    return phase
+
+def realPart(data: ndarray) -> ndarray:
+    real_part = np.real(data)
+    return real_part
+
+def imaginaryPart(data: ndarray) -> ndarray:
+    imaginary_part = np.imag(data)
+    return imaginary_part
+

@@ -1,0 +1,18 @@
+{
+    "Magnitude": {
+        "function": "complexMagnitude",
+        "module": "CustomMath"
+    },
+    "Phase": {
+        "function": "complexPhase",
+        "module": "CustomMath"
+    },
+    "Real": {
+        "function": "realPart",
+        "module": "CustomMath"
+    },
+    "Imaginary": {
+        "function": "imaginaryPart",
+        "module": "CustomMath"
+    }
+}

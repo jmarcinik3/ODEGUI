@@ -4,6 +4,7 @@ from functools import partial
 from math import prod
 from os import makedirs
 from os.path import dirname, exists, join
+import time
 from typing import Callable, Dict, Iterable, List, Tuple, Union
 
 import dill
@@ -45,7 +46,7 @@ class Transform(FunctionOnResult, StoredObject):
 
         :param name: name of transform
         :param transform_info: dictionary of information to generate transform object.
-            See :class:`~Results.TransformResult`.
+            See :class:`~Results.FunctionOnResult`.
         """
         FunctionOnResult.__init__(self, name, transform_info)
         StoredObject.__init__(self, name)
@@ -92,7 +93,7 @@ class Coordinate(FunctionOnResult, StoredObject):
 
         :param name: name of coordinate (e.g. "Cartesian")
         :param coordinate_info: dictionary of information to generate coordinate object.
-            See :class:`~Results.TransformResult`.
+            See :class:`~Results.FunctionOnResult`.
         """
         FunctionOnResult.__init__(self, name, coordinate_info)
         StoredObject.__init__(self, name)
@@ -105,9 +106,22 @@ class Functional(FunctionOnResult, StoredObject):
 
         :param name: name of functional
         :param functional_info: dictionary of information to generate functional object.
-            See :class:`~Results.TransformResult`.
+            See :class:`~Results.FunctionOnResult`.
         """
         FunctionOnResult.__init__(self, name, functional_info)
+        StoredObject.__init__(self, name)
+
+
+class Complex(FunctionOnResult, StoredObject):
+    def __init__(self, name: str, complex_info: dict):
+        """
+        Constructor for :class:`~Results.Functional`.
+
+        :param name: name of functional
+        :param complex_info: dictionary of information to generate functional object.
+            See :class:`~Results.FunctionOnResult`.
+        """
+        FunctionOnResult.__init__(self, name, complex_info)
         StoredObject.__init__(self, name)
 
 
@@ -139,6 +153,7 @@ class Results:
         transform_config_filepath: str = "transforms.json",
         coordinate_config_filepath: str = "coordinates.json",
         functional_config_filepath: str = "functionals.json",
+        complex_config_filepath: str = "complexes.json",
         folderpath: str = None,
         results: dict = None
     ) -> None:
@@ -159,7 +174,7 @@ class Results:
         self.results = {}
         if results is not None:
             for index, result in results.items():
-                self.setResults(index, result)
+                self.storeResult(index, result)
 
         transform_config = loadConfig(transform_config_filepath)
         for transform_name, transform_info in transform_config.items():
@@ -172,6 +187,10 @@ class Results:
         functional_config = loadConfig(functional_config_filepath)
         for functional_name, functional_info in functional_config.items():
             functional_obj = Functional(functional_name, functional_info)
+
+        complex_config = loadConfig(complex_config_filepath)
+        for complex_name, complex_info in complex_config.items():
+            complex_obj = Complex(complex_name, complex_info)
 
         self.model = model
         self.variable_names = model.getVariables(return_type=str)
@@ -195,7 +214,8 @@ class Results:
             orientation="horizontal",
             current_value=current_value,
             max_value=max_value,
-            keep_on_top=True
+            keep_on_top=True,
+            key="-PER PARAMETER PROGRESS-"
         )
 
     def getFolderpath(self) -> str:
@@ -502,7 +522,8 @@ class Results:
         expression = expression.subs(parameter_substitutions)
 
         if expression.is_constant():
-            time_count = len(self.getResultsOverTime(index, 't'))
+            times = self.getResultsOverTime(index, 't')
+            time_count = len(times)
             constant = float(expression)
             updated_results = np.repeat(constant, time_count)
         else:
@@ -599,7 +620,7 @@ class Results:
         :param results: 1D ndarray of results
         :param coordinate_name: see :class:`~Results.Results.getResultsOverTime`
         """
-        coordinate_obj = Coordinate.getInstances(names=coordinate_name)
+        coordinate_obj: Coordinate = Coordinate.getInstances(names=coordinate_name)
         coordinate_function = coordinate_obj.getFunction()
         coordinate_results = coordinate_function(results)
         return coordinate_results
@@ -615,9 +636,9 @@ class Results:
         :param results: 1D ndarray of results
         :param functional_name: see :class:`~Results.Results.getResultsOverTime`
         """
-        functional_obj = Functional.getInstances(names=functional_name)
-        funcional_function = functional_obj.getFunction()
-        functional_results = funcional_function(results)
+        functional_obj: Functional = Functional.getInstances(names=functional_name)
+        functional_function = functional_obj.getFunction()
+        functional_results = functional_function(results)
         return functional_results
 
     def getTransformOfResults(
@@ -675,15 +696,32 @@ class Results:
 
         return transform_results
 
+    @staticmethod
+    def getComplexReductionOfResults(
+        results: ndarray,
+        complex_name: str
+    ) -> float:
+        """
+        Get complex-reduction method performed on results.
+
+        :param results: 1D ndarray of results
+        :param complex_name: see :class:`~Results.Results.getResultsOverTime`
+        """
+        complex_obj: Complex = Complex.getInstances(names=complex_name)
+        complex_function = complex_obj.getFunction()
+        complex_results = complex_function(results)
+        return complex_results
+
     def getResultsOverTime(
         self,
         index: Union[tuple, Tuple[int, ...]],
         quantity_names: Union[str, List[str]] = None,
         inequality_filters: Iterable[Tuple[str, str, float]] = None,
-        coordinate_name: str = "None",
+        coordinate_name: str = "Cartesian",
         transform_name: str = "None",
         functional_name: str = "None",
-        functional_kwargs: dict = None
+        functional_kwargs: dict = None,
+        complex_name: str = "Magnitude"
     ) -> Union[float, ndarray]:
         """
         Get results for variable or function over time.
@@ -702,13 +740,10 @@ class Results:
             The index within the tuple corresponds to the value of the parameter in its set of possible values.
         :param quantity_names: name(s) of variable/function(s) to retrieve results for
         :param coordinate_name: name of coordinate transform to perform on results.
-        :param transform_name: transform to perform on results.
-            "Fourier" - Fourier transform.
-        :param functional_name: analysis to perform on results to reduce into one (or few) floats.
-            "Frequency" - calculate frequency of results.
-            "Mean" - calculate Holder mean of results.
-            "Standard Deviation" - calculate standard deviation of results.
+        :param transform_name: name of transform to perform on results
+        :param functional_name: functional to perform on results to reduce into one (or few) floats
         :param functional_kwargs: dictionary of optional arguments to pass into corresponding condensing function
+        :param complex_name: name of function to reduce complex numbers into real numbers
         :param inequality_filters: iterable of tuples indicating filters for results.
             First element of tuple is variable/function name.
             Second element of tuple is inequality sign as string.
@@ -718,8 +753,8 @@ class Results:
         if isinstance(quantity_names, str):
             try:
                 filepath = self.getResultFilepath(index, quantity_names)
-                file = open(filepath, 'rb')
-                single_results = dill.load(file)
+                with open(filepath, 'rb') as file:
+                    single_results = dill.load(file)
             except FileNotFoundError:
                 model = self.getModel()
                 if quantity_names in self.variable_names:
@@ -730,8 +765,6 @@ class Results:
                         "Constant": self.getConstantVariableResults,
                         "Function": self.getFunctionResults,
                     }
-
-                    # noinspection PyArgumentList
                     single_results = results_handles[time_evolution_type](
                         index,
                         quantity_names
@@ -741,6 +774,9 @@ class Results:
                         index,
                         quantity_names
                     )
+                elif quantity_names == 't':
+                    print("returning NaN for time")
+                    return np.nan
                 else:
                     raise ValueError("quantity_names input must correspond to either variable or function when str")
 
@@ -772,7 +808,7 @@ class Results:
 
                     single_results = single_results[filter_intersection]
 
-            if coordinate_name != "None":
+            if coordinate_name != "Cartesian":
                 single_results = self.getCoordinateTransformOfResults(
                     single_results,
                     coordinate_name=coordinate_name
@@ -790,44 +826,34 @@ class Results:
 
             results = single_results
         elif isinstance(quantity_names, list):
-            if len(quantity_names) == 1:
-                quantity_name = quantity_names[0]
-                results = self.getResultsOverTime(
+            multiple_results = [
+                self.getResultsOverTime(
                     index=index,
-                    quantity_names=quantity_name,
-                    inequality_filters=inequality_filters,
-                    coordinate_name=coordinate_name,
-                    transform_name=transform_name
+                    quantity_names=name,
+                    inequality_filters=inequality_filters
                 )
-            else:
+                for name in quantity_names
+            ]
+
+            if coordinate_name != "Cartesian":
                 multiple_results = [
-                    self.getResultsOverTime(
-                        index=index,
-                        quantity_names=name,
-                        inequality_filters=inequality_filters
+                    self.getCoordinateTransformOfResults(
+                        single_results,
+                        coordinate_name=coordinate_name
                     )
-                    for name in quantity_names
+                    for single_results in multiple_results
                 ]
 
-                if coordinate_name != "None":
-                    multiple_results = [
-                        self.getCoordinateTransformOfResults(
-                            single_results,
-                            coordinate_name=coordinate_name
-                        )
-                        for single_results in multiple_results
-                    ]
-
-                if transform_name == "None":
-                    results = np.array(multiple_results)
-                elif transform_name != "None":
-                    results = self.getTransformOfResults(
-                        results=tuple(multiple_results),
-                        transform_name=transform_name,
-                        is_time=False,
-                        index=index,
-                        inequality_filters=inequality_filters
-                    )
+            if transform_name == "None":
+                results = np.array(multiple_results)
+            elif transform_name != "None":
+                results = self.getTransformOfResults(
+                    results=tuple(multiple_results),
+                    transform_name=transform_name,
+                    is_time=False,
+                    index=index,
+                    inequality_filters=inequality_filters
+                )
         else:
             raise TypeError("names input must be str or list")
 
@@ -836,6 +862,11 @@ class Results:
                 results,
                 functional_name=functional_name
             )
+
+        results = self.getComplexReductionOfResults(
+            results,
+            complex_name=complex_name
+        )
 
         return results
 
@@ -864,7 +895,6 @@ class Results:
                 nth index of this matrix gives values for nth quantity in
                 :paramref:`~Results.Results.getResultsOverTimePerParameter.quantity_names`.
         """
-        
         if isinstance(quantity_names, str):
             quantity_names = [quantity_names]
         if isinstance(parameter_names, str):
@@ -878,10 +908,10 @@ class Results:
         per_parameter_partial_indicies = list(itertools.product(*map(range, per_parameter_stepcounts)))
 
         default_index = np.array(index)
-        
+
         sample_result = self.getResultsOverTime(
             index=index,
-            quantity_names=quantity_names,
+            quantity_names=quantity_names[0],
             transform_name=transform_name,
             **kwargs
         )
@@ -902,16 +932,21 @@ class Results:
             title="Calculating Simulation",
             max_value=simulation_count
         )
-        print("per_param:", quantity_count, quantity_names, results.shape)
+
         simulation_index_flat = 0
+        time_seconds_resolution = 0.1
+        previous_time = time.time()
         for quantity_location, quantity_name in enumerate(quantity_names):
             single_results = np.zeros(single_result_size)
             for partial_index_flat, partial_index in enumerate(per_parameter_partial_indicies):
-                simulation_index_flat += 1  # quantity_location * simulation_count_per_quantity + partial_index_flat + 1
+                simulation_index_flat = quantity_location * simulation_count_per_quantity + partial_index_flat + 1
 
-                if simulation_index_flat % 100 == 0 and simulation_index_flat >= 100:
+                current_time = time.time()
+                if current_time - previous_time >= time_seconds_resolution:
+                    previous_time = current_time
                     if not updateProgressMeter(simulation_index_flat):
-                        break
+                        updateProgressMeter(simulation_count)
+                        return
 
                 new_index = default_index
                 new_index[per_parameter_locations] = partial_index
@@ -950,39 +985,33 @@ class Results:
         """
         self.stepcount = count
 
-    def setResults(
+    def storeResult(
         self,
         index: Union[tuple, Tuple[int]],
-        results: Union[ndarray, Dict[str, ndarray]],
-        name: str = None
+        result: ndarray,
+        name: str
     ) -> None:
         """
         Save results from simulation.
 
         :param self: :class:`~Results.Results` to save results in
         :param index: see :meth:`~Results.Results.getResultsOverTime`
-        :param results: results to save at :paramref:`~Results.Results.setResults.index`.
-            This must be a list of floats if name is specified.
-            This must be a dictionary if name is not specified.
-                Key is name of variable.
-                Value is list of floats for variable over time.
+        :param results: results to save at :paramref:`~Results.Results.setResults.index`
         :param name: name of quantity to set results for
         """
-        if isinstance(name, str):
-            results_size = results.size
-            if self.getStepcount() is None:
-                self.setStepcount(results_size)
+        assert isinstance(name, str)
 
-            stepcount = self.getStepcount()
-            assert results_size == stepcount
+        results_size = result.size
+        if self.getStepcount() is None:
+            self.setStepcount(results_size)
 
-            if index not in self.results.keys():
-                self.results[index] = {}
+        stepcount = self.getStepcount()
+        assert results_size == stepcount
 
-            self.results[index][name] = results
-        elif name is None:
-            for name, result in results.items():
-                self.setResults(index, result, name=name)
+        if index not in self.results.keys():
+            self.results[index] = {}
+
+        self.results[index][name] = result
 
     def saveResult(
         self,

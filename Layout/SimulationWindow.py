@@ -809,7 +809,8 @@ class AxisQuantityElement:
         quantity_count_per_axis: int = 2,
         transform_names: List[str] = None,
         coordinate_names: List[str] = None,
-        functional_names: List[str] = None
+        functional_names: List[str] = None,
+        complex_names: List[str] = None
     ):
         """
         Constructor for :class:`~Layout.SimulationWindow.AxisQuantityElement`.
@@ -817,7 +818,11 @@ class AxisQuantityElement:
         :param quantity_count_per_axis: number of possible quantities to select per axis
         :param transform_names: collection of names for math transforms to perform on results.
             Defaults to ["None"].
-        :param transform_names: collection of names for coordinate transforms to perform on results.
+        :param coordinate_names: collection of names for coordinate transforms to perform on results.
+            Defaults to ["None"].
+        :param functional_names: collection of names for functionals to perform on results.
+            Defaults to ["None"].
+        :param complex_names: collection of names for complex-reduction methods to perform on results.
             Defaults to ["None"].
         """
         self.quantity_count_per_axis = quantity_count_per_axis
@@ -825,6 +830,7 @@ class AxisQuantityElement:
         self.transform_names = ["None"] if transform_names is None else transform_names
         self.coordinate_names = ["None"] if coordinate_names is None else coordinate_names
         self.functional_names = ["None"] if functional_names is None else functional_names
+        self.complex_names = ["None"] if complex_names is None else complex_names
 
     def getQuantityCountPerAxis(self) -> int:
         """
@@ -858,6 +864,14 @@ class AxisQuantityElement:
         """
         return self.functional_names
 
+    def getComplexNames(self) -> List[str]:
+        """
+        Get names of complex-reduction methods.
+
+        :param self: :class:`~Layout.SimulationWindow.AxisQuantityElement` to retrieve names from
+        """
+        return self.complex_names
+
 
 class AxisQuantityTabGroup(TabGroup, AxisQuantityElement):
     def __init__(
@@ -885,17 +899,13 @@ class AxisQuantityTabGroup(TabGroup, AxisQuantityElement):
                 "Standard",
                 window,
                 quantity_count_per_axis=quantity_count_per_axis,
-                transform_names=transform_names,
-                coordinate_names=coordinate_names,
-                functional_names=functional_names
+                **kwargs
             ),
             NonStandardTab(
                 "Other",
                 window,
                 quantity_count_per_axis=quantity_count_per_axis,
-                transform_names=transform_names,
-                coordinate_names=coordinate_names,
-                functional_names=functional_names
+                **kwargs
             )
         ]
         TabGroup.__init__(self, tabs, name=name)
@@ -959,6 +969,7 @@ class StandardTab(AxisQuantityTab):
         coordinate_names = self.getCoordinateNames()
         transform_names = self.getTransformNames()
         functional_names = self.getFunctionalNames()
+        complex_names = self.getComplexNames()
         window_object = self.getWindowObject()
 
         axis_frames = []
@@ -973,7 +984,8 @@ class StandardTab(AxisQuantityTab):
                 include_continuous=True,
                 transform_names=transform_names,
                 coordinate_names=coordinate_names,
-                functional_names=functional_names
+                functional_names=functional_names,
+                complex_names=complex_names
             )
             axis_frames.append(axis_frame.getFrame())
 
@@ -1011,6 +1023,7 @@ class NonStandardTab(AxisQuantityTab):
         coordinate_names = self.getCoordinateNames()
         transform_names = self.getTransformNames()
         functional_names = self.getFunctionalNames()
+        complex_names = self.getComplexNames()
         window_object = self.getWindowObject()
 
         axis_frames = []
@@ -1025,7 +1038,8 @@ class NonStandardTab(AxisQuantityTab):
                 include_continuous=include_continuous,
                 transform_names=transform_names,
                 coordinate_names=coordinate_names,
-                functional_names=functional_names
+                functional_names=functional_names,
+                complex_names=complex_names
             )
             axis_frames.append(axis_frame.getFrame())
 
@@ -1144,7 +1158,25 @@ class AxisQuantityFrame(Frame, AxisQuantityElement, StoredObject):
         )
 
     @storeElement
-    def getAxisCoordinateGroup(self) -> RadioGroup:
+    def getAxisComplexGroup(self) -> ComplexRadioGroup:
+        """
+        Get element to take user input for complex-reduction method (e.g. "Magnitude", "Phase").
+
+        :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retrieve element from
+        """
+        axis_name = self.getName()
+        window_obj = self.getWindowObject()
+        complex_names = self.getComplexNames()
+
+        complex_radio_group = ComplexRadioGroup(
+            axis_name=axis_name,
+            window=window_obj,
+            complex_names=complex_names
+        )
+        return complex_radio_group
+
+    @storeElement
+    def getAxisCoordinateGroup(self) -> CoordinateRadioGroup:
         """
         Get element to take user input for coordinate system (e.g. "Cartesian").
 
@@ -1175,18 +1207,38 @@ class AxisQuantityFrame(Frame, AxisQuantityElement, StoredObject):
 
         rows = []
 
-        row_elements = [
-            sg.Text("Functional:"),
-            self.getAxisFunctionalElement(),
+        coordinate_group = self.getAxisCoordinateGroup()
+        coordinate_row_elements = [
+            sg.Text("Envelope:"),
+            *coordinate_group.getRadios()
+        ]
+        rows.append(Row(elements=coordinate_row_elements))
+
+        transform_row_elements = [
             sg.Text("Transform:"),
-            self.getAxisTransformElement(),
+            self.getAxisTransformElement()
+        ]
+        functional_row_elements = [
+            sg.Text("Functional:"),
+            self.getAxisFunctionalElement()
+        ]
+        normalize_row_elements = [
             sg.Text("Normalize:"),
             self.getAxisNormalizeElement()
         ]
-        coordinate_row = self.getAxisCoordinateGroup()
-
-        rows.append(coordinate_row)
+        row_elements = [
+            *transform_row_elements,
+            *functional_row_elements,
+            *normalize_row_elements
+        ]
         rows.append(Row(elements=row_elements))
+
+        complex_group = self.getAxisComplexGroup()
+        complex_row_elements = [
+            sg.Text("Complex:"),
+            *complex_group.getRadios()
+        ]
+        rows.append(Row(elements=complex_row_elements))
 
         for index in range(quantity_count_per_axis):
             include_none_per_quantity = index != 0 or include_none
@@ -1204,7 +1256,7 @@ class AxisQuantityFrame(Frame, AxisQuantityElement, StoredObject):
         return layout
 
 
-class CoordinateRadioGroup(RadioGroup, StoredObject, Element):
+class CoordinateRadioGroup(RadioGroup, StoredObject):
     def __init__(
         self,
         axis_name: str,
@@ -1224,13 +1276,14 @@ class CoordinateRadioGroup(RadioGroup, StoredObject, Element):
         RadioGroup.__init__(
             self,
             radios=[],
+            name=axis_name,
             group_id=group_id,
             window=window
         )
         StoredObject.__init__(self, axis_name)
 
         if coordinate_names is None:
-            self.coordinate_names = ["Cartesian", "Angle", "Modulus"]
+            self.coordinate_names = ["Cartesian"]
         else:
             self.coordinate_names = coordinate_names
 
@@ -1241,26 +1294,88 @@ class CoordinateRadioGroup(RadioGroup, StoredObject, Element):
     @storeElement
     def getCoordinateRadio(
         self,
-        coordinate_name: str
+        coordinate_name: str,
+        default_name: str = "Cartesian"
     ) -> sg.Radio:
         """
         Get element to take user input for coordinate system (individual).
 
         :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retrieve element from
-        :param coordinate_name: name coordinate type.
-            Must be "Cartesian", "Phase", "Amplitude".
-            Radio defaults to on if "Cartesian".
+        :param coordinate_name: name coordinate type
+        :param default_name: name of default radio to be set true
         """
         axis_name = self.getName()
-        default = coordinate_name == "Cartesian"
+        is_default = coordinate_name == default_name
         radio_group_id = self.getGroupId()
         radio_key = radio_group_id + f"{coordinate_name.upper():s}-"
 
         radio = sg.Radio(
             text=coordinate_name,
-            tooltip=f"Choose coordinate transformation to perform on {axis_name:s}-axis of",
+            tooltip=f"Choose coordinate transformation to perform on {axis_name:s}-axis of plot",
             group_id=radio_group_id,
-            default=default,
+            default=is_default,
+            key=radio_key
+        )
+        return radio
+
+
+class ComplexRadioGroup(RadioGroup, StoredObject):
+    def __init__(
+        self,
+        axis_name: str,
+        window: SimulationWindow,
+        complex_names: List[str] = None
+    ):
+        """
+        Constructor for :class:`~Layout.SimulationWindow.ComplexRadioGroup`.
+
+        :param axis_name: name of axis associated with group
+        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that group is stored in
+        :param complex_names: collection of names for complexe-reduction methods (e.g. "Magnitude", "Phase")
+        """
+        group_id = f"-COMPLEX {axis_name:s}_AXIS-"
+
+        RadioGroup.__init__(
+            self,
+            radios=[],
+            name=axis_name,
+            group_id=group_id,
+            window=window
+        )
+        StoredObject.__init__(self, axis_name)
+
+        if complex_names is None:
+            self.complex_names = ["Magnitude"]
+        else:
+            self.complex_names = complex_names
+
+        for complex_name in complex_names:
+            radio = self.getComplexRadio(complex_name)
+            self.addElements(radio)
+
+    @storeElement
+    def getComplexRadio(
+        self,
+        complex_name: str,
+        default_name: str = "Magnitude"
+    ) -> sg.Radio:
+        """
+        Get element to take user input for complex system (individual).
+
+        :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retrieve element from
+        :param complex_name: name of complex-reduction method
+        :param default_name: name of default radio to be set true
+        """
+        axis_name = self.getName()
+        is_default = complex_name == default_name
+        radio_group_id = self.getGroupId()
+        radio_key = radio_group_id + f"{complex_name.upper():s}-"
+
+        radio = sg.Radio(
+            text=complex_name,
+            tooltip=f"Choose complex-reduction method to perform on {axis_name:s}-axis of plot",
+            group_id=radio_group_id,
+            default=is_default,
             key=radio_key
         )
         return radio
@@ -1746,6 +1861,7 @@ class SimulationWindow(TabbedWindow):
         transform_config_filepath: str = "transforms.json",
         coordinate_config_filepath: str = "coordinates.json",
         functional_config_filepath: str = "functionals.json",
+        complex_config_filepath: str = "complexes.json"
     ) -> None:
         """
         Constructor for :class:`~Layout.SimulationWindow.SimulationWindow`.
@@ -1908,13 +2024,16 @@ class SimulationWindow(TabbedWindow):
         coordinate_names = list(coordinate_config.keys())
         functional_config = loadConfig(functional_config_filepath)
         functional_names = list(functional_config.keys())
+        complex_config = loadConfig(complex_config_filepath)
+        complex_names = list(complex_config.keys())
 
         plotting_tabgroup = AxisQuantityTabGroup(
             plotting_tabgroup_name,
             self,
             transform_names=transform_names,
             coordinate_names=coordinate_names,
-            functional_names=functional_names
+            functional_names=functional_names,
+            complex_names=complex_names
         )
         self.getQuantityCountPerAxis = plotting_tabgroup.getQuantityCountPerAxis
         self.getTransformNames = plotting_tabgroup.getTransformNames
@@ -2187,7 +2306,7 @@ class SimulationWindowRunner(WindowRunner):
 
         self.results = results_object
         self.resetResults = results_object.resetResults
-        self.setResults = results_object.setResults
+        self.setResults = results_object.storeResult
         self.saveResult = results_object.saveResult
         self.saveResults = results_object.saveResults
         self.setResultsFolderpath = results_object.setFolderpath
@@ -2928,6 +3047,7 @@ class SimulationWindowRunner(WindowRunner):
         axis2coordinate = {}
         axis2transform = {}
         axis2functional = {}
+        axis2complex = {}
         is_transformed = {}
         is_timelike = {}
         is_functional = {}
@@ -2952,14 +3072,17 @@ class SimulationWindowRunner(WindowRunner):
             )
             coordinate_name = plot_quantities.getAxisCoordinateName(valid_axis_name)
             functional_name = plot_quantities.getAxisFunctionalName(valid_axis_name)
+            transform_name = plot_quantities.getAxisTransformName(valid_axis_name)
             axis_is_transformed = transform_name != "None"
+            complex_name = plot_quantities.getAxisComplexName(valid_axis_name)
 
             axis2names[valid_axis_name] = quantity_names
             axis2species[valid_axis_name] = specie_names
             axis2coordinate[valid_axis_name] = coordinate_name
             axis2functional[valid_axis_name] = functional_name
-            axis2transform[valid_axis_name] = plot_quantities.getAxisTransformName(valid_axis_name)
+            axis2transform[valid_axis_name] = transform_name
             is_transformed[valid_axis_name] = axis_is_transformed
+            axis2complex[valid_axis_name] = complex_name
 
             exists_timelike_subaxis = plot_quantities.existsLikeSpecies(
                 specie_names,
@@ -2991,7 +3114,7 @@ class SimulationWindowRunner(WindowRunner):
                         is_nonelike[valid_axis_name] = True
                 else:
                     is_nonelike[valid_axis_name] = True
-
+        
         timelike_count = sum(is_timelike.values())
         parameterlike_count = sum(is_parameterlike.values())
         functional_count = sum(is_functional.values())
@@ -3023,6 +3146,7 @@ class SimulationWindowRunner(WindowRunner):
                     coordinate_name = axis2coordinate[valid_axis_name]
                     transform_name = axis2transform[valid_axis_name]
                     axis_is_transformed = is_transformed[valid_axis_name]
+                    complex_name = axis2complex[valid_axis_name]
 
                     if not axis_is_transformed or len(quantity_names) == 1:
                         quantity_names = quantity_names[0]
@@ -3031,7 +3155,8 @@ class SimulationWindowRunner(WindowRunner):
                         results[valid_axis_name] = getResultsOverTime(
                             quantity_names=quantity_names,
                             coordinate_name=coordinate_name,
-                            transform_name=transform_name
+                            transform_name=transform_name,
+                            complex_name=complex_name
                         )
                     elif is_functional[valid_axis_name]:
                         functional_name = axis2functional[valid_axis_name]
@@ -3041,7 +3166,8 @@ class SimulationWindowRunner(WindowRunner):
                             coordinate_name=coordinate_name,
                             transform_name=transform_name,
                             functional_name=functional_name,
-                            functional_kwargs=functional_kwargs
+                            functional_kwargs=functional_kwargs,
+                            complex_name=complex_name
                         )
             else:
                 getResultsOverTimePerParameter = partial(
@@ -3054,16 +3180,19 @@ class SimulationWindowRunner(WindowRunner):
                 for valid_axis_name, quantity_names in axis2names.items():
                     coordinate_name = axis2coordinate[valid_axis_name]
                     transform_name = axis2transform[valid_axis_name]
-                    functional_kwargs = self.getFunctionalKwargs(functional_name)
+                    axis_is_transformed = is_transformed[valid_axis_name]
+                    complex_name = axis2complex[valid_axis_name]
 
                     if is_functional[valid_axis_name]:
                         functional_name = axis2functional[valid_axis_name]
+                        functional_kwargs = self.getFunctionalKwargs(functional_name)
                         parameter_results, quantity_results = getResultsOverTimePerParameter(
                             quantity_names=quantity_names,
                             coordinate_name=coordinate_name,
                             transform_name=transform_name,
                             functional_name=functional_name,
-                            functional_kwargs=functional_kwargs
+                            functional_kwargs=functional_kwargs,
+                            complex_name=complex_name
                         )
                         results[valid_axis_name] = quantity_results[0]
                     else:
@@ -3071,13 +3200,11 @@ class SimulationWindowRunner(WindowRunner):
                             quantity_names = quantity_names[0]
 
                         if is_timelike[valid_axis_name]:
-                            functional_name = axis2functional[valid_axis_name]
                             parameter_results, quantity_results = getResultsOverTimePerParameter(
                                 quantity_names=quantity_names,
                                 coordinate_name=coordinate_name,
                                 transform_name=transform_name,
-                                functional_name=functional_name,
-                                functional_kwargs=functional_kwargs
+                                complex_name=complex_name
                             )
                             results[valid_axis_name] = quantity_results[0]
                         elif is_parameterlike[valid_axis_name]:
@@ -3085,6 +3212,8 @@ class SimulationWindowRunner(WindowRunner):
 
         except (UnboundLocalError, KeyError, IndexError, AttributeError, ValueError, AssertionError):
             print('data:', traceback.print_exc())
+        except TypeError:
+            print("calculation cancelled")
 
         if is_nonelike['x'] or is_nonelike['y']:
             plot_type = ''
@@ -3334,7 +3463,7 @@ class SimulationWindowRunner(WindowRunner):
 
     def saveFigure(
         self,
-        name: str = None,
+        parameter_name: str = None,
         dpi: int = 300
     ) -> None:
         """
@@ -3345,7 +3474,7 @@ class SimulationWindowRunner(WindowRunner):
         :param name: name of parameter to loop over for GIF
         :param dpi: DPI to save figure as
         """
-        if name is None:
+        if parameter_name is None:
             figure = self.getFigure()
             file_types = [
                 (name, [f"*.{extension:s}" for extension in extensions])
@@ -3370,7 +3499,7 @@ class SimulationWindowRunner(WindowRunner):
                 pass
             else:
                 sg.PopupError("invalid filepath")
-        elif isinstance(name, str):
+        elif isinstance(parameter_name, str):
             file_types = [
                 ("Compressed File", "*.zip"),
                 ("ALL Files", "*.*"),
@@ -3388,12 +3517,12 @@ class SimulationWindowRunner(WindowRunner):
                 gif_filepath = zip_filepath.replace(".zip", ".gif")
                 yaml_filepath = join(save_directory, "values.yml")
 
-                parameter_index = self.getFreeParameterIndex(name)
+                parameter_index = self.getFreeParameterIndex(parameter_name)
                 default_index = list(self.getClosestSliderIndex())
-                parameter_values = self.getFreeParameterValues(name)
+                parameter_values = self.getFreeParameterValues(parameter_name)
 
                 inset_parameters = {
-                    name: {
+                    parameter_name: {
                         "range": (parameter_values.min(), parameter_values.max())
                     }
                 }
@@ -3406,25 +3535,27 @@ class SimulationWindowRunner(WindowRunner):
                 )
                 with ZipFile(zip_filepath, 'w') as zipfile:
                     with imageio.get_writer(gif_filepath, mode='I') as writer:
-                        for image_index in range(image_count):
-                            if not updateProgressMeter(image_index):
+                        for frame_index in range(image_count):
+                            if not updateProgressMeter(frame_index):
                                 break
 
                             data_index = default_index
-                            data_index[parameter_index] = image_index
-                            parameter_value = parameter_values[image_index]
-                            inset_parameters[name]["value"] = parameter_value
+                            data_index[parameter_index] = frame_index
+                            parameter_value = parameter_values[frame_index]
+                            inset_parameters[parameter_name]["value"] = parameter_value
                             figure = self.updatePlot(
                                 index=tuple(data_index),
                                 inset_parameters=inset_parameters
                             )
 
-                            png_filepath = join(save_directory, f"{name:s}_{image_index:d}.png")
-                            figure.savefig(png_filepath, dpi=dpi)
-
-                            writer.append_data(imageio.imread(png_filepath))
-                            zipfile.write(png_filepath, basename(png_filepath))
-                            os.remove(png_filepath)
+                            png_filepath = join(save_directory, f"{parameter_name:s}_{frame_index:d}.png")
+                            try:
+                                figure.savefig(png_filepath, dpi=dpi)
+                                writer.append_data(imageio.imread(png_filepath))
+                                zipfile.write(png_filepath, basename(png_filepath))
+                                os.remove(png_filepath)
+                            except AttributeError:
+                                pass
 
                     zipfile.write(gif_filepath, basename(gif_filepath))
                     os.remove(gif_filepath)
@@ -3438,7 +3569,7 @@ class SimulationWindowRunner(WindowRunner):
                     os.remove(yaml_filepath)
 
                     updateProgressMeter(image_count)
-            elif filepath is None:
+            elif zip_filepath is None:
                 pass
             else:
                 sg.PopupError("invalid filepath")
@@ -3456,6 +3587,7 @@ class PlotQuantities:
         self.axis2coordinate = {}
         self.axis2transform = {}
         self.axis2functional = {}
+        self.axis2complex = {}
 
         self.specie_types = ["timelike", "parameterlike", "nonelike"]
         self.timelike_species = ["Variable", "Function"]
@@ -3474,6 +3606,7 @@ class PlotQuantities:
         self.axis2coordinate = {}
         self.axis2transform = {}
         self.axis2functional = {}
+        self.axis2complex = {}
 
     def getWindowRunner(self) -> SimulationWindowRunner:
         """
@@ -3634,9 +3767,9 @@ class PlotQuantities:
 
     def getAxisTransformName(self, axis_name: str) -> str:
         """
-        Get name of tranform for axis.
+        Get name of transform for axis.
 
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve functional from
+        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve name from
         :param axis_name: name of axis to retrieve name from
         """
         axis2transform = self.axis2transform
@@ -3658,6 +3791,32 @@ class PlotQuantities:
             self.axis2transform[axis_name] = transform_name
 
         return transform_name
+
+    def getAxisComplexName(self, axis_name: str) -> str:
+        """
+        Get name of complex-reduction method for axis.
+
+        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve name from
+        :param axis_name: name of axis to retrieve name from
+        """
+        axis2complex = self.axis2complex
+        if axis_name in axis2complex.keys():
+            complex_name = axis2complex[axis_name]
+        else:
+            exists_nontimelike = self.existsNontimelikeSpecies(axis_name)
+
+            if exists_nontimelike:
+                complex_name = "Magnitude"
+            else:
+                complex_radio_group: ComplexRadioGroup = ComplexRadioGroup.getInstances(names=axis_name)
+
+                chosen_radio = complex_radio_group.getChosenRadio()
+                chosen_radio_text = vars(chosen_radio)["Text"]
+                complex_name = chosen_radio_text
+
+            self.axis2complex[axis_name] = complex_name
+        
+        return complex_name
 
     def getAxisQuantityNames(
         self,
