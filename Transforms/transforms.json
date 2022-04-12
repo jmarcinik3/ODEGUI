@@ -2,7 +2,7 @@
     "None": {
         "function": "identity",
         "requires_times": false,
-        "module": "CustomMath",
+        "module": "Transforms.CustomMath",
         "arguments": 1,
         "point_mode": "full"
     },
@@ -10,7 +10,7 @@
         "function": "correlationTransform",
         "requires_times": false,
         "time_function": "correlationLags",
-        "module": "CustomMath",
+        "module": "Transforms.CustomMath",
         "arguments": 1,
         "point_mode": "half_round"
     },
@@ -18,7 +18,7 @@
         "function": "fourierTransform",
         "requires_times": false,
         "time_function": "fourierFrequencies",
-        "module": "CustomMath",
+        "module": "Transforms.CustomMath",
         "arguments": 1,
         "point_mode": "half_roundup"
     },
@@ -26,28 +26,28 @@
         "function": "instantaneousFrequency",
         "requires_times": true,
         "time_function": "interpolateMidpoint",
-        "module": "CustomMath",
+        "module": "Transforms.CustomMath",
         "arguments": 1,
         "point_mode": "lose_one"
     },
     "Imaginary Exponentiation": {
         "function": "imaginaryExponentiation",
         "requires_times": false,
-        "module": "CustomMath",
+        "module": "Transforms.CustomMath",
         "arguments": 1,
         "point_mode": "full"
     },
     "Interpolate Midpoint": {
         "function": "interpolateMidpoint",
         "requires_times": false,
-        "module": "CustomMath",
+        "module": "Transforms.CustomMath",
         "arguments": 1,
         "point_mode": "lose_one"
     },
     "Phase-Locking Value": {
         "function": "phaseLockingValue",
         "requires_times": false,
-        "module": "CustomMath",
+        "module": "Transforms.CustomMath",
         "arguments": 2,
         "point_mode": "full"
     }

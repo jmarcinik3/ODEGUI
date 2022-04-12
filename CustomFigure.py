@@ -10,7 +10,7 @@ from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from numpy import ndarray
 
-from CustomMath import normalizeArray
+from Transforms.CustomMath import normalizeArray
 
 all_axis_names = ('x', 'y', 'z', 'c', 'X', 'Y')
 

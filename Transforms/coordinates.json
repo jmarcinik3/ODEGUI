@@ -1,14 +1,14 @@
 {
     "Cartesian": {
         "function": "identity",
-        "module": "CustomMath"
+        "module": "Transforms.CustomMath"
     },
     "Amplitude": {
         "function": "instantaneousAmplitude",
-        "module": "CustomMath"
+        "module": "Transforms.CustomMath"
     },
     "Phase": {
         "function": "instantaneousPhase",
-        "module": "CustomMath"
+        "module": "Transforms.CustomMath"
     }
 }

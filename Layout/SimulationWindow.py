@@ -1858,10 +1858,10 @@ class SimulationWindow(TabbedWindow):
         free_parameter_values: Dict[str, Tuple[float, float, int, Quantity]],
         plot_choices: Dict[str, List[str]],
         include_simulation_tab: bool = True,
-        transform_config_filepath: str = "transforms.json",
-        coordinate_config_filepath: str = "coordinates.json",
-        functional_config_filepath: str = "functionals.json",
-        complex_config_filepath: str = "complexes.json"
+        transform_config_filepath: str = "transforms/transforms.json",
+        coordinate_config_filepath: str = "transforms/coordinates.json",
+        functional_config_filepath: str = "transforms/functionals.json",
+        complex_config_filepath: str = "transforms/complexes.json"
     ) -> None:
         """
         Constructor for :class:`~Layout.SimulationWindow.SimulationWindow`.

@@ -14,7 +14,6 @@ from numpy import ndarray
 from sympy import Expr, Symbol
 from sympy.utilities.lambdify import lambdify
 
-from CustomMath import *
 from Function import Model, Parameter
 from macros import StoredObject, recursiveMethod
 from YML import loadConfig, saveConfig
@@ -150,10 +149,10 @@ class Results:
         self,
         model: Model,
         free_parameter_values: Dict[str, ndarray],
-        transform_config_filepath: str = "transforms.json",
-        coordinate_config_filepath: str = "coordinates.json",
-        functional_config_filepath: str = "functionals.json",
-        complex_config_filepath: str = "complexes.json",
+        transform_config_filepath: str = "transforms/transforms.json",
+        coordinate_config_filepath: str = "transforms/coordinates.json",
+        functional_config_filepath: str = "transforms/functionals.json",
+        complex_config_filepath: str = "transforms/complexes.json",
         folderpath: str = None,
         results: dict = None
     ) -> None:
