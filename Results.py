@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import itertools
 import sys
 from functools import partial
@@ -27,6 +29,8 @@ class FunctionOnResult:
         :param name: name of function
         :param info: dictionary of information to generate object
         """
+        info_keys = list(info.keys())
+
         module_name = info["module"]
         module = sys.modules[module_name]
         function_name = info["function"]
@@ -34,8 +38,22 @@ class FunctionOnResult:
 
         self.function = function
 
+        if "requires_times" in info_keys:
+            requires_times = info["requires_times"]
+        else:
+            requires_times = False
+        self.requires_times = requires_times
+
     def getFunction(self) -> Callable:
+        """
+        Get function, pre-substituting in times if required.
+        
+        :param self: :class:`~Results.FunctionOnResult` to retreive function from
+        """
         return self.function
+
+    def requiresTimes(self) -> bool:
+        return self.requires_times
 
 
 class Transform(FunctionOnResult, StoredObject):
@@ -63,17 +81,11 @@ class Transform(FunctionOnResult, StoredObject):
             time_function_name = transform_function_name
         time_function = getattr(module, time_function_name)
 
-        if "requires_times" in transform_info_keys:
-            requires_times = transform_info["requires_times"]
-        else:
-            requires_times = False
-
         argument_count = transform_info["arguments"]
 
         self.module = module
         self.time_function = time_function
         self.argument_count = argument_count
-        self.requires_times = requires_times
 
     def getTimeFunction(self) -> Callable:
         return self.time_function
@@ -81,20 +93,17 @@ class Transform(FunctionOnResult, StoredObject):
     def getArgumentCount(self) -> int:
         return self.argument_count
 
-    def requiresTimes(self) -> bool:
-        return self.requires_times
 
-
-class Coordinate(FunctionOnResult, StoredObject):
-    def __init__(self, name: str, coordinate_info: dict) -> None:
+class Envelope(FunctionOnResult, StoredObject):
+    def __init__(self, name: str, envelope_info: dict) -> None:
         """
         Constructor for :class:`~Results.Coordinate`.
 
-        :param name: name of coordinate (e.g. "Cartesian")
-        :param coordinate_info: dictionary of information to generate coordinate object.
+        :param name: name of envelope (e.g. "Amplitude")
+        :param envelope_info: dictionary of information to generate envelope object.
             See :class:`~Results.FunctionOnResult`.
         """
-        FunctionOnResult.__init__(self, name, coordinate_info)
+        FunctionOnResult.__init__(self, name, envelope_info)
         StoredObject.__init__(self, name)
 
 
@@ -150,7 +159,7 @@ class Results:
         model: Model,
         free_parameter_values: Dict[str, ndarray],
         transform_config_filepath: str = "transforms/transforms.json",
-        coordinate_config_filepath: str = "transforms/coordinates.json",
+        envelope_config_filepath: str = "transforms/envelopes.json",
         functional_config_filepath: str = "transforms/functionals.json",
         complex_config_filepath: str = "transforms/complexes.json",
         folderpath: str = None,
@@ -179,9 +188,9 @@ class Results:
         for transform_name, transform_info in transform_config.items():
             transform_obj = Transform(transform_name, transform_info)
 
-        coordinate_config = loadConfig(coordinate_config_filepath)
-        for coordinate_name, coordinate_info in coordinate_config.items():
-            coordinate_obj = Coordinate(coordinate_name, coordinate_info)
+        envelope_config = loadConfig(envelope_config_filepath)
+        for envelope_name, envelope_info in envelope_config.items():
+            envelope_obj = Envelope(envelope_name, envelope_info)
 
         functional_config = loadConfig(functional_config_filepath)
         for functional_name, functional_info in functional_config.items():
@@ -608,36 +617,62 @@ class Results:
 
         return filepath
 
-    @staticmethod
-    def getCoordinateTransformOfResults(
+    def getEnvelopeOfResults(
+        self,
         results: ndarray,
-        coordinate_name: str
+        envelope_name: str,
+        index: Tuple[tuple, Tuple[int, ...]] = None,
+        inequality_filters: Iterable[Tuple[str, str, float]] = None
     ) -> ndarray:
         """
-        Get coordinate transform of results.
+        Get envelope of results.
 
+        :param self: :class:`~Results.Results` to retrieve envelope from
         :param results: 1D ndarray of results
-        :param coordinate_name: see :class:`~Results.Results.getResultsOverTime`
+        :param envelope_name: see :class:`~Results.Results.getResultsOverTime`
+        :param index: see :meth:`~Results.Results.getResultsOverTime`.
+            Only called if corresponding :class:`~Results.Results.Transform` requires time as input.
+        :param inequality_filters: see :meth:`~Results.Results.getResultsOverTime`
+            Only called if corresponding :class:`~Results.Results.Transform` requires time as input.
         """
-        coordinate_obj: Coordinate = Coordinate.getInstances(names=coordinate_name)
-        coordinate_function = coordinate_obj.getFunction()
-        coordinate_results = coordinate_function(results)
-        return coordinate_results
+        if envelope_name != "None":
+            envelope_obj: Envelope = Envelope.getInstances(names=envelope_name)
+            envelope_function = envelope_obj.getFunction()
+            
+            envelope_requires_times = envelope_obj.requiresTimes()
+            if envelope_requires_times:
+                times = self.getResultsOverTime(
+                    index=index,
+                    quantity_names='t',
+                    inequality_filters=inequality_filters
+                )
+                envelope_function = partial(envelope_function, times=times)
+            
+            envelope_results = envelope_function(results)
+        else:
+            envelope_results = results
+        
+        return envelope_results
 
-    @staticmethod
     def getFunctionalOfResults(
+        self,
         results: ndarray,
         functional_name: str
     ) -> float:
         """
-        Get funcional of results.
+        Get functional of results.
 
+        :param self: :class:`~Results.Results` to retrieve functional from
         :param results: 1D ndarray of results
         :param functional_name: see :class:`~Results.Results.getResultsOverTime`
         """
-        functional_obj: Functional = Functional.getInstances(names=functional_name)
-        functional_function = functional_obj.getFunction()
-        functional_results = functional_function(results)
+        if functional_name != "None":
+            functional_obj: Functional = Functional.getInstances(names=functional_name)
+            functional_function = functional_obj.getFunction()
+            functional_results = functional_function(results)
+        else:
+            functional_results = results
+        
         return functional_results
 
     def getTransformOfResults(
@@ -692,7 +727,9 @@ class Results:
                 transform_results = transform_function(*results)
             else:
                 transform_results = transform_function(results)
-
+        else:
+            transform_results = results
+        
         return transform_results
 
     @staticmethod
@@ -716,7 +753,7 @@ class Results:
         index: Union[tuple, Tuple[int, ...]],
         quantity_names: Union[str, List[str]] = None,
         inequality_filters: Iterable[Tuple[str, str, float]] = None,
-        coordinate_name: str = "Cartesian",
+        envelope_name: str = "None",
         transform_name: str = "None",
         functional_name: str = "None",
         functional_kwargs: dict = None,
@@ -738,7 +775,7 @@ class Results:
             The index of the tuple corresponds to the parameter in free parameters.
             The index within the tuple corresponds to the value of the parameter in its set of possible values.
         :param quantity_names: name(s) of variable/function(s) to retrieve results for
-        :param coordinate_name: name of coordinate transform to perform on results.
+        :param envelope_name: name of envelope to perform on results.
         :param transform_name: name of transform to perform on results
         :param functional_name: functional to perform on results to reduce into one (or few) floats
         :param functional_kwargs: dictionary of optional arguments to pass into corresponding condensing function
@@ -807,10 +844,12 @@ class Results:
 
                     single_results = single_results[filter_intersection]
 
-            if coordinate_name != "Cartesian":
-                single_results = self.getCoordinateTransformOfResults(
+            if envelope_name != "None":
+                single_results = self.getEnvelopeOfResults(
                     single_results,
-                    coordinate_name=coordinate_name
+                    envelope_name=envelope_name,
+                    index=index,
+                    inequality_filters=inequality_filters
                 )
 
             if transform_name != "None":
@@ -834,11 +873,13 @@ class Results:
                 for name in quantity_names
             ]
 
-            if coordinate_name != "Cartesian":
+            if envelope_name != "None":
                 multiple_results = [
-                    self.getCoordinateTransformOfResults(
+                    self.getEnvelopeOfResults(
                         single_results,
-                        coordinate_name=coordinate_name
+                        envelope_name=envelope_name,
+                        index=index,
+                        inequality_filters=inequality_filters
                     )
                     for single_results in multiple_results
                 ]

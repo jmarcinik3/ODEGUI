@@ -1,0 +1,26 @@
+{
+    "None": {
+        "function": "identity",
+        "requires_times": false,
+        "module": "Transforms.CustomMath",
+        "point_mode": "full"
+    },
+    "Amplitude": {
+        "function": "instantaneousAmplitude",
+        "requires_times": false,
+        "module": "Transforms.CustomMath",
+        "point_mode": "full"
+    },
+    "Phase": {
+        "function": "instantaneousPhase",
+        "requires_times": false,
+        "module": "Transforms.CustomMath",
+        "point_mode": "full"
+    },
+    "Frequency": {
+        "function": "instantaneousFrequency",
+        "requires_times": true,
+        "module": "Transforms.CustomMath",
+        "point_mode": "lose_one"
+    }
+}

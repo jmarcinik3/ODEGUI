@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,7 +12,7 @@ from numpy import ndarray
 
 from Transforms.CustomMath import normalizeArray
 
-all_axis_names = ('x', 'y', 'z', 'c', 'X', 'Y')
+axis_names = ('x', 'y', 'z', 'c', 'C', 'X', 'Y')
 
 
 def getParameterInsetAxes(
@@ -141,12 +141,37 @@ def plotOnAxes(
     y: ndarray,
     z: ndarray = None,
     c: ndarray = None,
+    C: ndarray = None,
     plot_type: str = "xy",
     clim: Tuple[float, float] = None,
     colormap: str = None,
     plot_kwargs: Dict = None,
-    segment_count: int = 0
+    segment_count: int = 0,
+    contour_levels: List[float] = None
 ):
+    """
+    Plot data onto single Axes object of figure.
+
+    :param axes: Axes object to plot data on
+    :param x: data for x-axis of plot
+    :param y: data for y-axis of plot
+    :param z: data for z-axis of plot
+    :param c: data for color-axis of plot
+    :param C: data for contour-axis of plot
+    :param plot_type: type of plot to display.
+        This could include a single curve, multiple curves, scatter plot.
+    :param clim: limits for colorbar scheme of plot.
+        Only called if plot type requires color axis.
+    :param colormap: name of colormap for data.
+        Only called if plot type requires color axis.
+    :param plot_kwargs: additional arguments to pass into matplotlib.pyplot.plot or equivalent
+    :param segment_count: number of segments to plot for multicolored-line(s) plot.
+        Number of contour lines to plot for contour-field plot.
+        Set to zero to substitute scatter plot in for standard-line plot.
+        Only called when relevant to plot type.
+    :param contour_levels: collection of values to plot contour lines at.
+        Only called if plot type requires contour axis.
+    """
     def coordinates2lines(
         x: ndarray,
         y: ndarray,
@@ -170,8 +195,7 @@ def plotOnAxes(
         :param segment_count: number of line segments to interpolate from data.
             Defaults to all segments if None.
         """
-        
-        
+
         for array in [x, y, z, c]:
             if isinstance(array, ndarray):
                 assert array.ndim == 1
@@ -262,6 +286,15 @@ def plotOnAxes(
         except ValueError:
             pass
 
+    if 'C' in plot_type:
+        contour_levels = [0.5]
+        assert isinstance(C, ndarray)
+        assert isinstance(contour_levels, list)
+        try:
+            Csize, Cshape = C.size, C.shape
+        except AttributeError:
+            return axes
+
     if 'z' not in plot_type:
         if plot_type in ["xy", "nxy", "xny"]:
             assert xshape == yshape
@@ -269,6 +302,7 @@ def plotOnAxes(
         elif plot_type == "cnxny":
             assert cshape == (xsize, ysize)
             c_shaped = c.T
+
             axes.contourf(
                 x, y, c_shaped,
                 levels=segment_count,
@@ -276,6 +310,29 @@ def plotOnAxes(
                 norm=norm,
                 **plot_kwargs
             )
+        elif plot_type == "nxnyC":
+            assert Cshape == (xsize, ysize)
+            C_shaped = C.T
+
+            axes.contour(
+                x, y, C_shaped,
+                levels=contour_levels,
+                **plot_kwargs
+            )
+        elif plot_type == "ncnxnyC":
+            assert Cshape == (csize, xsize, ysize)
+            C_shaped = np.transpose(C, axes=[0, 2, 1])
+            
+            for c_index in range(csize):
+                axes.contour(
+                    x,
+                    y,
+                    C_shaped[c_index],
+                    levels=contour_levels,
+                    colors=(c_colors[c_index], ),
+                    **plot_kwargs
+                )
+
         elif plot_type in ["ntxy", "cnxy", "cxny"]:
             assert cshape == xshape == yshape
 
@@ -654,7 +711,7 @@ def getFigure(
     assert isinstance(normalize, dict)
 
     result_axis_names = results.keys()
-    for axis_name in all_axis_names:
+    for axis_name in axis_names:
         if axis_name not in normalize.keys():
             normalize[axis_name] = False
         if axis_name not in scale_factor.keys():
@@ -670,7 +727,7 @@ def getFigure(
 
         return x
 
-    for axis_name in all_axis_names:
+    for axis_name in axis_names:
         results[axis_name] = getScaledResults(axis_name) if axis_name in result_axis_names else None
 
     for axis_name in result_axis_names:
@@ -722,6 +779,8 @@ def getFigure(
         axes.set_autoscalex_on(axes_kwargs["autoscalex_on"])
         axes.set_autoscaley_on(axes_kwargs["autoscaley_on"])
 
+    plt.rc("text", usetex=True)
+    plt.rc("font", family="serif")
     figure = plt.figure()
 
     if 'X' in plot_type:
@@ -806,10 +865,11 @@ def getFigure(
             axis = axes[x_index, y_index]
             plotOnAxes(
                 axis,
-                getSubsetResults('x', x_index, y_index),
-                getSubsetResults('y', x_index, y_index),
-                getSubsetResults('z', x_index, y_index),
-                getSubsetResults('c', x_index, y_index),
+                x=getSubsetResults('x', x_index, y_index),
+                y=getSubsetResults('y', x_index, y_index),
+                z=getSubsetResults('z', x_index, y_index),
+                c=getSubsetResults('c', x_index, y_index),
+                C=getSubsetResults('C', x_index, y_index),
                 plot_type=sub_plot_type,
                 clim=axes_kwargs["clim"],
                 colormap=colormap,

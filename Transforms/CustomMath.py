@@ -157,6 +157,7 @@ def standardDeviation(data: ndarray) -> float:
     standard_deviation = np.std(data)
     return standard_deviation
 
+
 def fourierTransform(data: ndarray) -> ndarray:
     """
     Calculate Fourier tranform for array.
@@ -270,19 +271,22 @@ def phaseLockingValue(data1: ndarray, data2: ndarray) -> ndarray:
     imaginary_exponent = imaginaryExponentiation(phase_difference)
     return imaginary_exponent
 
+
 def complexMagnitude(data: ndarray) -> ndarray:
     magnitude = np.absolute(data)
     return magnitude
+
 
 def complexPhase(data: ndarray) -> ndarray:
     phase = np.angle(data)
     return phase
 
+
 def realPart(data: ndarray) -> ndarray:
     real_part = np.real(data)
     return real_part
 
+
 def imaginaryPart(data: ndarray) -> ndarray:
     imaginary_part = np.imag(data)
     return imaginary_part
-
