@@ -252,9 +252,17 @@ def interpolateMidpoint(data: ndarray) -> ndarray:
     return midpoint_data
 
 
-def phaseDifference(data1, data2) -> ndarray:
-    phase1 = instantaneousPhase(data1)
-    phase2 = instantaneousPhase(data2)
+def phaseDifference(data: ndarray) -> ndarray:
+    """
+    Get phase differences between two quantities.
+    
+    :param data: 2D numpy array.
+        First index, taking values of either 0 or 1, gives quantity within array.
+        Second index gives value of quantity at corresponding time.
+    :returns: array of phase difference; second quantity minus first quantity
+    """
+    phase1 = instantaneousPhase(data[0])
+    phase2 = instantaneousPhase(data[1])
     phase_difference = phase2 - phase1
     return phase_difference
 
@@ -264,10 +272,18 @@ def imaginaryExponentiation(phase: ndarray) -> ndarray:
     return imaginary_exponent
 
 
-def phaseLockingValue(data1: ndarray, data2: ndarray) -> ndarray:
-    assert data1.shape == data2.shape
+def phaseLockingValue(data: ndarray) -> ndarray:
+    """
+    Get phase-locking values between two quantities.
+    
+    :param data: 2D numpy array.
+        First index, taking values of either 0 or 1, gives quantity within array.
+        Second index gives value of quantity at corresponding time.
+    :returns: array of complex phase-locking values, i.e. exp(i*theta2-theta1)
+    """
+    assert data.ndim == 2
 
-    phase_difference = phaseDifference(data1, data2)
+    phase_difference = phaseDifference(data)
     imaginary_exponent = imaginaryExponentiation(phase_difference)
     return imaginary_exponent
 
