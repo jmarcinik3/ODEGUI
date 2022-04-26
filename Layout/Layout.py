@@ -539,7 +539,7 @@ class RadioGroup(Row):
         name: str = None
     ):
         """
-        Constructor for :class:`~Layout.Layout.Tabgroup`.
+        Constructor for :class:`~Layout.Layout.RadioGroup`.
 
         :param radios: collection of radio elements
         :param group_id: id of radio group
@@ -590,6 +590,54 @@ class RadioGroup(Row):
         assert isinstance(chosen_radio, sg.Radio)
         return chosen_radio
 
+
+class CheckboxGroup(Row):
+    def __init__(
+        self,
+        checkboxes: Union[sg.Checkbox, List[sg.Checkbox]],
+        window: Window,
+        name: str = None
+    ):
+        """
+        Constructor for :class:`~Layout.Layout.CheckboxGroup`.
+
+        :param radios: collection of radio elements
+        :param window: :class:`~Layout.Layout.Window` that contains group
+        :param name: name of checkbox group
+        """
+        super().__init__(
+            name=name,
+            elements=checkboxes,
+            window=window
+        )
+        
+    def getCheckboxes(self) -> List[sg.Checkbox]:
+        """
+        Get checkboxes constituting group.
+
+        :param self: :class:`~Layout.Layout.CheckboxGroup` to retrieve checkboxes from
+        """
+        checkboxes = self.getElements()
+        return checkboxes
+
+    def getCheckedCheckboxes(self) -> List[sg.Checkbox]:
+        """
+        Get checkboxes in group that are set to true.
+
+        :param self: :class:`~Layout.Layout.CheckboxGroup` to retrieve checkboxes from
+        """
+        checkboxes = self.getCheckboxes()
+        window_obj = self.getWindowObject()
+        window_runner = window_obj.getWindowRunner()
+
+        checked_checkboxes = []
+        for checkbox in checkboxes:
+            checkbox_key = getKeys(checkbox)
+            checkbox_value = window_runner.getValue(checkbox_key)
+            if checkbox_value:
+                checked_checkboxes.append(checkbox)
+
+        return checked_checkboxes
 
 class Window:
     """
