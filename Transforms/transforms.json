@@ -22,14 +22,6 @@
         "arguments": 1,
         "point_mode": "half_roundup"
     },
-    "Instantaneous Frequency": {
-        "function": "instantaneousFrequency",
-        "requires_times": true,
-        "time_function": "interpolateMidpoint",
-        "module": "Transforms.CustomMath",
-        "arguments": 1,
-        "point_mode": "lose_one"
-    },
     "Imaginary Exponentiation": {
         "function": "imaginaryExponentiation",
         "requires_times": false,
