@@ -649,9 +649,9 @@ def plotOnAxes(
 
 def getFigure(
     results: Dict[str, ndarray],
+    plot_type: str = "xy",
     scale_factor: Dict[str, float] = None,
     normalize: Dict[str, bool] = None,
-    plot_type: str = "xy",
     segment_count: int = 100,
     colormap: str = None,
     axes_kwargs: Dict[str, Any] = None,
@@ -733,13 +733,22 @@ def getFigure(
     for axis_name in result_axis_names:
         lim_str = f"{axis_name:s}lim"
         try:
-            axes_kwargs[lim_str] = getLimits(
-                results[axis_name],
-                limits=axes_kwargs[lim_str],
-                autoscale_on=axes_kwargs[f"autoscale{axis_name:s}_on"]
-            )
+            autoscale_on = axes_kwargs[f"autoscale{axis_name:s}_on"]
         except KeyError:
-            pass
+            autoscale_on = False
+            axes_kwargs[f"autoscale{axis_name:s}_on"] = autoscale_on
+        
+        try:
+            axes_kwargs[lim_str]
+        except KeyError:
+            axes_kwargs[lim_str] = (None, None)
+        given_limits = axes_kwargs[lim_str]
+        
+        axes_kwargs[lim_str] = getLimits(
+            results[axis_name],
+            limits=given_limits,
+            autoscale_on=autoscale_on
+        )
 
     def getSubsetResults(axis_name, x_index=None, y_index=None):
         result = results[axis_name]
@@ -765,19 +774,37 @@ def getFigure(
         elif 'z' not in plot_type:
             try:
                 axes.set_xlim(*axes_kwargs["xlim"])
-            except TypeError:
+            except (TypeError, KeyError):
                 axes.set_xlim((None, None))
             try:
                 axes.set_ylim(*axes_kwargs["ylim"])
-            except TypeError:
+            except (TypeError, KeyError):
                 axes.set_ylim((None, None))
 
-        axes.set_xlabel(axes_kwargs["xlabel"])
-        axes.set_ylabel(axes_kwargs["ylabel"])
-        axes.set_xscale(axes_kwargs["xscale"])
-        axes.set_yscale(axes_kwargs["yscale"])
-        axes.set_autoscalex_on(axes_kwargs["autoscalex_on"])
-        axes.set_autoscaley_on(axes_kwargs["autoscaley_on"])
+        try:
+            axes.set_xlabel(axes_kwargs["xlabel"])
+        except KeyError:
+            pass
+        try:
+            axes.set_ylabel(axes_kwargs["ylabel"])
+        except KeyError:
+            pass
+        try:
+            axes.set_xscale(axes_kwargs["xscale"])
+        except KeyError:
+            pass
+        try:
+            axes.set_yscale(axes_kwargs["yscale"])
+        except KeyError:
+            pass
+        try:
+            axes.set_autoscalex_on(axes_kwargs["autoscalex_on"])
+        except KeyError:
+            pass
+        try:
+            axes.set_autoscaley_on(axes_kwargs["autoscaley_on"])
+        except KeyError:
+            pass
 
     plt.rc("text", usetex=True)
     plt.rc("font", family="serif")
@@ -808,9 +835,19 @@ def getFigure(
     )
     full_figure_axis.xaxis.set_ticks([])
     full_figure_axis.yaxis.set_ticks([])
-    full_figure_axis.set_title(axes_kwargs["title"])
-    full_figure_axis.set_xlabel(axes_kwargs["Xlabel"])
-    full_figure_axis.set_ylabel(axes_kwargs["Ylabel"])
+    
+    try:    
+        full_figure_axis.set_title(axes_kwargs["title"])
+    except KeyError:
+        pass
+    try:
+        full_figure_axis.set_xlabel(axes_kwargs["Xlabel"])
+    except KeyError:
+        pass
+    try:
+        full_figure_axis.set_ylabel(axes_kwargs["Ylabel"])
+    except KeyError:
+        pass
 
     if inset_parameters is not None:
         free_parameter_ranges = {name: inset_parameters[name]["range"] for name in inset_parameters.keys()}
@@ -847,16 +884,25 @@ def getFigure(
 
     if 'c' in plot_type or 't' in plot_type:
         assert colormap is None or isinstance(colormap, str)
-
+        
         vmin, vmax = axes_kwargs["clim"]
         cnorm = colors.Normalize(vmin=vmin, vmax=vmax)
         cmap = cm.ScalarMappable(norm=cnorm, cmap=colormap)
 
+        try:
+            clabel = axes_kwargs["clabel"]
+        except KeyError:
+            clabel = ''
+        try:
+            cloc = axes_kwargs["cloc"]
+        except KeyError:
+            cloc = None
+        
         figure.colorbar(
             mappable=cmap,
             ax=axes.ravel().tolist(),
-            label=axes_kwargs["clabel"],
-            location=axes_kwargs["cloc"]
+            label=clabel,
+            location=cloc
         )
 
     sub_plot_type = plot_type.split('_')[0]
