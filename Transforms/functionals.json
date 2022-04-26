@@ -11,6 +11,14 @@
         "function": "geometricMean",
         "module": "Transforms.CustomMath"
     },
+    "Linear Intercept": {
+        "function": "linearIntercept",
+        "module": "Transforms.CustomMath"
+    },
+    "Linear Slope": {
+        "function": "linearSlope",
+        "module": "Transforms.CustomMath"
+    },
     "Root-Mean-Square": {
         "function": "rootMeanSquare",
         "module": "Transforms.CustomMath"

@@ -2,7 +2,7 @@ import numpy as np
 from numpy import ndarray
 from scipy.fft import rfft, rfftfreq
 from scipy.signal import correlate, find_peaks, hilbert
-from scipy.stats import stats
+from scipy.stats import stats, linregress
 
 
 def identity(data: ndarray) -> ndarray:
@@ -255,7 +255,7 @@ def interpolateMidpoint(data: ndarray) -> ndarray:
 def phaseDifference(data: ndarray) -> ndarray:
     """
     Get phase differences between two quantities.
-    
+
     :param data: 2D numpy array.
         First index, taking values of either 0 or 1, gives quantity within array.
         Second index gives value of quantity at corresponding time.
@@ -275,7 +275,7 @@ def imaginaryExponentiation(phase: ndarray) -> ndarray:
 def phaseLockingValue(data: ndarray) -> ndarray:
     """
     Get phase-locking values between two quantities.
-    
+
     :param data: 2D numpy array.
         First index, taking values of either 0 or 1, gives quantity within array.
         Second index gives value of quantity at corresponding time.
@@ -306,3 +306,37 @@ def realPart(data: ndarray) -> ndarray:
 def imaginaryPart(data: ndarray) -> ndarray:
     imaginary_part = np.imag(data)
     return imaginary_part
+
+
+def linearIntercept(y: ndarray, x: ndarray = None) -> ndarray:
+    """
+    Get y-intercept b of linear regression y=mx+b.
+
+    :param y: 1D array of data for y-axis of plot
+    :param x: 1D array of data for x-axis of plot.
+        Defaults to natural numbers (0 inclusive), up to size of y.
+    """
+    if x is None:
+        x = np.arange(y.size)
+
+    linear_regression = linregress(x, y)
+    intercept = linear_regression[1]
+
+    return intercept
+
+
+def linearSlope(y: ndarray, x: ndarray = None) -> ndarray:
+    """
+    Get slope m of linear regression y=mx+b.
+
+    :param y: 1D array of data for y-axis of plot
+    :param x: 1D array of data for x-axis of plot.
+        Defaults to natural numbers (0 inclusive), up to size of y.
+    """
+    if x is None:
+        x = np.arange(y.size)
+
+    linear_regression = linregress(x, y)
+    slope = linear_regression[0]
+
+    return slope
