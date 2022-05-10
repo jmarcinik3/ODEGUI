@@ -44,7 +44,7 @@ pf_pre = "PARAMETER FILESTEM"
 class TimeEvolutionRow(TabRow, StoredObject):
     """
     Row to set time-evolution properties for variable.
-    
+
     This contains
         #. Label of variable name
         #. Combobox to choose time-evolution type
@@ -63,8 +63,8 @@ class TimeEvolutionRow(TabRow, StoredObject):
         StoredObject.__init__(self, name)
 
         # noinspection PyTypeChecker
-        window_object: MainWindow = self.getWindowObject()
-        window_object.addVariableNames(name)
+        window_obj: MainWindow = self.getWindowObject()
+        window_obj.addVariableNames(name)
 
         elements = [
             self.getRowLabel(),
@@ -82,7 +82,7 @@ class TimeEvolutionRow(TabRow, StoredObject):
     def getInitialCondition(self) -> float:
         """
         Get default initial condition for variable.
-        
+
         :param self: :class:`~Layout.MainWindow.TimeEvolutionRow` to retrieve initial condition from
         """
         return self.getTab().getInitialConditions(self.getName())
@@ -90,7 +90,7 @@ class TimeEvolutionRow(TabRow, StoredObject):
     def getTimeEvolutionTypes(self, **kwargs) -> Union[str, Iterable[str]]:
         """
         Get possible time-evolution types for variable.
-        
+
         :param self: :class:`~Layout.MainWindow.TimeEvolutionRow` to retrieve time-evolution types from
         :param kwargs: additional arguments to pass into
             :meth:`~Layout.MainWindow.TimeEvolutionTab.getTimeEvolutionTypes`
@@ -101,7 +101,7 @@ class TimeEvolutionRow(TabRow, StoredObject):
     def getRowLabel(self) -> Union[sg.Text, sg.Image]:
         """
         Get element to label time-evolution row by variable.
-        
+
         :param self: :class:`~Layout.MainWindow.TimeEvolutionRow` to retrieve label from
         """
         return getTexImage(
@@ -128,7 +128,7 @@ class TimeEvolutionRow(TabRow, StoredObject):
     def getInitialConditionElement(self) -> sg.InputText:
         """
         Get element allowing user to input initial value.
-        
+
         :param self: :class:`~Layout.MainWindow.TimeEvolutionRow` to retrieve element from
         """
         return sg.InputText(
@@ -141,7 +141,7 @@ class TimeEvolutionRow(TabRow, StoredObject):
     def getInitialEquilibriumElement(self) -> sg.Checkbox:
         """
         Get element allowing user to choose whether or not variable begins simulation in equilibrium.
-        
+
         :param self: :class:`~Layout.MainWindow.TimeEvolutionRow` to retrieve element from
         """
         return sg.Checkbox(
@@ -152,7 +152,7 @@ class TimeEvolutionRow(TabRow, StoredObject):
             size=self.getDimensions(name="initial_equilibrium_checkbox"),
             key=f"-{ice_pre:s} {self.getName():s}"
         )
-    
+
     @storeElement
     def getIsCoreElement(self) -> sg.Checkbox:
         """
@@ -171,11 +171,11 @@ class TimeEvolutionRow(TabRow, StoredObject):
 class TimeEvolutionTab(Tab):
     """
     Tab to organize time-evolution rows for variables.
-    
+
     This contains
         #. Header of labels to indicate purpose of each element in variable row
         #. :class:`~Layout.MainWindow.TimeEvolutionRow` for each variable in tab
-    
+
     :ivar time_evolution_types: dictionary of time-evolution types for variables.
         Key is name of variable.
         Value is list of time-evolution types for variable.
@@ -188,7 +188,7 @@ class TimeEvolutionTab(Tab):
     def __init__(self, name: str, window: MainWindow, variable_names: List[str]) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.TimeEvolutionTab`.
-        
+
         :param name: name of tab
         :param window: window that tab is stored in
         :param variable_names: names of variables included in tab
@@ -280,7 +280,7 @@ class TimeEvolutionTab(Tab):
             justification="center"
         )
         row.addElements(text)
-        
+
         text = sg.Text(
             text="Core",
             size=self.getDimensions(name="is_core_text"),
@@ -374,8 +374,8 @@ class ParameterRow(TabRow, StoredObject):
         TabRow.__init__(self, name, section.getTab())
         StoredObject.__init__(self, name)
         # noinspection PyTypeChecker
-        window_object: MainWindow = self.getWindowObject()
-        window_object.addParameterNames(names=name)
+        window_obj: MainWindow = self.getWindowObject()
+        window_obj.addParameterNames(names=name)
 
         self.parameters = parameters
         self.section = section
@@ -517,8 +517,8 @@ class ParameterRow(TabRow, StoredObject):
         return sg.InputText(
             default_text='',
             tooltip="If 'Constant': enter new parameter value, then click button to update. " +
-                       "If 'Sweep': this input field will be ignored." +
-                       "Displayed units are preserved",
+            "If 'Sweep': this input field will be ignored." +
+            "Displayed units are preserved",
             size=self.getDimensions(name="parameter_value_input_field"),
             key=f"-PARAMETER VALUE INPUT {self.getName():s}-"
         )
@@ -793,8 +793,8 @@ class FunctionRow(TabRow, StoredObject):
         self.functions = functions
 
         # noinspection PyTypeChecker
-        window_object: MainWindow = self.getWindowObject()
-        window_object.addFunctionNames(name)
+        window_obj: MainWindow = self.getWindowObject()
+        window_obj.addFunctionNames(name)
 
         elements = [
             self.getRowLabel(),
@@ -966,7 +966,7 @@ class FunctionTab(Tab):
                 justification="left"
             )
             row.addElements(text_element)
-            
+
         return row
 
     def getAsColumn(self) -> sg.Column:
@@ -1507,17 +1507,16 @@ class MainWindowRunner(WindowRunner):
 
     def runWindow(self) -> None:
         # noinspection PyTypeChecker
-        window_object: MainWindow = self.getWindowObject()
-        window = window_object.getWindow()
+        window_obj: MainWindow = self.getWindowObject()
+        window = window_obj.getWindow()
 
-        
-        toolbar_menu_key = getKeys(window_object.getMenu())
-        open_simulation_key = getKeys(window_object.getOpenSimulationButton())
-        generate_graph_key = getKeys(window_object.getGenerateGraphButton())
+        toolbar_menu_key = getKeys(window_obj.getMenu())
+        open_simulation_key = getKeys(window_obj.getOpenSimulationButton())
+        generate_graph_key = getKeys(window_obj.getGenerateGraphButton())
 
         window.bind("<Control-r>", open_simulation_key)
         window.bind("<Control-g>", generate_graph_key)
-        
+
         while True:
             event, self.values = window.read()
             print('event:', event)
@@ -1549,7 +1548,7 @@ class MainWindowRunner(WindowRunner):
                         checked = True
                     elif checked_event == "Uncheck All":
                         checked = False
-                    
+
                     checkboxes = map(
                         TimeEvolutionRow.getIsCoreElement,
                         TimeEvolutionRow.getInstances()
@@ -1610,7 +1609,7 @@ class MainWindowRunner(WindowRunner):
         if model is None:
             model = self.getModel()
         variable_names = ['t'] + model.getVariables(return_type=str)
-        
+
         function_names = []
         for function_obj in model.getFunctions(filter_type=Independent):
             function_name = function_obj.getName()
@@ -1662,18 +1661,18 @@ class MainWindowRunner(WindowRunner):
 
         core_function_names = set()
         add_function_name = core_function_names.add
-        
+
         core_parameter_names = set()
         add_parameter_names = core_parameter_names.update
         getParameterNames = partial(
-            Function.getParameters, 
-            expanded=True, 
+            Function.getParameters,
+            expanded=True,
             return_type=str
         )
 
         full_model = Model(
             variables=self.getVariables(),
-            functions=self.getFunctions(), 
+            functions=self.getFunctions(),
             parameters=self.getParameters()
         )
 
@@ -1694,13 +1693,12 @@ class MainWindowRunner(WindowRunner):
                 add_function_name(child_function_name)
 
                 child_variable_names = getVariableNamesFromFunction(core_function_obj)
-                
+
                 for child_variable_name in child_variable_names:
                     if child_variable_name not in core_variable_names:
                         append_variable_stack(child_variable_name)
                         add_variable_name(child_variable_name)
 
-        
         function_name_stack = list(core_function_names.copy())
         append_function_stack = function_name_stack.append
         while len(function_name_stack) != 0:
@@ -1722,18 +1720,18 @@ class MainWindowRunner(WindowRunner):
                 if child_function_name not in core_function_names:
                     append_function_stack(child_function_name)
                     add_function_name(child_function_name)
-            
+
         core_model = Model(
             variables=self.getVariables(names=core_variable_names),
-            functions=self.getFunctions(names=core_function_names), 
+            functions=self.getFunctions(names=core_function_names),
             parameters=self.getParameters(names=core_parameter_names)
         )
 
         return core_model
 
     def setElementsAsValue(
-        self, 
-        elements: Union[sg.Element, Iterable[sg.Element]], 
+        self,
+        elements: Union[sg.Element, Iterable[sg.Element]],
         value: Union[str, bool]
     ) -> None:
         """
@@ -1746,7 +1744,7 @@ class MainWindowRunner(WindowRunner):
 
         def set(element: sg.Element) -> None:
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.setElementAsValue`"""
-            
+
             if isinstance(element, sg.Combo):
                 choices = vars(element)["Values"]
                 if value in choices:
@@ -1754,7 +1752,7 @@ class MainWindowRunner(WindowRunner):
             elif isinstance(element, sg.Checkbox):
                 if isinstance(value, bool):
                     is_valid_value = True
-            
+
             if is_valid_value:
                 element.update(value)
 
@@ -1797,7 +1795,7 @@ class MainWindowRunner(WindowRunner):
             )
             is_initial_equilibrium = is_initial_equilibrium_checked or is_equilibrium
 
-            if False: # is_initial_equilibrium:
+            if False:  # is_initial_equilibrium:
                 return "Equilibrium"
             else:
                 input_field_key = getKeys(time_evolution_type_row.getInitialConditionElement())
@@ -1879,10 +1877,10 @@ class MainWindowRunner(WindowRunner):
         variable_row: TimeEvolutionRow = TimeEvolutionRow.getInstances(names=name)
         is_core_checkbox = variable_row.getIsCoreElement()
         is_core_checkbox.update(is_core)
-        
+
         checkbox_key = getKeys(is_core_checkbox)
         self.getWindow().write_event_value(checkbox_key, is_core)
-        
+
     def isCoreVariable(self, name: str) -> bool:
         """
         Get whether variable is checked as core variable.
@@ -1918,10 +1916,10 @@ class MainWindowRunner(WindowRunner):
                 initial_condition=self.getInitialConditions(names=name)
             )
             return variable_obj
-        
+
         if isinstance(names, str):
             return get(names)
-        
+
         elif names is None:
             names = self.getVariableNames()
         else:
@@ -2031,38 +2029,38 @@ class MainWindowRunner(WindowRunner):
         filestem = self.getValue(combobox_key)
         return filestem
 
-    def setFunctions(self, function_objects: Union[Function, Iterable[Function]]) -> None:
+    def setFunctions(self, function_objs: Union[Function, Iterable[Function]]) -> None:
         """
         Set or overwrite parameter stored in window.
 
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store parameter in
-        :param function_objects: parameter(s) to set/overwrite.
+        :param function_objs: parameter(s) to set/overwrite.
             Overwrites based on parameter name stored in parameter object.
         """
 
-        def set(function_object: Function) -> None:
+        def set(function_obj: Function) -> None:
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.setFunctions`"""
-            filestem = function_object.getStem()
+            filestem = function_obj.getStem()
             if isinstance(filestem, str):
-                self.setFunctionWithStem(function_object)
+                self.setFunctionWithStem(function_obj)
             else:
-                self.setFunctionWithoutStem(function_object)
+                self.setFunctionWithoutStem(function_obj)
 
         return recursiveMethod(
             base_method=set,
-            args=function_objects,
+            args=function_objs,
             valid_input_types=Function
         )
 
-    def setFunctionWithStem(self, function_object: Function) -> None:
+    def setFunctionWithStem(self, function_obj: Function) -> None:
         """
         Set function from filestem.
 
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve filestem info from
-        :param function_object: function to set/overwrite
+        :param function_obj: function to set/overwrite
         """
-        name = function_object.getName()
-        new_filestem = function_object.getStem()
+        name = function_obj.getName()
+        new_filestem = function_obj.getStem()
 
         combobox_filestem = FunctionRow.getInstances(names=name).getChooseFileElement()
         combobox_key = getKeys(combobox_filestem)
@@ -2092,9 +2090,13 @@ class MainWindowRunner(WindowRunner):
             image_folder = join("tex_eq", function_filestem)
             image_filename = '.'.join((name, "png"))
             image_filepath = join(image_folder, image_filename)
-            image_data = open(image_filepath, 'rb').read()
-            image_expression = FunctionRow.getInstances(names=name).getExpressionLabel()
+            with open(image_filepath, 'rb') as image_file:
+                image_data = image_file.read()
+
+            function_row = FunctionRow.getInstances(names=name)
+            image_expression = function_row.getExpressionLabel()
             image_size = vars(image_expression)["Size"]
+
             image_expression.update(data=image_data, size=image_size)
 
         return recursiveMethod(
@@ -2179,7 +2181,7 @@ class MainWindowRunner(WindowRunner):
         return list(self.custom_parameters.keys())
 
     def getCustomParameterQuantities(
-        self, 
+        self,
         names: Union[str, Iterable[str]] = None
     ) -> Union[Quantity, Dict[str, Quantity]]:
         """
@@ -2245,8 +2247,8 @@ class MainWindowRunner(WindowRunner):
         )
 
     def getParameterNames(
-        self, 
-        parameter_types: Union[str, Iterable[str]] = None, 
+        self,
+        parameter_types: Union[str, Iterable[str]] = None,
         custom_type: bool = None
     ) -> List[str]:
         """
@@ -2528,8 +2530,8 @@ class MainWindowRunner(WindowRunner):
         )
 
     def setTimeEvolutionType(
-        self, 
-        names: Union[str, List[str]], 
+        self,
+        names: Union[str, List[str]],
         time_evolution_type: str
     ) -> None:
         """
@@ -2549,7 +2551,7 @@ class MainWindowRunner(WindowRunner):
                 combobox_key = getKeys(time_evolution_combobox)
                 time_evolution_combobox.update(time_evolution_type)
                 self.getWindow().write_event_value(combobox_key, time_evolution_type)
-        
+
         return recursiveMethod(
             args=names,
             base_method=set,
@@ -2557,8 +2559,8 @@ class MainWindowRunner(WindowRunner):
         )
 
     def setInitialCondition(
-        self, 
-        name: Union[str, List[str]], 
+        self,
+        name: Union[str, List[str]],
         initial_condition: float
     ) -> None:
         """
@@ -2577,13 +2579,13 @@ class MainWindowRunner(WindowRunner):
         self.getWindow().write_event_value(field_key, initial_condition)
 
     def loadInitialConditionsFromFile(
-        self, 
+        self,
         filepath: str = None,
         contents: dict = None
     ) -> None:
         """
         Load and store initial conditions for variables from file.
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store initial conditions in
         :param filepath: path of file to load initial conditions from.
             Defaults to letting user choose file.
@@ -2604,7 +2606,7 @@ class MainWindowRunner(WindowRunner):
                 )
                 if filepath is None:
                     return None
-            
+
             contents = loadConfig(filepath)
 
         for variable_name, variable_content in contents.items():
@@ -2612,14 +2614,14 @@ class MainWindowRunner(WindowRunner):
             self.setInitialCondition(variable_name, initial_condition)
 
     def loadTimeEvolutionTypesFromFile(
-        self, 
+        self,
         filepath: str = None,
         contents: dict = None
     ) -> None:
         """
         Load and store time-evolution types from file.
         Changes loaded variables to core and non-loaded variables to non-core.
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store time evolutions in
         :param filepath: path of file to load time evolutions from.
             Defaults to letting user choose file.
@@ -2640,7 +2642,7 @@ class MainWindowRunner(WindowRunner):
                 )
                 if filepath is None:
                     return None
-            
+
             contents = loadConfig(filepath)
 
         updated_variable_names = []
@@ -2655,14 +2657,14 @@ class MainWindowRunner(WindowRunner):
             self.setIsCoreVariable(window_variable_name, updated)
 
     def loadParametersFromFile(
-        self, 
-        filepath: str = None, 
+        self,
+        filepath: str = None,
         choose_parameters: bool = True,
         contents: dict = None
     ) -> Optional[List[Parameter]]:
         """
         Load and store parameter quantities from file.
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to store quantities in
         :param filepath: path of file to load parameters from.
             Defaults to letting user choose file.
@@ -2688,7 +2690,7 @@ class MainWindowRunner(WindowRunner):
                     return None
 
             contents = loadConfig(filepath)
-        
+
         filestems = self.getParameterStems()
         loaded_parameters = []
         for key, value in contents.items():
@@ -2722,8 +2724,8 @@ class MainWindowRunner(WindowRunner):
         return chosen_parameters
 
     def loadFunctionsFromFile(
-        self, 
-        filepath: str = None, 
+        self,
+        filepath: str = None,
         choose_functions: bool = False,
         contents: dict = None
     ) -> Optional[List[Function]]:
@@ -2742,7 +2744,7 @@ class MainWindowRunner(WindowRunner):
         if contents is None:
             if filepath is None:
                 file_types = (
-                    *config_file_types, 
+                    *config_file_types,
                     ("ALL Files", "*.*"),
                 )
                 filepath = sg.PopupGetFile(
@@ -2755,7 +2757,7 @@ class MainWindowRunner(WindowRunner):
                     return None
 
             contents = loadConfig(filepath)
-            
+
         filestems = self.getFunctionStems()
         loaded_functions = []
         for key, value in contents.items():
@@ -2770,19 +2772,19 @@ class MainWindowRunner(WindowRunner):
                 loaded_functions.append(generateFunction(key, value))
 
         if choose_functions:
-            runner = ChooseFunctionsWindowRunner("Choose Functions to Load", function_objects=loaded_functions)
+            runner = ChooseFunctionsWindowRunner("Choose Functions to Load", function_objs=loaded_functions)
             function_names = runner.getChosenFunctions()
         else:
             function_names = self.getFunctionNames()
 
         chosen_functions = [
-            function_object
-            for function_object in loaded_functions
-            if function_object.getName() in function_names
+            function_obj
+            for function_obj in loaded_functions
+            if function_obj.getName() in function_names
         ]
 
-        for function_object in chosen_functions:
-            self.setFunctions(function_object)
+        for function_obj in chosen_functions:
+            self.setFunctions(function_obj)
 
         return chosen_functions
 
@@ -2801,21 +2803,21 @@ class MainWindowRunner(WindowRunner):
             )
             if folderpath is None:
                 return None
-        
+
         variable_objs_filepath = join(folderpath, "Variable.json")
         parameter_objs_filepath = join(folderpath, "Parameter.json")
         function_objs_filepath = join(folderpath, "Function.json")
-        
+
         self.loadTimeEvolutionTypesFromFile(filepath=variable_objs_filepath)
         self.loadInitialConditionsFromFile(filepath=variable_objs_filepath)
         self.loadParametersFromFile(filepath=parameter_objs_filepath)
         self.loadFunctionsFromFile(filepath=function_objs_filepath)
-    
+
     def getFreeParameterValues(self) -> Tuple[str, Dict[str, Tuple[float, float, int, Quantity]]]:
         """
         Open window allowing user to set minimum, maximum, and step count for each selected free parameter.
         Uses present state of window.
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve free parameters from
         """
         free_parameter_names = self.getParameterNames(parameter_types="Free")
@@ -2836,7 +2838,7 @@ class MainWindowRunner(WindowRunner):
         """
         Open simulation window allowing user to run and analyze model.
         Uses present state of window.
-        
+
         :param self: :class:`~Layout.MainWindow.MainWindowRunner`
             to call :class:`~Layout.SimulationWindow.SimulationWindowRunner`
         """

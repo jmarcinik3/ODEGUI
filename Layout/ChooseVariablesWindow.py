@@ -135,10 +135,10 @@ class ChooseVariablesWindowRunner(WindowRunner):
             excluding runner
         :param kwargs: additional arguments for :class:`~Layout.ChooseVariablesWindow.ChooseVariablesWindow`
         """
-        window_object = ChooseVariablesWindow(*args, runner=self, **kwargs)
-        super().__init__(window_object)
+        window_obj = ChooseVariablesWindow(*args, runner=self, **kwargs)
+        super().__init__(window_obj)
 
-        self.getVariableNames = window_object.getVariableNames
+        self.getVariableNames = window_obj.getVariableNames
 
     def setChecks(self, names: Union[str, Iterable[str]], checked: bool) -> None:
         """

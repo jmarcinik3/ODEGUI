@@ -145,11 +145,11 @@ class SetFreeParametersWindow(Window):
 
 class SetFreeParametersWindowRunner(WindowRunner):
     def __init__(self, name: str, **kwargs):
-        window_object = SetFreeParametersWindow(name, self, **kwargs)
-        super().__init__(window_object)
+        window_obj = SetFreeParametersWindow(name, self, **kwargs)
+        super().__init__(window_obj)
 
         self.values = None
-        self.getFreeParameterNames = window_object.getFreeParameterNames
+        self.getFreeParameterNames = window_obj.getFreeParameterNames
 
     def getFreeParameterValues(
         self,

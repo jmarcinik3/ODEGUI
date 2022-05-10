@@ -909,7 +909,7 @@ class WindowRunner:
     """
     Object to run handle events in :class:`~Layout.Layout.Window`.
 
-    :ivar window_object: :class:`~Layout.Layout.Window` to run
+    :ivar window_obj: :class:`~Layout.Layout.Window` to run
     :ivar window: PySimpleGUI Window for :class:`~Layout.Layout.Window`
     :ivar values: most recent values read in PySimpleGUI Window
     :ivar getName: pointer to :meth:`~Layout.Layout.Window.getName`
@@ -918,20 +918,20 @@ class WindowRunner:
     :ivar getKeyList: pointer to :meth:`~Layout.Layout.Window.getKeyList`
     """
 
-    def __init__(self, window_object: Window):
+    def __init__(self, window_obj: Window):
         """
         Constructor for :class:`~Layout.Layout.WindowRunner`.
 
-        :param window_object: :class:`~Layout.Layout.Window` to run
+        :param window_obj: :class:`~Layout.Layout.Window` to run
         """
-        self.window_object = window_object
+        self.window_obj = window_obj
         self.window = None
         self.values = None
 
-        self.getName = window_object.getName
-        self.getPrefix = window_object.getPrefix
-        self.getKey = window_object.getKey
-        self.getKeyList = window_object.getKeyList
+        self.getName = window_obj.getName
+        self.getPrefix = window_obj.getPrefix
+        self.getKey = window_obj.getKey
+        self.getKeyList = window_obj.getKeyList
 
     def getWindow(self) -> sg.Window:
         """
@@ -947,7 +947,7 @@ class WindowRunner:
 
         :param self: :class:`~Layout.Layout.WindowRunner` to retrieve window from
         """
-        return self.window_object
+        return self.window_obj
 
     def getValue(self, key: str, combo_error: bool = True) -> Union[str, float]:
         """

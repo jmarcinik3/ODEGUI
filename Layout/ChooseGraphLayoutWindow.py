@@ -92,11 +92,11 @@ class ChooseGraphLayoutWindow(Window):
 
 class ChooseGraphLayoutWindowRunner(WindowRunner):
     def __init__(self, name: str) -> None:
-        window_object = ChooseGraphLayoutWindow(name, self)
-        super().__init__(window_object)
+        window_obj = ChooseGraphLayoutWindow(name, self)
+        super().__init__(window_obj)
 
-        self.getLayoutChoices = window_object.getLayoutChoices
-        self.getLayoutCodes = window_object.getLayoutCodes
+        self.getLayoutChoices = window_obj.getLayoutChoices
+        self.getLayoutCodes = window_obj.getLayoutCodes
 
     def getLayoutCode(self) -> Tuple[str, Optional[str]]:
         """

@@ -6,7 +6,7 @@ from collections.abc import KeysView
 from functools import partial
 from os.path import dirname
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, TextIO, Tuple, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, TextIO, Tuple, Type, Union
 
 import numpy as np
 from igraph import Graph
@@ -20,7 +20,7 @@ from sympy.core import function
 from sympy.utilities.lambdify import lambdify
 
 from CustomErrors import RecursiveTypeError
-from macros import formatUnit, formatValue, recursiveMethod, unique
+from macros import formatQuantity, formatUnit, formatValue, recursiveMethod, unique
 from YML import config_file_extensions, loadConfig, saveConfig
 
 var2tex = loadConfig("var2tex.yml")
@@ -142,9 +142,9 @@ class Parameter(PaperQuantity):
         model = self.getModel()
         model_functions = model.getFunctions()
         functions = [
-            function_object
-            for function_object in model_functions
-            if symbol in function_object.getParameters(**kwargs)
+            function_obj
+            for function_obj in model_functions
+            if symbol in function_obj.getParameters(**kwargs)
         ]
         return functions
 
@@ -229,9 +229,9 @@ class Variable(PaperQuantity):
         model_functions = model.getFunctions()
         symbol = Symbol(self.getName())
         functions = [
-            function_object
-            for function_object in model_functions
-            if symbol in function_object.getVariables(**kwargs)
+            function_obj
+            for function_obj in model_functions
+            if symbol in function_obj.getVariables(**kwargs)
         ]
         return functions
 
@@ -294,51 +294,51 @@ class Model:
         if variables is not None:
             self.addPaperQuantities(variables)
 
-    def addPaperQuantities(self, quantity_objects: Union[PaperQuantity, List[PaperQuantity]]) -> None:
+    def addPaperQuantities(self, quantity_objs: Union[PaperQuantity, List[PaperQuantity]]) -> None:
         """
         Add Function object(s) to model.
         Set self as model for Function object(s).
 
         :param self: :class:`~Function.Model` to add function to
-        :param quantity_objects: function(s) to add to model
+        :param quantity_objs: function(s) to add to model
         """
 
-        def add(quantity_object) -> None:
+        def add(quantity_obj) -> None:
             """Base method for :meth:`~Function.Model.addPaperQuantities`"""
-            name = quantity_object.getName()
+            name = quantity_obj.getName()
 
-            if isinstance(quantity_object, Function):
-                if quantity_object not in self.getFunctions():
+            if isinstance(quantity_obj, Function):
+                if quantity_obj not in self.getFunctions():
                     if name in self.getFunctionNames():
-                        print(f"Overwriting {name:s}={quantity_object.getExpression():} into model")
+                        print(f"Overwriting {name:s}={quantity_obj.getExpression():} into model")
                         del self.functions[name]
-                    if quantity_object.isParameter():
-                        print(f"Overwriting function {name:s}={quantity_object.getExpression():} as parameter")
+                    if quantity_obj.isParameter():
+                        print(f"Overwriting function {name:s}={quantity_obj.getExpression():} as parameter")
                     elif name in self.getParameterNames():
-                        print(f"Overwriting parameter {name:s} as function {name:s}={quantity_object.getExpression():}")
+                        print(f"Overwriting parameter {name:s} as function {name:s}={quantity_obj.getExpression():}")
                         del self.parameters[name]
-                    if not quantity_object.isParameter():
-                        self.functions[name] = quantity_object
-            elif isinstance(quantity_object, Parameter):
-                quantity = quantity_object.getQuantity()
+                    if not quantity_obj.isParameter():
+                        self.functions[name] = quantity_obj
+            elif isinstance(quantity_obj, Parameter):
+                quantity = quantity_obj.getQuantity()
                 if name in self.getFunctionNames():
                     print(f"Overwriting function {name:s} as parameter {name:s}={formatQuantity(quantity)}")
                     del self.functions[name]
                 elif name in self.getParameterNames():
                     print(f"Overwriting parameter {name:s}={formatQuantity(quantity):s} into model")
-                self.parameters[name] = quantity_object
-            elif isinstance(quantity_object, Variable):
+                self.parameters[name] = quantity_obj
+            elif isinstance(quantity_obj, Variable):
                 if name in self.getVariableNames():
                     print(f"Overwriting variable {name:s} into model")
                     del self.variables[name]
-                self.variables[name] = quantity_object
+                self.variables[name] = quantity_obj
 
-            if quantity_object.getModel() is not self:
-                quantity_object.setModel(self)
+            if quantity_obj.getModel() is not self:
+                quantity_obj.setModel(self)
 
         return recursiveMethod(
             base_method=add,
-            args=quantity_objects,
+            args=quantity_objs,
             valid_input_types=(Variable, Function, Parameter),
             output_type=list
         )
@@ -431,9 +431,9 @@ class Model:
         :param filter_type: only retrieve function(s) of this class, acts as a filter
         """
         if isinstance(names, str):
-            function_object = self.functions[names]
-            if filter_type is None or isinstance(function_object, filter_type):
-                return function_object
+            function_obj = self.functions[names]
+            if filter_type is None or isinstance(function_obj, filter_type):
+                return function_obj
             else:
                 raise TypeError(f"names input must correspond to {filter_type:s}")
         elif isinstance(names, list):
@@ -441,7 +441,7 @@ class Model:
             if filter_type is None:
                 return functions
             else:
-                return [function_object for function_object in functions if isinstance(function_object, filter_type)]
+                return [function_obj for function_obj in functions if isinstance(function_obj, filter_type)]
         elif names is None:
             return self.getFunctions(names=self.getFunctionNames(), filter_type=filter_type)
         else:
@@ -484,22 +484,22 @@ class Model:
         :returns: new file
         """
         if specie == "Parameter":
-            quantity_objects: Iterable[Parameter] = self.getParameters()
+            quantity_objs: Iterable[Parameter] = self.getParameters()
         elif specie == "Function":
-            quantity_objects: Iterable[Function] = self.getFunctions()
+            quantity_objs: Iterable[Function] = self.getFunctions()
         else:
             raise ValueError("invalid value for specie")
 
         save_contents = {}
-        for quantity_object in quantity_objects:
-            name = quantity_object.getName()
-            filestem = quantity_object.getStem()
+        for quantity_obj in quantity_objs:
+            name = quantity_obj.getName()
+            filestem = quantity_obj.getStem()
             if isinstance(filestem, str):
                 if filestem not in save_contents.keys():
                     save_contents[filestem] = []
                 save_contents[filestem].append(name)
             else:
-                save_contents[name] = quantity_object.getSaveContents()
+                save_contents[name] = quantity_obj.getSaveContents()
 
         file = saveConfig(save_contents, filepath)
         return file
@@ -837,8 +837,8 @@ class Model:
             substitute_constants=substitute_constants,
             substitute_functions=substitute_functions
         )
-        function_object = self.getDerivativesFromVariables(name)
-        equilibrium = equilibria[function_object.getVariable()]
+        function_obj = self.getDerivativesFromVariables(name)
+        equilibrium = equilibria[function_obj.getVariable()]
         return equilibrium
 
     def getFunctionSubstitutions(
@@ -881,9 +881,9 @@ class Model:
                 parameter_names = unique(
                     [
                         parameter_name
-                        for function_object in functions
+                        for function_obj in functions
                         for parameter_name in
-                        function_object.getParameters(expanded=True, return_type=str)
+                        function_obj.getParameters(expanded=True, return_type=str)
                         if parameter_name not in skip_parameters
                     ]
                 )
@@ -1033,7 +1033,7 @@ class Model:
             derivative_vector.append(expression)
 
         Function.setUseMemory(use_memory)
-        
+
         if lambdified:
             derivative_vector = lambdify((Symbol('t'), tuple(names)), derivative_vector, modules=["math"])
         if substitute_equilibria:
@@ -1195,7 +1195,7 @@ class Model:
 
         :param self: :class:`~Function.Model` to generate model, directional graph for
         :returns: Generated graph
-        """        
+        """
         variable_objs = self.getVariables()
         var2vars = {}
         for variable_obj_from in variable_objs:
@@ -1205,20 +1205,20 @@ class Model:
             if time_evolution_type == "Temporal":
                 derivative_obj_from = self.getDerivativesFromVariables(variable_name_from)
                 variable_names_to = derivative_obj_from.getVariables(
-                    expanded=True, 
+                    expanded=True,
                     return_type=str
                 )
             elif time_evolution_type == "Equilibrium":
                 derivative_obj_from = self.getDerivativesFromVariables(variable_name_from)
                 variable_names_to = derivative_obj_from.getVariables(
-                    expanded=True, 
+                    expanded=True,
                     return_type=str
                 )
                 variable_names_to.remove(variable_name_from)
             elif time_evolution_type == "Function":
                 function_obj_from = self.getFunctions(names=variable_name_from)
                 variable_names_to = function_obj_from.getVariables(
-                    expanded=True, 
+                    expanded=True,
                     return_type=str
                 )
             elif time_evolution_type == "Constant":
@@ -1228,7 +1228,7 @@ class Model:
             var2vars[variable_obj_from] = variable_objs_to
 
         variable_objs_from = sorted(
-            var2vars.keys(), 
+            var2vars.keys(),
             key=lambda k: len(var2vars[k])
         )
         variable_count = len(variable_objs_from)
@@ -1245,7 +1245,7 @@ class Model:
             "Function": "green",
             "Constant": "violet"
         }
-        
+
         variable_names = list(map(Variable.getName, variable_objs_from))
         for variable_index_from in range(variable_count):
             variable_from = variable_objs_from[variable_index_from]
@@ -1263,10 +1263,11 @@ class Model:
 
                 graph.add_edges([(variable_index_from, variable_index_to)])
                 graph.es[-1]["color"] = color_from
-        
+
         graph.vs["label"] = graph.vs["name"]
-        
+
         return graph
+
 
 class Parent:
     """
@@ -1439,9 +1440,9 @@ class Child:
         self: Function
         name = self.getName()
         parents = [
-            function_object.getName()
-            for function_object in self.getModel().getFunctions()
-            if name in function_object.getFunctions(return_type=str)
+            function_obj.getName()
+            for function_obj in self.getModel().getFunctions()
+            if name in function_obj.getFunctions(return_type=str)
         ]
         return parents
 
@@ -1517,8 +1518,8 @@ class Function(Child, Parent, PaperQuantity):
         """
         if functions is None:
             functions = Function.functions
-        for function_object in functions:
-            function_object.clearExpression()
+        for function_obj in functions:
+            function_obj.clearExpression()
 
     def clearExpression(self) -> None:
         """
@@ -2597,19 +2598,19 @@ def readQuantitiesFromFiles(
     else:
         raise ValueError("invalid value for specie")
 
-    quantity_objects = {}
+    quantity_objs = {}
     for filepath in filepaths:
         objs_contents = loadConfig(filepath)
         filestem = Path(filepath).stem
         for name, contents in objs_contents.items():
             if load_all or name in names:
-                quantity_objects[name] = generate(
+                quantity_objs[name] = generate(
                     name,
                     contents,
                     filestem=filestem,
                 )
 
-    return quantity_objects
+    return quantity_objs
 
 
 def readParametersFromFiles(*args, **kwargs) -> Dict[str, Parameter]:

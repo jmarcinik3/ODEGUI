@@ -188,10 +188,10 @@ class ChooseParametersWindowRunner(WindowRunner):
             excluding runner
         :param kwargs: additional arguments for :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow`
         """
-        window_object = ChooseParametersWindow(*args, runner=self, **kwargs)
-        super().__init__(window_object)
+        window_obj = ChooseParametersWindow(*args, runner=self, **kwargs)
+        super().__init__(window_obj)
 
-        self.getParameters = window_object.getParameters
+        self.getParameters = window_obj.getParameters
 
     def getParameterNames(self) -> List[str]:
         """
