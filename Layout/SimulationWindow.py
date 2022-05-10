@@ -4,6 +4,7 @@ Free parameters are parameters for which multiple values are simulated.
 The simulation must be run once by hitting the button before the window functions.
 """
 from __future__ import annotations
+import os
 
 import tkinter as tk
 import traceback
