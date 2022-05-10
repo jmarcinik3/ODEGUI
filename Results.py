@@ -1,22 +1,22 @@
 from __future__ import annotations
 
 import itertools
+import os
 import sys
+import time
 from functools import partial
 from math import prod
-from os import makedirs
-from os.path import dirname, exists, join
-import time
+from os.path import exists, join
 from typing import Callable, Dict, Iterable, List, Tuple, Union
 
-import dill
+import h5py
 import numpy as np
 import PySimpleGUI as sg
 from numpy import ndarray
 from sympy import Expr, Symbol
 from sympy.utilities.lambdify import lambdify
 
-from Function import Model, Parameter
+from Function import Model, Parameter, Variable
 from macros import StoredObject, recursiveMethod
 from YML import loadConfig, saveConfig
 
@@ -44,16 +44,35 @@ class FunctionOnResult:
             requires_times = False
         self.requires_times = requires_times
 
+        if "requires_parameters" in info_keys:
+            requires_parameters = info["requires_parameters"]
+        else:
+            requires_parameters = False
+        self.requires_parameters = requires_parameters
+
     def getFunction(self) -> Callable:
         """
         Get function, pre-substituting in times if required.
-        
+
         :param self: :class:`~Results.FunctionOnResult` to retreive function from
         """
         return self.function
 
     def requiresTimes(self) -> bool:
+        """
+        Get whether function requires times as additional input argument.
+
+        :param self: :class:`~Results.Results.FunctionOnResults` to retrieve boolean from
+        """
         return self.requires_times
+
+    def requiresParameters(self) -> bool:
+        """
+        Get whether function requires parameter values as additional input argument.
+
+        :param self: :class:`~Results.Results.FunctionOnResults` to retrieve boolean from
+        """
+        return self.requires_parameters
 
 
 class Transform(FunctionOnResult, StoredObject):
@@ -97,7 +116,7 @@ class Transform(FunctionOnResult, StoredObject):
 class Envelope(FunctionOnResult, StoredObject):
     def __init__(self, name: str, envelope_info: dict) -> None:
         """
-        Constructor for :class:`~Results.Coordinate`.
+        Constructor for :class:`~Results.Envelope`.
 
         :param name: name of envelope (e.g. "Amplitude")
         :param envelope_info: dictionary of information to generate envelope object.
@@ -139,14 +158,7 @@ class Results:
     Minimally, results for temporal variables are required to be set.
     Other results may be calculated and saved from :class:`~Function.Model` as needed.
 
-    :ivar results: 2D dictionary of results.
-        First key is indicies of free parameter for current data to present.
-        Second key is name of quantity to retrieve results of.
-        Value is array of quantitiy values over time.
     :ivar model: :class:`~Function.Model` to calculated results from
-    :ivar free_parameter_values: dictionary of values for free parameters.
-            Key is name of free parameter.
-            Value is possible values for free parameter.
     :ivar general_equilibrium_expressions: dictionary of symbolic equilibrium expressions.
         Key is name of variable.
         Value is symbolic expression.
@@ -157,32 +169,33 @@ class Results:
     def __init__(
         self,
         model: Model,
-        free_parameter_values: Dict[str, ndarray],
+        parameter_name2values: Dict[str, ndarray],
+        folderpath: str,
         transform_config_filepath: str = "transforms/transforms.json",
         envelope_config_filepath: str = "transforms/envelopes.json",
         functional_config_filepath: str = "transforms/functionals.json",
         complex_config_filepath: str = "transforms/complexes.json",
-        folderpath: str = None,
-        results: dict = None
+        stepcount: int = None
     ) -> None:
         """
         Constructor for :class:`~Results.Results`
 
         :param model: :class:`~Function.Model` to calculate results from
-        :param free_parameter_values: dictionary of values for free parameters.
+        :param parameter_name2values: dictionary of values for free parameters.
             Key is name of free parameter.
             Value is possible values for free parameter.
         :param folderpath: folder path containing relevant Results files.
             Save and load here.
         """
-
-        self.folderpath = folderpath
-        self.data_foldername = "data"
-        self.stepcount = None
-        self.results = {}
-        if results is not None:
-            for index, result in results.items():
-                self.storeResult(index, result)
+        variable_names = model.getVariables(return_type=str)
+        function_names = model.getFunctionNames()
+        self.results_file_handler = ResultsFileHandler(
+            folderpath=folderpath,
+            variable_names=variable_names,
+            function_names=function_names,
+            stepcount=stepcount,
+            parameter_name2values=parameter_name2values
+        )
 
         transform_config = loadConfig(transform_config_filepath)
         for transform_name, transform_info in transform_config.items():
@@ -201,12 +214,15 @@ class Results:
             complex_obj = Complex(complex_name, complex_info)
 
         self.model = model
-        self.variable_names = model.getVariables(return_type=str)
-        self.function_names = model.getFunctionNames()
 
         self.general_function_expressions = {}
-        self.free_parameter_values = free_parameter_values
         self.general_equilibrium_expressions = {}
+
+    def getResultsFileHandler(self) -> ResultsFileHandler:
+        """
+        Get object to handle saving/loading files.
+        """
+        return self.results_file_handler
 
     @staticmethod
     def updateProgressMeter(current_value: int, max_value: int, title: str) -> sg.OneLineProgressMeter:
@@ -226,32 +242,6 @@ class Results:
             key="-PER PARAMETER PROGRESS-"
         )
 
-    def getFolderpath(self) -> str:
-        """
-        Get folderpath to save/load results into/from.
-
-        :param self: :class:`~Results.Results` to retrieve folderpath from
-        """
-        if self.folderpath is not None:
-            folderpath = self.folderpath
-        else:
-            folderpath = sg.PopupGetFolder(
-                message="Enter Folder to Load",
-                title="Load Previous Results"
-            )
-            self.folderpath = folderpath
-
-        return folderpath
-
-    def setFolderpath(self, folderpath: str) -> None:
-        """
-        Set folderpath to save/load results into/from.
-
-        :param self: :class:`~Results.Results` to retrieve folderpath from
-        :param folderpath: folderpath to save/load 
-        """
-        self.folderpath = folderpath
-
     def getModel(self) -> Model:
         """
         Get associated :class:`~Function.Model`.
@@ -267,42 +257,10 @@ class Results:
         :param self: :class:`~Results.Results` to retreive free-parameter names from
         :param name: name of free parameter to retreive index of
         """
-        free_parameter_names = self.getFreeParameterNames()
+        results_file_handler = self.getResultsFileHandler()
+        free_parameter_names = results_file_handler.getFreeParameterNames()
         free_parameter_index = free_parameter_names.index(name)
         return free_parameter_index
-
-    def getFreeParameterNames(self) -> List[str]:
-        """
-        Get names of free parameters.
-
-        :param self: :class:`~Results.Results` to retrieve free-parameter names from
-        """
-        return list(self.free_parameter_values.keys())
-
-    def getFreeParameterValues(
-        self,
-        names: Union[str, Iterable[str]] = None,
-        output_type: type = list
-    ) -> Union[ndarray, Dict[str, ndarray]]:
-        """
-        Get values for a free parameter.
-
-        :param self: :class:`~Results.Results` to retreive value from
-        :param names: name(s) of parameter to retreive values for
-        :param output_type: iterable to output as
-            if :paramref:`~Results.Results.getFreeParameterValues.names` is iterable
-        """
-        def get(name: str) -> ndarray:
-            """Base method for :meth:`~Results.Results.getFreeParameterValues`"""
-            return self.free_parameter_values[name]
-
-        return recursiveMethod(
-            args=names,
-            base_method=get,
-            valid_input_types=str,
-            output_type=output_type,
-            default_args=self.getFreeParameterNames()
-        )
 
     def getFreeParameterSubstitutions(
         self,
@@ -314,14 +272,17 @@ class Results:
         :param self: :class:`~Results.Results` to retrieve substitutions from
         :param index: see :meth:`~Results.Results.getResultsOverTime`
         """
-        free_parameter_names = self.getFreeParameterNames()
+        results_file_handler = self.getResultsFileHandler()
+        free_parameter_names = results_file_handler.getFreeParameterNames()
+
         free_parameter_substitutions = {}
         for parameter_location, free_parameter_name in enumerate(free_parameter_names):
             parameter_index = index[parameter_location]
-            parameter_values = self.getFreeParameterValues(names=free_parameter_name)
+            parameter_values = results_file_handler.getFreeParameterValues(names=free_parameter_name)
             parameter_value = parameter_values[parameter_index]
             parameter_symbol = Symbol(free_parameter_name)
             free_parameter_substitutions[parameter_symbol] = parameter_value
+
         return free_parameter_substitutions
 
     def getParameterSubstitutions(
@@ -362,7 +323,8 @@ class Results:
             free_substitutions = self.getFreeParameterSubstitutions(index)
             substitutions.update(free_substitutions)
         if include_nonfree:
-            free_parameter_names = self.getFreeParameterNames()
+            results_file_handler = self.getResultsFileHandler()
+            free_parameter_names = results_file_handler.getFreeParameterNames()
             nonfree_substitutions = model.getParameterSubstitutions(
                 parameter_names,
                 skip_parameters=free_parameter_names
@@ -386,7 +348,8 @@ class Results:
             Value is symbolic equilibrium expression of variable.
         """
         if equilibrium_expressions is None:
-            free_parameter_names = self.getFreeParameterNames()
+            results_file_handler = self.getResultsFileHandler()
+            free_parameter_names = results_file_handler.getFreeParameterNames()
             model = self.getModel()
             solutions = model.getEquilibriumSolutions(skip_parameters=free_parameter_names)
             self.general_equilibrium_expressions = solutions
@@ -447,15 +410,6 @@ class Results:
             self.general_function_expressions[name] = expression
 
         return expression
-
-    def resetResults(self) -> None:
-        """
-        Reset results to store a new set of them.
-
-        :param self: :class:`~Results.Results` to reset results for
-        """
-        self.stepcount = None
-        self.results = {}
 
     def getSubstitutedResults(
         self,
@@ -547,7 +501,6 @@ class Results:
                 quantity_names=free_symbol_names
             )
             updated_results = expression_lambda(substitutions_results)
-
         return updated_results
 
     def getEquilibriumVariableResults(
@@ -588,35 +541,6 @@ class Results:
         results = np.repeat(initial_condition, time_count)
         return results
 
-    def getResultFilepath(
-        self,
-        index: Union[tuple, Tuple[int, ...]],
-        quantity_name: str,
-        folderpath: str = None
-    ):
-        """
-        Get filepath to save/load result from.
-
-        :param self: :class:`~Results.Results` to retrieve filepath from
-        :param index: :meth:`~Results.Results.getResultsOverTime`
-        :param quantity_name: name of quantity to retrieve filepath for
-        :param folderpath: path of folder to save result into.
-            Defaults to loaded folder path.
-        """
-        if folderpath is None:
-            folderpath = self.getFolderpath()
-
-        result_folderpath = join(
-            folderpath,
-            self.data_foldername,
-            *list(map(str, index))
-        )
-        file_extension = ".pkl"
-        filename = quantity_name + file_extension
-        filepath = join(result_folderpath, filename)
-
-        return filepath
-
     def getEnvelopeOfResults(
         self,
         results: ndarray,
@@ -635,29 +559,27 @@ class Results:
         :param inequality_filters: see :meth:`~Results.Results.getResultsOverTime`
             Only called if corresponding :class:`~Results.Results.Transform` requires time as input.
         """
-        if envelope_name != "None":
-            envelope_obj: Envelope = Envelope.getInstances(names=envelope_name)
-            envelope_function = envelope_obj.getFunction()
-            
-            envelope_requires_times = envelope_obj.requiresTimes()
-            if envelope_requires_times:
-                times = self.getResultsOverTime(
-                    index=index,
-                    quantity_names='t',
-                    inequality_filters=inequality_filters
-                )
-                envelope_function = partial(envelope_function, times=times)
-            
-            envelope_results = envelope_function(results)
-        else:
-            envelope_results = results
-        
+        envelope_obj: Envelope = Envelope.getInstances(names=envelope_name)
+        envelope_function = envelope_obj.getFunction()
+
+        envelope_requires_times = envelope_obj.requiresTimes()
+        if envelope_requires_times:
+            times = self.getResultsOverTime(
+                index=index,
+                quantity_names='t',
+                inequality_filters=inequality_filters
+            )
+            envelope_function = partial(envelope_function, times=times)
+
+        envelope_results = envelope_function(results)
+
         return envelope_results
 
     def getFunctionalOfResults(
         self,
         results: ndarray,
-        functional_name: str
+        functional_name: str,
+        parameters: ndarray = None
     ) -> float:
         """
         Get functional of results.
@@ -665,19 +587,22 @@ class Results:
         :param self: :class:`~Results.Results` to retrieve functional from
         :param results: 1D ndarray of results
         :param functional_name: see :class:`~Results.Results.getResultsOverTime`
+        :param parameters: array of parameter values for function.
+            Only called if functional requires parameter values.
         """
-        if functional_name != "None":
-            functional_obj: Functional = Functional.getInstances(names=functional_name)
-            functional_function = functional_obj.getFunction()
-            functional_results = functional_function(results)
-        else:
-            functional_results = results
-        
+        functional_obj: Functional = Functional.getInstances(names=functional_name)
+        functional_function = functional_obj.getFunction()
+
+        functional_requires_parameters = functional_obj.requiresParameters()
+        if functional_requires_parameters:
+            functional_function = partial(functional_function, parameters=parameters)
+
+        functional_results = functional_function(results)
         return functional_results
 
     def getTransformOfResults(
         self,
-        results: Union[ndarray, Tuple[ndarray]],
+        results: ndarray,
         transform_name: str,
         is_time: bool = False,
         index: Tuple[tuple, Tuple[int, ...]] = None,
@@ -697,39 +622,34 @@ class Results:
         :param inequality_filters: see :meth:`~Results.Results.getResultsOverTime`
             Only called if corresponding :class:`~Results.Results.Transform` requires time as input.
         """
-        if transform_name != "None":
-            transform_obj: Transform = Transform.getInstances(names=transform_name)
+        assert isinstance(results, ndarray)
+        transform_obj: Transform = Transform.getInstances(names=transform_name)
 
-            if isinstance(results, tuple):
-                quantity_count = len(results)
-            elif isinstance(results, ndarray):
-                quantity_count = 1
-            else:
-                raise ValueError(f"results ({results.__class__:s}) must be either 1D ndarray or tuple of 1D-ndarrays")
-            argument_count = transform_obj.getArgumentCount()
-            assert argument_count == quantity_count
-
-            if is_time and argument_count == 1:
-                transform_function = transform_obj.getTimeFunction()
-            else:
-                transform_function = transform_obj.getFunction()
-
-                transform_requires_times = transform_obj.requiresTimes()
-                if transform_requires_times:
-                    times = self.getResultsOverTime(
-                        index=index,
-                        quantity_names='t',
-                        inequality_filters=inequality_filters
-                    )
-                    transform_function = partial(transform_function, times=times)
-
-            if isinstance(results, tuple):
-                transform_results = transform_function(*results)
-            else:
-                transform_results = transform_function(results)
+        dimension_count = results.ndim
+        if dimension_count == 1:
+            quantity_count = 1
+        elif dimension_count == 2:
+            quantity_count = results.shape[0]
         else:
-            transform_results = results
-        
+            raise ValueError(f"results ({results.__class__:s}) must be either 1D ndarray or 2D-arrays")
+        argument_count = transform_obj.getArgumentCount()
+        assert argument_count == quantity_count
+
+        if is_time and argument_count == 1:
+            transform_function = transform_obj.getTimeFunction()
+        else:
+            transform_function = transform_obj.getFunction()
+
+            transform_requires_times = transform_obj.requiresTimes()
+            if transform_requires_times:
+                times = self.getResultsOverTime(
+                    index=index,
+                    quantity_names='t',
+                    inequality_filters=inequality_filters
+                )
+                transform_function = partial(transform_function, times=times)
+
+        transform_results = transform_function(results)
         return transform_results
 
     @staticmethod
@@ -746,18 +666,22 @@ class Results:
         complex_obj: Complex = Complex.getInstances(names=complex_name)
         complex_function = complex_obj.getFunction()
         complex_results = complex_function(results)
+
         return complex_results
 
     def getResultsOverTime(
         self,
         index: Union[tuple, Tuple[int, ...]],
-        quantity_names: Union[str, List[str]] = None,
+        quantity_names: Union[str, List[str]],
         inequality_filters: Iterable[Tuple[str, str, float]] = None,
         envelope_name: str = "None",
         transform_name: str = "None",
         functional_name: str = "None",
         functional_kwargs: dict = None,
-        complex_name: str = "Magnitude"
+        complex_name: str = "None",
+        parameter_functional_names: List[str] = None,
+        functional_parameter_namess: List[List[str]] = None,
+        close_files: bool = True
     ) -> Union[float, ndarray]:
         """
         Get results for variable or function over time.
@@ -784,138 +708,195 @@ class Results:
             First element of tuple is variable/function name.
             Second element of tuple is inequality sign as string.
             Third element of tuple is float.
-            Example: ('t', '>', 1.0) includes only data where time (t) is greater than 1
+            Example: ('t', '>', 1.0) includes only data where time (t) is greater than 1.
+        :param close_files: set True to immediately close any opened files.
         """
-        if isinstance(quantity_names, str):
-            try:
-                filepath = self.getResultFilepath(index, quantity_names)
-                with open(filepath, 'rb') as file:
-                    single_results = dill.load(file)
-            except FileNotFoundError:
-                model = self.getModel()
-                if quantity_names in self.variable_names:
-                    variable_obj = model.getVariables(names=quantity_names)
-                    time_evolution_type = variable_obj.getTimeEvolutionType()
-                    results_handles = {
-                        "Equilibrium": self.getEquilibriumVariableResults,
-                        "Constant": self.getConstantVariableResults,
-                        "Function": self.getFunctionResults,
-                    }
-                    single_results = results_handles[time_evolution_type](
-                        index,
-                        quantity_names
-                    )
-                elif quantity_names in self.function_names:
-                    single_results = self.getFunctionResults(
-                        index,
-                        quantity_names
-                    )
-                elif quantity_names == 't':
-                    print("returning NaN for time")
-                    return np.nan
-                else:
-                    raise ValueError("quantity_names input must correspond to either variable or function when str")
+        if parameter_functional_names is None:
+            parameter_functional_names = []
+        assert isinstance(parameter_functional_names, list)
+        for parameter_functional_name in parameter_functional_names:
+            assert isinstance(parameter_functional_name, str)
+            assert parameter_functional_name != "None"
 
-                self.saveResult(
-                    index=index,
-                    name=quantity_names,
-                    result=single_results
-                )
+        if len(parameter_functional_names) >= 1:
+            assert isinstance(functional_parameter_namess, list)
+            for functional_parameter_names in functional_parameter_namess:
+                assert isinstance(functional_parameter_names, list)
+                for parameter_name in functional_parameter_names:
+                    assert isinstance(parameter_name, str)
+            assert len(functional_parameter_namess) == len(parameter_functional_names)
 
-            if inequality_filters is not None:
-                if len(inequality_filters) >= 1:
-                    for inequality_index, inequality_filter in enumerate(inequality_filters):
-                        filter_quantity_name, filter_inequality_type, filter_float = inequality_filter
-                        filter_results = self.getResultsOverTime(
-                            index=index,
-                            quantity_names=filter_quantity_name,
-                            inequality_filters=None
-                        )
-
-                        if inequality_index == 0:
-                            stepcount = filter_results.shape[-1]
-                            filter_intersection = np.arange(stepcount)
-
-                        new_filter_indicies = eval(f"np.where(filter_results{filter_inequality_type:s}{filter_float:})")
-                        filter_intersection = np.intersect1d(
-                            filter_intersection,
-                            new_filter_indicies
-                        )
-
-                    single_results = single_results[filter_intersection]
-
-            if envelope_name != "None":
-                single_results = self.getEnvelopeOfResults(
-                    single_results,
-                    envelope_name=envelope_name,
-                    index=index,
-                    inequality_filters=inequality_filters
-                )
-
-            if transform_name != "None":
-                is_time = quantity_names == 't'
-                single_results = self.getTransformOfResults(
-                    single_results,
-                    transform_name=transform_name,
-                    is_time=is_time,
-                    index=index,
-                    inequality_filters=inequality_filters
-                )
-
-            results = single_results
-        elif isinstance(quantity_names, list):
-            multiple_results = [
-                self.getResultsOverTime(
-                    index=index,
-                    quantity_names=name,
-                    inequality_filters=inequality_filters
-                )
-                for name in quantity_names
+            parameter_names_flat = [
+                parameter_name
+                for parameter_names in functional_parameter_namess
+                for parameter_name in parameter_names
             ]
 
-            if envelope_name != "None":
-                multiple_results = [
-                    self.getEnvelopeOfResults(
+            parameter_results, results_per_parameter = self.getResultsOverTimePerParameter(
+                index=index,
+                parameter_names=parameter_names_flat,
+                quantity_names=quantity_names,
+                inequality_filters=inequality_filters,
+                envelope_name=envelope_name,
+                transform_name=transform_name,
+                functional_name=functional_name,
+                functional_kwargs=functional_kwargs,
+                complex_name=complex_name
+            )
+            results = results_per_parameter[0]
+
+            previous_parameter_counts = 0
+            for index, parameter_functional_name in enumerate(parameter_functional_names):
+                functional_parameter_names = functional_parameter_namess[index]
+                parameter_count = len(functional_parameter_names)
+
+                parameter_values = parameter_results[previous_parameter_counts:previous_parameter_counts + parameter_count]
+
+                if len(parameter_values) == 1:
+                    parameter_values = parameter_values[0]
+
+                results_shape = results.shape
+                parameters_shape = results_shape[:parameter_count]
+                residual_shape = results_shape[parameter_count:]
+                parameter_value_count = np.prod(parameters_shape)
+
+                getFunctionalOfResults = partial(
+                    self.getFunctionalOfResults,
+                    functional_name=parameter_functional_name,
+                    parameters=parameter_values
+                )
+
+                results_shaped = results.reshape((parameter_value_count, *residual_shape))
+                results = np.apply_along_axis(
+                    getFunctionalOfResults,
+                    0,
+                    results_shaped
+                )
+
+                previous_parameter_counts += parameter_count
+        else:
+            if isinstance(quantity_names, str):
+                try:
+                    results_file_handler = self.getResultsFileHandler()
+                    filepath = results_file_handler.getResultFilepath(quantity_name=quantity_names)
+                    with h5py.File(filepath, 'r') as file:
+                        single_results = file[quantity_names][index]
+                        is_all_zero = not np.any(single_results)
+                        if is_all_zero:
+                            raise ValueError(f"numpy array {quantity_names:s} {index} contains only zeros... calculating values")
+                except (FileNotFoundError, ValueError) as error:
+                    print(error)
+                    model = self.getModel()
+                    results_file_handler = self.getResultsFileHandler()
+
+                    if quantity_names in results_file_handler.getVariableNames():
+                        variable_obj: Variable = model.getVariables(names=quantity_names)
+                        time_evolution_type = variable_obj.getTimeEvolutionType()
+                        results_handles = {
+                            "Equilibrium": self.getEquilibriumVariableResults,
+                            "Constant": self.getConstantVariableResults,
+                            "Function": self.getFunctionResults,
+                        }
+                        single_results = results_handles[time_evolution_type](
+                            index,
+                            quantity_names
+                        )
+                    elif quantity_names in results_file_handler.getFunctionNames():
+                        single_results = results_file_handler.getFunctionResults(
+                            index,
+                            quantity_names
+                        )
+                    elif quantity_names == 't':
+                        print("returning NaN for time")
+                        return np.nan
+                    else:
+                        raise ValueError("quantity_names input must correspond to either variable or function when str")
+
+                    results_file_handler.saveResult(
+                        index=index,
+                        name=quantity_names,
+                        result=single_results,
+                        close_files=close_files
+                    )
+
+                if inequality_filters is not None:
+                    if len(inequality_filters) >= 1:
+                        for inequality_index, inequality_filter in enumerate(inequality_filters):
+                            filter_quantity_name, filter_inequality_type, filter_float = inequality_filter
+                            filter_results = self.getResultsOverTime(
+                                index=index,
+                                quantity_names=filter_quantity_name,
+                                inequality_filters=None
+                            )
+
+                            if inequality_index == 0:
+                                stepcount = filter_results.shape[-1]
+                                filter_intersection = np.arange(stepcount)
+
+                            new_filter_indicies = eval(f"np.where(filter_results{filter_inequality_type:s}{filter_float:})")
+                            filter_intersection = np.intersect1d(
+                                filter_intersection,
+                                new_filter_indicies
+                            )
+
+                        single_results = single_results[filter_intersection]
+
+                if envelope_name != "None":
+                    single_results = self.getEnvelopeOfResults(
                         single_results,
                         envelope_name=envelope_name,
                         index=index,
                         inequality_filters=inequality_filters
                     )
-                    for single_results in multiple_results
-                ]
 
-            if transform_name == "None":
-                results = np.array(multiple_results)
-            elif transform_name != "None":
+                quantity_is_time = quantity_names == 't'
+                results = single_results
+            elif isinstance(quantity_names, list):
+                multiple_results = np.array([
+                    self.getResultsOverTime(
+                        index=index,
+                        quantity_names=name,
+                        inequality_filters=inequality_filters,
+                        envelope_name=envelope_name
+                    )
+                    for name in quantity_names
+                ])
+
+                quantity_is_time = False
+                results = multiple_results
+            else:
+                raise TypeError("names input must be str or list")
+
+            if transform_name != "None":
                 results = self.getTransformOfResults(
-                    results=tuple(multiple_results),
+                    results=results,
                     transform_name=transform_name,
-                    is_time=False,
+                    is_time=quantity_is_time,
                     index=index,
                     inequality_filters=inequality_filters
                 )
-        else:
-            raise TypeError("names input must be str or list")
 
-        if functional_name != "None":
-            results = self.getFunctionalOfResults(
-                results,
-                functional_name=functional_name
-            )
+            if functional_name != "None":
+                results = self.getFunctionalOfResults(
+                    results,
+                    functional_name=functional_name
+                )
 
-        results = self.getComplexReductionOfResults(
-            results,
-            complex_name=complex_name
-        )
+            if complex_name != "None":
+                results = self.getComplexReductionOfResults(
+                    results,
+                    complex_name=complex_name
+                )
 
         return results
 
     def getResultsOverTimePerParameter(
         self,
         index: Union[tuple, Tuple[int]],
-        parameter_names: str,
+        parameter_names: Union[str, List[str]],
         quantity_names: Union[str, List[str]],
         transform_name: str = "None",
+        show_progress: bool = False,
         **kwargs
     ) -> Tuple[tuple, ndarray]:
         """
@@ -926,6 +907,7 @@ class Results:
         :param parameter_names: name(s) of free parameter(s) to retrieve quantity results over.
         :param quantity_names: name(s) of quantity(s) to pass into :meth:`~Results.Results.getResultsOverTime`
         :param transform_name: see :class:`~Results.Results.getResultsOverTime`
+        :param show_progress: show progress bar during calculation
         :param kwargs: additional arguments to pass into :meth:`~Results.Results.getResultsOverTime`
         :returns: tuple of results.
             First index gives array of parameter base values.
@@ -942,20 +924,22 @@ class Results:
         if transform_name != "None":
             quantity_names = [quantity_names]
 
+        results_file_handler = self.getResultsFileHandler()
+
         per_parameter_locations = np.array(list(map(self.getFreeParameterIndex, parameter_names)))
-        per_parameter_base_values = tuple(list(self.getFreeParameterValues(names=parameter_names)))
+        per_parameter_base_values = tuple(list(results_file_handler.getFreeParameterValues(names=parameter_names)))
         per_parameter_stepcounts = tuple(map(len, per_parameter_base_values))
         per_parameter_partial_indicies = list(itertools.product(*map(range, per_parameter_stepcounts)))
 
         default_index = np.array(index)
-
         sample_result = self.getResultsOverTime(
             index=index,
             quantity_names=quantity_names[0],
             transform_name=transform_name,
             **kwargs
         )
-        if isinstance(sample_result, (float, int)):
+
+        if isinstance(sample_result, (float, int, np.float32)):
             single_result_size = per_parameter_stepcounts
         elif isinstance(sample_result, ndarray):
             single_result_size = (*per_parameter_stepcounts, *sample_result.shape)
@@ -965,25 +949,25 @@ class Results:
         quantity_count = len(quantity_names)
         simulation_count_per_quantity = prod(list(per_parameter_stepcounts))
         simulation_count = quantity_count * simulation_count_per_quantity
-
         results = np.zeros((quantity_count, *single_result_size))
-        updateProgressMeter = partial(
-            self.updateProgressMeter,
-            title="Calculating Simulation",
-            max_value=simulation_count
-        )
 
-        simulation_index_flat = 0
-        time_seconds_resolution = 0.1
+        if show_progress:
+            updateProgressMeter = partial(
+                self.updateProgressMeter,
+                title="Calculating Simulation",
+                max_value=simulation_count
+            )
+
+        time_seconds_resolution = 1
         previous_time = time.time()
+
         for quantity_location, quantity_name in enumerate(quantity_names):
             single_results = np.zeros(single_result_size)
             for partial_index_flat, partial_index in enumerate(per_parameter_partial_indicies):
-                simulation_index_flat = quantity_location * simulation_count_per_quantity + partial_index_flat + 1
-
                 current_time = time.time()
-                if current_time - previous_time >= time_seconds_resolution:
+                if show_progress and current_time - previous_time >= time_seconds_resolution:
                     previous_time = current_time
+                    simulation_index_flat = quantity_location * simulation_count_per_quantity + partial_index_flat + 1
                     if not updateProgressMeter(simulation_index_flat):
                         updateProgressMeter(simulation_count)
                         return
@@ -996,6 +980,7 @@ class Results:
                         index=tuple(new_index),
                         quantity_names=quantity_name,
                         transform_name=transform_name,
+                        close_files=False,
                         **kwargs
                     )
                     single_results[partial_index] = single_result
@@ -1004,92 +989,14 @@ class Results:
 
             results[quantity_location] = single_results
 
-        updateProgressMeter(simulation_count)
+        if show_progress:
+            updateProgressMeter(simulation_count)
+
+        results_file_handler.closeResultsFiles()
 
         return per_parameter_base_values, results
 
-    def getStepcount(self) -> float:
-        """
-        Get number of steps per result.
-
-        :param self: :class:`~Results.Results` to retrieve stepcount from
-        """
-        return self.stepcount
-
-    def setStepcount(self, count: float) -> None:
-        """
-        Set step count per results for new set of data.
-
-        :param self: :class:`~Results.Results` to set step count in
-        :param count: new step count for results object
-        """
-        self.stepcount = count
-
-    def storeResult(
-        self,
-        index: Union[tuple, Tuple[int]],
-        result: ndarray,
-        name: str
-    ) -> None:
-        """
-        Save results from simulation.
-
-        :param self: :class:`~Results.Results` to save results in
-        :param index: see :meth:`~Results.Results.getResultsOverTime`
-        :param results: results to save at :paramref:`~Results.Results.setResults.index`
-        :param name: name of quantity to set results for
-        """
-        assert isinstance(name, str)
-
-        results_size = result.size
-        if self.getStepcount() is None:
-            self.setStepcount(results_size)
-
-        stepcount = self.getStepcount()
-        assert results_size == stepcount
-
-        if index not in self.results.keys():
-            self.results[index] = {}
-
-        self.results[index][name] = result
-
-    def saveResult(
-        self,
-        index: Union[tuple, Tuple[int]],
-        name: str,
-        result: ndarray,
-        folderpath: str = None
-    ) -> None:
-        """
-        Save single result into file.
-        :param self: :class:`~Results.Results` to retrieve save folder from
-        :param index: see :meth:`~Results.Results.getResultsOverTime`
-        :param name: name of quantity to set results for
-        :param result: single array of results for quantity
-        :param folderpath: path of folder to save results into.
-            Defaults to loaded folder path.
-        """
-        if folderpath is None:
-            folderpath = self.getFolderpath()
-
-        result_filepath = self.getResultFilepath(
-            index,
-            name,
-            folderpath=folderpath
-        )
-
-        result_folderpath = dirname(result_filepath)
-        if not exists(result_folderpath):
-            makedirs(result_folderpath)
-
-        if not exists(result_filepath):
-            with open(result_filepath, 'wb') as result_file:
-                dill.dump(result, result_file)
-
-    def saveResults(
-        self,
-        folderpath: str = None
-    ) -> None:
+    def saveResultsMetadata(self) -> None:
         """
         Save results object (self) into folder.
 
@@ -1097,11 +1004,11 @@ class Results:
         :param folderpath: path of folder to save results into.
             Defaults to loaded folder path.
         """
-        if folderpath is None:
-            folderpath = self.getFolderpath()
+        results_file_handler = self.getResultsFileHandler()
+        folderpath = results_file_handler.getFolderpath()
 
         model = self.getModel()
-        parameter_values = self.getFreeParameterValues(output_type=dict)
+        parameter_values = results_file_handler.getFreeParameterValues(output_type=dict)
 
         free_parameter_info = {}
         for name, values in parameter_values.items():
@@ -1115,17 +1022,293 @@ class Results:
             }
 
         function_filepath = join(folderpath, "Function.json")
-        if not exists(function_filepath):
-            function_file = model.saveFunctionsToFile(function_filepath)
-
         parameter_filepath = join(folderpath, "Parameter.json")
-        if not exists(parameter_filepath):
-            parameter_file = model.saveParametersToFile(parameter_filepath)
-
         variable_filepath = join(folderpath, "Variable.json")
-        if not exists(variable_filepath):
-            variable_file = model.saveVariablesToFile(variable_filepath)
-
         free_parameter_filepath = join(folderpath, "FreeParameter.json")
-        if not exists(free_parameter_filepath):
-            free_parameter_file = saveConfig(free_parameter_info, free_parameter_filepath)
+
+        function_file = model.saveFunctionsToFile(function_filepath)
+        parameter_file = model.saveParametersToFile(parameter_filepath)
+        variable_file = model.saveVariablesToFile(variable_filepath)
+        free_parameter_file = saveConfig(free_parameter_info, free_parameter_filepath)
+
+
+class ResultsFileHandler:
+    def __init__(
+        self,
+        folderpath: str,
+        variable_names: List[str],
+        function_names: List[str],
+        parameter_name2values: Dict[str, ndarray],
+        stepcount: int = None
+    ) -> None:
+        assert isinstance(folderpath, str)
+        self.folderpath = folderpath
+        self.name2file: Dict[str, h5py.File] = {}
+
+        if stepcount is None:
+            time_results_filepath = self.getResultFilepath('t', index=())
+            with h5py.File(time_results_filepath, 'r') as time_results_file:
+                time_results_dataset = time_results_file['t']
+                time_results_shape = time_results_dataset.shape
+                time_result_index = tuple(np.zeros(len(time_results_shape) - 1, dtype=np.int64))
+                time_result = time_results_dataset[time_result_index]
+
+            time_result_size = time_result.size
+            self.stepcount = time_result_size
+        else:
+            assert isinstance(stepcount, int)
+            self.stepcount = stepcount
+        self.variable_names = variable_names
+        self.function_names = function_names
+        self.parameter_name2values = parameter_name2values
+
+    def getStepcount(self) -> float:
+        """
+        Get number of steps per result.
+
+        :param self: :class:`~Results.Results` to retrieve stepcount from
+        """
+        return self.stepcount
+
+    def getVariableNames(self) -> List[str]:
+        """
+        Get names of variables simulated in results.
+
+        :param self: :class:`~Results.DynamicSaveResults` to retrieve names from
+        """
+        return self.variable_names
+
+    def getFunctionNames(self) -> List[str]:
+        """
+        Get names of functions possibly simulated in results.
+
+        :param self: :class:`~Results.DynamicSaveResults` to retrieve names from
+        """
+        return self.function_names
+
+    def getFreeParameterNames(self) -> List[str]:
+        """
+        Get names of free parameters.
+
+        :param self: :class:`~Results.Results` to retrieve free-parameter names from
+        """
+        return list(self.parameter_name2values.keys())
+
+    def getFreeParameterValues(
+        self,
+        names: Union[str, Iterable[str]] = None,
+        output_type: type = list
+    ) -> Union[ndarray, Dict[str, ndarray]]:
+        """
+        Get values for a free parameter.
+
+        :param self: :class:`~Results.Results` to retreive value from
+        :param names: name(s) of parameter to retreive values for
+        :param output_type: iterable to output as
+            if :paramref:`~Results.Results.getFreeParameterValues.names` is iterable
+        """
+        def get(name: str) -> ndarray:
+            """Base method for :meth:`~Results.Results.getFreeParameterValues`"""
+            return self.parameter_name2values[name]
+
+        return recursiveMethod(
+            args=names,
+            base_method=get,
+            valid_input_types=str,
+            output_type=output_type,
+            default_args=self.getFreeParameterNames()
+        )
+
+    def getFolderpath(self) -> str:
+        """
+        Get folderpath to save/load results into/from.
+
+        :param self: :class:`~Results.Results` to retrieve folderpath from
+        """
+        if self.folderpath is not None:
+            folderpath = self.folderpath
+        else:
+            folderpath = sg.PopupGetFolder(
+                message="Enter Folder to Load",
+                title="Load Previous Results"
+            )
+            self.folderpath = folderpath
+
+        return folderpath
+
+    def getResultFilepath(
+        self,
+        quantity_name: str,
+        index: Union[tuple, Tuple[int, ...]] = None
+    ):
+        """
+        Get filepath to save/load result from.
+
+        :param self: :class:`~Results.Results` to retrieve filepath from
+        :param index: :meth:`~Results.Results.getResultsOverTime` (not implemented)
+        :param quantity_name: name of quantity to retrieve filepath for
+        """
+        folderpath = self.getFolderpath()
+        file_extension = ".hdf5"
+        filename = quantity_name + file_extension
+        filepath = join(folderpath, filename)
+
+        return filepath
+
+    def getResultsFile(
+        self,
+        name: str,
+        index: Union[tuple, Tuple[int]] = None
+    ):
+        """
+        Get results file for single quantity.
+
+        :param self: :class:`~Results.Results` to retrieve file from
+        :param name: name of quantity to retrieve results for
+        :param index: see :meth:`~Results.Results.getResultsOverTime` (not implemented)
+        """
+        try:
+            results_file = self.name2file[name]
+        except KeyError:
+            results_filepath = self.getResultFilepath(name, index=index)
+            results_file_exists = exists(results_filepath)
+            results_file = h5py.File(results_filepath, 'a')
+
+            if not results_file_exists:
+                result_stepcount = self.getStepcount()
+
+                parameters_values = self.getFreeParameterValues()
+                parameter_shape = tuple([
+                    len(parameter_values)
+                    for parameter_values in parameters_values
+                ])
+
+                results_shape = (*parameter_shape, result_stepcount)
+                chunk_shape = (*np.ones(len(parameter_shape)), result_stepcount)
+
+                results_file.create_dataset(
+                    name,
+                    results_shape,
+                    chunks=chunk_shape
+                )
+
+            self.name2file[name] = results_file
+
+        return results_file
+
+    def closeResultsFiles(
+        self,
+        names: Union[str, List[str]] = None,
+        index: Union[tuple, Tuple[int]] = None
+    ):
+        """
+        Close results file for single quantity.
+
+        :param self: :class:`~Results.Results` to retrieve file from
+        :param names: name of quantity to close file for.
+            Defaults to closing all open files.
+        :param index: see :meth:`~Results.Results.getResultsOverTime` (not implemented)
+        """
+        name2file = self.name2file
+
+        if names is None:
+            for file in name2file.values():
+                file.close()
+            self.name2file = {}
+        else:
+            if isinstance(names, str):
+                names = [names]
+
+            name2file_keys = list(name2file.keys())
+            for name in names:
+                if name in name2file_keys:
+                    file = name2file[name]
+                    file.close()
+                    del self.name2file[name]
+
+    def flushResultsFiles(
+        self,
+        names: str = None,
+        index: Union[tuple, Tuple[int]] = None
+    ):
+        """
+        Close results file for single quantity.
+
+        :param self: :class:`~Results.Results` to retrieve file from
+        :param names: name of quantity to close file for.
+            Defaults to flushing all open files.
+        :param index: see :meth:`~Results.Results.getResultsOverTime` (not implemented)
+        """
+        def flush(name):
+            """Base method for :class:`~Results.Results.closeResultsFile`"""
+            try:
+                results_file = self.name2file[name]
+                results_file.flush()
+            except KeyError:
+                pass
+
+        recursiveMethod(
+            args=names,
+            base_method=flush,
+            valid_input_types=str,
+            default_args=self.name2file.keys()
+        )
+
+    def deleteResultsFiles(
+        self,
+        names: str = None,
+        index: Union[tuple, Tuple[int]] = None
+    ):
+        """
+        Close results file for single quantity.
+
+        :param self: :class:`~Results.Results` to retrieve file from
+        :param names: name of quantity to close file for.
+            Defaults to flushing all open files.
+        :param index: see :meth:`~Results.Results.getResultsOverTime` (not implemented)
+        """
+
+        def delete(name):
+            """Base method for :class:`~Results.Results`"""
+            self.closeResultsFiles(names=name)
+            results_filepath = self.getResultFilepath(name, index=index)
+            try:
+                os.remove(results_filepath)
+            except FileNotFoundError:
+                pass
+
+        variable_names = self.getVariableNames()
+        function_names = self.getFunctionNames()
+        quantity_names = [
+            't',
+            *variable_names,
+            *function_names
+        ]
+
+        recursiveMethod(
+            args=names,
+            base_method=delete,
+            valid_input_types=str,
+            default_args=quantity_names
+        )
+
+    def saveResult(
+        self,
+        index: Union[tuple, Tuple[int]],
+        name: str,
+        result: ndarray,
+        close_files: bool = True
+    ) -> None:
+        """
+        Save single result into file.
+
+        :param self: :class:`~Results.Results` to retrieve file from
+        :param index: see :meth:`~Results.Results.getResultsOverTime`
+        :param name: name of quantity to set results for
+        :param result: single 1D array of results for quantity
+        :param close_files: set True to immediately close any opened files.
+        """
+        results_file = self.getResultsFile(name)
+        results_file[name][index] = result
+        if close_files:
+            self.closeResultsFiles(names=name)
