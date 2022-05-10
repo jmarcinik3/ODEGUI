@@ -1,8 +1,9 @@
 import numpy as np
-from numpy import ndarray
+from numpy import ndarray, polyfit
 from scipy.fft import rfft, rfftfreq
-from scipy.signal import correlate, find_peaks, hilbert
-from scipy.stats import stats, linregress
+from scipy.signal import (correlate, find_peaks, hilbert, peak_prominences,
+                          peak_widths)
+from scipy.stats import linregress, stats, variation
 
 
 def identity(data: ndarray) -> ndarray:
@@ -158,6 +159,16 @@ def standardDeviation(data: ndarray) -> float:
     return standard_deviation
 
 
+def relativeStandardDeviation(data: ndarray) -> float:
+    """
+    Calculate relative standard deviation for array.
+
+    :param data: array to calculate deviation for
+    """
+    rsd = variation(data)
+    return rsd
+
+
 def fourierTransform(data: ndarray) -> ndarray:
     """
     Calculate Fourier tranform for array.
@@ -308,35 +319,104 @@ def imaginaryPart(data: ndarray) -> ndarray:
     return imaginary_part
 
 
-def linearIntercept(y: ndarray, x: ndarray = None) -> ndarray:
+def linearIntercept(y: ndarray, parameters: ndarray = None) -> ndarray:
     """
     Get y-intercept b of linear regression y=mx+b.
 
     :param y: 1D array of data for y-axis of plot
-    :param x: 1D array of data for x-axis of plot.
+    :param parameters: 1D array of data for x-axis of plot.
         Defaults to natural numbers (0 inclusive), up to size of y.
     """
-    if x is None:
-        x = np.arange(y.size)
+    if parameters is None:
+        parameters = np.arange(y.size)
 
-    linear_regression = linregress(x, y)
+    linear_regression = linregress(parameters, y)
     intercept = linear_regression[1]
 
     return intercept
 
 
-def linearSlope(y: ndarray, x: ndarray = None) -> ndarray:
+def linearSlope(y: ndarray, parameters: ndarray = None) -> ndarray:
     """
     Get slope m of linear regression y=mx+b.
 
     :param y: 1D array of data for y-axis of plot
-    :param x: 1D array of data for x-axis of plot.
+    :param parameters: 1D array of data for x-axis of plot.
         Defaults to natural numbers (0 inclusive), up to size of y.
     """
-    if x is None:
-        x = np.arange(y.size)
+    if parameters is None:
+        parameters = np.arange(y.size)
 
-    linear_regression = linregress(x, y)
+    linear_regression = linregress(parameters, y)
     slope = linear_regression[0]
-
     return slope
+
+
+def linearSlopeTimesIntercept(y: ndarray, parameters: ndarray = None) -> ndarray:
+    """
+    Get m*b of linear regression y=mx+b.
+
+    :param y: 1D array of data for y-axis of plot
+    :param parameters: 1D array of data for x-axis of plot.
+        Defaults to natural numbers (0 inclusive), up to size of y.
+    """
+    if parameters is None:
+        parameters = np.arange(y.size)
+
+    linear_regression = linregress(parameters, y)
+    slope, intercept = linear_regression[0:2]
+
+    multiplied = slope * intercept
+    return multiplied
+
+
+def quadraticHighestOrder(y: ndarray, parameters: ndarray = None) -> ndarray:
+    """
+    Get highest-order coefficient a2 of regression y=a2*x^2+a1*x+a0.
+
+    :param y: 1D array of data for y-axis of plot
+    :param parameters: 1D array of data for x-axis of plot.
+        Defaults to natural numbers (0 inclusive), up to size of y.
+    """
+    if parameters is None:
+        parameters = np.arange(y.size)
+
+    quadratic_coefficients = polyfit(parameters, y, 2)
+    highest_order = quadratic_coefficients[0]
+    return highest_order
+
+
+def globalPeakIsolation(y: ndarray, parameters: ndarray = None) -> ndarray:
+    """
+    Get peak width/isolation for global maximum.
+
+    :param y: 1D array of data for y-axis of plot
+    :param parameters: 1D array of data for x-axis of plot.
+        Defaults to natural numbers (0 inclusive), up to size of y.
+    """
+    if parameters is None:
+        parameters = np.arange(y.size)
+
+    max_index = np.argmax(y)
+
+    isolations = peak_widths(y, [max_index])
+    global_isolation = isolations[0][0]
+    return global_isolation
+
+
+def globalPeakProminence(y: ndarray, parameters: ndarray = None) -> ndarray:
+    """
+    Get peak prominence for global maximum.
+
+    :param y: 1D array of data for y-axis of plot
+    :param parameters: 1D array of data for x-axis of plot.
+        Defaults to natural numbers (0 inclusive), up to size of y.
+    """
+    if parameters is None:
+        parameters = np.arange(y.size)
+
+    max_index = np.argmax(y)
+
+    prominences = peak_prominences(y, [max_index])
+    global_prominence = prominences[0][0]
+    return global_prominence

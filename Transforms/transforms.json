@@ -1,14 +1,12 @@
 {
     "None": {
         "function": "identity",
-        "requires_times": false,
         "module": "Transforms.CustomMath",
         "arguments": 1,
         "point_mode": "full"
     },
     "Autocorrelation": {
         "function": "correlationTransform",
-        "requires_times": false,
         "time_function": "correlationLags",
         "module": "Transforms.CustomMath",
         "arguments": 1,
@@ -16,7 +14,6 @@
     },
     "Fourier": {
         "function": "fourierTransform",
-        "requires_times": false,
         "time_function": "fourierFrequencies",
         "module": "Transforms.CustomMath",
         "arguments": 1,
@@ -24,21 +21,18 @@
     },
     "Imaginary Exponentiation": {
         "function": "imaginaryExponentiation",
-        "requires_times": false,
         "module": "Transforms.CustomMath",
         "arguments": 1,
         "point_mode": "full"
     },
     "Interpolate Midpoint": {
         "function": "interpolateMidpoint",
-        "requires_times": false,
         "module": "Transforms.CustomMath",
         "arguments": 1,
         "point_mode": "lose_one"
     },
     "Phase-Locking Value": {
         "function": "phaseLockingValue",
-        "requires_times": false,
         "module": "Transforms.CustomMath",
         "arguments": 2,
         "point_mode": "full"

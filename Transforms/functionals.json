@@ -11,12 +11,33 @@
         "function": "geometricMean",
         "module": "Transforms.CustomMath"
     },
+    "Global Peak Isolation": {
+        "function": "globalPeakIsolation",
+        "module": "Transforms.CustomMath",
+        "requires_parameters": true
+    },
+    "Global Peak Prominence": {
+        "function": "globalPeakProminence",
+        "module": "Transforms.CustomMath",
+        "requires_parameters": true
+    },
     "Linear Intercept": {
         "function": "linearIntercept",
-        "module": "Transforms.CustomMath"
+        "module": "Transforms.CustomMath",
+        "requires_parameters": true
     },
     "Linear Slope": {
         "function": "linearSlope",
+        "module": "Transforms.CustomMath",
+        "requires_parameters": true
+    },
+    "Linear m*b": {
+        "function": "linearSlopeTimesIntercept",
+        "module": "Transforms.CustomMath",
+        "requires_parameters": true
+    },
+    "Relative Standard Deviation": {
+        "function": "relativeStandardDeviation",
         "module": "Transforms.CustomMath"
     },
     "Root-Mean-Square": {
@@ -26,5 +47,10 @@
     "Standard Deviation": {
         "function": "standardDeviation",
         "module": "Transforms.CustomMath"
+    },
+    "Quadratic Second Order": {
+        "function": "quadraticHighestOrder",
+        "module": "Transforms.CustomMath",
+        "requires_parameters": true
     }
 }
