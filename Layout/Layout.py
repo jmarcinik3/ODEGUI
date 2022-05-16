@@ -743,7 +743,7 @@ class ChooseChecksWindow(Window):
         self,
         name: str,
         runner: WindowRunner,
-        get_rows: Callable,
+        get_rows: Callable[[], List[Row]],
         header_text: str = ''
     ):
         """

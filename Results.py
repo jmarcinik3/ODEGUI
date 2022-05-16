@@ -778,12 +778,12 @@ class Results:
             if isinstance(quantity_names, str):
                 try:
                     results_file_handler = self.getResultsFileHandler()
-                    filepath = results_file_handler.getResultFilepath(quantity_name=quantity_names)
-                    with h5py.File(filepath, 'r') as file:
-                        single_results = file[quantity_names][index]
-                        is_all_zero = not np.any(single_results)
-                        if is_all_zero:
-                            raise ValueError(f"numpy array {quantity_names:s} {index} contains only zeros... calculating values")
+                    results_file = results_file_handler.getResultsFile(name=quantity_names)
+                    single_results = results_file[quantity_names][index]
+                    
+                    is_all_zero = not np.any(single_results)
+                    if is_all_zero:
+                        raise ValueError(f"numpy array {quantity_names:s} {index} contains only zeros... calculating values")
                 except (FileNotFoundError, ValueError) as error:
                     print(error)
                     model = self.getModel()
@@ -889,6 +889,31 @@ class Results:
                 )
 
         return results
+
+
+class GridResults(Results):
+    def __init__(
+        self,
+        model: Model,
+        parameter_name2values: Dict[str, ndarray],
+        folderpath: str,
+        transform_config_filepath: str = "transforms/transforms.json",
+        envelope_config_filepath: str = "transforms/envelopes.json",
+        functional_config_filepath: str = "transforms/functionals.json",
+        complex_config_filepath: str = "transforms/complexes.json",
+        stepcount: int = None
+    ) -> None:
+        Results.__init__(
+            self,
+            model=model,
+            parameter_name2values=parameter_name2values,
+            folderpath=folderpath,
+            transform_config_filepath=transform_config_filepath,
+            envelope_config_filepath=envelope_config_filepath,
+            functional_config_filepath=functional_config_filepath,
+            complex_config_filepath=complex_config_filepath,
+            stepcount=stepcount
+        )
 
     def getResultsOverTimePerParameter(
         self,
@@ -1039,7 +1064,8 @@ class ResultsFileHandler:
         variable_names: List[str],
         function_names: List[str],
         parameter_name2values: Dict[str, ndarray],
-        stepcount: int = None
+        stepcount: int = None,
+        simulation_type: str = "grid"
     ) -> None:
         assert isinstance(folderpath, str)
         self.folderpath = folderpath
@@ -1061,6 +1087,16 @@ class ResultsFileHandler:
         self.variable_names = variable_names
         self.function_names = function_names
         self.parameter_name2values = parameter_name2values
+        
+        self.simulation_type = simulation_type.lower()
+
+    def getSimulationType(self) -> str:
+        """
+        Get type of simulation executed to produce data.
+        
+        :param self: :class:`~Results.ResultsFileHandler` to retrieve type from
+        """
+        return self.simulation_type
 
     def getStepcount(self) -> float:
         """
@@ -1119,21 +1155,32 @@ class ResultsFileHandler:
             default_args=self.getFreeParameterNames()
         )
 
-    def getFolderpath(self) -> str:
+    def getFolderpath(
+        self, 
+        index: Union[tuple, Tuple[int, ...]] = None,
+    ) -> str:
         """
         Get folderpath to save/load results into/from.
 
         :param self: :class:`~Results.Results` to retrieve folderpath from
+        :param index: :meth:`~Results.Results.getResultsOverTime` (not implemented)
         """
         if self.folderpath is not None:
-            folderpath = self.folderpath
+            root_folderpath = self.folderpath
         else:
-            folderpath = sg.PopupGetFolder(
+            root_folderpath = sg.PopupGetFolder(
                 message="Enter Folder to Load",
                 title="Load Previous Results"
             )
-            self.folderpath = folderpath
+            self.folderpath = root_folderpath
 
+        simulation_type = self.simulation_type
+        if simulation_type == "grid":
+            folderpath = root_folderpath
+        elif simulation_type == "optimization":
+            subfolder = str(index[0])
+            folderpath = join(root_folderpath, subfolder)
+        
         return folderpath
 
     def getResultFilepath(
@@ -1147,8 +1194,9 @@ class ResultsFileHandler:
         :param self: :class:`~Results.Results` to retrieve filepath from
         :param index: :meth:`~Results.Results.getResultsOverTime` (not implemented)
         :param quantity_name: name of quantity to retrieve filepath for
+        :param subfolder: folder relative to data folder to retrieve results file
         """
-        folderpath = self.getFolderpath()
+        folderpath = self.getFolderpath(index=index)
         file_extension = ".hdf5"
         filename = quantity_name + file_extension
         filepath = join(folderpath, filename)
@@ -1166,11 +1214,15 @@ class ResultsFileHandler:
         :param self: :class:`~Results.Results` to retrieve file from
         :param name: name of quantity to retrieve results for
         :param index: see :meth:`~Results.Results.getResultsOverTime` (not implemented)
+        :param subfolder: folder relative to data folder to retrieve results file
         """
         try:
             results_file = self.name2file[name]
         except KeyError:
-            results_filepath = self.getResultFilepath(name, index=index)
+            results_filepath = self.getResultFilepath(
+                name,
+                index=index
+            )
             results_file_exists = exists(results_filepath)
             results_file = h5py.File(results_filepath, 'a')
 
@@ -1308,7 +1360,7 @@ class ResultsFileHandler:
         :param result: single 1D array of results for quantity
         :param close_files: set True to immediately close any opened files.
         """
-        results_file = self.getResultsFile(name)
+        results_file = self.getResultsFile(name, index=index)
         results_file[name][index] = result
         if close_files:
             self.closeResultsFiles(names=name)

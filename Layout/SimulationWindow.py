@@ -29,9 +29,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from numpy import ndarray
 from pint import Quantity, Unit
-from Results import Results, ResultsFileHandler
+from Results import GridResults
 from Simulation import RunSimulation
-from sympy import Expr, Symbol
 from sympy.core import function
 from YML import (config_file_types, getDimensions, getStates, loadConfig,
                  saveConfig)
@@ -2568,7 +2567,7 @@ class SimulationWindowRunner(WindowRunner):
         self,
         name: str,
         model: Model = None,
-        results_obj: Results = None,
+        results_obj: GridResults = None,
         include_simulation_tab: bool = True,
         **kwargs
     ) -> None:
@@ -2685,7 +2684,7 @@ class SimulationWindowRunner(WindowRunner):
         """
         self.results_obj = None
 
-    def getResultsObject(self) -> Results:
+    def getResultsObject(self) -> GridResults:
         """
         Get stored :class:`~Results.Results`.
 
@@ -2693,27 +2692,29 @@ class SimulationWindowRunner(WindowRunner):
         """
         results_obj = self.results_obj
 
-        if not isinstance(results_obj, Results):
+        if not isinstance(results_obj, GridResults):
             save_folderpath = sg.PopupGetFolder(
                 message="Enter Folder to Save Into",
                 title="Run Simulation"
             )
             if save_folderpath is not None:
                 stepcount = self.getStepCount()
+                free_parameter_names = self.getFreeParameterNames()
                 free_parameter_values = {
                     free_parameter_name: self.getFreeParameterValues(free_parameter_name)
-                    for free_parameter_name in self.getFreeParameterNames()
+                    for free_parameter_name in free_parameter_names
                 }
 
                 model = self.getModel()
-                results_obj = Results(
+                
+                results_obj = GridResults(
                     model,
                     free_parameter_values,
                     folderpath=save_folderpath,
                     stepcount=stepcount
                 )
 
-            if isinstance(results_obj, Results):
+            if isinstance(results_obj, GridResults):
                 self.results_obj = results_obj
 
         return results_obj
@@ -2948,7 +2949,7 @@ class SimulationWindowRunner(WindowRunner):
                     self.saveModelFunctions()
                 elif menu_value == "Results::Save":
                     results_obj = self.getResultsObject()
-                    if isinstance(results_obj, Results):
+                    if isinstance(results_obj, GridResults):
                         results_obj.saveResultsMetadata()
                 elif menu_value == "Variables::Save":
                     self.saveModelVariables()
@@ -2997,7 +2998,7 @@ class SimulationWindowRunner(WindowRunner):
         """
         self.clearResultsObject()
         results_obj = self.getResultsObject()
-        if not isinstance(results_obj, Results):
+        if not isinstance(results_obj, GridResults):
             return None
 
         results_file_handler = results_obj.getResultsFileHandler()
@@ -3338,7 +3339,7 @@ class SimulationWindowRunner(WindowRunner):
         valid_axis_names = plot_quantities.getValidAxisNames()
 
         results_obj = self.getResultsObject()
-        if not isinstance(results_obj, Results):
+        if not isinstance(results_obj, GridResults):
             return None
         results_file_handler = results_obj.getResultsFileHandler()
 

@@ -1360,13 +1360,13 @@ class MainWindow(TabbedWindow):
         )
 
     @storeElement
-    def getOpenSimulationButton(self) -> sg.Button:
+    def getGridSimulationButton(self) -> sg.Button:
         """
         Get button to open :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
 
         :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve button from
         """
-        text = "Open Simulation"
+        text = "Grid Simulation"
 
         return sg.Button(
             button_text=text,
@@ -1394,10 +1394,14 @@ class MainWindow(TabbedWindow):
         :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve layout from
         """
         menu = self.getMenu()
-        open_simulation_button = self.getOpenSimulationButton()
+        open_simulation_button = self.getGridSimulationButton()
         generate_graph_button = self.getGenerateGraphButton()
+        suffix_elements = [
+            open_simulation_button,
+            generate_graph_button
+        ]
         prefix_layout = Layout(rows=Row(window=self, elements=menu))
-        suffix_layout = Layout(rows=Row(window=self, elements=[open_simulation_button, generate_graph_button]))
+        suffix_layout = Layout(rows=Row(window=self, elements=suffix_elements))
         tabgroup = TabGroup(self.getTabs())
         return prefix_layout.getLayout() + tabgroup.getLayout() + suffix_layout.getLayout()
 
@@ -1511,7 +1515,7 @@ class MainWindowRunner(WindowRunner):
         window = window_obj.getWindow()
 
         toolbar_menu_key = getKeys(window_obj.getMenu())
-        open_simulation_key = getKeys(window_obj.getOpenSimulationButton())
+        open_simulation_key = getKeys(window_obj.getGridSimulationButton())
         generate_graph_key = getKeys(window_obj.getGenerateGraphButton())
 
         window.bind("<Control-r>", open_simulation_key)
@@ -1747,12 +1751,10 @@ class MainWindowRunner(WindowRunner):
 
             if isinstance(element, sg.Combo):
                 choices = vars(element)["Values"]
-                if value in choices:
-                    is_valid_value = True
+                is_valid_value = value in choices
             elif isinstance(element, sg.Checkbox):
-                if isinstance(value, bool):
-                    is_valid_value = True
-
+                is_valid_value = isinstance(value, bool)
+                
             if is_valid_value:
                 element.update(value)
 
@@ -2144,8 +2146,12 @@ class MainWindowRunner(WindowRunner):
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve filestem from
         :param name: name of parameter to retrieve filestem for
         """
-        combobox_key = getKeys(ParameterRow.getInstances(names=name).getChooseFileElement())
-        filestem = self.getValue(combobox_key)
+        parameter_row: ParameterRow = ParameterRow.getInstances(names=name)
+        combobox_key = getKeys(parameter_row.getChooseFileElement())
+        filestem = self.getValue(
+            combobox_key, 
+            combo_error=False
+        )
         return filestem
 
     def getParameterFromStem(self, name: str, filestem: str) -> Parameter:
@@ -2463,8 +2469,11 @@ class MainWindowRunner(WindowRunner):
         def update(name: str) -> None:
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.updateParameterFromStems`."""
             filestem = self.getChosenParameterStem(name)
-            parameter = self.getParameterFromStem(name, filestem)
-            self.setParameterWithStem(parameter)
+            try:
+                parameter = self.getParameterFromStem(name, filestem)
+                self.setParameterWithStem(parameter)
+            except KeyError:
+                pass
 
         return recursiveMethod(
             base_method=update,
@@ -2813,14 +2822,21 @@ class MainWindowRunner(WindowRunner):
         self.loadParametersFromFile(filepath=parameter_objs_filepath)
         self.loadFunctionsFromFile(filepath=function_objs_filepath)
 
-    def getFreeParameterValues(self) -> Tuple[str, Dict[str, Tuple[float, float, int, Quantity]]]:
+    def getFreeParameterValues(
+        self,
+        free_parameter_names: List[str] = None
+    ) -> Tuple[str, Dict[str, Tuple[float, float, int, Quantity]]]:
         """
         Open window allowing user to set minimum, maximum, and step count for each selected free parameter.
         Uses present state of window.
 
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve free parameters from
+        :param free_parameter_names: names of parameters to set range of values for.
+            Defaults to names of parameter set to "Free" in window.
         """
-        free_parameter_names = self.getParameterNames(parameter_types="Free")
+        if free_parameter_names is None:
+            free_parameter_names = self.getParameterNames(parameter_types="Free")
+
         free_parameter_quantities = self.getParameterQuantities(names=free_parameter_names)
         set_free_parameters_window = SetFreeParametersWindowRunner(
             name="Set Values for Free Parameters",
@@ -2842,19 +2858,33 @@ class MainWindowRunner(WindowRunner):
         :param self: :class:`~Layout.MainWindow.MainWindowRunner`
             to call :class:`~Layout.SimulationWindow.SimulationWindowRunner`
         """
-        event, free_parameter_values = self.getFreeParameterValues()
+        variable_objs = self.getVariables(is_core=True)
+        variable_names = list(map(Variable.getName, variable_objs))
+        model = self.getModel(variable_names=variable_names)
+        model_parameter_names = model.getParameterNames()
+
+        free_parameter_names = self.getParameterNames(parameter_types="Free")
+        free_parameters_not_in_model = tuple([
+            free_parameter_name
+            for free_parameter_name in free_parameter_names
+            if free_parameter_name not in model_parameter_names
+        ])
+        if len(free_parameters_not_in_model) >= 1:
+            sg.PopupError(
+                f"Free parameters {free_parameters_not_in_model:} are not present in model.",
+                title="Unavailable Free Parameters"
+            )
+            return None
+
+        event, free_parameter_values = self.getFreeParameterValues(free_parameter_names=free_parameter_names)
         if event == "Submit":
-            variable_objs = self.getVariables(is_core=True)
-            variable_names = list(map(Variable.getName, variable_objs))
-            if event == "Submit":
-                model = self.getModel(variable_names=variable_names)
-                simulation_window = SimulationWindowRunner(
-                    name="Run Simulation for Model",
-                    model=model,
-                    free_parameter_values=free_parameter_values,
-                    plot_choices=self.getPlotChoices(model=model)
-                )
-                simulation_window.runWindow()
+            simulation_window = SimulationWindowRunner(
+                name="Run Simulation for Model",
+                model=model,
+                free_parameter_values=free_parameter_values,
+                plot_choices=self.getPlotChoices(model=model)
+            )
+            simulation_window.runWindow()
 
     def openFunction2ArgumentGraph(self) -> None:
         """
