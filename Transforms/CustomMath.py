@@ -149,6 +149,17 @@ def rootMeanSquare(data: ndarray) -> float:
     return rms
 
 
+def sumSquaresError(data: ndarray, data_compare: ndarray) -> ndarray:
+    """
+    Get residual sum of squares (RSS) between data and comparison.
+    
+    :param data: vector of points to compare to comparison data (e.g. fit data)
+    :param data_compare: vector of points to compare to data
+    """
+    rss = np.sum((data - data_compare) ** 2)
+    return rss
+    
+
 def standardDeviation(data: ndarray) -> float:
     """
     Calculate standard deviation for array.
