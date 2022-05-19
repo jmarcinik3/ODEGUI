@@ -6,9 +6,7 @@ from __future__ import annotations
 
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
-# noinspection PyPep8Naming
 import PySimpleGUI as sg
-
 from KeyList import KeyList
 from macros import recursiveMethod
 
@@ -431,13 +429,93 @@ class Frame(Element):
         )
 
 
-class TabGroup(Element):
+class TabbedElement:
+    def __init__(
+        self,
+        tabs: Union[Union[sg.Tab, Tab], Iterable[Union[sg.Tab, Tab]]] = None
+    ):
+        """
+        Constructor for :class:`~Layout.Layout.TabbedElement`
+
+        :param tabs: tabs contained in tabbed element.
+            Defaults to empty list of tabs.
+        """
+        if isinstance(tabs, (Tab, sg.Tab)):
+            self.tabs = [tabs]
+        elif isinstance(tabs, Iterable):
+            tabs = list(tabs)
+            for tab in tabs:
+                assert isinstance(tab, (sg.Tab, Tab))
+            self.tabs = tabs
+        elif tabs is None:
+            self.tabs = []
+        else:
+            raise TypeError("tabs must be sg.Tab/Tab or Iterable of sg.Tab/Tab")
+
+    def addTabs(
+        self,
+        tabs: Union[Union[sg.Tab, Tab], Iterable[Union[sg.Tab, Tab]]]
+    ) -> None:
+        """
+        Add tab(s) to tabbed element.
+
+        :param self: :class:`~Layout.Layout.TabbedElement` to add tabs into
+        :param tabs: tabs to contain in tabbed element
+        """
+        append = self.tabs.append
+
+        def add(tab: Union[sg.Tab, Tab]) -> None:
+            """Base method for Layout.Layout.TabbedElement.addTabs"""
+            append(tab)
+
+        return recursiveMethod(
+            base_method=add,
+            args=tabs,
+            valid_input_types=(sg.Tab, Tab),
+            output_type=list
+        )
+
+    def getTabs(
+        self,
+        names: Union[str, Iterable[str]] = None,
+    ) -> List[Tab]:
+        """
+        Get tabs contained in tabgroup.
+
+        :param self: :class:`~Layout.Layout.TabbedElement` to retrieve tabs from
+        :param names: name(s) of tab(s) to retrieve.
+            Defaults to all tabs.
+        """
+        if names is None:
+            return self.tabs
+
+        def get(name: str):
+            """Base method for :meth:`~Layout.Layout.TabbedElement.getTabs`"""
+            for tab in self.tabs:
+                if isinstance(tab, Tab):
+                    tab_name = tab.getName()
+                elif isinstance(tab, sg.Tab):
+                    tab_name = vars(tab)["Title"]
+
+                if tab_name == name:
+                    return tab
+            raise ValueError(f"tab {name:s} not found in {self.__class__.__name__:s}")
+
+        return recursiveMethod(
+            args=names,
+            base_method=get,
+            valid_input_types=str,
+            output_type=list
+        )
+
+
+class TabGroup(TabbedElement):
     """
     Wrapper for PySimpleGUI TabGroup and container for :class:`~Layout.Layout.Tab`.
 
     :ivar name: name of tabgroup
     :ivar suffix_layout: layout shared by all tabs in tabgroup, appended after tabs
-    :ivar tabs: :class:`~Layout.Layout.Tab` and/or PySimpleGUI contained in tabgroup
+    :ivar tabs: :class:`~Layout.Layout.Tab` and/or PySimpleGUI Tab contained in tabgroup
     """
 
     def __init__(
@@ -449,21 +527,17 @@ class TabGroup(Element):
         """
         Constructor for :class:`~Layout.Layout.Tabgroup`.
 
-        :param name: name of tabgroup
+        :param name: name of tabgroup.
+            Only called if retrieve tabgroup as PySimpleGUI tab.
         :param suffix_layout: layout shared by all tabs in tabgroup, appended after tabs
         :param tabs: tabs contained in tabgroup
         """
-        self.name = name
-        self.suffix_layout = Layout() if suffix_layout is None else suffix_layout
+        TabbedElement.__init__(self, tabs)
 
-        if isinstance(tabs, (Tab, sg.Tab)):
-            self.tabs = [tabs]
-        elif isinstance(tabs, list):
-            self.tabs = tabs
-        elif tabs is None:
-            self.tabs = []
-        else:
-            raise TypeError("tabs must be Tab or list")
+        if name is not None:
+            assert isinstance(name, str)
+            self.name = name
+        self.suffix_layout = Layout() if suffix_layout is None else suffix_layout
 
     def getName(self) -> str:
         """
@@ -472,14 +546,6 @@ class TabGroup(Element):
         :param self: :class:`~Layout.Layout.TabGroup` to retrieve name from
         """
         return self.name
-
-    def getTabs(self) -> List[Tab]:
-        """
-        Get tabs contained in tabgroup.
-
-        :param self: :class:`~Layout.Layout.TabGroup` to retrieve tabs from
-        """
-        return self.tabs
 
     def getTabGroup(self) -> sg.TabGroup:
         """
@@ -833,7 +899,7 @@ class ChooseChecksWindow(Window):
         return menu.getLayout() + header.getLayout() + rows.getLayout() + footer.getLayout()
 
 
-class TabbedWindow(Window):
+class TabbedWindow(Window, TabbedElement):
     """
     Wrapper for :class:`~Layout.Layout.Window` with tabs.
 
@@ -844,7 +910,8 @@ class TabbedWindow(Window):
         self,
         name: str,
         runner: WindowRunner,
-        dimensions: Dict[str, Tuple[Optional[int], Optional[int]]] = None
+        dimensions: Dict[str, Tuple[Optional[int], Optional[int]]] = None,
+        tabs: Union[Union[sg.Tab, Tab], Iterable[Union[sg.Tab, Tab]]] = None
     ) -> None:
         """
         Constructor for :class:`~Layout.Layout.TabbedWindow`.
@@ -853,56 +920,14 @@ class TabbedWindow(Window):
         :param runner: :class:`~Layout.Layout.WindowRunner` that runs window
         :param dimensions: dictionary of dimensions for elements contained in window
         """
-        super().__init__(name, runner, dimensions=dimensions)
-        self.tabs = []
-
-    def addTabs(self, tabs: Union[Union[sg.Tab, Tab], Iterable[Union[sg.Tab, Tab]]]) -> None:
-        """
-        Add tabs to window
-
-        :param self: :class:`~Layout.Layout.TabbedWindow` to add tabs into
-        :param tabs: tabs to contain in window
-        """
-
-        def add(tab: Union[sg.Tab, Tab]) -> None:
-            """Base method for Layout.Layout.TabbedWindow.addTabs"""
-            self.tabs.append(tab)
-
-        return recursiveMethod(
-            base_method=add,
-            args=tabs,
-            valid_input_types=(sg.Tab, Tab),
-            output_type=list
-        )
-
-    def getTabs(self, names: Union[str, Iterable[str]] = None) -> List[sg.Tab]:
-        """
-        Get tabs contained in window as PySimpleGUI Tab.
-
-        :param self: :class:`~Layout.Layout.TabbedWindow` to retrieve tabs from
-        :param names: name(s) of tab(s) to retrieve.
-            Defaults to all tabs.
-        """
-
-        if names is None:
-            return self.tabs
-
-        def get(name: str):
-            """Base method for :meth:`~Layout.Layout.TabbedWindow.getTabs`"""
-            for tab in self.tabs:
-                if isinstance(tab, Tab):
-                    if tab.getName() == name:
-                        return tab
-                elif isinstance(tab, sg.Tab):
-                    if vars(tab)["Title"] == name:
-                        return tab
-            raise ValueError(f"tab {name:s} not found in {self.__class__.__name__:s}")
-
-        return recursiveMethod(
-            args=names,
-            base_method=get,
-            valid_input_types=str,
-            output_type=list
+        print("tab_win:", name, runner, tabs)
+        TabbedElement.__init__(self, tabs)
+        print("tab_complete")
+        Window.__init__(
+            self,
+            name=name,
+            runner=runner,
+            dimensions=dimensions
         )
 
 

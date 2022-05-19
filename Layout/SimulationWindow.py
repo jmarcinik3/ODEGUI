@@ -377,7 +377,7 @@ class SimulationTab(Tab):
         return layout.getLayout()
 
 
-class ColorbarAestheticsTab(Tab, StoredObject):
+class ColorbarAestheticsTab(Tab):
     """
     This class contains the layout for the aesthetics tab in the simulation window.
         # . Header row to identify purpose for each column
@@ -396,8 +396,11 @@ class ColorbarAestheticsTab(Tab, StoredObject):
         :param name: name of tab
         :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab is stored in.
         """
-        Tab.__init__(self, name, window)
-        StoredObject.__init__(self, name)
+        Tab.__init__(
+            self, 
+            name=name, 
+            window=window
+        )
 
     def getHeaderRows(self) -> List[Row]:
         """
@@ -575,7 +578,7 @@ class ColorbarAestheticsTab(Tab, StoredObject):
         return layout.getLayout()
 
 
-class AxisAestheticsTab(Tab, StoredObject):
+class AxisAestheticsTab(Tab):
     """
     This class contains the layout for the aesthetics tab in the simulation window.
         # . Header row to identify functions for input
@@ -593,8 +596,11 @@ class AxisAestheticsTab(Tab, StoredObject):
         :param name: name of tab
         :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab is stored in.
         """
-        Tab.__init__(self, name, window)
-        StoredObject.__init__(self, name)
+        Tab.__init__(
+            self, 
+            name=name, 
+            window=window
+        )
 
     def getHeaderRows(self) -> List[Row]:
         """
@@ -772,9 +778,17 @@ class AestheticsTabGroup(TabGroup):
         :param name: name of tabgroup
         :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tabgroup is stored in.
         """
+        axis_aesthetics_tab_name = "Axis"
+        axis_aesthetics_tab = AxisAestheticsTab("Axis", window)
+        self.getAxisAestheticsTab = partial(self.getTabs, names=axis_aesthetics_tab_name)
+        
+        colorbar_aesthetics_tab_name = "Colorbar"
+        colorbar_aesthetics_tab = ColorbarAestheticsTab("Colorbar", window)
+        self.getColorbarAestheticsTab = partial(self.getTabs, names=colorbar_aesthetics_tab_name)
+        
         tabs = [
-            AxisAestheticsTab("Axis", window),
-            ColorbarAestheticsTab("Colorbar", window)
+            axis_aesthetics_tab,
+            colorbar_aesthetics_tab
         ]
         super().__init__(tabs, name=name)
 
@@ -1134,7 +1148,7 @@ class AxisQuantityFrame(Frame, AxisQuantityElement):
                 values=transform_names,
                 default_value=transform_names[0],
                 tooltip=f"Choose transform to perform on {name:s}-axis of plot",
-                enable_events=True,
+                enable_events=False,
                 size=self.getDimensions(name="transform_type_combobox"),
                 key=f"{cc_pre:s} TRANSFORM {name:s}_AXIS"
             )
@@ -1158,7 +1172,7 @@ class AxisQuantityFrame(Frame, AxisQuantityElement):
                 values=functional_names,
                 default_value=default_value,
                 tooltip=f"Choose functional to perform on {name:s}-axis of plot",
-                enable_events=True,
+                enable_events=False,
                 size=self.getDimensions(name="axis_functional_combobox"),
                 key=f"-{cc_pre:s} FUNCTIONAL {name:s}_AXIS-"
             )
@@ -1471,7 +1485,7 @@ class ParameterFunctionalRow(Row, AxisQuantityElement, StoredObject):
                 values=functional_names,
                 default_value=default_value,
                 tooltip=f"Choose functional to perform on {axis_name:s}-axis of plot over chosen parameters",
-                enable_events=True,
+                enable_events=False,
                 size=self.getDimensions(name="axis_functional_combobox"),
                 key=f"-{cc_pre:s} MULTIFUNCTIONAL {name:s}_AXIS-"
             )
@@ -1500,7 +1514,7 @@ class ParameterFunctionalRow(Row, AxisQuantityElement, StoredObject):
             return None
 
 
-class EnvelopeRadioGroup(RadioGroup, StoredObject):
+class EnvelopeRadioGroup(RadioGroup):
     def __init__(
         self,
         axis_name: str,
@@ -1524,7 +1538,6 @@ class EnvelopeRadioGroup(RadioGroup, StoredObject):
             group_id=group_id,
             window=window
         )
-        StoredObject.__init__(self, axis_name)
 
         if envelope_names is None:
             self.envelope_names = ["None"]
@@ -2071,7 +2084,7 @@ class AnalysisTab(Tab, StoredObject):
             values=frequency_method,
             default_value=frequency_method[0],
             tooltip="Choose method to calculate frequency",
-            enable_events=True,
+            enable_events=False,
             size=self.getDimensions(name="frequency_method_combobox"),
             key=f"-ANALYSIS METHOD FREQUENCY-"
         )
@@ -2092,7 +2105,7 @@ class AnalysisTab(Tab, StoredObject):
             values=axis_functional,
             default_value=axis_functional[0],
             tooltip=f"Choose method to condense frequency",
-            enable_events=True,
+            enable_events=False,
             size=self.getDimensions(name=f"frequency_functional_combobox"),
             key=f"ANALYSIS FUNCTIONAL FREQUENCY"
         )
@@ -2201,11 +2214,11 @@ class SimulationWindow(TabbedWindow):
         runner: SimulationWindowRunner,
         free_parameter_values: Dict[str, Tuple[float, float, int, Quantity]],
         plot_choices: Dict[str, List[str]],
-        include_simulation_tab: bool = True,
         transform_config_filepath: str = "transforms/transforms.json",
         envelope_config_filepath: str = "transforms/envelopes.json",
         functional_config_filepath: str = "transforms/functionals.json",
-        complex_config_filepath: str = "transforms/complexes.json"
+        complex_config_filepath: str = "transforms/complexes.json",
+        include_simulation_tab: bool = True
     ) -> None:
         """
         Constructor for :class:`~Layout.SimulationWindow.SimulationWindow`.
@@ -2353,7 +2366,12 @@ class SimulationWindow(TabbedWindow):
             ),
             "mean_order_spin": getDimensions(["simulation_window", "analysis_tab", "mean_tab", "order_spin"])
         }
-        super().__init__(name, runner, dimensions=dimensions)
+        TabbedWindow.__init__(
+            self, 
+            name, 
+            runner, 
+            dimensions=dimensions
+        )
 
         assert isinstance(plot_choices, dict)
         for specie, names in plot_choices.items():
@@ -2361,14 +2379,7 @@ class SimulationWindow(TabbedWindow):
             assert isinstance(names, Iterable)
             for name in names:
                 assert isinstance(name, str)
-
         self.plot_choices = plot_choices
-
-        self.free_parameter_values = free_parameter_values
-
-        simulation_tab_name = "Simulation"
-        simulation_tab = SimulationTab(simulation_tab_name, self)
-        self.getSimulationTab = partial(self.getTabs, names=simulation_tab_name)
 
         assert isinstance(transform_config_filepath, str)
         transform_config = loadConfig(transform_config_filepath)
@@ -2386,6 +2397,8 @@ class SimulationWindow(TabbedWindow):
         complex_config = loadConfig(complex_config_filepath)
         complex_names = list(complex_config.keys())
 
+        self.free_parameter_values = free_parameter_values
+
         plotting_tabgroup_name = "Plotting"
         plotting_tabgroup = AxisQuantityTabGroup(
             plotting_tabgroup_name,
@@ -2401,12 +2414,25 @@ class SimulationWindow(TabbedWindow):
         assert isinstance(include_simulation_tab, bool)
         self.include_simulation_tab = include_simulation_tab
         if include_simulation_tab:
+            simulation_tab_name = "Simulation"
+            simulation_tab = SimulationTab(simulation_tab_name, self)
+            self.getSimulationTab = partial(self.getTabs, names=simulation_tab_name)
             self.addTabs(simulation_tab)
 
-        self.addTabs(AestheticsTabGroup("Aesthetics", self).getAsTab())
-        self.addTabs(plotting_tabgroup.getAsTab())
-        self.addTabs(AnalysisTab("Analysis", self))
-        self.addTabs(FilterTab("Filter", self, row_count=4))
+        aesthetics_tabgroup = AestheticsTabGroup("Aesthetics", self)
+        aesthetics_tab = aesthetics_tabgroup.getAsTab()
+        self.getAxisAestheticsTab = aesthetics_tabgroup.getAxisAestheticsTab
+        self.getColorbarAestheticsTab = aesthetics_tabgroup.getColorbarAestheticsTab
+        self.addTabs(aesthetics_tab)
+        
+        plotting_tab = plotting_tabgroup.getAsTab()
+        self.addTabs(plotting_tab)
+        
+        analysis_tab = AnalysisTab("Analysis", self)
+        self.addTabs(analysis_tab)
+        
+        filter_tab = FilterTab("Filter", self, row_count=4)
+        self.addTabs(filter_tab)
 
     def getFreeParameterNames(
         self,
@@ -2605,7 +2631,10 @@ class SimulationWindow(TabbedWindow):
         canvas = self.getCanvas()
         exit_button = sg.Exit()
         update_plot_button = self.getUpdatePlotButton()
-        tabgroup = TabGroup(self.getTabs()).getTabGroup()
+        
+        tabs = self.getTabs()
+        tabgroup_obj = TabGroup(tabs)
+        tabgroup = tabgroup_obj.getTabGroup()
 
         parameter_sliders = self.getParameterSliders()
         parameter_slider_rows = [
@@ -2693,6 +2722,64 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
         else:
             self.model = model
             self.results_obj = None
+
+    def runWindow(self) -> None:
+        """
+        Run simulation window.
+        This function links each possible event to an action.
+        When an event is triggered, its corresponding action is executed.
+
+        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to run
+        """
+        window = self.getWindow()
+
+        is_simulation = self.includeSimulationTab()
+        if is_simulation:
+            simulation_tab_obj: SimulationTab = self.getSimulationTab()
+            run_simulation_key = getKeys(simulation_tab_obj.getRunButton())
+
+        toolbar_menu_key = getKeys(self.getMenu())
+        update_plot_key = getKeys(self.getUpdatePlotButton())
+
+        window.bind("<F5>", update_plot_key)
+
+        while True:
+            event, self.values = window.read()
+            print('event:', event)
+
+            if event == sg.WIN_CLOSED or event == 'Exit':
+                break
+            menu_value = self.getValue(toolbar_menu_key)
+
+            if menu_value is not None:
+                if menu_value == "Parameters::Save":
+                    self.saveModelParameters()
+                elif menu_value == "Functions::Save":
+                    self.saveModelFunctions()
+                elif menu_value == "Results::Save":
+                    results_obj = self.getResultsObject()
+                    if isinstance(results_obj, GridResults):
+                        results_obj.saveResultsMetadata()
+                elif menu_value == "Variables::Save":
+                    self.saveModelVariables()
+                elif menu_value == "Static::Save Figure":
+                    self.saveFigure()
+                elif "Save Animated Figure" in menu_value:
+                    free_parameter_name = menu_value.split('::')[0]
+                    self.saveFigure(free_parameter_name)
+            elif fps_pre in event:
+                self.updatePlot()
+            elif cc_pre in event:
+                if ccs_pre in event:
+                    axis_name = event.split(' ')[-1].replace("_AXIS", '').replace('-', '')[0]
+                    self.updatePlotChoices(axis_name)
+                else:
+                    pass  # window.write_event_value(update_plot_key, None)
+            elif event == update_plot_key:
+                self.updatePlot()
+            elif is_simulation and event == run_simulation_key:
+                self.runSimulations()
+        window.close()
 
     def getPlotQuantities(self) -> PlotQuantities:
         """
@@ -2878,7 +2965,6 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
 
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve method from
         """
-        # noinspection PyTypeChecker
         analysis_tab: AnalysisTab = AnalysisTab.getInstances()[0]
         method_key = getKeys(analysis_tab.getFrequencyMethodElement())
         method = self.getValue(method_key)
@@ -2891,7 +2977,6 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
 
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve functional from
         """
-        # noinspection PyTypeChecker
         analysis_tab: AnalysisTab = AnalysisTab.getInstances()[0]
         functional_key = getKeys(analysis_tab.getFrequencyFunctionalElement())
         functional = self.getValue(functional_key)
@@ -2904,7 +2989,6 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
 
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve order from
         """
-        # noinspection PyTypeChecker
         analysis_tab: AnalysisTab = AnalysisTab.getInstances()[0]
         order_key = getKeys(analysis_tab.getMeanOrderElement())
         order = float(self.getValue(order_key))
@@ -2980,64 +3064,6 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
         parameter_slider = parameter_slider_obj.getSlider()
         slider_resolution = vars(parameter_slider)["Resolution"]
         return slider_resolution
-
-    def runWindow(self) -> None:
-        """
-        Run simulation window.
-        This function links each possible event to an action.
-        When an event is triggered, its corresponding action is executed.
-
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to run
-        """
-        # noinspection PyTypeChecker
-        window = self.getWindow()
-
-        is_simulation = self.includeSimulationTab()
-        if is_simulation:
-            # noinspection PyTypeChecker
-            simulation_tab_obj: SimulationTab = self.getSimulationTab()
-            run_simulation_key = getKeys(simulation_tab_obj.getRunButton())
-
-        toolbar_menu_key = getKeys(self.getMenu())
-        update_plot_key = getKeys(self.getUpdatePlotButton())
-
-        while True:
-            event, self.values = window.read()
-            print('event:', event)
-
-            if event == sg.WIN_CLOSED or event == 'Exit':
-                break
-            menu_value = self.getValue(toolbar_menu_key)
-
-            if menu_value is not None:
-                if menu_value == "Parameters::Save":
-                    self.saveModelParameters()
-                elif menu_value == "Functions::Save":
-                    self.saveModelFunctions()
-                elif menu_value == "Results::Save":
-                    results_obj = self.getResultsObject()
-                    if isinstance(results_obj, GridResults):
-                        results_obj.saveResultsMetadata()
-                elif menu_value == "Variables::Save":
-                    self.saveModelVariables()
-                elif menu_value == "Static::Save Figure":
-                    self.saveFigure()
-                elif "Save Animated Figure" in menu_value:
-                    free_parameter_name = menu_value.split('::')[0]
-                    self.saveFigure(free_parameter_name)
-            elif fps_pre in event:
-                self.updatePlot()
-            elif cc_pre in event:
-                if ccs_pre in event:
-                    axis_name = event.split(' ')[-1].replace("_AXIS", '').replace('-', '')[0]
-                    self.updatePlotChoices(axis_name)
-                else:
-                    window.write_event_value(update_plot_key, None)
-            elif event == update_plot_key:
-                self.updatePlot()
-            elif is_simulation and event == run_simulation_key:
-                self.runSimulations()
-        window.close()
 
     @staticmethod
     def updateProgressMeter(current_value: int, max_value: int, title: str) -> sg.OneLineProgressMeter:
@@ -3200,8 +3226,8 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
             "Logarithmic": "log"
         }
 
-        axis_aesthetics_tab: AxisAestheticsTab = AxisAestheticsTab.getInstances()[0]
-        colorbar_aesthetics_tab: ColorbarAestheticsTab = ColorbarAestheticsTab.getInstances()[0]
+        axis_aesthetics_tab = self.getAxisAestheticsTab()
+        colorbar_aesthetics_tab = self.getColorbarAestheticsTab()
 
         scale_type = {}
         scale_factor = {}
@@ -4159,8 +4185,11 @@ class PlotQuantities:
             if exists_nontimelike:
                 envelope_name = "None"
             else:
-                envelope_radio_group: EnvelopeRadioGroup = EnvelopeRadioGroup.getInstances(names=axis_name)
+                window_runner = self.getWindowRunner()
+                axis_quantity_frame = window_runner.getAxisQuantityFrames(names=axis_name)
+                envelope_radio_group = axis_quantity_frame.getAxisEnvelopeGroup()
                 chosen_radio = envelope_radio_group.getChosenRadio()
+
                 chosen_radio_text = vars(chosen_radio)["Text"]
                 envelope_name = chosen_radio_text
 
@@ -4325,8 +4354,11 @@ class PlotQuantities:
             if exists_nontimelike:
                 complex_name = "Real"
             else:
-                complex_radio_group: ComplexRadioGroup = ComplexRadioGroup.getInstances(names=axis_name)
+                window_runner = self.getWindowRunner()
+                axis_quantity_frame = window_runner.getAxisQuantityFrames(names=axis_name)
+                complex_radio_group = axis_quantity_frame.getAxisComplexGroup()
                 chosen_radio = complex_radio_group.getChosenRadio()
+
                 chosen_radio_text = vars(chosen_radio)["Text"]
                 complex_name = chosen_radio_text
 
@@ -4348,8 +4380,11 @@ class PlotQuantities:
             normalize_names = []
 
             try:
-                normalize_checkbox_group: NormalizeCheckboxGroup = NormalizeCheckboxGroup.getInstances(names=axis_name)
+                window_runner = self.getWindowRunner()
+                axis_quantity_frame = window_runner.getAxisQuantityFrames(names=axis_name)
+                normalize_checkbox_group = axis_quantity_frame.getAxisNormalizeGroup()
                 checked_checkboxes = normalize_checkbox_group.getCheckedCheckboxes()
+
                 valid_axis_names = self.getValidAxisNames()
 
                 for checked_checkbox in checked_checkboxes:
