@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from functools import partial
-from os.path import dirname, join
+from os.path import dirname, exists, isfile, join
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
-from zipfile import ZipFile
 
 # noinspection PyPep8Naming
 import PySimpleGUI as sg
@@ -18,8 +17,8 @@ from macros import (StoredObject, expression2png, formatQuantity, getTexImage,
                     recursiveMethod, unique)
 from numpy import ndarray
 from pint import Quantity
-from YML import (config_file_extensions, config_file_types, getDimensions,
-                 getStates, loadConfig, readLayout, readStates)
+from YML import (config_file_types, getDimensions, getStates, loadConfig,
+                 readLayout, readStates)
 
 from Layout.ChooseGraphLayoutWindow import ChooseGraphLayoutWindowRunner
 from Layout.ChooseParametersWindow import ChooseParametersWindowRunner
@@ -1217,7 +1216,7 @@ class MainWindow(TabbedWindow):
         """
         return self.function_names
 
-    def addFunctionNames(self, names: Union[str, Iterable[str]]) -> Union[str, Iterable[str]]:
+    def addFunctionNames(self, names: Union[str, Iterable[str]]) -> Union[str, List[str]]:
         """
         Add names of functions included in window.
 
@@ -1249,7 +1248,7 @@ class MainWindow(TabbedWindow):
         """
         return self.parameter_names
 
-    def addParameterNames(self, names: Union[str, Iterable[str]]) -> Union[str, Iterable[str]]:
+    def addParameterNames(self, names: Union[str, Iterable[str]]) -> Union[str, List[str]]:
         """
         Add names of parameters included in window.
 
@@ -1439,7 +1438,7 @@ class MainWindow(TabbedWindow):
         return tab
 
 
-class MainWindowRunner(WindowRunner):
+class MainWindowRunner(WindowRunner, MainWindow):
     """
     Runner for :class:`~Layout.MainWindow.MainWindow`.
 
@@ -1503,20 +1502,21 @@ class MainWindowRunner(WindowRunner):
             "functions": self.stem2name2func,
             "parameters": self.stem2name2param
         }
-        window = MainWindow(name, self, blueprints, stem2name2obj)
-        super().__init__(window)
-
-        self.getVariableNames = window.getVariableNames
-        self.getFunctionNames = window.getFunctionNames
+        MainWindow.__init__(
+            self, 
+            name, 
+            self, 
+            blueprints, 
+            stem2name2obj,
+        )
+        WindowRunner.__init__(self)
 
     def runWindow(self) -> None:
-        # noinspection PyTypeChecker
-        window_obj: MainWindow = self.getWindowObject()
-        window = window_obj.getWindow()
+        window = self.getWindow()
 
-        toolbar_menu_key = getKeys(window_obj.getMenu())
-        open_simulation_key = getKeys(window_obj.getGridSimulationButton())
-        generate_graph_key = getKeys(window_obj.getGenerateGraphButton())
+        toolbar_menu_key = getKeys(self.getMenu())
+        open_simulation_key = getKeys(self.getGridSimulationButton())
+        generate_graph_key = getKeys(self.getGenerateGraphButton())
 
         window.bind("<Control-r>", open_simulation_key)
         window.bind("<Control-g>", generate_graph_key)
@@ -1656,12 +1656,13 @@ class MainWindowRunner(WindowRunner):
         core_variable_names = set(map(Variable.getName, core_variable_objs))
         add_variable_name = core_variable_names.add
 
-        def getVariableNamesFromFunction(function_obj) -> List[str]:
-            return function_obj.getVariables(
+        def getVariableNamesFromFunction(function_obj: Function) -> List[str]:
+            variable_names = function_obj.getVariables(
                 expanded=True,
                 substitute_dependents=True,
                 return_type=str
             )
+            return variable_names
 
         core_function_names = set()
         add_function_name = core_function_names.add
@@ -1754,7 +1755,7 @@ class MainWindowRunner(WindowRunner):
                 is_valid_value = value in choices
             elif isinstance(element, sg.Checkbox):
                 is_valid_value = isinstance(value, bool)
-                
+
             if is_valid_value:
                 element.update(value)
 
@@ -2026,7 +2027,7 @@ class MainWindowRunner(WindowRunner):
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve filename from
         :param name: name of function to retrieve filename for
         """
-        function_row = FunctionRow.getInstances(names=name)
+        function_row: FunctionRow = FunctionRow.getInstances(names=name)
         combobox_key = getKeys(function_row.getChooseFileElement())
         filestem = self.getValue(combobox_key)
         return filestem
@@ -2149,7 +2150,7 @@ class MainWindowRunner(WindowRunner):
         parameter_row: ParameterRow = ParameterRow.getInstances(names=name)
         combobox_key = getKeys(parameter_row.getChooseFileElement())
         filestem = self.getValue(
-            combobox_key, 
+            combobox_key,
             combo_error=False
         )
         return filestem
@@ -2591,7 +2592,7 @@ class MainWindowRunner(WindowRunner):
         self,
         filepath: str = None,
         contents: dict = None
-    ) -> None:
+    ) -> bool:
         """
         Load and store initial conditions for variables from file.
 
@@ -2600,6 +2601,7 @@ class MainWindowRunner(WindowRunner):
             Defaults to letting user choose file.
             Only referenced if :paramref:`~Layout.MainWindow.loadInitialConditionsFromFile.contents` is None.
         :param contents: dictionary of contents for variables, preloaded from file
+        :returns: True if initial conditions were loaded successfully, false otherwise.
         """
         if contents is None:
             if filepath is None:
@@ -2616,6 +2618,12 @@ class MainWindowRunner(WindowRunner):
                 if filepath is None:
                     return None
 
+            if filepath is None:
+                return None
+            elif not exists(filepath) or not isfile(filepath):
+                sg.PopupError(f"Initial conditions not found at {filepath:s}")
+                return None
+            
             contents = loadConfig(filepath)
 
         for variable_name, variable_content in contents.items():
@@ -2626,7 +2634,7 @@ class MainWindowRunner(WindowRunner):
         self,
         filepath: str = None,
         contents: dict = None
-    ) -> None:
+    ) -> bool:
         """
         Load and store time-evolution types from file.
         Changes loaded variables to core and non-loaded variables to non-core.
@@ -2636,6 +2644,7 @@ class MainWindowRunner(WindowRunner):
             Defaults to letting user choose file.
             Only referenced if :paramref:`~Layout.MainWindow.loadTimeEvolutionTypesFromFile.contents` is None.
         :param contents: dictionary of contents for variables, preloaded from file
+        :returns: True if time-evolution types were loaded successfully, false otherwise.
         """
         if contents is None:
             if filepath is None:
@@ -2649,8 +2658,12 @@ class MainWindowRunner(WindowRunner):
                     file_types=file_types,
                     multiple_files=False
                 )
-                if filepath is None:
-                    return None
+            
+            if filepath is None:
+                return False
+            elif not exists(filepath) or not isfile(filepath):
+                sg.PopupError(f"Time-evolution types not found at {filepath:s}")
+                return False
 
             contents = loadConfig(filepath)
 
@@ -2664,6 +2677,8 @@ class MainWindowRunner(WindowRunner):
         for window_variable_name in window_variable_names:
             updated = window_variable_name in updated_variable_names
             self.setIsCoreVariable(window_variable_name, updated)
+        
+        return True
 
     def loadParametersFromFile(
         self,
@@ -2697,6 +2712,12 @@ class MainWindowRunner(WindowRunner):
                 )
                 if filepath is None:
                     return None
+            
+            if filepath is None:
+                return None
+            elif not exists(filepath) or not isfile(filepath):
+                sg.PopupError(f"Parameters not found at {filepath:s}")
+                return None
 
             contents = loadConfig(filepath)
 
@@ -2764,6 +2785,12 @@ class MainWindowRunner(WindowRunner):
                 )
                 if filepath is None:
                     return None
+            
+            if filepath is None:
+                return None
+            elif not exists(filepath) or not isfile(filepath):
+                sg.PopupError(f"Functions not found at {filepath:s}")
+                return None
 
             contents = loadConfig(filepath)
 
@@ -2816,11 +2843,15 @@ class MainWindowRunner(WindowRunner):
         variable_objs_filepath = join(folderpath, "Variable.json")
         parameter_objs_filepath = join(folderpath, "Parameter.json")
         function_objs_filepath = join(folderpath, "Function.json")
-
-        self.loadTimeEvolutionTypesFromFile(filepath=variable_objs_filepath)
-        self.loadInitialConditionsFromFile(filepath=variable_objs_filepath)
-        self.loadParametersFromFile(filepath=parameter_objs_filepath)
-        self.loadFunctionsFromFile(filepath=function_objs_filepath)
+        
+        if not self.loadTimeEvolutionTypesFromFile(filepath=variable_objs_filepath):
+            return None
+        if self.loadInitialConditionsFromFile(filepath=variable_objs_filepath) is None:
+            return None
+        if self.loadParametersFromFile(filepath=parameter_objs_filepath) is None:
+            return None
+        if self.loadFunctionsFromFile(filepath=function_objs_filepath) is None:
+            return None
 
     def getFreeParameterValues(
         self,
@@ -2860,6 +2891,7 @@ class MainWindowRunner(WindowRunner):
         """
         variable_objs = self.getVariables(is_core=True)
         variable_names = list(map(Variable.getName, variable_objs))
+        print("var_names:",  variable_names)
         model = self.getModel(variable_names=variable_names)
         model_parameter_names = model.getParameterNames()
 

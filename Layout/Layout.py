@@ -610,7 +610,7 @@ class CheckboxGroup(Row):
             elements=checkboxes,
             window=window
         )
-        
+
     def getCheckboxes(self) -> List[sg.Checkbox]:
         """
         Get checkboxes constituting group.
@@ -638,6 +638,7 @@ class CheckboxGroup(Row):
                 checked_checkboxes.append(checkbox)
 
         return checked_checkboxes
+
 
 class Window:
     """
@@ -918,36 +919,13 @@ class WindowRunner:
     :ivar getKeyList: pointer to :meth:`~Layout.Layout.Window.getKeyList`
     """
 
-    def __init__(self, window_obj: Window):
+    def __init__(self):
         """
         Constructor for :class:`~Layout.Layout.WindowRunner`.
 
         :param window_obj: :class:`~Layout.Layout.Window` to run
         """
-        self.window_obj = window_obj
-        self.window = None
         self.values = None
-
-        self.getName = window_obj.getName
-        self.getPrefix = window_obj.getPrefix
-        self.getKey = window_obj.getKey
-        self.getKeyList = window_obj.getKeyList
-
-    def getWindow(self) -> sg.Window:
-        """
-        Get PySimpleGUI Window for runner.
-
-        :param self: :class:`~Layout.Layout.WindowRunner` to retrieve window from
-        """
-        return self.getWindowObject().getWindow()
-
-    def getWindowObject(self) -> Window:
-        """
-        Get :class:`~Layout.Layout.Window` for runner.
-
-        :param self: :class:`~Layout.Layout.WindowRunner` to retrieve window from
-        """
-        return self.window_obj
 
     def getValue(self, key: str, combo_error: bool = True) -> Union[str, float]:
         """
