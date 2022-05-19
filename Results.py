@@ -780,7 +780,7 @@ class Results:
                     results_file_handler = self.getResultsFileHandler()
                     results_file = results_file_handler.getResultsFile(name=quantity_names)
                     single_results = results_file[quantity_names][index]
-                    
+
                     is_all_zero = not np.any(single_results)
                     if is_all_zero:
                         raise ValueError(f"numpy array {quantity_names:s} {index} contains only zeros... calculating values")
@@ -1067,12 +1067,46 @@ class ResultsFileHandler:
         stepcount: int = None,
         simulation_type: str = "grid"
     ) -> None:
+        """
+        Constructor for :class:`~Results.ResultsFileHandler`.
+
+        :param folderpath: root folderpath to save/load results
+        :param variable_names: collection of variable names to save/load results for
+        :param function_names: collection of function names to save/load results for
+        :param parameter_name2values: see :class:`~Results.Results`
+        :param stepcount: number of values in each simulation per variable.
+            Defaults to size of time array at first index for all parameters.
+        :param simulation_type: type of simulation, indicated how to organize results.
+            Must be "grid", "optimization".
+            "grid": filled, discrete of parameter values is simulated.
+            "optimization": simulations are optimized relative to dataset, for collection of parameters.
+        """
         assert isinstance(folderpath, str)
         self.folderpath = folderpath
-        self.name2file: Dict[str, h5py.File] = {}
+
+        assert isinstance(variable_names, Iterable)
+        for variable_name in variable_names:
+            assert isinstance(variable_name, str)
+        self.variable_names = variable_names
+
+        assert isinstance(function_names, Iterable)
+        for function_name in function_names:
+            assert isinstance(function_name, str)
+        self.function_names = function_names
+
+        assert isinstance(parameter_name2values, dict)
+        for parameter_name, parameter_values in parameter_name2values.items():
+            assert isinstance(parameter_name, str)
+            assert isinstance(parameter_values, ndarray)
+        self.parameter_name2values = parameter_name2values
+
+        assert isinstance(simulation_type, str)
+        self.simulation_type = simulation_type.lower()
 
         if stepcount is None:
-            time_results_filepath = self.getResultFilepath('t', index=())
+            parameter_count = len(parameter_name2values)
+            first_index = tuple(list(np.zeros(parameter_count)))
+            time_results_filepath = self.getResultFilepath('t', index=first_index)
             with h5py.File(time_results_filepath, 'r') as time_results_file:
                 time_results_dataset = time_results_file['t']
                 time_results_shape = time_results_dataset.shape
@@ -1084,16 +1118,13 @@ class ResultsFileHandler:
         else:
             assert isinstance(stepcount, int)
             self.stepcount = stepcount
-        self.variable_names = variable_names
-        self.function_names = function_names
-        self.parameter_name2values = parameter_name2values
-        
-        self.simulation_type = simulation_type.lower()
+
+        self.name2file: Dict[str, h5py.File] = {}
 
     def getSimulationType(self) -> str:
         """
         Get type of simulation executed to produce data.
-        
+
         :param self: :class:`~Results.ResultsFileHandler` to retrieve type from
         """
         return self.simulation_type
@@ -1156,7 +1187,7 @@ class ResultsFileHandler:
         )
 
     def getFolderpath(
-        self, 
+        self,
         index: Union[tuple, Tuple[int, ...]] = None,
     ) -> str:
         """
@@ -1180,7 +1211,7 @@ class ResultsFileHandler:
         elif simulation_type == "optimization":
             subfolder = str(index[0])
             folderpath = join(root_folderpath, subfolder)
-        
+
         return folderpath
 
     def getResultFilepath(
@@ -1358,9 +1389,24 @@ class ResultsFileHandler:
         :param index: see :meth:`~Results.Results.getResultsOverTime`
         :param name: name of quantity to set results for
         :param result: single 1D array of results for quantity
-        :param close_files: set True to immediately close any opened files.
+        :param close_files: set True to immediately close any opened files;
+            Set False to leave files open, and close manually later.
         """
+        assert isinstance(index, tuple)
+        for simulation_index in index:
+            assert isinstance(simulation_index, int)
+
+        stepcount = self.getStepcount()
+        assert result.size == stepcount
+
         results_file = self.getResultsFile(name, index=index)
-        results_file[name][index] = result
+
+        simulation_type = self.getSimulationType()
+        if simulation_type == "grid":
+            array_index = index
+        elif simulation_type == "optimization":
+            array_index = index[1]
+
+        results_file[name][array_index] = result
         if close_files:
             self.closeResultsFiles(names=name)
