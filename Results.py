@@ -171,6 +171,7 @@ class Results:
         model: Model,
         parameter_name2values: Dict[str, ndarray],
         folderpath: str,
+        simulation_type: str,
         transform_config_filepath: str = "transforms/transforms.json",
         envelope_config_filepath: str = "transforms/envelopes.json",
         functional_config_filepath: str = "transforms/functionals.json",
@@ -194,7 +195,8 @@ class Results:
             variable_names=variable_names,
             function_names=function_names,
             stepcount=stepcount,
-            parameter_name2values=parameter_name2values
+            parameter_name2values=parameter_name2values,
+            simulation_type=simulation_type
         )
 
         transform_config = loadConfig(transform_config_filepath)
@@ -802,7 +804,7 @@ class Results:
                             quantity_names
                         )
                     elif quantity_names in results_file_handler.getFunctionNames():
-                        single_results = results_file_handler.getFunctionResults(
+                        single_results = self.getFunctionResults(
                             index,
                             quantity_names
                         )
@@ -912,7 +914,8 @@ class GridResults(Results):
             envelope_config_filepath=envelope_config_filepath,
             functional_config_filepath=functional_config_filepath,
             complex_config_filepath=complex_config_filepath,
-            stepcount=stepcount
+            stepcount=stepcount,
+            simulation_type="grid"
         )
 
     def getResultsOverTimePerParameter(
@@ -1110,7 +1113,7 @@ class ResultsFileHandler:
             with h5py.File(time_results_filepath, 'r') as time_results_file:
                 time_results_dataset = time_results_file['t']
                 time_results_shape = time_results_dataset.shape
-                time_result_index = tuple(np.zeros(len(time_results_shape) - 1, dtype=np.int64))
+                time_result_index = tuple(np.zeros(len(time_results_shape) - 1, dtype=np.int32))
                 time_result = time_results_dataset[time_result_index]
 
             time_result_size = time_result.size
@@ -1394,7 +1397,7 @@ class ResultsFileHandler:
         """
         assert isinstance(index, tuple)
         for simulation_index in index:
-            assert isinstance(simulation_index, int)
+            assert isinstance(simulation_index, (int, np.integer))
 
         stepcount = self.getStepcount()
         assert result.size == stepcount
