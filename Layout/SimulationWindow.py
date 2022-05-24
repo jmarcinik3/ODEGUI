@@ -13,7 +13,6 @@ from itertools import product
 from os.path import basename, join
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple, Union
-# noinspection PyPep8Naming
 from zipfile import ZipFile
 
 import dill
@@ -23,8 +22,8 @@ import numpy as np
 import PySimpleGUI as sg
 from CustomFigure import getFigure
 from Function import Model
-from macros import (StoredObject, formatValue, getIndicies, getTexImage,
-                    recursiveMethod, removeAtIndicies, unique)
+from macros import (StoredObject, formatValue, getTexImage, recursiveMethod,
+                    unique)
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from numpy import ndarray
@@ -35,13 +34,11 @@ from sympy.core import function
 from YML import (config_file_types, getDimensions, getStates, loadConfig,
                  saveConfig)
 
-from Layout.Layout import (CheckboxGroup, Element, Frame, Layout, RadioGroup,
-                           Row, Tab, TabbedWindow, TabGroup, WindowRunner,
-                           getKeys, storeElement)
-
-cc_pre = "CANVAS CHOICE"
-ccs_pre = ' '.join((cc_pre, "SPECIE"))
-fps_pre = "FREE_PARAMETER SLIDER"
+from Layout.AxisQuantity import (AxisQuantity, AxisQuantityTabGroup,
+                                 ComplexRadioGroup, EnvelopeRadioGroup,
+                                 PlotQuantities, cc_pre, ccs_pre, fps_pre)
+from Layout.Layout import (Element, Layout, Row, Tab, TabbedWindow, TabGroup,
+                           WindowRunner, getKeys, storeElement)
 
 
 def drawFigure(canvas: tk.Canvas, figure: Figure) -> FigureCanvasTkAgg:
@@ -80,11 +77,11 @@ def calculateResolution(
     :param maximum: maximum value
     :param step_count: number of values from minimum to maximum, inclusive
     """
-    range_values = maximum - minimum
     distinct_values = step_count - 1
     if distinct_values == 0:
         return 0
     elif distinct_values >= 1:
+        range_values = maximum - minimum
         return range_values / distinct_values
     else:
         raise ValueError("count must be int at least 1")
@@ -188,9 +185,13 @@ class ParameterSlider(Element):
         """
         Get resolution of parameter values.
 
-        :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve resolution of
+        :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve resolution from
         """
-        return calculateResolution(self.getMinimum(), self.getMaximum(), self.getStepCount())
+        minimum = self.getMinimum()
+        maximum = self.getMaximum()
+        stepcount = self.getStepCount()
+        resolution = calculateResolution(minimum, maximum, stepcount)
+        return resolution
 
     def getNameLabel(self) -> Union[sg.Image, sg.Text]:
         """
@@ -397,8 +398,8 @@ class ColorbarAestheticsTab(Tab):
         :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab is stored in.
         """
         Tab.__init__(
-            self, 
-            name=name, 
+            self,
+            name=name,
             window=window
         )
 
@@ -597,8 +598,8 @@ class AxisAestheticsTab(Tab):
         :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab is stored in.
         """
         Tab.__init__(
-            self, 
-            name=name, 
+            self,
+            name=name,
             window=window
         )
 
@@ -781,11 +782,11 @@ class AestheticsTabGroup(TabGroup):
         axis_aesthetics_tab_name = "Axis"
         axis_aesthetics_tab = AxisAestheticsTab("Axis", window)
         self.getAxisAestheticsTab = partial(self.getTabs, names=axis_aesthetics_tab_name)
-        
+
         colorbar_aesthetics_tab_name = "Colorbar"
         colorbar_aesthetics_tab = ColorbarAestheticsTab("Colorbar", window)
         self.getColorbarAestheticsTab = partial(self.getTabs, names=colorbar_aesthetics_tab_name)
-        
+
         tabs = [
             axis_aesthetics_tab,
             colorbar_aesthetics_tab
@@ -793,1112 +794,7 @@ class AestheticsTabGroup(TabGroup):
         super().__init__(tabs, name=name)
 
 
-class AxisQuantityElement:
-    def __init__(
-        self,
-        quantity_count_per_axis: int = 2,
-        transform_names: List[str] = None,
-        envelope_names: List[str] = None,
-        functional_names: List[str] = None,
-        complex_names: List[str] = None,
-        normalize_over_axis_names: List[str] = None,
-        include_none: bool = True,
-        include_continuous: bool = True,
-        include_discrete: bool = True,
-        include_scalefactor: bool = True,
-        window: SimulationWindow = None
-    ):
-        """
-        Constructor for :class:`~Layout.SimulationWindow.AxisQuantityElement`.
-
-        :param quantity_count_per_axis: number of possible quantities to select per axis
-        :param transform_names: collection of names for math transforms to perform on results.
-            Defaults to empty list.
-        :param envelope_names: collection of names for envelopes to perform on results.
-            Defaults to empty list.
-        :param functional_names: collection of names for functionals to perform on results.
-            Defaults to empty list.
-        :param complex_names: collection of names for complex-reduction methods to perform on results.
-            Defaults to empty list.
-        :param normalize_over_axis_names: names of axes to normalize data over.
-            Defaults to empty list;
-        :param include_normalize: set True to include element to normalize data.
-            Set False otherwise.
-        :param include_none: set True to allow user to choose "None" for quantity.
-            Set False otherwise.
-        :param include_continuous: set True to allow user to choose continuous-like quantities.
-            Set False otherwise.
-        :param include_discrete: set True to allow user to choose discrete-like quantities.
-            Set False otherwise.
-        :param include_discrete: set True to allow user to choose scale factor to proportional quantities.
-            Set False otherwise.
-        """
-        if window is not None:
-            self.getPlotChoices = window.getPlotChoices
-
-        self.quantity_count_per_axis = quantity_count_per_axis
-        self.include_none = include_none
-        self.include_continuous = include_continuous
-        self.include_discrete = include_discrete
-        self.include_scalefactor = include_scalefactor
-
-        self.transform_names = [] if transform_names is None else transform_names
-        self.envelope_names = [] if envelope_names is None else envelope_names
-        self.functional_names = [] if functional_names is None else functional_names
-        self.complex_names = [] if complex_names is None else complex_names
-        self.normalize_over_axis_names = [] if normalize_over_axis_names is None else normalize_over_axis_names
-
-    def getQuantityCountPerAxis(self) -> int:
-        """
-        Get number of possible quantities to select per axis.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityElement` to retrieve count from
-        """
-        return self.quantity_count_per_axis
-
-    def getTransformNames(self) -> List[str]:
-        """
-        Get names of transforms.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityElement` to retrieve names from
-        """
-        return self.transform_names
-
-    def getEnvelopeNames(self) -> List[str]:
-        """
-        Get names of envelope.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityElement` to retrieve names from
-        """
-        return self.envelope_names
-
-    def getFunctionalNames(self) -> List[str]:
-        """
-        Get names of functionals.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityElement` to retrieve names from
-        """
-        return self.functional_names
-
-    def getComplexNames(self) -> List[str]:
-        """
-        Get names of complex-reduction methods.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityElement` to retrieve names from
-        """
-        return self.complex_names
-
-    def getNormalizeOverAxisNames(self) -> List[str]:
-        """
-        Get names of axes to normalize data over.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityElement` to retrieve names from
-        """
-        return self.normalize_over_axis_names
-
-    def includeScaleFactor(self) -> bool:
-        """
-        Get whether to include element to scale data along axis.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityElement` to retrieve boolean from
-        """
-        return self.include_scalefactor
-
-    def includeNone(self) -> bool:
-        """
-        Get whether to include "None" choice for quantity.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityElement` to retrieve boolean from
-        """
-        return self.include_none
-
-    def includeContinuous(self) -> bool:
-        """
-        Get whether to include continuous (timelike) choice(s) for quantity.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityElement` to retrieve boolean from
-        """
-        return self.include_continuous
-
-    def includeDiscrete(self) -> bool:
-        """
-        Get whether to include dicrete (parameterlike) choice(s) for quantity.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityElement` to retrieve boolean from
-        """
-        return self.include_discrete
-
-
-class AxisQuantityTabGroup(TabGroup, AxisQuantityElement):
-    def __init__(
-        self,
-        name: str,
-        window: SimulationWindow,
-        **kwargs
-    ):
-        """
-        Constructor for :class:`~Layout.SimulationWindow.AxisQuantityTabGroup`.
-
-        :param name: name of tab
-        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab is stored in
-        :param kwargs: additional arguments to input into :class:`~Layout.SimulationWindow.AxisQuantityElement`
-        """
-        AxisQuantityElement.__init__(self, **kwargs)
-
-        self.name2frame = {}
-
-        quantity_count_per_axis = self.getQuantityCountPerAxis()
-        transform_names = self.getTransformNames()
-        envelope_names = self.getEnvelopeNames()
-        functional_names = self.getFunctionalNames()
-        complex_names = self.getComplexNames()
-
-        axis_names = ('x', 'y', 'z', 'c', 'C', 'X', 'Y')
-        numerical_axis_names = ('x', 'y', 'z', 'c', 'C')
-        normalize_over_axis_names = axis_names
-        standard_tab_frames = []
-        nonstandard_tab_frames = []
-        for axis_name in axis_names:
-            if axis_name in numerical_axis_names:
-                axis_quantity_count = quantity_count_per_axis
-                axis_transform_names = transform_names
-                axis_envelope_names = envelope_names
-                axis_functional_names = functional_names
-                axis_complex_names = complex_names
-                axis_include_continuous = True
-                axis_normalize_over_axis_names = normalize_over_axis_names
-                axis_include_scalefactor = True
-            else:
-                axis_quantity_count = 1
-                axis_transform_names = []
-                axis_envelope_names = []
-                axis_functional_names = []
-                axis_complex_names = []
-                axis_include_continuous = False
-                axis_normalize_over_axis_names = []
-                axis_include_scalefactor = False
-
-            axis_include_none = axis_name not in ('x', 'y')
-            axis_include_discrete = axis_name not in ('C', )
-
-            axis_quantity_frame = AxisQuantityFrame(
-                axis_name,
-                window,
-                quantity_count_per_axis=axis_quantity_count,
-                include_none=axis_include_none,
-                include_continuous=axis_include_continuous,
-                include_discrete=axis_include_discrete,
-                normalize_over_axis_names=axis_normalize_over_axis_names,
-                include_scalefactor=axis_include_scalefactor,
-                transform_names=axis_transform_names,
-                envelope_names=axis_envelope_names,
-                functional_names=axis_functional_names,
-                complex_names=axis_complex_names
-            )
-            self.name2frame[axis_name] = axis_quantity_frame
-
-            if axis_name in ('x', 'y', 'z', 'c'):
-                standard_tab_frames.append(axis_quantity_frame)
-            else:
-                nonstandard_tab_frames.append(axis_quantity_frame)
-
-        standard_tab = AxisQuantityTab(
-            "Standard",
-            window,
-            axis_quantity_frames=standard_tab_frames
-        )
-        nonstandard_tab = AxisQuantityTab(
-            "Non-Standard",
-            window,
-            axis_quantity_frames=nonstandard_tab_frames
-        )
-
-        tabs = [
-            standard_tab,
-            nonstandard_tab
-        ]
-        TabGroup.__init__(self, tabs, name=name)
-
-    def getAxisQuantityFrames(
-        self,
-        names: Union[str, List[str]],
-    ) -> Union[AxisQuantityFrame, List[AxisQuantityFrame]]:
-        name2frame = self.name2frame
-
-        def get(name: str):
-            return name2frame[name]
-
-        return recursiveMethod(
-            args=names,
-            base_method=get,
-            valid_input_types=str,
-            output_type=dict,
-            default_args=list(name2frame.keys())
-        )
-
-
-class AxisQuantityTab(Tab):
-    """
-    This class contains the layout for the plotting tab in the simulation window.
-        # . Header row to identify functions for input
-        # . Axis name label for each axis to identify which axis input affects
-        # . Combobox to input quantity species for each axis
-        # . Combobox to input quantity for each axis
-        # . Combobox to input transform type for each axis
-    """
-
-    def __init__(
-        self,
-        name: str,
-        window: SimulationWindow,
-        axis_quantity_frames: List[AxisQuantityFrame]
-    ) -> None:
-        """
-        Constructor for :class:`~Layout.SimulationWindow.AxisQuantityTab`.
-
-        :param name: name of tab
-        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab is stored in
-        :param frames: frames contained in tab
-        """
-        Tab.__init__(self, name, window)
-
-        self.axis_quantity_frames = axis_quantity_frames
-
-    def getFrames(self) -> List[AxisQuantityFrame]:
-        """
-        Get axis-quantity frames stored in tab.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityTab` to retrieve frames from
-        """
-        return self.axis_quantity_frames
-
-    def getLayout(self) -> List[List[sg.Element]]:
-        """
-        Get layout for standard-axis plotting tab.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityTab` to retrieve layout from
-        """
-        frame_objs = self.getFrames()
-        frames = [
-            frame_obj.getFrame()
-            for frame_obj in frame_objs
-        ]
-
-        frame_layout = [
-            [frame]
-            for frame in frames
-        ]
-        layout = [[sg.Column(
-            frame_layout,
-            scrollable=True,
-            vertical_scroll_only=True,
-            size=(None, 600)
-        )]]
-
-        return layout
-
-
-class AxisQuantityFrame(Frame, AxisQuantityElement):
-    def __init__(
-        self,
-        name: str,
-        window: SimulationWindow,
-        **kwargs
-    ) -> None:
-        """
-        Constructor for :class:`~Layout.SimulationWindow.AxisQuantityFrame`.
-
-        :param name: name of axis
-        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that frame is stored in
-        :param kwargs: additional arguments to pass into :class:`~Layout.SimulationWindow.AxisQuantityElement`
-        """
-        Frame.__init__(self, name, window)
-        AxisQuantityElement.__init__(
-            self,
-            window=window,
-            **kwargs,
-        )
-
-        parameter_names = self.getPlotChoices(species="Parameter")
-        parameter_count = len(parameter_names)
-        self.parameter_functional_count = min(2, parameter_count)
-        assert self.parameter_functional_count <= parameter_count
-
-    def getParameterFunctionalCount(self) -> int:
-        """
-        Get max number of functionals to perform over parameters.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retreive number from
-        """
-        return self.parameter_functional_count
-
-    @storeElement
-    def getAxisTransformElement(self) -> sg.InputCombo:
-        """
-        Get element to take user input for tranform.
-        This allows user to choose which transform to perform on plot quantities.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retrieve element from
-        """
-        transform_names = self.getTransformNames()
-        if len(transform_names) >= 1:
-            name = self.getName()
-
-            return sg.InputCombo(
-                values=transform_names,
-                default_value=transform_names[0],
-                tooltip=f"Choose transform to perform on {name:s}-axis of plot",
-                enable_events=False,
-                size=self.getDimensions(name="transform_type_combobox"),
-                key=f"{cc_pre:s} TRANSFORM {name:s}_AXIS"
-            )
-        else:
-            return None
-
-    @storeElement
-    def getAxisFunctionalElement(self) -> sg.InputCombo:
-        """
-        Get element to take user input for an axis functional.
-        This allows user to choose which type of functional to calculate for a plot quantity (e.g. frequency, amplitude).
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retrieve element from
-        """
-        functional_names = self.getFunctionalNames()
-        if len(functional_names) >= 1:
-            name = self.getName()
-
-            default_value = functional_names[0]
-            return sg.InputCombo(
-                values=functional_names,
-                default_value=default_value,
-                tooltip=f"Choose functional to perform on {name:s}-axis of plot",
-                enable_events=False,
-                size=self.getDimensions(name="axis_functional_combobox"),
-                key=f"-{cc_pre:s} FUNCTIONAL {name:s}_AXIS-"
-            )
-        else:
-            return None
-
-    @storeElement
-    def getAxisNormalizeGroup(self) -> NormalizeCheckboxGroup:
-        """
-        Get element to take user input for whether to normalize axis data.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retrieve element from
-        """
-        normalize_over_axis_names = self.getNormalizeOverAxisNames()
-        if len(normalize_over_axis_names) >= 1:
-            name = self.getName()
-            window_obj = self.getWindowObject()
-
-            normalize_checkbox_group = NormalizeCheckboxGroup(
-                name=name,
-                other_axis_names=normalize_over_axis_names,
-                window=window_obj
-            )
-            return normalize_checkbox_group
-        else:
-            return None
-
-    @storeElement
-    def getAxisComplexGroup(self) -> ComplexRadioGroup:
-        """
-        Get element to take user input for complex-reduction method (e.g. "Magnitude", "Phase").
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retrieve element from
-        """
-        complex_names = self.getComplexNames()
-        if len(complex_names) >= 1:
-            axis_name = self.getName()
-            window_obj = self.getWindowObject()
-
-            complex_radio_group = ComplexRadioGroup(
-                axis_name=axis_name,
-                window=window_obj,
-                complex_names=complex_names
-            )
-            return complex_radio_group
-        else:
-            return None
-
-    @storeElement
-    def getAxisEnvelopeGroup(self) -> EnvelopeRadioGroup:
-        """
-        Get element to take user input for envelope (e.g. "Amplitude").
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retrieve element from
-        """
-        envelope_names = self.getEnvelopeNames()
-        if len(envelope_names) >= 1:
-            axis_name = self.getName()
-            window_obj = self.getWindowObject()
-
-            envelope_radio_group = EnvelopeRadioGroup(
-                axis_name=axis_name,
-                window=window_obj,
-                envelope_names=envelope_names
-            )
-            return envelope_radio_group
-        else:
-            return None
-
-    @storeElement
-    def getScaleFactorElement(self) -> sg.Spin:
-        """
-        Get element that allows user to input scale factor.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retrieve element from
-        """
-        include_scalefactor = self.includeScaleFactor()
-        if include_scalefactor:
-            name = self.getName()
-            values = [f"1e{int(exponent):d}" for exponent in np.linspace(-24, 24, 49)]
-
-            return sg.Spin(
-                values=values,
-                initial_value="1e0",
-                tooltip=f"Choose scale factor for {name:s}-axis. Data is divided by this factor.",
-                size=self.getDimensions(name="scale_factor_spin"),
-                key=f"-SCALE FACTOR {name:s}_AXIS-"
-            )
-        else:
-            return None
-
-    @storeElement
-    def getParameterFunctionalRow(self, index: int) -> ParameterFunctionalRow:
-        """
-        Get element to take user input for functional over parameters.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retrieve element from
-        :param index: index of functional row within collection of functionals over parameters
-        """
-        parameter_names = self.getPlotChoices(species="Parameter")
-        parameter_count = len(parameter_names)
-        functional_names = self.getFunctionalNames()
-        functional_count = len(functional_names)
-        if parameter_count >= 1 and functional_count >= 1:
-            name = self.getName()
-            window_obj = self.getWindowObject()
-
-            functional_row = ParameterFunctionalRow(
-                name,
-                index,
-                window=window_obj,
-                functional_names=functional_names
-            )
-            return functional_row
-        else:
-            return None
-
-    @storeElement
-    def getParameterFunctionalRows(self) -> List[ParameterFunctionalRow]:
-        """
-        Get element to take user input for functionals over parameters.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retrieve element from
-        """
-        count = self.parameter_functional_count
-
-        parameter_names = self.getPlotChoices(species="Parameter")
-        parameter_count = len(parameter_names)
-        assert count <= parameter_count
-
-        functional_names = self.getFunctionalNames()
-        functional_count = len(functional_names)
-        if functional_count >= 1:
-            parameter_functional_rows = [
-                self.getParameterFunctionalRow(index)
-                for index in range(count)
-            ]
-            return parameter_functional_rows
-        else:
-            return None
-
-    def getLayout(self) -> List[List[sg.Element]]:
-        """
-        Get frame that allows user input for a single axis.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retrieve frame from
-        """
-        name = self.getName()
-        parameter_names = self.getPlotChoices(species="Parameter")
-        parameter_count = len(parameter_names)
-
-        quantity_count_per_axis = self.getQuantityCountPerAxis()
-        include_none = self.includeNone()
-        include_continuous = self.includeContinuous()
-        include_discrete = self.includeDiscrete()
-        window_obj = self.getWindowObject()
-
-        rows = []
-
-        envelope_group = self.getAxisEnvelopeGroup()
-        if envelope_group is not None:
-            envelope_row_elements = [
-                sg.Text("Envelope:"),
-                *envelope_group.getRadios()
-            ]
-            rows.append(Row(elements=envelope_row_elements))
-
-        transform_element = self.getAxisTransformElement()
-        if transform_element is not None:
-            transform_row_elements = [
-                sg.Text("Transform:"),
-                transform_element
-            ]
-        else:
-            transform_row_elements = []
-
-        functional_element = self.getAxisFunctionalElement()
-        if functional_element is not None:
-            functional_row_elements = [
-                sg.Text("Functional:"),
-                functional_element
-            ]
-        else:
-            functional_row_elements = []
-
-        row_elements = [
-            *transform_row_elements,
-            *functional_row_elements
-        ]
-        if len(row_elements) >= 1:
-            rows.append(Row(elements=row_elements))
-
-        complex_group = self.getAxisComplexGroup()
-        if complex_group is not None:
-            complex_row_elements = [
-                sg.Text("Complex:"),
-                *complex_group.getRadios()
-            ]
-            rows.append(Row(elements=complex_row_elements))
-
-        for index in range(quantity_count_per_axis):
-            include_none_per_quantity = index != 0 or include_none
-            axis_row = AxisQuantityRow(
-                name,
-                window=window_obj,
-                index=index,
-                include_none=include_none_per_quantity,
-                include_continuous=include_continuous,
-                include_discrete=include_discrete
-            )
-            rows.append(axis_row)
-
-        scale_factor_element = self.getScaleFactorElement()
-        if scale_factor_element is not None:
-            scale_factor_row_elements = [
-                sg.Text("Scale Factor:"),
-                scale_factor_element
-            ]
-        else:
-            scale_factor_row_elements = []
-
-        parameter_functional_rows = self.getParameterFunctionalRows()
-        if parameter_functional_rows is not None:
-            rows.extend(parameter_functional_rows)
-
-        normalize_checkbox_group = self.getAxisNormalizeGroup()
-        if normalize_checkbox_group is not None:
-            normalize_checkboxes = normalize_checkbox_group.getCheckboxes()
-            normalize_row_elements = [
-                sg.Text("Normalize:"),
-                *normalize_checkboxes
-            ]
-        else:
-            normalize_row_elements = []
-
-        row_elements = [
-            *normalize_row_elements,
-            *scale_factor_row_elements
-        ]
-        if len(row_elements) >= 1:
-            rows.append(Row(elements=row_elements))
-
-        layout = Layout(rows).getLayout()
-        return layout
-
-
-class ParameterFunctionalRow(Row, AxisQuantityElement, StoredObject):
-    def __init__(
-        self,
-        axis_name: str,
-        index: int,
-        window: SimulationWindow,
-        **kwargs
-    ) -> None:
-        """
-        Constructor for :class:`~Layout.SimulationWindow.ParameterFunctionalRow`.
-
-        :param axis_name: name of axis associated with row
-        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that group is stored in
-        :param index: index of functional row within collection of functionals over parameters
-        :param kwargs: additional arguments to pass into :class:`~Layout.SimulationWindow.AxisQuantityElement`
-        :
-        """
-        name = axis_name + str(index)
-        Row.__init__(self, name, window=window)
-        AxisQuantityElement.__init__(
-            self,
-            window=window,
-            **kwargs
-        )
-        StoredObject.__init__(self, name)
-
-        self.axis_name = axis_name
-
-        functional_element = self.getParameterFunctionalElement()
-        parameter_group = self.getParameterFunctionalGroup()
-        elements = [
-            sg.Text("Functional:"),
-            functional_element,
-            sg.Text("Over:"),
-            *parameter_group.getElements()
-        ]
-
-        if None not in elements:
-            self.addElements(elements)
-
-    def getAxisName(self) -> str:
-        """
-        Get name of axis.
-
-        :param self: :class:`~Layout.SimulationWindow.ParameterFunctionRow` to retrieve name from
-        """
-        return self.axis_name
-
-    @storeElement
-    def getParameterFunctionalElement(self) -> sg.InputCombo:
-        """
-        Get element to take user input for a second functional over multiple parameters.
-        This allows user to choose which type of functional to calculate for a plot quantity (e.g. frequency, amplitude).
-
-        :param self: :class:`~Layout.SimulationWindow.ParameterFunctionalRow` to retrieve element from
-        """
-        functional_names = self.getFunctionalNames()
-        if len(functional_names) >= 1:
-            axis_name = self.getAxisName()
-            name = self.getName()
-
-            default_value = functional_names[0]
-            return sg.InputCombo(
-                values=functional_names,
-                default_value=default_value,
-                tooltip=f"Choose functional to perform on {axis_name:s}-axis of plot over chosen parameters",
-                enable_events=False,
-                size=self.getDimensions(name="axis_functional_combobox"),
-                key=f"-{cc_pre:s} MULTIFUNCTIONAL {name:s}_AXIS-"
-            )
-        else:
-            return None
-
-    @storeElement
-    def getParameterFunctionalGroup(self) -> ParameterFunctionalCheckboxGroup:
-        """
-        Get element to take user input for whether to normalize axis data.
-
-        :param self: :class:`~Layout.SimulationWindow.ParameterFunctionalRow` to retrieve element from
-        """
-        parameter_names = self.getPlotChoices(species="Parameter")
-        if len(parameter_names) >= 1:
-            name = self.getName()
-            window_obj = self.getWindowObject()
-
-            functional_checkbox_group = ParameterFunctionalCheckboxGroup(
-                name=name,
-                parameter_names=parameter_names,
-                window=window_obj
-            )
-            return functional_checkbox_group
-        else:
-            return None
-
-
-class EnvelopeRadioGroup(RadioGroup):
-    def __init__(
-        self,
-        axis_name: str,
-        window: SimulationWindow,
-        envelope_names: List[str] = None
-    ):
-        """
-        Constructor for :class:`~Layout.SimulationWindow.EnvelopeRadioGroup`.
-
-        :param axis_name: name of axis associated with group
-        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that group is stored in
-        :param envelope_names: collection of names for envelopes (e.g. ["None", "Ampltude"]).
-            Defaults to ["None"].
-        """
-        group_id = f"-ENVELOPE {axis_name:s}_AXIS-"
-
-        RadioGroup.__init__(
-            self,
-            radios=[],
-            name=axis_name,
-            group_id=group_id,
-            window=window
-        )
-
-        if envelope_names is None:
-            self.envelope_names = ["None"]
-        else:
-            self.envelope_names = envelope_names
-
-        for envelope_name in envelope_names:
-            radio = self.getEnvelopeRadio(envelope_name)
-            self.addElements(radio)
-
-    @storeElement
-    def getEnvelopeRadio(
-        self,
-        envelope_name: str,
-        default_name: str = "None"
-    ) -> sg.Radio:
-        """
-        Get element to take user input for envelope (individual).
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retrieve element from
-        :param envelope_name: name envelope type
-        :param default_name: name of default radio to be set true
-        """
-        axis_name = self.getName()
-        is_default = envelope_name == default_name
-        radio_group_id = self.getGroupId()
-        radio_key = radio_group_id + f"{envelope_name.upper():s}-"
-
-        radio = sg.Radio(
-            text=envelope_name,
-            tooltip=f"Choose envelope to perform on {axis_name:s}-axis of plot",
-            group_id=radio_group_id,
-            default=is_default,
-            key=radio_key
-        )
-        return radio
-
-
-class ComplexRadioGroup(RadioGroup, StoredObject):
-    def __init__(
-        self,
-        axis_name: str,
-        window: SimulationWindow,
-        complex_names: List[str] = None
-    ):
-        """
-        Constructor for :class:`~Layout.SimulationWindow.ComplexRadioGroup`.
-
-        :param axis_name: name of axis associated with group
-        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that group is stored in
-        :param complex_names: collection of names for complex-reduction methods (e.g. "Magnitude", "Phase").
-            Defaults to empty list.
-        """
-        group_id = f"-COMPLEX {axis_name:s}_AXIS-"
-
-        RadioGroup.__init__(
-            self,
-            radios=[],
-            name=axis_name,
-            group_id=group_id,
-            window=window
-        )
-        StoredObject.__init__(self, axis_name)
-
-        if complex_names is None:
-            self.complex_names = []
-        else:
-            self.complex_names = complex_names
-
-        for complex_name in complex_names:
-            radio = self.getComplexRadio(complex_name)
-            self.addElements(radio)
-
-    @storeElement
-    def getComplexRadio(
-        self,
-        complex_name: str,
-        default_name: str = "Real"
-    ) -> sg.Radio:
-        """
-        Get element to take user input for complex system (individual).
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retrieve element from
-        :param complex_name: name of complex-reduction method
-        :param default_name: name of default radio to be set true
-        """
-        axis_name = self.getName()
-        is_default = complex_name == default_name
-        radio_group_id = self.getGroupId()
-        radio_key = radio_group_id + f"{complex_name.upper():s}-"
-
-        radio = sg.Radio(
-            text=complex_name,
-            tooltip=f"Choose complex-reduction method to perform on {axis_name:s}-axis of plot",
-            group_id=radio_group_id,
-            default=is_default,
-            key=radio_key
-        )
-        return radio
-
-
-class NormalizeCheckboxGroup(CheckboxGroup, StoredObject):
-    def __init__(
-        self,
-        name: str,
-        window: SimulationWindow,
-        other_axis_names: Iterable[str] = None
-    ) -> None:
-        """
-        Constructor for :class:`~Layout.SimulationWindow.AxisNormalizeCheckboxGroup`.
-
-        :param name: name of axis to normalize from
-        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that group is stored in
-        :param other_axis_names: names of other axes to normalize over.
-            Defaults to empty list.
-        """
-        if other_axis_names is None:
-            self.other_axis_names = []
-        else:
-            assert isinstance(other_axis_names, Iterable)
-            for other_axis_name in other_axis_names:
-                assert isinstance(other_axis_name, str)
-            self.other_axis_names = list(other_axis_names)
-
-        StoredObject.__init__(self, name)
-
-        normalize_group_checkboxes = [
-            self.getNormalizeElement(other_axis_name)
-            for other_axis_name in other_axis_names
-        ]
-
-        CheckboxGroup.__init__(
-            self,
-            checkboxes=normalize_group_checkboxes,
-            window=window,
-        )
-
-    def getOtherAxisNames(self) -> List[str]:
-        """
-        Get collection of other axis names to normalize data over.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisNormalizeCheckboxGroup` to retrieve names from
-        """
-        return self.other_axis_names
-
-    @storeElement
-    def getNormalizeElement(self, name: str) -> sg.Checkbox:
-        """
-        Get element to allow user to normalize data over another axis.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisNormalizeCheckboxGroup` to retrieve element from
-        :param name: name of axis to normalize data over (if chosen)
-        """
-        self_axis_name = self.getName()
-        other_axis_name = name
-
-        return sg.Checkbox(
-            text=other_axis_name,
-            default=False,
-            disabled=False,
-            key=f"-NORMALIZE {self_axis_name:s}_AXIS OVER {other_axis_name:s}_AXIS-"
-        )
-
-
-class ParameterFunctionalCheckboxGroup(CheckboxGroup, StoredObject):
-    def __init__(
-        self,
-        name: str,
-        window: SimulationWindow,
-        parameter_names: Iterable[str] = None
-    ) -> None:
-        """
-        Constructor for :class:`~Layout.SimulationWindow.AxisNormalizeCheckboxGroup`.
-
-        :param name: name of axis to normalize from
-        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that group is stored in
-        :param parameter_names: names of parameters to perform functional over.
-            Defaults to empty list.
-        """
-        if parameter_names is None:
-            self.parameter_names = []
-        else:
-            assert isinstance(parameter_names, Iterable)
-            for parameter_name in parameter_names:
-                assert isinstance(parameter_name, str)
-            self.parameter_names = list(parameter_names)
-
-        StoredObject.__init__(self, name)
-
-        functional_group_checkboxes = [
-            self.getParameterElement(parameter_name)
-            for parameter_name in parameter_names
-        ]
-
-        CheckboxGroup.__init__(
-            self,
-            checkboxes=functional_group_checkboxes,
-            window=window,
-        )
-
-    def getParameterNames(self) -> List[str]:
-        """
-        Get collection of other axis names to normalize data over.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisNormalizeCheckboxGroup` to retrieve names from
-        """
-        return self.parameter_names
-
-    @storeElement
-    def getParameterElement(self, name: str) -> sg.Checkbox:
-        """
-        Get element to allow user to normalize data over another axis.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisNormalizeCheckboxGroup` to retrieve element from
-        :param name: name of parameter to perform functional over (if chosen)
-        """
-        axis_name = self.getName()
-        parameter_name = name
-
-        return sg.Checkbox(
-            text=parameter_name,
-            default=False,
-            disabled=False,
-            key=f"-NORMALIZE {axis_name:s}_AXIS OVER {parameter_name:s}_PARAMETER-"
-        )
-
-
-class AxisQuantityRow(AxisQuantityElement, Row, StoredObject):
-    """
-    :ivar getPlotChoices: pointer to :meth:`~Layout.SimulationWindow.SimulationWindow.getPlotChoices`
-    """
-
-    def __init__(
-        self,
-        axis_name: str,
-        window: SimulationWindow,
-        index: int = 0,
-        include_none: bool = None,
-        **kwargs
-    ) -> None:
-        """
-        Constructor for :class:`~Layout.SimulationWindow.AxisQuantityRow`.
-
-        :param axis_name: name of axis
-        :param index: quantity index per axis
-        :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that row is stored in
-        :param include_none: set True to allow user to choose "None" for quantity.
-            Set False otherwise.
-            Must be True if index != 0.
-            Defaults to index != 0.
-        :param kwargs: additional arguments to pass into :class:`~Layout.SimulationWindow.AxisQuantityElement`
-        """
-        if index != 0:
-            assert include_none
-        if include_none is None:
-            include_none = index != 0
-        else:
-            include_none = index != 0 or include_none
-
-        name = axis_name + str(index)
-        AxisQuantityElement.__init__(
-            self,
-            window=window,
-            include_none=include_none,
-            **kwargs
-        )
-        Row.__init__(self, name, window=window)
-        StoredObject.__init__(self, name)
-
-        self.axis_name = axis_name
-        self.index = index
-
-        elements = [
-            sg.Text("Species:"),
-            self.getAxisQuantitySpeciesElement(),
-            sg.Text("Quantity:"),
-            self.getAxisQuantityElement()
-        ]
-        self.addElements(elements)
-
-    def getAxisName(self) -> str:
-        """
-        Get name of axis.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityRow` to retrieve name from
-        """
-        return self.axis_name
-
-    def getIndex(self) -> int:
-        """
-        Get index of row within axis.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityRow` to retrieve index from
-        """
-        return self.index
-
-    @storeElement
-    def getAxisQuantityElement(self) -> sg.InputCombo:
-        """
-        Get element to take user input for an axis quantity.
-        This allows user to choose which quantity to plot on the axis.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityRow` to retrieve element from
-        """
-        name = self.getName()
-
-        include_none = self.includeNone()
-        if include_none:
-            values = ['']
-            disabled = True
-        else:
-            values = self.getPlotChoices(species="Variable")
-            disabled = False
-
-        sg_kwargs = {
-            "tooltip": f"Choose quantity to display on {name:s}-axis of plot",
-            "enable_events": True,
-            "size": self.getDimensions(name="axis_quantity_combobox"),
-            "key": f"-{cc_pre:s} QUANTITY {name:s}_AXIS-"
-        }
-
-        sg_kwargs["values"] = values
-        sg_kwargs["default_value"] = sg_kwargs["values"][0]
-        sg_kwargs["disabled"] = disabled
-
-        elem = sg.InputCombo(**sg_kwargs)
-        return elem
-
-    @storeElement
-    def getAxisQuantitySpeciesElement(self) -> sg.InputCombo:
-        """
-        Get element to take user input for an axis quantity type.
-        This allows user to choose which type of quantity to plot on the axis.
-
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityRow` to retrieve element from
-        """
-        name = self.getName()
-        include_none = self.includeNone()
-        include_continuous = self.includeContinuous()
-        include_discrete = self.includeDiscrete()
-
-        axis_quantity_species = []
-        if include_none:
-            axis_quantity_species.append("None")
-        if include_continuous:
-            axis_quantity_species.extend(["Variable", "Function"])
-        if include_discrete:
-            if len(self.getPlotChoices(species="Parameter")) >= 1:
-                axis_quantity_species.append("Parameter")
-
-        return sg.InputCombo(
-            values=axis_quantity_species,
-            default_value=axis_quantity_species[0],
-            tooltip=f"Choose quantity species to display on {name:s}-axis of plot",
-            enable_events=True,
-            size=self.getDimensions(name="axis_quantity_species_combobox"),
-            key=f"-{ccs_pre:s} {name:s}_AXIS-"
-        )
-
-
-class FilterTab(Tab, StoredObject):
+class FilterTab(Tab):
     """
     This class contains the layout for the filter tab in the simulation window.
         # . One or more :class:`~Layout.SimulationWindow.FilterRow`, each comprising one node of AND-gate filter
@@ -1919,7 +815,6 @@ class FilterTab(Tab, StoredObject):
         :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab is stored in.
         """
         Tab.__init__(self, name, window)
-        StoredObject.__init__(self, name)
 
         self.row_count = row_count
 
@@ -2367,9 +1262,9 @@ class SimulationWindow(TabbedWindow):
             "mean_order_spin": getDimensions(["simulation_window", "analysis_tab", "mean_tab", "order_spin"])
         }
         TabbedWindow.__init__(
-            self, 
-            name, 
-            runner, 
+            self,
+            name,
+            runner,
             dimensions=dimensions
         )
 
@@ -2424,13 +1319,13 @@ class SimulationWindow(TabbedWindow):
         self.getAxisAestheticsTab = aesthetics_tabgroup.getAxisAestheticsTab
         self.getColorbarAestheticsTab = aesthetics_tabgroup.getColorbarAestheticsTab
         self.addTabs(aesthetics_tab)
-        
+
         plotting_tab = plotting_tabgroup.getAsTab()
         self.addTabs(plotting_tab)
-        
+
         analysis_tab = AnalysisTab("Analysis", self)
         self.addTabs(analysis_tab)
-        
+
         filter_tab = FilterTab("Filter", self, row_count=4)
         self.addTabs(filter_tab)
 
@@ -2631,7 +1526,7 @@ class SimulationWindow(TabbedWindow):
         canvas = self.getCanvas()
         exit_button = sg.Exit()
         update_plot_button = self.getUpdatePlotButton()
-        
+
         tabs = self.getTabs()
         tabgroup_obj = TabGroup(tabs)
         tabgroup = tabgroup_obj.getTabGroup()
@@ -2713,7 +1608,13 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
         self.values = None
         self.figure_canvas = None
         self.general_derivative_vector = None
-        self.plot_quantities = PlotQuantities(self)
+
+        axis_names = self.getAxisNames()
+        axis_quantity_name2frame = {
+            axis_name: self.getAxisQuantityFrames(names=axis_name)
+            for axis_name in axis_names
+        }
+        self.plot_quantities = PlotQuantities(axis_quantity_name2frame)
 
         if results_obj is not None:
             self.model = results_obj.getModel()
@@ -2742,12 +1643,13 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
         update_plot_key = getKeys(self.getUpdatePlotButton())
 
         window.bind("<F5>", update_plot_key)
+        window.bind("<Escape>", "Exit")
 
         while True:
             event, self.values = window.read()
             print('event:', event)
 
-            if event == sg.WIN_CLOSED or event == 'Exit':
+            if event == sg.WIN_CLOSED or event == "Exit":
                 break
             menu_value = self.getValue(toolbar_menu_key)
 
@@ -2886,11 +1788,11 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
         """
 
         if filter is None:
-            all_names = (
+            all_names = [
                 axis_name
                 for axis_names in self.axis_names.values()
                 for axis_name in axis_names
-            )
+            ]
             return all_names
         elif isinstance(filter, str):
             filter = filter.lower()
@@ -3437,244 +2339,165 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
             return None
         results_file_handler = results_obj.getResultsFileHandler()
 
-        axis2names = {}
-        axis2species = {}
-        axis2envelope = {}
-        axis2transform = {}
-        axis2functional = {}
-        axis2complex = {}
-        axis2functionals = {}
-        axis2parameterss = {}
-        axis2normalizes = {}
-        is_transformed = {}
-        is_timelike = {}
-        is_functional = {}
-        is_parameterlike = {}
-        is_nonelike = {}
-        parameter_names = []
-
-        for axis_name in axis_names:
-            is_functional[axis_name] = False
-            is_timelike[axis_name] = False
-            is_parameterlike[axis_name] = False
-            is_nonelike[axis_name] = axis_name not in valid_axis_names
-
-        for valid_axis_name in valid_axis_names:
-            quantity_names = plot_quantities.getAxisQuantityNames(
-                valid_axis_name,
-                include_none=False
-            )
-            specie_names = plot_quantities.getAxisQuantitySpecies(
-                valid_axis_name,
-                include_none=False
-            )
-            envelope_name = plot_quantities.getAxisEnvelopeName(valid_axis_name)
-            functional_name = plot_quantities.getAxisFunctionalName(valid_axis_name)
-            transform_name = plot_quantities.getAxisTransformName(valid_axis_name)
-            axis_is_transformed = transform_name != "None"
-            complex_name = plot_quantities.getAxisComplexName(valid_axis_name)
-            normalize_names = plot_quantities.getAxisNormalizeNames(valid_axis_name)
-            parameter_functional_names = plot_quantities.getFunctionalFunctionalNames(
-                valid_axis_name,
-                include_none=False
-            )
-            functional_parameter_namess = plot_quantities.getFunctionalParameterNamess(
-                valid_axis_name,
-                include_none=False
-            )
-
-            axis2names[valid_axis_name] = quantity_names
-            axis2species[valid_axis_name] = specie_names
-            axis2envelope[valid_axis_name] = envelope_name
-            axis2functional[valid_axis_name] = functional_name
-            axis2transform[valid_axis_name] = transform_name
-            is_transformed[valid_axis_name] = axis_is_transformed
-            axis2complex[valid_axis_name] = complex_name
-            axis2normalizes[valid_axis_name] = normalize_names
-            axis2functionals[valid_axis_name] = parameter_functional_names
-            axis2parameterss[valid_axis_name] = functional_parameter_namess
-
-            exists_timelike_subaxis = plot_quantities.existsLikeSpecies(
-                specie_names,
-                "timelike"
-            )
-            exists_parameterlike_subaxis = plot_quantities.existsLikeSpecies(
-                specie_names,
-                "parameterlike"
-            )
-
-            if exists_timelike_subaxis and exists_parameterlike_subaxis:
-                is_nonelike[valid_axis_name] = True
-            elif functional_name != "None":
-                is_functional[valid_axis_name] = True
-            else:
-                if exists_timelike_subaxis and exists_parameterlike_subaxis:
-                    is_nonelike[valid_axis_name] = True
-                elif exists_timelike_subaxis:
-                    is_timelike[valid_axis_name] = True
-                elif exists_parameterlike_subaxis:
-                    parameterlike_count_subaxis = plot_quantities.getLikeCount(
-                        specie_names,
-                        "parameterlike"
-                    )
-                    if parameterlike_count_subaxis == 1:
-                        is_parameterlike[valid_axis_name] = True
-                        parameter_names.append(quantity_names[0])
-                    elif parameterlike_count_subaxis >= 2:
-                        is_nonelike[valid_axis_name] = True
-                else:
-                    is_nonelike[valid_axis_name] = True
-
-        timelike_count = sum(is_timelike.values())
-        parameterlike_count = sum(is_parameterlike.values())
-        grid_parameterlike_count = sum([
-            is_parameterlike[grid_axis_name]
-            for grid_axis_name in grid_axis_names
-        ])
-        nongrid_parameterlike_count = parameterlike_count - grid_parameterlike_count
-        functional_count = sum(is_functional.values())
-
+        parameter_names = plot_quantities.getParameterNames()
+        parameterlike_count = len(parameter_names)
         exists_parameterlike = parameterlike_count >= 1
-        multiple_nongrid_parameterlikes = nongrid_parameterlike_count >= 2
-        exists_cartesian_parameterlike = any([
-            is_parameterlike[cartesian_axis_name]
-            for cartesian_axis_name in cartesian_axis_names
-        ])
-        exists_functional = functional_count >= 1
-        multiple_functionals = functional_count >= 2
-        exists_timelike = timelike_count >= 1
-        multiple_timelikes = timelike_count >= 2
 
         inequality_filters = self.getInequalityFilters()
         print('filters:', inequality_filters)
 
         results = {}
         try:
-            if not exists_parameterlike:
-                getResultsOverTime = partial(
-                    results_obj.getResultsOverTime,
-                    inequality_filters=inequality_filters,
-                    index=index
+            if exists_parameterlike:
+                getResults = partial(
+                    results_obj.getResultsOverTimePerParameter,
+                    show_progress=True,
+                    parameter_names=parameter_names
                 )
+            else:
+                getResults = results_obj.getResultsOverTime
 
-                for valid_axis_name, quantity_names in axis2names.items():
-                    envelope_name = axis2envelope[valid_axis_name]
-                    transform_name = axis2transform[valid_axis_name]
-                    axis_is_transformed = is_transformed[valid_axis_name]
-                    complex_name = axis2complex[valid_axis_name]
-                    parameter_functional_names = axis2functionals[valid_axis_name]
+            getResults = partial(
+                getResults,
+                inequality_filters=inequality_filters,
+                index=index
+            )
 
-                    if not axis_is_transformed or len(quantity_names) == 1:
+            for valid_axis_name in valid_axis_names:
+                axis_quantity = plot_quantities.getAxisQuantities(names=valid_axis_name)
+                quantity_names = axis_quantity.getQuantityNames(include_none=False)
+
+                axis_is_parameterlike = axis_quantity.isParameterLike()
+                axis_is_functionallike = axis_quantity.isFunctionalLike()
+                axis_is_timelike = axis_quantity.isTimeLike()
+
+                if axis_is_parameterlike:
+                    assert len(quantity_names) == 1
+                    quantity_name = quantity_names[0]
+                    quantity_results = results_file_handler.getFreeParameterValues(names=quantity_name)
+                elif axis_is_timelike or axis_is_functionallike:
+                    envelope_name = axis_quantity.getEnvelopeName()
+                    transform_name = axis_quantity.getTransformName()
+                    is_transformed = axis_quantity.isTransformed()
+                    complex_name = axis_quantity.getComplexName()
+
+                    if not is_transformed or len(quantity_names) == 1:
                         quantity_names = quantity_names[0]
 
-                    getAxisResultsOverTime = partial(
-                        getResultsOverTime,
+                    getAxisResults = partial(
+                        getResults,
                         quantity_names=quantity_names,
                         envelope_name=envelope_name,
                         transform_name=transform_name,
                         complex_name=complex_name
                     )
 
+                    parameter_functional_names = axis_quantity.getFunctionalFunctionalNames(include_none=False)
                     if len(parameter_functional_names) >= 1:
-                        functional_parameter_namess = axis2parameterss[valid_axis_name]
-                        getAxisResultsOverTime = partial(
-                            getAxisResultsOverTime,
+                        functional_parameter_namess = axis_quantity.getFunctionalParameterNamess(include_none=False)
+                        getAxisResults = partial(
+                            getAxisResults,
                             parameter_functional_names=parameter_functional_names,
                             functional_parameter_namess=functional_parameter_namess
                         )
 
-                    if is_timelike[valid_axis_name]:
-                        results[valid_axis_name] = getAxisResultsOverTime()
-                    elif is_functional[valid_axis_name]:
-                        functional_name = axis2functional[valid_axis_name]
+                    if axis_is_functionallike:
+                        functional_name = axis_quantity.getFunctionalName()
                         functional_kwargs = self.getFunctionalKwargs(functional_name)
-                        results[valid_axis_name] = getAxisResultsOverTime(
+                        getAxisResults = partial(
+                            getAxisResults,
                             functional_name=functional_name,
                             functional_kwargs=functional_kwargs
                         )
-            else:
-                getResultsOverTimePerParameter = partial(
-                    results_obj.getResultsOverTimePerParameter,
-                    show_progress=True,
-                    parameter_names=parameter_names,
-                    inequality_filters=inequality_filters,
-                    index=index
-                )
 
-                for valid_axis_name, quantity_names in axis2names.items():
-                    envelope_name = axis2envelope[valid_axis_name]
-                    transform_name = axis2transform[valid_axis_name]
-                    axis_is_transformed = is_transformed[valid_axis_name]
-                    complex_name = axis2complex[valid_axis_name]
-                    parameter_functional_names = axis2functionals[valid_axis_name]
-
-                    getAxisResultsOverTimePerParameter = partial(
-                        getResultsOverTimePerParameter,
-                        envelope_name=envelope_name,
-                        transform_name=transform_name,
-                        complex_name=complex_name
-                    )
-
-                    if parameter_functional_names != "None":
-                        functional_parameter_namess = axis2parameterss[valid_axis_name]
-                        getAxisResultsOverTimePerParameter = partial(
-                            getAxisResultsOverTimePerParameter,
-                            parameter_functional_names=parameter_functional_names,
-                            functional_parameter_namess=functional_parameter_namess
-                        )
-
-                    if is_functional[valid_axis_name]:
-                        functional_name = axis2functional[valid_axis_name]
-                        functional_kwargs = self.getFunctionalKwargs(functional_name)
-                        parameter_results, quantity_results = getAxisResultsOverTimePerParameter(
-                            quantity_names=quantity_names,
-                            functional_name=functional_name,
-                            functional_kwargs=functional_kwargs
-                        )
-                        results[valid_axis_name] = quantity_results[0]
+                    if exists_parameterlike:
+                        parameter_results, quantity_results = getAxisResults()
+                        quantity_results = quantity_results[0]
                     else:
-                        if not axis_is_transformed or len(quantity_names) == 1:
-                            quantity_names = quantity_names[0]
+                        quantity_results = getAxisResults()
 
-                        if is_timelike[valid_axis_name]:
-                            parameter_results, quantity_results = getAxisResultsOverTimePerParameter(
-                                quantity_names=quantity_names
-                            )
-                            results[valid_axis_name] = quantity_results[0]
-                        elif is_parameterlike[valid_axis_name]:
-                            results[valid_axis_name] = results_file_handler.getFreeParameterValues(names=quantity_names)
+                results[valid_axis_name] = quantity_results
         except (UnboundLocalError, KeyError, IndexError, AttributeError, ValueError, AssertionError):
             print('data:', traceback.print_exc())
         except TypeError:
             print('calculation cancelled', traceback.print_exc())
 
-        if is_nonelike['x'] or is_nonelike['y']:
+        is_timelike = {}
+        is_functionallike = {}
+        is_parameterlike = {}
+        is_nonelike = {}
+        for axis_name in axis_names:
+            axis_quantity = plot_quantities.getAxisQuantities(names=axis_name)
+            is_parameterlike[axis_name] = axis_quantity.isParameterLike()
+            is_functionallike[axis_name] = axis_quantity.isFunctionalLike()
+            is_timelike[axis_name] = axis_quantity.isTimeLike()
+            is_nonelike[axis_name] = axis_quantity.isNoneLike()
+
+        timelike_count = sum(is_timelike.values())
+        exists_timelike = timelike_count >= 1
+        multiple_timelikes = timelike_count >= 2
+        exists_exactly_one_timelike = exists_timelike and not multiple_timelikes
+
+        functionallike_count = sum(is_functionallike.values())
+        exists_functionallike = functionallike_count >= 1
+
+        timelike_and_functionallike = exists_timelike and exists_functionallike
+        timelike_nor_functionallike = not exists_timelike and not exists_functionallike
+        functionallike_and_not_parameterlike = exists_functionallike and not exists_parameterlike
+
+        x_is_nonelike = is_nonelike['x']
+        y_is_nonelike = is_nonelike['y']
+        x_or_y_is_nonelike = x_is_nonelike or y_is_nonelike
+
+        if x_or_y_is_nonelike:
             plot_type = ''
-        elif exists_timelike and not multiple_timelikes:
+        elif exists_exactly_one_timelike:
             plot_type = ''
-        elif exists_timelike and exists_functional:
+        elif timelike_and_functionallike:
             plot_type = ''
-        elif not exists_timelike and not exists_functional:
+        elif timelike_nor_functionallike:
             plot_type = ''
-        elif exists_functional and not exists_parameterlike:
+        elif functionallike_and_not_parameterlike:
             plot_type = ''
         else:
+            multiple_functionals = functionallike_count >= 2
+
+            exists_cartesian_parameterlike = False
+            cartesian_axis_quantities: List[AxisQuantity] = plot_quantities.getAxisQuantities(names=cartesian_axis_names)
+            for cartesian_axis_quantity in cartesian_axis_quantities:
+                cartesian_axis_is_parameterlike = cartesian_axis_quantity.isParameterLike()
+                if cartesian_axis_is_parameterlike:
+                    exists_cartesian_parameterlike = True
+                    break
+
+            grid_parameterlike_count = 0
+            grid_axis_quantities: List[AxisQuantity] = plot_quantities.getAxisQuantities(names=grid_axis_names)
+            for grid_axis_quantity in grid_axis_quantities:
+                grid_axis_is_parameterlike = grid_axis_quantity.isParameterLike()
+                if grid_axis_is_parameterlike:
+                    grid_parameterlike_count += 1
+
+            exists_grid_parameterlike = grid_parameterlike_count >= 1
+
+            nongrid_parameterlike_count = parameterlike_count - grid_parameterlike_count
+            multiple_nongrid_parameterlikes = nongrid_parameterlike_count >= 2
+
             if is_parameterlike['c']:
                 if exists_timelike:
                     plot_type = 'nc'
-                elif exists_functional:
+                elif exists_functionallike:
                     if multiple_nongrid_parameterlikes:
                         plot_type = 'nc'
                     elif exists_parameterlike:
                         plot_type = 'nt'
-            elif is_functional['c']:
+            elif is_functionallike['c']:
                 assert exists_cartesian_parameterlike
                 if multiple_functionals:
                     if multiple_nongrid_parameterlikes:
                         plot_type = 't'
                     else:
                         plot_type = 'nt'
-                elif exists_functional:
+                elif exists_functionallike:
                     plot_type = 'c'
             elif is_timelike['c']:
                 plot_type = 'nt'
@@ -3683,14 +2506,14 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
 
             for cartesian_axis_name in cartesian_axis_names:
                 if is_parameterlike[cartesian_axis_name]:
-                    if exists_functional:
+                    if exists_functionallike:
                         if multiple_nongrid_parameterlikes:
                             plot_type += f"n{cartesian_axis_name:s}"
                         elif exists_parameterlike:
                             plot_type += cartesian_axis_name
                     elif exists_timelike:
                         plot_type += f"n{cartesian_axis_name:s}"
-                elif is_functional[cartesian_axis_name]:
+                elif is_functionallike[cartesian_axis_name]:
                     if is_parameterlike['c']:
                         plot_type += cartesian_axis_name
                     elif multiple_nongrid_parameterlikes:
@@ -3706,19 +2529,16 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
                 elif is_nonelike[cartesian_axis_name]:
                     pass
 
-            if is_functional['C']:
+            if is_functionallike['C']:
                 plot_type += 'C'
 
-            for grid_axis_name in grid_axis_names:
-                if not is_nonelike[grid_axis_name]:
-                    plot_type += '_'
-                    break
-
-            for grid_axis_name in grid_axis_names:
-                if is_parameterlike[grid_axis_name]:
-                    plot_type += grid_axis_name
-                elif is_nonelike[grid_axis_name]:
-                    pass
+            if exists_grid_parameterlike:
+                plot_type += '_'
+                for grid_axis_name in grid_axis_names:
+                    if is_parameterlike[grid_axis_name]:
+                        plot_type += grid_axis_name
+                    elif is_nonelike[grid_axis_name]:
+                        pass
 
         with open("results_temp.pkl", 'wb') as file:
             dill.dump(results, file)
@@ -3742,7 +2562,10 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
         except (KeyError, AttributeError, AssertionError):
             print('figure:', traceback.print_exc())
 
-    def updatePlotChoices(self, names: Union[str, List[str]] = None) -> None:
+    def updatePlotChoices(
+        self,
+        names: Union[str, List[str]] = None,
+    ) -> None:
         """
         Update plot choices for desired axis(es).
         This allows user to select new set of quantities to plot.
@@ -3751,21 +2574,26 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
         :param names: name(s) of axis(es) to update choices for.
             Updates all axes by default.
         """
+        getSpecies = PlotQuantities.getSpecies
+        timelike_species = getSpecies("timelike") + getSpecies("nonelike")
+        all_species = getSpecies()
+        nontimelike_species = [
+            specie
+            for specie in all_species
+            if specie not in timelike_species
+        ]
 
         def update(name: str) -> None:
             """Base method for :meth:`~Layout.SimulationWindow.SimulationWindowRunner.updatePlotChoices`"""
-            axis_quantity_frame = self.getAxisQuantityFrames(names=name)
-            quantity_count_per_axis = axis_quantity_frame.getQuantityCountPerAxis()
             plot_quantities = self.getPlotQuantities()
+            axis_quantity = plot_quantities.getAxisQuantities(names=name)
+            axis_quantity_frame = axis_quantity.getAxisQuantityFrame()
 
-            species = []
-            for index in range(quantity_count_per_axis):
-                row_name = name + str(index)
-                axis_quantity_row: AxisQuantityRow = AxisQuantityRow.getInstances(names=row_name)
+            species = axis_quantity.getSpecieNames()
+            axis_quantity_rows = axis_quantity_frame.getAxisQuantityRows()
+            for index, axis_quantity_row in enumerate(axis_quantity_rows):
+                specie = species[index]
                 quantity_names_combobox = axis_quantity_row.getAxisQuantityElement()
-
-                specie = plot_quantities.getAxisQuantitySpecie(name, index)
-                species.append(specie)
 
                 new_choices = self.getPlotChoices(species=specie) if specie != "None" else ['']
                 old_choices = vars(quantity_names_combobox)["Values"]
@@ -3788,14 +2616,6 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
                         self.getWindow().write_event_value(quantity_names_combobox_key, new_chosen_quantity)
                     else:
                         quantity_names_combobox.update(**kwargs)
-
-            timelike_species = plot_quantities.getSpecies("timelike") + plot_quantities.getSpecies("nonelike")
-            all_species = plot_quantities.getSpecies()
-            nontimelike_species = [
-                specie
-                for specie in all_species
-                if specie not in timelike_species
-            ]
 
             exists_nontimelike = False
             for nontimelike_specie in nontimelike_species:
@@ -4018,527 +2838,3 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
                 pass
             else:
                 sg.PopupError("invalid filepath")
-
-
-class PlotQuantities:
-    def __init__(self, window_runner: SimulationWindowRunner) -> None:
-        self.window_runner = window_runner
-        self.getAxisNames = window_runner.getAxisNames
-
-        self.valid_axis_names = []
-        self.axis2names = {}
-        self.axis2species = {}
-        self.axis2envelope = {}
-        self.axis2transform = {}
-        self.axis2functional = {}
-        self.axis2functionals = {}
-        self.axis2parameterss = {}
-        self.axis2complex = {}
-        self.axis2normalizes = {}
-
-        self.specie_types = ["timelike", "parameterlike", "nonelike"]
-        self.timelike_species = ["Variable", "Function"]
-        self.parameterlike_species = ["Parameter"]
-        self.nonelike_species = ["None"]
-
-    def reset(self) -> None:
-        """
-        Reset attribute in object.
-
-        :param self: :class:`~Layout.SimulationWindowRunner.PlotQuantities` to reset attributes for
-        """
-        self.valid_axis_names = []
-        self.axis2names = {}
-        self.axis2species = {}
-        self.axis2envelope = {}
-        self.axis2transform = {}
-        self.axis2functional = {}
-        self.axis2functionals = {}
-        self.axis2parameterss = {}
-        self.axis2complex = {}
-        self.axis2normalizes = {}
-
-    def getWindowRunner(self) -> SimulationWindowRunner:
-        """
-        Get window runner associated with self.
-
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve window runner from
-        """
-        return self.window_runner
-
-    def getSpecies(self, like: str = None) -> List[str]:
-        """
-        Get collection of quantity species that may be treated as over-time.
-
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve species from
-        :param like: species type to retrieve collection of species of.
-            Can be "timelike", "parameterlike", "nonelike".
-            Defaults to all species.
-        """
-        if like == "timelike":
-            return self.timelike_species
-        elif like == "parameterlike":
-            return self.parameterlike_species
-        elif like == "nonelike":
-            return self.nonelike_species
-        elif like == None:
-            all_species = []
-            for specie_type in self.specie_types:
-                species_of_type = self.getSpecies(specie_type)
-                all_species.extend(species_of_type)
-            return all_species
-        else:
-            raise ValueError("like must be 'timelike', 'parameterlike', or 'nonelike'")
-
-    def getLikeCount(
-        self,
-        specie_names: List[str],
-        like: str
-    ):
-        """
-        Get number of given specie names within like-species group.
-
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve like-species from
-        :param specie_names: names of species to count like-type in
-        :param like: type of species to check for in collection of species.
-            See :meth:`~Layout.SimulationWindow.PlotQuantities.getSpecies`.
-        """
-        like_species = self.getSpecies(like)
-        like_count = 0
-        for specie_name in specie_names:
-            if specie_name in like_species:
-                like_count += 1
-
-        return like_count
-
-    def existsLikeSpecies(
-        self,
-        species: List[str],
-        like: str
-    ):
-        """
-        Get whether at least one specie is of like-type.
-
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve like-species from
-        :param species: names of species to check for like-type in
-        :param like: type of species to check for in collection of species.
-            See :meth:`~Layout.SimulationWindow.PlotQuantities.getSpecies`.
-        """
-        like_species = self.getSpecies(like)
-        exists_like = False
-        for specie_name in species:
-            if specie_name in like_species:
-                exists_like = True
-
-        return exists_like
-
-    def getValidAxisNames(self) -> List[str]:
-        """
-        Get names of axes that require plotting a valid quantity.
-        Ignore axes that are to be left empty.
-
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve names from
-        """
-        valid_axis_names = self.valid_axis_names
-
-        if len(valid_axis_names) == 0:
-            axis_names = self.getAxisNames()
-
-            valid_axis_names = []
-            for axis_name in axis_names:
-                specie_names = self.getAxisQuantitySpecies(axis_name)
-
-                specie_is_none = [
-                    specie_name == "None"
-                    for specie_name in specie_names
-                ]
-                none_count = sum(specie_is_none)
-                specie_count = len(specie_names)
-                nonnone_count = specie_count - none_count
-
-                if nonnone_count >= 1:
-                    transform_name = self.getAxisTransformName(axis_name)
-
-                    if transform_name == "None":
-                        if nonnone_count == 1:
-                            valid_axis_names.append(axis_name)
-                    elif transform_name != "None":
-                        valid_axis_names.append(axis_name)
-
-            self.valid_axis_names = valid_axis_names
-
-        return valid_axis_names
-
-    def getAxisEnvelopeName(self, axis_name: str) -> str:
-        """
-        Get name of envelope (e.g. "Amplitude") for axis.
-
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve name from
-        :param axis_name: name of axis to retrieve envelope name from
-        """
-        axis2envelope = self.axis2envelope
-        if axis_name in axis2envelope.keys():
-            envelope_name = axis2envelope[axis_name]
-        else:
-            exists_nontimelike = self.existsNontimelikeSpecies(axis_name)
-
-            if exists_nontimelike:
-                envelope_name = "None"
-            else:
-                window_runner = self.getWindowRunner()
-                axis_quantity_frame = window_runner.getAxisQuantityFrames(names=axis_name)
-                envelope_radio_group = axis_quantity_frame.getAxisEnvelopeGroup()
-                chosen_radio = envelope_radio_group.getChosenRadio()
-
-                chosen_radio_text = vars(chosen_radio)["Text"]
-                envelope_name = chosen_radio_text
-
-            self.axis2envelope[axis_name] = envelope_name
-
-        return envelope_name
-
-    def getAxisFunctionalName(self, axis_name: str) -> str:
-        """
-        Get name of functional for axis.
-
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve name from
-        :param axis_name: name of axis to retrieve functional name from
-        """
-        axis2functional = self.axis2functional
-        if axis_name in axis2functional.keys():
-            functional_name = axis2functional[axis_name]
-        else:
-            exists_nontimelike = self.existsNontimelikeSpecies(axis_name)
-
-            if exists_nontimelike:
-                functional_name = "None"
-            else:
-                window_runner = self.getWindowRunner()
-                axis_quantity_frame = window_runner.getAxisQuantityFrames(axis_name)
-                functional_element = axis_quantity_frame.getAxisFunctionalElement()
-
-                if functional_element is not None:
-                    functional_key = getKeys(functional_element)
-                    functional_name = window_runner.getValue(functional_key)
-                else:
-                    functional_name = "None"
-
-            self.axis2functional[axis_name] = functional_name
-
-        return functional_name
-
-    def getFunctionalFunctionalNames(
-        self,
-        axis_name: str,
-        include_none: bool = True
-    ) -> List[str]:
-        """
-        Get names of functionals for axis.
-
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve name from
-        :param axis_name: name of axis to retrieve functional names from
-        :param include_none: set True to include "None" functional. Set False otherwise.
-        """
-        axis2functionals = self.axis2functionals
-        if axis_name in axis2functionals.keys():
-            functional_names = axis2functionals[axis_name]
-        else:
-            functional_names = []
-            exists_nontimelike = self.existsNontimelikeSpecies(axis_name)
-            if not exists_nontimelike:
-                window_runner = self.getWindowRunner()
-                axis_quantity_frame = window_runner.getAxisQuantityFrames(axis_name)
-                parameter_functional_rows = axis_quantity_frame.getParameterFunctionalRows()
-
-                for parameter_functional_row in parameter_functional_rows:
-                    functional_element = parameter_functional_row.getParameterFunctionalElement()
-                    functional_key = getKeys(functional_element)
-                    functional_name = window_runner.getValue(functional_key)
-                    functional_names.append(functional_name)
-
-            self.axis2functionals[axis_name] = functional_names.copy()
-
-        if not include_none:
-            none_indicies = getIndicies("None", functional_names)
-            functional_names = removeAtIndicies(functional_names, none_indicies)
-
-        return functional_names
-
-    def getFunctionalParameterNamess(
-        self,
-        axis_name: str,
-        include_none: bool = True
-    ) -> List[List[str]]:
-        """
-        Get name of axes to normalize data over.
-
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve names from
-        :param axis_name: name of axis to retrieve data from
-        :param include_none: set True to include "None" functional. Set False otherwise.
-        """
-        axis2parameterss = self.axis2parameterss
-        if axis_name in axis2parameterss.keys():
-            parameter_namess = axis2parameterss[axis_name]
-        else:
-            parameter_namess = []
-            exists_nontimelike = self.existsNontimelikeSpecies(axis_name)
-            if not exists_nontimelike:
-                window_runner = self.getWindowRunner()
-                axis_quantity_frame = window_runner.getAxisQuantityFrames(axis_name)
-                parameter_functional_rows = axis_quantity_frame.getParameterFunctionalRows()
-
-                for parameter_functional_row in parameter_functional_rows:
-                    parameter_group = parameter_functional_row.getParameterFunctionalGroup()
-
-                    parameter_names = []
-                    checked_checkboxes = parameter_group.getCheckedCheckboxes()
-                    for checked_checkbox in checked_checkboxes:
-                        checkbox_attributes = vars(checked_checkbox)
-                        checkbox_parameter_name = checkbox_attributes["Text"]
-                        parameter_names.append(checkbox_parameter_name)
-
-                    parameter_namess.append(parameter_names)
-
-            self.axis2parameterss[axis_name] = parameter_namess.copy()
-
-        if not include_none:
-            functional_names = self.getFunctionalFunctionalNames(axis_name)
-            none_indicies = getIndicies("None", functional_names)
-            parameter_namess = removeAtIndicies(parameter_namess, none_indicies)
-
-        return parameter_namess
-
-    def getAxisTransformName(self, axis_name: str) -> str:
-        """
-        Get name of transform for axis.
-
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve name from
-        :param axis_name: name of axis to retrieve transform name from
-        """
-        axis2transform = self.axis2transform
-        if axis_name in axis2transform.keys():
-            transform_name = axis2transform[axis_name]
-        else:
-            exists_nontimelike = self.existsNontimelikeSpecies(axis_name)
-
-            if exists_nontimelike:
-                transform_name = "None"
-            else:
-                window_runner = self.getWindowRunner()
-                axis_quantity_frame = window_runner.getAxisQuantityFrames(axis_name)
-                transform_element = axis_quantity_frame.getAxisTransformElement()
-
-                if transform_element is not None:
-                    transform_key = getKeys(transform_element)
-                    transform_name = window_runner.getValue(transform_key)
-                else:
-                    transform_name = "None"
-
-            self.axis2transform[axis_name] = transform_name
-
-        return transform_name
-
-    def getAxisComplexName(self, axis_name: str) -> str:
-        """
-        Get name of complex-reduction method for axis.
-
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve name from
-        :param axis_name: name of axis to retrieve name from
-        """
-        axis2complex = self.axis2complex
-        if axis_name in axis2complex.keys():
-            complex_name = axis2complex[axis_name]
-        else:
-            exists_nontimelike = self.existsNontimelikeSpecies(axis_name)
-
-            if exists_nontimelike:
-                complex_name = "Real"
-            else:
-                window_runner = self.getWindowRunner()
-                axis_quantity_frame = window_runner.getAxisQuantityFrames(names=axis_name)
-                complex_radio_group = axis_quantity_frame.getAxisComplexGroup()
-                chosen_radio = complex_radio_group.getChosenRadio()
-
-                chosen_radio_text = vars(chosen_radio)["Text"]
-                complex_name = chosen_radio_text
-
-            self.axis2complex[axis_name] = complex_name
-
-        return complex_name
-
-    def getAxisNormalizeNames(self, axis_name: str) -> List[str]:
-        """
-        Get name of axes to normalize data over.
-
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve names from
-        :param axis_name: name of axis to retrieve data from
-        """
-        axis2normalizes = self.axis2normalizes
-        if axis_name in axis2normalizes.keys():
-            normalize_names = axis2normalizes[axis_name]
-        else:
-            normalize_names = []
-
-            try:
-                window_runner = self.getWindowRunner()
-                axis_quantity_frame = window_runner.getAxisQuantityFrames(names=axis_name)
-                normalize_checkbox_group = axis_quantity_frame.getAxisNormalizeGroup()
-                checked_checkboxes = normalize_checkbox_group.getCheckedCheckboxes()
-
-                valid_axis_names = self.getValidAxisNames()
-
-                for checked_checkbox in checked_checkboxes:
-                    checkbox_attributes = vars(checked_checkbox)
-                    is_disabled = checkbox_attributes["Disabled"]
-                    if not is_disabled:
-                        other_axis_name = checkbox_attributes["Text"]
-                        if other_axis_name in valid_axis_names:
-                            normalize_names.append(other_axis_name)
-            except KeyError:
-                pass
-
-            self.axis2normalizes[axis_name] = normalize_names
-
-        return normalize_names
-
-    def getAxisQuantityNames(
-        self,
-        axis_name: str,
-        include_none: bool = True
-    ) -> List[str]:
-        """
-        Get selected quantity names for axis.
-
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retreive names from
-        :param axis_name: name of axis to retrieve names from
-        :param include_none: set True to include "None" species. Set False otherwise.
-        """
-        axis2names = self.axis2names
-        if axis_name in axis2names.keys():
-            quantity_names = axis2names[axis_name]
-        else:
-            window_runner = self.getWindowRunner()
-            axis_quantity_frame = window_runner.getAxisQuantityFrames(axis_name)
-            quantity_count_per_axis = axis_quantity_frame.getQuantityCountPerAxis()
-
-            quantity_names = []
-            for index in range(quantity_count_per_axis):
-                row_name = axis_name + str(index)
-                axis_quantity_row: AxisQuantityRow = AxisQuantityRow.getInstances(row_name)
-
-                quantity_element = axis_quantity_row.getAxisQuantityElement()
-                quantity_name_key = getKeys(quantity_element)
-                quantity_name = window_runner.getValue(quantity_name_key)
-
-                quantity_names.append(quantity_name)
-
-            self.axis2names[axis_name] = quantity_names.copy()
-
-        if not include_none:
-            specie_names = self.getAxisQuantitySpecies(axis_name)
-            none_indicies = getIndicies("None", specie_names)
-            quantity_names = removeAtIndicies(quantity_names, none_indicies)
-
-        return quantity_names
-
-    def getAxisQuantityName(
-        self,
-        axis_name: str,
-        index: int
-    ) -> str:
-        """
-        Get selected quantity name for subaxis.
-
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve name from
-        :param axis_name: name of axis to retrieve quantity name from
-        :param index: index of axis quantity per axis name
-        """
-        axis2names = self.axis2names
-        if axis_name in axis2names.keys():
-            quantity_name = axis2names[axis_name][index]
-        else:
-            quantity_names = self.getAxisQuantityNames(axis_name)
-            quantity_name = quantity_names[index]
-
-        return quantity_name
-
-    def existsNontimelikeSpecies(self, axis_name: str) -> bool:
-        """
-        Get whether axis has some nontimelike species.
-
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve boolean from
-        :param axis_name: name of axis to retrieve boolean from
-        :returns: True if axis contains at least one nontimelike species.
-            False if all species are timelike.
-        """
-        specie_names = self.getAxisQuantitySpecies(axis_name)
-        timelike_species = self.getSpecies("timelike") + self.getSpecies("nonelike")
-
-        exists_nontimelike_specie = False
-        for specie_name in specie_names:
-            if specie_name not in timelike_species:
-                exists_nontimelike_specie = True
-                break
-
-        return exists_nontimelike_specie
-
-    def getAxisQuantitySpecies(
-        self,
-        axis_name: str,
-        include_none: bool = True
-    ) -> List[str]:
-        """
-        Get selected specie names for axis.
-
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retreive names from
-        :param axis_name: name of axis to retrieve names from
-        :param include_none: set True to include "None" species. Set False otherwise.
-        """
-        axis2species = self.axis2species
-        if axis_name in axis2species.keys():
-            specie_names = axis2species[axis_name]
-        else:
-            window_runner = self.getWindowRunner()
-
-            axis_quantity_frame = window_runner.getAxisQuantityFrames(axis_name)
-            quantity_count_per_axis = axis_quantity_frame.getQuantityCountPerAxis()
-
-            specie_names = []
-            for index in range(quantity_count_per_axis):
-                row_name = axis_name + str(index)
-                axis_quantity_row: AxisQuantityRow = AxisQuantityRow.getInstances(names=row_name)
-
-                specie_element = axis_quantity_row.getAxisQuantitySpeciesElement()
-                specie_name_key = getKeys(specie_element)
-                specie_name = window_runner.getValue(specie_name_key)
-
-                specie_names.append(specie_name)
-
-            self.axis2species[axis_name] = specie_names.copy()
-
-        if not include_none:
-            none_indicies = getIndicies("None", specie_names)
-            specie_names = removeAtIndicies(specie_names, none_indicies)
-
-        return specie_names
-
-    def getAxisQuantitySpecie(
-        self,
-        axis_name: str,
-        index: int
-    ) -> str:
-        """
-        Get selected quantity specie for desired axis.
-
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve quantity name from
-        :param axis_name: name of axis to retrieve quantity specie from
-        :param index: index of axis quantity per axis name
-        """
-        axis2specie = self.axis2species
-        if axis_name in axis2specie.keys():
-            specie_name = axis2specie[axis_name][index]
-        else:
-            specie_names = self.getAxisQuantitySpecies(axis_name)
-            specie_name = specie_names[index]
-
-        return specie_name
