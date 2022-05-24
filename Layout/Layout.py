@@ -660,15 +660,15 @@ class RadioGroup(Row):
 class CheckboxGroup(Row):
     def __init__(
         self,
-        checkboxes: Union[sg.Checkbox, List[sg.Checkbox]],
         window: Window,
+        checkboxes: Union[sg.Checkbox, List[sg.Checkbox]] = None,
         name: str = None
     ):
         """
         Constructor for :class:`~Layout.Layout.CheckboxGroup`.
 
-        :param radios: collection of radio elements
         :param window: :class:`~Layout.Layout.Window` that contains group
+        :param checkboxes: collection of checkbox elements
         :param name: name of checkbox group
         """
         super().__init__(
@@ -705,6 +705,28 @@ class CheckboxGroup(Row):
 
         return checked_checkboxes
 
+    def addCheckboxes(
+        self,
+        checkboxes: Union[sg.Checkbox, Iterable[sg.Checkbox]]
+    ) -> None:
+        """
+        Add checkbox(es) to checkbox group.
+
+        :param self: :class:`~Layout.Layout.TabbedElement` to add checkboxes into
+        :param checkboxes: checkbox(es) to contain in group
+        """
+        append = self.elements.append
+
+        def add(checkbox: sg.Checkbox) -> None:
+            """Base method for Layout.Layout.CheckboxGroup.addCheckboxes"""
+            append(checkbox)
+
+        return recursiveMethod(
+            base_method=add,
+            args=checkboxes,
+            valid_input_types=sg.Checkbox,
+            output_type=list
+        )
 
 class Window:
     """
@@ -920,9 +942,7 @@ class TabbedWindow(Window, TabbedElement):
         :param runner: :class:`~Layout.Layout.WindowRunner` that runs window
         :param dimensions: dictionary of dimensions for elements contained in window
         """
-        print("tab_win:", name, runner, tabs)
         TabbedElement.__init__(self, tabs)
-        print("tab_complete")
         Window.__init__(
             self,
             name=name,
