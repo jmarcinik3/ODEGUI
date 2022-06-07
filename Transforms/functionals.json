@@ -3,6 +3,14 @@
         "function": "identity",
         "module": "Transforms.CustomMath"
     },
+    "Absolute Maximum": {
+        "function": "absoluteMaximum",
+        "module": "Transforms.CustomMath"
+    },
+    "Absolute Minimum": {
+        "function": "absoluteMinimum",
+        "module": "Transforms.CustomMath"
+    },
     "Arithmetic Mean": {
         "function": "arithmeticMean",
         "module": "Transforms.CustomMath"

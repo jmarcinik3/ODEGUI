@@ -30,7 +30,7 @@ from Layout.SetFreeParametersWindow import SetFreeParametersWindowRunner
 from Layout.SimulationWindow import SimulationWindowRunner
 
 tet_types = ("Temporal", "Equilibrium", "Constant", "Function")
-p_types = ("Constant", "Free")
+p_types = ("Constant", "Fit", "Free")
 
 psl_pre = "PARAMETER SECTION LABEL"
 psc_pre = "PARAMETER SECTION COLLAPSABLE"
@@ -115,12 +115,13 @@ class TimeEvolutionRow(TabRow, StoredObject):
 
         :param self: :class:`~Layout.MainWindow.TimeEvolutionRow` to retrieve element from
         """
+        variable_name = self.getName()
         return sg.InputCombo(
             values=self.getTimeEvolutionTypes(),
             default_value=self.getTimeEvolutionTypes(index=0),
             enable_events=True,
             size=self.getDimensions(name="evolution_type_combobox"),
-            key=f"-{tet_pre:s} {self.getName():s}-"
+            key=f"-{tet_pre:s} {variable_name:s}-"
         )
 
     @storeElement
@@ -130,10 +131,11 @@ class TimeEvolutionRow(TabRow, StoredObject):
 
         :param self: :class:`~Layout.MainWindow.TimeEvolutionRow` to retrieve element from
         """
+        variable_name = self.getName()
         return sg.InputText(
             default_text=self.getInitialCondition(),
             size=self.getDimensions(name="initial_condition_input_field"),
-            key=f"-INITIAL CONDITION VALUE {self.getName():s}-"
+            key=f"-INITIAL CONDITION VALUE {variable_name:s}-"
         )
 
     @storeElement
@@ -143,13 +145,14 @@ class TimeEvolutionRow(TabRow, StoredObject):
 
         :param self: :class:`~Layout.MainWindow.TimeEvolutionRow` to retrieve element from
         """
+        variable_name = self.getName()
         return sg.Checkbox(
             text="Equilibrium",
             default=False,
             enable_events=True,
             disabled=True,
             size=self.getDimensions(name="initial_equilibrium_checkbox"),
-            key=f"-{ice_pre:s} {self.getName():s}"
+            key=f"-{ice_pre:s} {variable_name:s}"
         )
 
     @storeElement
@@ -159,11 +162,12 @@ class TimeEvolutionRow(TabRow, StoredObject):
 
         :param self: :class:`~Layout.MainWindow.TimeEvolutionRow` to retrieve element from
         """
+        variable_name = self.getName()
         return sg.Checkbox(
             text='',
             default=True,
             size=self.getDimensions(name="is_core_checkbox"),
-            key=f"-IS CORE {self.getName():s}-"
+            key=f"-IS CORE {variable_name:s}-"
         )
 
 
@@ -450,15 +454,15 @@ class ParameterRow(TabRow, StoredObject):
 
         :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve checkbox from
         """
-        name = self.getName()
+        parameter_name = self.getName()
         return sg.Checkbox(
             text="Custom",
             default=False,
-            tooltip=f"Checked if parameter {name:s} is from custom value (i.e. input field)",
+            tooltip=f"Checked if parameter {parameter_name:s} is from custom value (i.e. input field)",
             enable_events=False,
             disabled=True,
             size=(None, None),  # dim
-            key=f"-CUSTOM PARAMETER {name:s}-"
+            key=f"-CUSTOM PARAMETER {parameter_name:s}-"
         )
 
     @storeElement
@@ -470,14 +474,16 @@ class ParameterRow(TabRow, StoredObject):
         """
         filestems = self.getStems()
         stem_count = len(filestems)
+        parameter_name = self.getName()
+        
         return sg.Combo(
             values=filestems,
             default_value=filestems[-1],
-            tooltip=f"Choose file to load parameter {self.getName():s} from",
+            tooltip=f"Choose file to load parameter {parameter_name:s} from",
             enable_events=True,
             disabled=stem_count == 1,
             size=self.getDimensions(name="parameter_stem_combobox"),
-            key=f"-{pf_pre:s} {self.getName():s}-"
+            key=f"-{pf_pre:s} {parameter_name:s}-"
         )
 
     def getNameLabel(self) -> Union[sg.Text, sg.Image]:
@@ -499,11 +505,14 @@ class ParameterRow(TabRow, StoredObject):
         :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve label from
         """
         quantity = self.getQuantities()[-1]
+        formatted_value = formatQuantity(quantity)
+        parameter_name = self.getName()
+        
         return sg.Text(
-            text=formatQuantity(quantity),
+            text=formatted_value,
             tooltip="Present value of parameter",
             size=self.getDimensions(name="parameter_value_label"),
-            key=f"-PARAMETER VALUE LABEL {self.getName():s}-"
+            key=f"-PARAMETER VALUE LABEL {parameter_name:s}-"
         )
 
     @storeElement
@@ -513,13 +522,14 @@ class ParameterRow(TabRow, StoredObject):
 
         :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve element from
         """
+        parameter_name = self.getName()
         return sg.InputText(
             default_text='',
             tooltip="If 'Constant': enter new parameter value, then click button to update. " +
             "If 'Sweep': this input field will be ignored." +
             "Displayed units are preserved",
             size=self.getDimensions(name="parameter_value_input_field"),
-            key=f"-PARAMETER VALUE INPUT {self.getName():s}-"
+            key=f"-PARAMETER VALUE INPUT {parameter_name:s}-"
         )
 
     @storeElement
@@ -529,12 +539,13 @@ class ParameterRow(TabRow, StoredObject):
 
         :param self: :class:`~Layout.MainWindow.ParameterRow` to retrieve element from
         """
+        parameter_name = self.getName()
         return sg.InputCombo(
             values=self.getParameterTypes(),
             default_value=self.getParameterTypes(0),
             enable_events=True,
             size=self.getDimensions(name="parameter_type_combobox"),
-            key=f"-PARAMETER TYPE {self.getName():s}-"
+            key=f"-PARAMETER TYPE {parameter_name:s}-"
         )
 
 
@@ -630,15 +641,21 @@ class ParameterSection(Element):
         header_column = header_row.getAsColumn()
         header_row_obj = Row(elements=header_column)
 
+        section_name = self.getName()
+        
+        parameter_rows = self.getParameterRows()
+        collapsible_layout_obj = Layout(rows=parameter_rows)
+        collapsible_layout = collapsible_layout_obj.getLayout()
         collapsable_section = generateCollapsableSection(
-            layout=list(map(ParameterRow.getElements, self.getParameterRows())),
+            layout=collapsible_layout,
             size=self.getDimensions(name="parameter_section"),
-            key=f"-{psc_pre:s} {self.getName():s}-"
+            key=f"-{psc_pre:s} {section_name:s}-"
         )
 
+        window_obj = self.getWindowObject()
         layout = Layout()
         layout.addRows(rows=header_row_obj)
-        layout.addRows(rows=Row(window=self.getWindowObject(), elements=collapsable_section))
+        layout.addRows(rows=Row(window=window_obj, elements=collapsable_section))
         return layout.getLayout()
 
 
@@ -876,15 +893,16 @@ class FunctionRow(TabRow, StoredObject):
         """
         filestems = self.getStems()
         stem_count = len(filestems)
+        function_name = self.getName()
 
         return sg.Combo(
             values=filestems,
             default_value=filestems[-1],
-            tooltip=f"Choose file to load function {self.getName():s} from",
+            tooltip=f"Choose file to load function {function_name:s} from",
             enable_events=True,
             disabled=stem_count == 1,
             size=self.getDimensions(name="function_stem_combobox"),
-            key=f"-{ff_pre:s} {self.getName():s}-"
+            key=f"-{ff_pre:s} {function_name:s}-"
         )
 
     @storeElement
@@ -897,12 +915,14 @@ class FunctionRow(TabRow, StoredObject):
         name = self.getName()
         image_filepath = self.generatePngExpressions()[-1]
         image_folder = dirname(image_filepath)
+        
+        function_name = self.getName()
 
         return getTexImage(
             name=name,
             size=self.getDimensions(name="expression_label"),
             tex_folder=image_folder,
-            key=f"-FUNCTION EXPRESSION {self.getName():s}-"
+            key=f"-FUNCTION EXPRESSION {function_name:s}-"
         )
 
 
@@ -1361,11 +1381,25 @@ class MainWindow(TabbedWindow):
     @storeElement
     def getGridSimulationButton(self) -> sg.Button:
         """
-        Get button to open :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
+        Get button to open :class:`~Layout.SimulationWindow.SimulationWindowRunner`, to simulate ODE over even grid of parameters.
 
         :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve button from
         """
-        text = "Grid Simulation"
+        text = "Parameter Grid"
+
+        return sg.Button(
+            button_text=text,
+            key=f"-{text.upper():s}-"
+        )
+
+    @storeElement
+    def getOptimizeSimulationButton(self) -> sg.Button:
+        """
+        Get button to open :class:`~Layout.SimulationWindow.SimulationWindowRunner`, to minimize cost function relative to dataset.
+
+        :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve button from
+        """
+        text = "Fit Data"
 
         return sg.Button(
             button_text=text,
@@ -1385,7 +1419,7 @@ class MainWindow(TabbedWindow):
             button_text=text,
             key=f"-{text.upper():s}-"
         )
-
+        
     def getLayout(self) -> List[List[sg.Element]]:
         """
         Get layout for window.
@@ -1393,16 +1427,23 @@ class MainWindow(TabbedWindow):
         :param self: :class:`~Layout.MainWindow.MainWindow` to retrieve layout from
         """
         menu = self.getMenu()
-        open_simulation_button = self.getGridSimulationButton()
+        parameter_grid_button = self.getGridSimulationButton()
+        fit_data_button = self.getOptimizeSimulationButton()
         generate_graph_button = self.getGenerateGraphButton()
+        
+        prefix_layout = Layout(rows=Row(window=self, elements=menu))
+        
         suffix_elements = [
-            open_simulation_button,
+            parameter_grid_button,
+            fit_data_button,
             generate_graph_button
         ]
-        prefix_layout = Layout(rows=Row(window=self, elements=menu))
         suffix_layout = Layout(rows=Row(window=self, elements=suffix_elements))
+        
         tabgroup = TabGroup(self.getTabs())
-        return prefix_layout.getLayout() + tabgroup.getLayout() + suffix_layout.getLayout()
+        
+        layout = prefix_layout.getLayout() + tabgroup.getLayout() + suffix_layout.getLayout()
+        return layout
 
     def getTimeEvolutionTypeTab(self) -> sg.Tab:
         """
@@ -1515,70 +1556,73 @@ class MainWindowRunner(WindowRunner, MainWindow):
         window = self.getWindow()
 
         toolbar_menu_key = getKeys(self.getMenu())
-        open_simulation_key = getKeys(self.getGridSimulationButton())
+        parameter_grid_key = getKeys(self.getGridSimulationButton())
+        fit_data_key = getKeys(self.getOptimizeSimulationButton())
         generate_graph_key = getKeys(self.getGenerateGraphButton())
+        exit_keys = (sg.WIN_CLOSED, 'Exit')
 
-        window.bind("<Control-r>", open_simulation_key)
         window.bind("<Control-g>", generate_graph_key)
 
         while True:
             event, self.values = window.read()
             print('event:', event)
-            if event in [sg.WIN_CLOSED, event == 'Exit']:
+            if event in exit_keys:
                 break
             menu_value = self.getValue(toolbar_menu_key)
 
             if menu_value is not None:
-                if event == "Model::import":
-                    self.loadModelFromFile()
-                elif event == "Parameters::import":
-                    self.loadParametersFromFile()
-                elif event == "Functions::import":
-                    self.loadFunctionsFromFile()
-                elif event == "Initial Conditions::import":
-                    self.loadInitialConditionsFromFile()
-                elif event == "Time-Evolution Types::import":
-                    self.loadTimeEvolutionTypesFromFile()
-                elif "::set_time_evolution_types_to" in event:
-                    time_evolution_type = event.replace("::set_time_evolution_types_to", '')
-                    comboboxes = map(
-                        TimeEvolutionRow.getTimeEvolutionTypeElement,
-                        TimeEvolutionRow.getInstances()
-                    )
-                    self.setElementsAsValue(comboboxes, time_evolution_type)
-                elif "::set_variable_cores_to" in event:
-                    checked_event = event.replace("::set_variable_cores_to", '')
-                    if checked_event == "Check All":
-                        checked = True
-                    elif checked_event == "Uncheck All":
-                        checked = False
+                if "::import" in event:
+                    if event == "Model::import":
+                        self.loadModelFromFile()
+                    elif event == "Parameters::import":
+                        self.loadParametersFromFile()
+                    elif event == "Functions::import":
+                        self.loadFunctionsFromFile()
+                    elif event == "Initial Conditions::import":
+                        self.loadInitialConditionsFromFile()
+                    elif event == "Time-Evolution Types::import":
+                        self.loadTimeEvolutionTypesFromFile()
+                elif "::set" in event:
+                    if "::set_time_evolution_types_to" in event:
+                        time_evolution_type = event.replace("::set_time_evolution_types_to", '')
+                        comboboxes = map(
+                            TimeEvolutionRow.getTimeEvolutionTypeElement,
+                            TimeEvolutionRow.getInstances()
+                        )
+                        self.setElementsAsValue(comboboxes, time_evolution_type)
+                    elif "::set_variable_cores_to" in event:
+                        checked_event = event.replace("::set_variable_cores_to", '')
+                        if checked_event == "Check All":
+                            checked = True
+                        elif checked_event == "Uncheck All":
+                            checked = False
 
-                    checkboxes = map(
-                        TimeEvolutionRow.getIsCoreElement,
-                        TimeEvolutionRow.getInstances()
-                    )
-                    self.setElementsAsValue(checkboxes, checked)
-                elif "::set_parameter_types_to" in event:
-                    parameter_type = event.replace("::set_parameter_types_to", '')
-                    comboboxes = map(
-                        ParameterRow.getParameterTypeElement,
-                        ParameterRow.getInstances()
-                    )
-                    self.setElementsAsValue(comboboxes, parameter_type)
-                elif "::set_parameter_filestems_to" in event:
-                    parameter_filestem = event.replace("::set_parameter_filestems_to", '')
-                    comboboxes = map(
-                        ParameterRow.getChooseFileElement,
-                        ParameterRow.getInstances()
-                    )
-                    self.setElementsAsValue(comboboxes, parameter_filestem)
-                elif "::set_function_filestems_to" in event:
-                    function_filestem = event.replace("::set_function_filestems_to", '')
-                    comboboxes = map(
-                        FunctionRow.getChooseFileElement,
-                        FunctionRow.getInstances()
-                    )
-                    self.setElementsAsValue(comboboxes, function_filestem)
+                        checkboxes = map(
+                            TimeEvolutionRow.getIsCoreElement,
+                            TimeEvolutionRow.getInstances()
+                        )
+                        self.setElementsAsValue(checkboxes, checked)
+                    elif "::set_parameter_types_to" in event:
+                        parameter_type = event.replace("::set_parameter_types_to", '')
+                        comboboxes = map(
+                            ParameterRow.getParameterTypeElement,
+                            ParameterRow.getInstances()
+                        )
+                        self.setElementsAsValue(comboboxes, parameter_type)
+                    elif "::set_parameter_filestems_to" in event:
+                        parameter_filestem = event.replace("::set_parameter_filestems_to", '')
+                        comboboxes = map(
+                            ParameterRow.getChooseFileElement,
+                            ParameterRow.getInstances()
+                        )
+                        self.setElementsAsValue(comboboxes, parameter_filestem)
+                    elif "::set_function_filestems_to" in event:
+                        function_filestem = event.replace("::set_function_filestems_to", '')
+                        comboboxes = map(
+                            FunctionRow.getChooseFileElement,
+                            FunctionRow.getInstances()
+                        )
+                        self.setElementsAsValue(comboboxes, function_filestem)
             elif psl_pre in event:
                 key = event.replace(psl_pre, psc_pre)
                 self.toggleVisibility(key)
@@ -1593,7 +1637,7 @@ class MainWindowRunner(WindowRunner, MainWindow):
                 self.updateParametersFromStems(names=parameter_name)
             elif event == "Update Parameters":
                 self.updateParametersFromFields()
-            elif event == open_simulation_key:
+            elif event == parameter_grid_key:
                 self.openSimulationWindow()
             elif event == generate_graph_key:
                 self.openFunction2ArgumentGraph()
@@ -2855,29 +2899,37 @@ class MainWindowRunner(WindowRunner, MainWindow):
 
     def getFreeParameterValues(
         self,
-        free_parameter_names: List[str] = None
+        free_parameter_names: List[str] = None,
+        fit_parameter_names: List[str] = None
     ) -> Tuple[str, Dict[str, Tuple[float, float, int, Quantity]]]:
         """
         Open window allowing user to set minimum, maximum, and step count for each selected free parameter.
         Uses present state of window.
 
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve free parameters from
-        :param free_parameter_names: names of parameters to set range of values for.
-            Defaults to names of parameter set to "Free" in window.
+        :param free_parameter_names: Names of parameters to set range of values for if grid-type simulation.
+            Names of parameters on axes of dataset if optimize-type simulation.
+            Defaults to names of parameters set to "Free" in window.
+        :param fit_parameter_names: names of parameters to fit to dataset.
+            Defaults to names of parameters set to "Fit" in window.
         """
         if free_parameter_names is None:
             free_parameter_names = self.getParameterNames(parameter_types="Free")
+        if fit_parameter_names is None:
+            fit_parameter_names = self.getParameterNames(parameter_types="Fit")
 
-        free_parameter_quantities = self.getParameterQuantities(names=free_parameter_names)
+        free_parameter_name2quantity = self.getParameterQuantities(names=free_parameter_names)
+        fit_parameter_name2quantity = self.getParameterQuantities(names=fit_parameter_names)
         set_free_parameters_window = SetFreeParametersWindowRunner(
-            name="Set Values for Free Parameters",
-            free_parameter_quantities=free_parameter_quantities
+            name="Set Varying Parameters",
+            free_parameter_name2quantity=free_parameter_name2quantity,
+            fit_parameter_name2quantity=fit_parameter_name2quantity
         )
         event, free_parameter_values = set_free_parameters_window.runWindow()
 
         if event == "Submit":
             free_parameter_values = {free_parameter_name: tuple(
-                [*free_parameter_values[free_parameter_name], free_parameter_quantities[free_parameter_name]]
+                [*free_parameter_values[free_parameter_name], free_parameter_name2quantity[free_parameter_name]]
             ) for free_parameter_name in free_parameter_names}
         return event, free_parameter_values
 
@@ -2891,24 +2943,30 @@ class MainWindowRunner(WindowRunner, MainWindow):
         """
         variable_objs = self.getVariables(is_core=True)
         variable_names = list(map(Variable.getName, variable_objs))
-        print("var_names:",  variable_names)
         model = self.getModel(variable_names=variable_names)
         model_parameter_names = model.getParameterNames()
 
         free_parameter_names = self.getParameterNames(parameter_types="Free")
-        free_parameters_not_in_model = tuple([
-            free_parameter_name
-            for free_parameter_name in free_parameter_names
-            if free_parameter_name not in model_parameter_names
+        fit_parameter_names = self.getParameterNames(parameter_types="Fit")
+        varying_parameter_names = free_parameter_names + fit_parameter_names
+        
+        varying_parameters_not_in_model = tuple([
+            varying_parameter_name
+            for varying_parameter_name in varying_parameter_names
+            if varying_parameter_name not in model_parameter_names
         ])
-        if len(free_parameters_not_in_model) >= 1:
+        
+        if len(varying_parameters_not_in_model) >= 1:
             sg.PopupError(
-                f"Free parameters {free_parameters_not_in_model:} are not present in model.",
-                title="Unavailable Free Parameters"
+                f"Fit/Free parameters {varying_parameters_not_in_model:} are not present in model.",
+                title="Unavailable Parameters"
             )
             return None
 
-        event, free_parameter_values = self.getFreeParameterValues(free_parameter_names=free_parameter_names)
+        event, free_parameter_values = self.getFreeParameterValues(
+            free_parameter_names=free_parameter_names,
+            fit_parameter_names=fit_parameter_names
+        )
         if event == "Submit":
             simulation_window = SimulationWindowRunner(
                 name="Run Simulation for Model",

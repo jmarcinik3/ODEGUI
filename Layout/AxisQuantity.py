@@ -32,15 +32,15 @@ class AxisQuantity:
         self.reset()
 
     def reset(self) -> None:
-        self.specie_names = []
-        self.quantity_names = []
+        self.specie_names = None
+        self.quantity_names = None
         self.envelope_name = None
         self.functional_name = None
         self.transform_name = None
         self.complex_name = None
-        self.normalize_names = []
-        self.functional_names = []
-        self.parameter_namess = []
+        self.normalize_names = None
+        self.functional_names = None
+        self.parameter_namess = None
         self.quantity_type = None
 
     def getAxisName(self) -> str:
@@ -70,7 +70,7 @@ class AxisQuantity:
         :param include_none: set True to include "None" species. Set False otherwise.
         """
         specie_names = self.specie_names
-        if len(specie_names) == 0:
+        if specie_names is None:
             axis_quantity_frame = self.getAxisQuantityFrame()
             quantity_count_per_axis = axis_quantity_frame.getQuantityCountPerAxis()
 
@@ -158,7 +158,7 @@ class AxisQuantity:
         :param include_none: set True to include "None" species. Set False otherwise.
         """
         quantity_names = self.quantity_names
-        if len(quantity_names) == 0:
+        if quantity_names is None:
             axis_quantity_frame = self.getAxisQuantityFrame()
             window_runner = axis_quantity_frame.getWindowRunner()
 
@@ -305,12 +305,12 @@ class AxisQuantity:
 
     def getNormalizeNames(self) -> List[str]:
         """
-        Get name of axes to normalize data over.
+        Get name of parameters to normalize data over.
 
         :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve names from
         """
         normalize_names = self.normalize_names
-        if len(normalize_names) == 0:
+        if normalize_names is None:
             normalize_names = []
 
             axis_quantity_frame = self.getAxisQuantityFrame()
@@ -339,7 +339,7 @@ class AxisQuantity:
         :param include_none: set True to include "None" functional. Set False otherwise.
         """
         functional_names = self.functional_names
-        if len(functional_names) == 0:
+        if functional_names is None:
             functional_names = []
 
             exists_nontimelike = self.existsNontimelikeSpecies()
@@ -373,7 +373,7 @@ class AxisQuantity:
         :param include_none: set True to include "None" functional. Set False otherwise.
         """
         parameter_namess = self.parameter_namess
-        if len(parameter_namess) == 0:
+        if parameter_namess is None:
             parameter_namess = []
 
             exists_nontimelike = self.existsNontimelikeSpecies()
@@ -519,7 +519,7 @@ class PlotQuantities:
         for axis_quantity in axis_quantities:
             axis_quantity.reset()
 
-        self.valid_axis_names = []
+        self.valid_axis_names = None
         self.parameter_names = None
 
     def getAxisQuantities(
@@ -589,7 +589,7 @@ class PlotQuantities:
         """
         valid_axis_names = self.valid_axis_names
 
-        if len(valid_axis_names) == 0:
+        if valid_axis_names is None:
             axis_quantities: List[AxisQuantity] = self.getAxisQuantities()
             valid_axis_names = []
             for axis_quantity in axis_quantities:
@@ -703,7 +703,7 @@ class AxisQuantityElement:
         envelope_names: List[str] = None,
         functional_names: List[str] = None,
         complex_names: List[str] = None,
-        normalize_over_axis_names: List[str] = None,
+        normalize_parameter_names: List[str] = None,
         include_none: bool = True,
         include_continuous: bool = True,
         include_discrete: bool = True,
@@ -722,7 +722,7 @@ class AxisQuantityElement:
             Defaults to empty list.
         :param complex_names: collection of names for complex-reduction methods to perform on results.
             Defaults to empty list.
-        :param normalize_over_axis_names: names of axes to normalize data over.
+        :param normalize_parameter_names: names of parameters to normalize data over.
             Defaults to empty list;
         :param include_normalize: set True to include element to normalize data.
             Set False otherwise.
@@ -748,7 +748,8 @@ class AxisQuantityElement:
         self.envelope_names = [] if envelope_names is None else envelope_names
         self.functional_names = [] if functional_names is None else functional_names
         self.complex_names = [] if complex_names is None else complex_names
-        self.normalize_over_axis_names = [] if normalize_over_axis_names is None else normalize_over_axis_names
+
+        self.normalize_parameter_names = [] if normalize_parameter_names is None else normalize_parameter_names
 
     def getQuantityCountPerAxis(self) -> int:
         """
@@ -790,13 +791,13 @@ class AxisQuantityElement:
         """
         return self.complex_names
 
-    def getNormalizeOverAxisNames(self) -> List[str]:
+    def getNormalizeParameterNames(self) -> List[str]:
         """
-        Get names of axes to normalize data over.
+        Get names of parameters to normalize data over.
 
         :param self: :class:`~Layout.SimulationWindow.AxisQuantityElement` to retrieve names from
         """
-        return self.normalize_over_axis_names
+        return self.normalize_parameter_names
 
     def includeScaleFactor(self) -> bool:
         """
@@ -845,7 +846,11 @@ class AxisQuantityTabGroup(TabGroup, AxisQuantityElement):
         :param window: :class:`~Layout.SimulationWindow.SimulationWindow` that tab is stored in
         :param kwargs: additional arguments to input into :class:`~Layout.SimulationWindow.AxisQuantityElement`
         """
-        AxisQuantityElement.__init__(self, **kwargs)
+        AxisQuantityElement.__init__(
+            self,
+            window=window,
+            **kwargs
+        )
 
         self.name2frame = {}
 
@@ -855,9 +860,11 @@ class AxisQuantityTabGroup(TabGroup, AxisQuantityElement):
         functional_names = self.getFunctionalNames()
         complex_names = self.getComplexNames()
 
+        parameter_names = self.getPlotChoices(species="Parameter")
+
         axis_names = ('x', 'y', 'z', 'c', 'C', 'X', 'Y')
         numerical_axis_names = ('x', 'y', 'z', 'c', 'C')
-        normalize_over_axis_names = axis_names
+        normalize_parameter_names = parameter_names
         standard_tab_frames = []
         nonstandard_tab_frames = []
         for axis_name in axis_names:
@@ -868,7 +875,7 @@ class AxisQuantityTabGroup(TabGroup, AxisQuantityElement):
                 axis_functional_names = functional_names
                 axis_complex_names = complex_names
                 axis_include_continuous = True
-                axis_normalize_over_axis_names = normalize_over_axis_names
+                axis_normalize_parameter_names = normalize_parameter_names
                 axis_include_scalefactor = True
             else:
                 axis_quantity_count = 1
@@ -877,7 +884,7 @@ class AxisQuantityTabGroup(TabGroup, AxisQuantityElement):
                 axis_functional_names = []
                 axis_complex_names = []
                 axis_include_continuous = False
-                axis_normalize_over_axis_names = []
+                axis_normalize_parameter_names = []
                 axis_include_scalefactor = False
 
             axis_include_none = axis_name not in ('x', 'y')
@@ -890,7 +897,7 @@ class AxisQuantityTabGroup(TabGroup, AxisQuantityElement):
                 include_none=axis_include_none,
                 include_continuous=axis_include_continuous,
                 include_discrete=axis_include_discrete,
-                normalize_over_axis_names=axis_normalize_over_axis_names,
+                normalize_parameter_names=axis_normalize_parameter_names,
                 include_scalefactor=axis_include_scalefactor,
                 transform_names=axis_transform_names,
                 envelope_names=axis_envelope_names,
@@ -1108,14 +1115,14 @@ class AxisQuantityFrame(Frame, AxisQuantityElement):
 
         :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retrieve element from
         """
-        normalize_over_axis_names = self.getNormalizeOverAxisNames()
-        if len(normalize_over_axis_names) >= 1:
+        normalize_parameter_names = self.getNormalizeParameterNames()
+        if len(normalize_parameter_names) >= 1:
             name = self.getName()
             window_obj = self.getWindowObject()
 
             normalize_checkbox_group = NormalizeCheckboxGroup(
                 name=name,
-                other_axis_names=normalize_over_axis_names,
+                other_axis_names=normalize_parameter_names,
                 window=window_obj
             )
             return normalize_checkbox_group

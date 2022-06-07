@@ -728,6 +728,7 @@ class CheckboxGroup(Row):
             output_type=list
         )
 
+
 class Window:
     """
     Wrapper for PySimpleGUI Window.

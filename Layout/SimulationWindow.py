@@ -2411,7 +2411,10 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
                         )
 
                     if exists_parameterlike:
-                        parameter_results, quantity_results = getAxisResults()
+                        normalize_parameter_names = axis_quantity.getNormalizeNames()
+                        parameter_results, quantity_results = getAxisResults(
+                            normalize_names=normalize_parameter_names
+                        )
                         quantity_results = quantity_results[0]
                     else:
                         quantity_results = getAxisResults()

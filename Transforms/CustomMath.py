@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import numpy as np
 from numpy import ndarray, polyfit
 from scipy.fft import rfft, rfftfreq
@@ -19,6 +21,64 @@ def normalizeArray(data: ndarray) -> ndarray:
     data_abs = np.abs(data)
     data_maxabs = data_abs.max()
     data_normalized = data / data_maxabs
+
+    return data_normalized
+
+
+def normalizeOverAxes(data: ndarray, axes: Tuple[int]) -> ndarray:
+    """
+    Normalize data over given axes.
+
+    :param data: array of data to normalize
+    :param axes: indicies of axes (in data) to normalize over
+    """
+    if len(axes) >= 1:
+        axes = tuple(sorted(axes))
+
+        data_abs = np.abs(data)
+        data_max = np.max(data_abs, axis=axes)
+
+        if isinstance(data_max, ndarray):
+            data_max[data_max == 0] = 1
+
+        """data_max_inds = []
+        for dimension_index, dimension_size in enumerate(data.shape):
+            if dimension_index in axes:
+                new_inds = np.newaxis
+            else:
+                new_inds = np.arange(data.shape[dimension_index])
+            data_max_inds.append(new_inds)
+        data_max_inds = tuple(data_max_inds)"""
+
+        data_shape_array = np.array(data.shape)
+        data_ndim = data.ndim
+        normalize_ndim = len(axes)
+        nonnormalize_ndim = data_ndim - normalize_ndim
+
+        other_axes = tuple([
+            axis
+            for axis in range(data_ndim)
+            if axis not in axes
+        ])
+
+        shape_missing = tuple(data_shape_array[list(axes)])
+        tile_reps = tuple([
+            *shape_missing,
+            *np.ones(nonnormalize_ndim, dtype=int)
+        ])
+        data_max_shaped = np.tile(data_max, tile_reps)
+
+        dimension_map = np.array([*axes, *other_axes])
+        dimension_map_reverse = np.zeros(data_ndim, dtype=int)
+        dimension_map_reverse[dimension_map] = np.arange(data_ndim)
+        transpose_axes = tuple(dimension_map_reverse)
+        data_max_shaped = np.transpose(data_max_shaped, axes=transpose_axes)
+
+        print("norm_shapes:", data.shape, data_max.shape, data_max_shaped.shape)
+        print("norm_axes:", axes, other_axes, dimension_map, transpose_axes)
+        data_normalized = np.divide(data, data_max_shaped)
+    else:
+        data_normalized = data
 
     return data_normalized
 
@@ -139,6 +199,26 @@ def geometricMean(data: ndarray):
     return mean
 
 
+def absoluteMinimum(data: ndarray):
+    """
+    Calculate absolute minimum for array.
+
+    :param data: array to calculate max for
+    """
+    absolute_minimum = np.min(np.abs(data))
+    return absolute_minimum
+
+
+def absoluteMaximum(data: ndarray):
+    """
+    Calculate absolute maximum for array.
+
+    :param data: array to calculate max for
+    """
+    absolute_maximum = np.max(np.abs(data))
+    return absolute_maximum
+
+
 def rootMeanSquare(data: ndarray) -> float:
     """
     Calculate root-mean-square for array.
@@ -152,13 +232,13 @@ def rootMeanSquare(data: ndarray) -> float:
 def sumSquaresError(data: ndarray, data_compare: ndarray) -> ndarray:
     """
     Get residual sum of squares (RSS) between data and comparison.
-    
+
     :param data: vector of points to compare to comparison data (e.g. fit data)
     :param data_compare: vector of points to compare to data
     """
     rss = np.sum((data - data_compare) ** 2)
     return rss
-    
+
 
 def standardDeviation(data: ndarray) -> float:
     """

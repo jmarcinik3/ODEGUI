@@ -18,6 +18,7 @@ from sympy.utilities.lambdify import lambdify
 
 from Function import Model, Parameter, Variable
 from macros import StoredObject, recursiveMethod
+from Transforms.CustomMath import normalizeOverAxes
 from YML import loadConfig, saveConfig
 
 
@@ -924,6 +925,7 @@ class GridResults(Results):
         parameter_names: Union[str, List[str]],
         quantity_names: Union[str, List[str]],
         transform_name: str = "None",
+        normalize_names: Union[str, List[str]] = None,
         show_progress: bool = False,
         **kwargs
     ) -> Tuple[tuple, ndarray]:
@@ -935,6 +937,7 @@ class GridResults(Results):
         :param parameter_names: name(s) of free parameter(s) to retrieve quantity results over.
         :param quantity_names: name(s) of quantity(s) to pass into :meth:`~Results.Results.getResultsOverTime`
         :param transform_name: see :class:`~Results.Results.getResultsOverTime`
+        :param normalize_names: name(s) of parameter(s) to normalize results over
         :param show_progress: show progress bar during calculation
         :param kwargs: additional arguments to pass into :meth:`~Results.Results.getResultsOverTime`
         :returns: tuple of results.
@@ -947,10 +950,31 @@ class GridResults(Results):
         """
         if isinstance(quantity_names, str):
             quantity_names = [quantity_names]
+        else:
+            assert isinstance(quantity_names, list)
+            for quantity_name in quantity_names:
+                assert isinstance(quantity_name, str)
+
         if isinstance(parameter_names, str):
             parameter_names = [parameter_names]
+        else:
+            assert isinstance(parameter_names, list)
+            for parameter_name in parameter_names:
+                assert isinstance(parameter_name, str)
+
+        assert isinstance(transform_name, str)
         if transform_name != "None":
             quantity_names = [quantity_names]
+
+        if normalize_names is None:
+            normalize_names = []
+        elif isinstance(normalize_names, str):
+            normalize_names = [normalize_names]
+        else:
+            assert isinstance(normalize_names, list)
+            for normalize_name in normalize_names:
+                assert isinstance(normalize_name, str)
+                assert normalize_name in parameter_names
 
         results_file_handler = self.getResultsFileHandler()
 
@@ -967,12 +991,19 @@ class GridResults(Results):
             **kwargs
         )
 
+        normalize_over_axes = [
+            parameter_names.index(normalize_name)
+            for normalize_name in normalize_names
+        ]
         if isinstance(sample_result, (float, int, np.float32)):
             single_result_size = per_parameter_stepcounts
         elif isinstance(sample_result, ndarray):
             single_result_size = (*per_parameter_stepcounts, *sample_result.shape)
+            if len(normalize_over_axes) >= 1:
+                normalize_over_axes.append(-1)
         else:
             raise TypeError(f"invalid type ({type(sample_result):})")
+        normalize_over_axes = tuple(normalize_over_axes)
 
         quantity_count = len(quantity_names)
         simulation_count_per_quantity = prod(list(per_parameter_stepcounts))
@@ -1015,6 +1046,7 @@ class GridResults(Results):
                 except KeyError:
                     single_results[partial_index] = None
 
+            single_results = normalizeOverAxes(single_results, normalize_over_axes)
             results[quantity_location] = single_results
 
         if show_progress:
