@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, List, Type, Union
 
 import numpy as np
-# noinspection PyPep8Naming
 import PySimpleGUI as sg
 from more_itertools import locate
 from numpy import ndarray
@@ -319,24 +318,28 @@ def expression2png(name: str, expression: Expr, folder: str, filename: str, var2
     return filepath
 
 
-def tex2pngFromFile(output_folder: str, tex_filename: str, **kwargs) -> None:
+def tex2pngFromFile(
+    output_folder: str, 
+    var2tex_filepath: str, 
+    **kwargs
+) -> None:
     """
     Create PNG for quantity(s) in TeX expression.
     File containing quantity name(s) to TeX math format must be made before call.
 
     :param output_folder: name of folder to save images in
-    :param tex_filename: name of file containing name-to-TeX conversions.
+    :param var2tex_filepath: path of file containing name-to-TeX conversions.
         Keys in file are name of quantity.
         Values are corresponding TeX format.
     :param kwargs: additional arguments to pass into :meth:`~macros.tex2png`
     """
-    tex_yml = readVar2Tex(tex_filename)
+    tex_config = readVar2Tex(var2tex_filepath)
 
     if not os.path.isdir(output_folder):
         os.mkdir(output_folder)
-    for key in readVar2Tex(tex_filename):
+    for key in tex_config.keys():
         filepath = f"{output_folder:s}/{key:s}.png"
-        tex2png(tex_yml[key], filepath, **kwargs)
+        tex2png(tex_config[key], filepath, **kwargs)
 
 
 def recursiveMethod(

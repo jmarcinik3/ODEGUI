@@ -1,11 +1,18 @@
 import json
 from io import BytesIO
+from os.path import join
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
 from zipfile import ZipFile
 
 import xmltodict
 import yaml
+
+specific_model_folderpath = "specific_model"
+var2tex_filepath = join(specific_model_folderpath, "var2tex.yml")
+states_filepath = join(specific_model_folderpath, "states.json")
+prefix_filepath = join(specific_model_folderpath, "prefix.json")
+layout_dimensions_filepath = join(specific_model_folderpath, "layout_dimensions.json")
 
 config_file_types = [
     ("JavaScript Object Notation", "*.json"),
@@ -19,46 +26,46 @@ config_file_extensions = [
 ]
 
 
-def readVar2Tex(filename="var2tex.yml"):
-    var2tex = loadConfig(filename)
+def readVar2Tex(filepath: str = var2tex_filepath):
+    var2tex = loadConfig(filepath)
     return var2tex
 
 
-def readLayout(filename: str) -> dict:
+def readLayout(filepath: str) -> dict:
     """
     Read YML file containing layout for window.
-    
-    :param filename: name of YML file
+
+    :param filepath: path of YML file
     """
-    layout = loadConfig(filename)
+    layout = loadConfig(filepath)
     return layout
 
 
-def readPrefixes(filename="prefix.yml"):
-    prefixes = loadConfig(filename)
+def readPrefixes(filepath: str = prefix_filepath) -> dict:
+    prefixes = loadConfig(filepath)
     return prefixes
 
 
-def readStates(choice=None, filename: str = "states.json") -> dict:
+def readStates(choice=None, filepath: str = states_filepath) -> dict:
     """
     Get dictionary of default values for elements in window.
-    
+
     :param choice: element to retrieve states for
-    :param filename: name of file to retrieve states from
+    :param filepath: path of file to retrieve states from
     """
-    choices = loadConfig(filename)
+    choices = loadConfig(filepath)
     if choice is None:
         return choices
     elif choice is not None:
         return choices[choice]
 
 
-def getStates(choice, name, filename="states.json"):
-    choices = readStates(choice, filename)
+def getStates(choice: str, name: str, filepath: str = states_filepath):
+    choices = readStates(choice, filepath)
     return choices[name]
 
 
-def getDimensions(keys: List[str], filename: str = "layout_dimensions.json") -> Tuple[Optional[float], Optional[float]]:
+def getDimensions(keys: List[str], filepath: str = layout_dimensions_filepath) -> Tuple[Optional[float], Optional[float]]:
     def getDimension(dimension):
         if dimension is not None:
             try:
@@ -68,7 +75,7 @@ def getDimensions(keys: List[str], filename: str = "layout_dimensions.json") -> 
         elif dimension is None:
             return None
 
-    dimensions = loadConfig(filename)
+    dimensions = loadConfig(filepath)
 
     if isinstance(keys, list):
         for key in keys:
@@ -87,7 +94,7 @@ def loadConfig(filepath: str, archive: ZipFile = None) -> Union[dict, list]:
         Must be relative to *.zip file if :paramref:`~YML.loadConfig.archive` is given.
     :param archive: zip file to load file from
 
-        
+
     """
     assert isinstance(filepath, str)
 
@@ -109,9 +116,10 @@ def loadConfig(filepath: str, archive: ZipFile = None) -> Union[dict, list]:
         contents = xmltodict.parse(file_str, dict_constructor=dict)["root"]
     elif file_extension in [".yml", ".yaml"]:
         contents = yaml.load(file, Loader=yaml.Loader)
-    
+
     file.close()
     return contents
+
 
 def saveConfig(contents: dict, filepath: str) -> BytesIO:
     """
@@ -138,6 +146,5 @@ def saveConfig(contents: dict, filepath: str) -> BytesIO:
                 default_flow_style=None,
                 sort_keys=False
             )
-        
-    
+
     return file
