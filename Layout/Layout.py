@@ -278,6 +278,98 @@ class Row:
         return column
 
 
+class ChooseFileRow(Row):
+    def __init__(
+        self,
+        name: str,
+        window: Window,
+        text: str = "Choose file:",
+        **kwargs
+    ) -> None:
+        """
+        Constructor for :class:`~Layout.Layout.ChooseFileRow`
+
+        :param name: name of row
+        :param window: :class:`~Layout.Layout.Window` that contains row
+        :param text: display text to identify row (e.g. containing directions to choose file)
+        :parm kwargs: additional arguments to input into :class:`~Layout.Layout.Row`
+        """
+        Row.__init__(
+            self,
+            name=name,
+            window=window,
+            **kwargs
+        )
+        self.text = text
+
+        elements = [
+            self.getLabel(),
+            self.getInputField(),
+            self.getFileBrowseButton()
+        ]
+        self.addElements(elements=elements)
+
+    def getText(self) -> str:
+        """
+        Get text to display preceding input field.
+
+        :param self: :class:`~Layout.Layout.ChooseFileRow` to retrieve text from
+        """
+        return self.text
+
+    def getLabel(self) -> sg.Text:
+        """
+        Get element for label preceding input field.
+
+        :param self: :class:`~Layout.Layout.ChooseFileRow` to retrieve label from
+        """
+        text = self.getText()
+        name = self.getName()
+        return sg.Text(
+            text=text,
+            key=f"-OUTPUT FILE LABEL {name:s}-"
+        )
+
+    @storeElement
+    def getInputField(self) -> sg.Input:
+        """
+        Get element to type/store chosen file in.
+
+        :param self: :class:`~Layout.Layout.ChooseFileRow` to retrieve element from
+        """
+        name = self.getName()
+        return sg.Input(
+            default_text="",
+            size=(30, 1),
+            justification="left",
+            key=f"-OUTPUT FILE INPUT {name:s}-"
+        )
+
+    def getChosenFilepath(self) -> str:
+        """
+        Get text in input field.
+
+        :param self: :class:`~Layout.Layout.ChooseFileRow` to retrieve text from
+        """
+        file_input = self.getInputField()
+        file_input_key = getKeys(file_input)
+        window_runner = self.getWindowRunner()
+        file_input_text = window_runner.getValue(file_input_key)
+        return file_input_text
+
+    def getFileBrowseButton(self) -> sg.FileBrowse:
+        """
+        Get button to open file-browse menu.
+
+        :param self: :class:`~Layout.Layout.ChooseFileRow` to retrieve button from
+        """
+        name = self.getName()
+        return sg.FileBrowse(
+            button_text="Browse",
+            key=f"-OUTPUT FILE BROWSE {name:s}-"
+        )
+
+
 class Layout:
     """
     Container for :class:`~Layout.Layout.Row`.
@@ -577,7 +669,6 @@ class TabGroup(TabbedElement):
 
         :param self: :class:`~Layout.Layout.TabGroup` to retrieve layout from
         """
-        # noinspection PyTypeChecker
         return [[self.getTabGroup()]] + self.getSuffixLayout()
 
     def getAsTab(self) -> sg.Tab:
@@ -602,7 +693,8 @@ class RadioGroup(Row):
         radios: Union[sg.Radio, List[sg.Radio]],
         group_id: str,
         window: Window,
-        name: str = None
+        name: str = None,
+        default_index: int = 0
     ):
         """
         Constructor for :class:`~Layout.Layout.RadioGroup`.
@@ -610,15 +702,53 @@ class RadioGroup(Row):
         :param radios: collection of radio elements
         :param group_id: id of radio group
         :param window: :class:`~Layout.Layout.Window` that contains group
-        :param name: name of radio group qua row
+        :param name: name of radio group
+        :param default_index: index of default radio within radio group
         """
-        super().__init__(
+        if isinstance(radios, list):
+            for radio in radios:
+                assert isinstance(radio, sg.Checkbox)
+        else:
+            assert isinstance(radio, sg.Checkbox)
+
+        assert isinstance(window, Window)
+        assert isinstance(name, str)
+
+        Row.__init__(
+            self,
             name=name,
             elements=radios,
             window=window
         )
 
+        assert isinstance(group_id, str)
         self.group_id = group_id
+
+        assert isinstance(default_index, int)
+        radio_count = len(radios)
+        assert 0 <= default_index < radio_count or radio_count == 0
+        self.default_index = default_index
+
+    def reset(self) -> None:
+        """
+        Reset group of radios to choose default radio.
+
+        :param self: :class:`~Layout.Layout.RadioGroup`
+        """
+        radios = self.getRadios()
+        default_index = self.getDefaultIndex()
+        radio_count = len(radios)
+        for radio_index in range(radio_count):
+            radio = radios[radio_index]
+            radio.update(radio_index == default_index)
+
+    def getDefaultIndex(self) -> int:
+        """
+        Get index of default radio within radio group.
+
+        :param self: :class:`~Layout.Layout.RadioGroup` to retrieve index from
+        """
+        return self.default_index
 
     def getGroupId(self) -> str:
         """
@@ -634,11 +764,12 @@ class RadioGroup(Row):
 
         :param self: :class:`~Layout.Layout.RadioGroup` to retrieve radios from
         """
-        return self.getElements()
+        radios = self.getElements()
+        return radios
 
     def getChosenRadio(self) -> sg.Radio:
         """
-        Get radio in group that is set to true.
+        Get radio in group that is chosen.
 
         :param self: :class:`~Layout.Layout.RadioGroup` to retrieve radio from
         """
@@ -671,11 +802,32 @@ class CheckboxGroup(Row):
         :param checkboxes: collection of checkbox elements
         :param name: name of checkbox group
         """
-        super().__init__(
+        assert isinstance(window, Window)
+
+        if isinstance(checkboxes, list):
+            for checkbox in checkboxes:
+                assert isinstance(checkbox, sg.Checkbox)
+        else:
+            assert isinstance(checkboxes, sg.Checkbox) or checkboxes is None
+
+        assert isinstance(name, str)
+
+        Row.__init__(
+            self,
             name=name,
             elements=checkboxes,
             window=window
         )
+
+    def reset(self) -> None:
+        """
+        Deselect all checkboxes in group.
+
+        :param self: :class:`~Layout.Layout.CheckboxGroup` to reset
+        """
+        checkboxes = self.getCheckboxes()
+        for checkbox in checkboxes:
+            checkbox.update(False)
 
     def getCheckboxes(self) -> List[sg.Checkbox]:
         """

@@ -6,7 +6,6 @@ from __future__ import annotations
 from os.path import basename
 from typing import Iterable, List, Union
 
-# noinspection PyPep8Naming
 import PySimpleGUI as sg
 from pint import Quantity
 
