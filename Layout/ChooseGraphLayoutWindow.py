@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Dict, Iterable, List, Optional, Tuple, Union
 
-# noinspection PyPep8Naming
 import PySimpleGUI as sg
 
 from CustomErrors import RecursiveTypeError
@@ -10,12 +9,27 @@ from Layout.Layout import Layout, Row, Window, WindowRunner
 
 
 class ChooseGraphLayoutWindow(Window):
-    def __init__(self, name: str, runner: ChooseGraphLayoutWindowRunner) -> None:
+    def __init__(
+        self, 
+        name: str, 
+        runner: ChooseGraphLayoutWindowRunner,
+    ) -> None:
+        """
+        Constructor for :class:`~Layout.ChooseGraphLayoutWindow.ChooseGraphLayoutWindow`.
+        
+        :param name: name of window
+        :param runner: window runner associated with window
+        """
         dimensions = {
             "window": (None, None)  # dim
         }
-        super().__init__(name, runner, dimensions=dimensions)
-        self.choice2lay = {
+        Window.__init__(
+            self, 
+            name, 
+            runner, 
+            dimensions=dimensions
+        )
+        self.choice2layout = {
             "Circle": "circle",
             "Distributed Recursive": "drl",
             "Fruchterman-Reingold Force-Directed": "fr",
@@ -29,9 +43,12 @@ class ChooseGraphLayoutWindow(Window):
 
         :param self: `~Layout.Layout.ChooseGraphLayoutWindow` to retrieve choices from
         """
-        return list(self.choice2lay.keys())
+        return list(self.choice2layout.keys())
 
-    def getLayoutCodes(self, choices: Union[str, List[str]] = None) -> Union[str, Dict[str, str]]:
+    def getLayoutCodes(
+        self, 
+        choices: Union[str, List[str]] = None
+    ) -> Union[str, Dict[str, str]]:
         """
         Get layout codes for igraph from full layout name.
 
@@ -40,7 +57,7 @@ class ChooseGraphLayoutWindow(Window):
             Defaults to all layouts.
         """
         if isinstance(choices, str):
-            return self.choice2lay[choices]
+            return self.choice2layout[choices]
         elif isinstance(choices, Iterable):
             return {choice: self.getLayoutCodes(choices=choice) for choice in choices}
         elif choices is None:
@@ -85,18 +102,30 @@ class ChooseGraphLayoutWindow(Window):
         radios = self.getChooseLayoutElements()
         radio_layout = Layout()
         for radio in radios:
-            radio_layout.addRows(rows=Row(window=self, elements=radio))
+            row = Row(
+                window=self, 
+                elements=radio
+            )
+            radio_layout.addRows(rows=row)
+        
         footer_row = self.getFooterRow()
+        
         return radio_layout.getLayout() + footer_row.getLayout()
 
 
-class ChooseGraphLayoutWindowRunner(WindowRunner):
+class ChooseGraphLayoutWindowRunner(WindowRunner, ChooseGraphLayoutWindow):
     def __init__(self, name: str) -> None:
-        window_obj = ChooseGraphLayoutWindow(name, self)
-        super().__init__(window_obj)
-
-        self.getLayoutChoices = window_obj.getLayoutChoices
-        self.getLayoutCodes = window_obj.getLayoutCodes
+        """
+        Constructor for :class:`~Layout.ChooseGraphLayoutWindow.ChooseGraphLayoutWindowRunner`.
+        
+        :param name: name of window
+        """
+        ChooseGraphLayoutWindow.__init__(
+            self, 
+            name=name, 
+            runner=self,
+        )
+        WindowRunner.__init__(self)
 
     def getLayoutCode(self) -> Tuple[str, Optional[str]]:
         """
@@ -107,7 +136,8 @@ class ChooseGraphLayoutWindowRunner(WindowRunner):
         """
         window = self.getWindow()
         event = ''
-        while event not in [sg.WIN_CLOSED, "Cancel"]:
+        exit_keys = (sg.WIN_CLOSED, "Cancel")
+        while event not in exit_keys:
             event, self.values = window.read()
 
             if event == "Submit":
@@ -117,6 +147,7 @@ class ChooseGraphLayoutWindowRunner(WindowRunner):
                     return event, layout_code
                 else:
                     sg.PopupError("Select layout name or hit cancel button")
+        
         window.close()
         return event, None
 
