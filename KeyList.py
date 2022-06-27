@@ -7,7 +7,7 @@ Dictionary value is the collection of keys containing that prefix.
 """
 from typing import List, Union
 
-import YML
+from YML import readPrefixes
 
 
 class KeyList:
@@ -26,7 +26,7 @@ class KeyList:
         
         :param separator: string separating prefix and tag
         """
-        self.prefixes = YML.readPrefixes("prefix.yml")
+        self.prefixes = readPrefixes()
         self.separator = separator
         self.keys = {}
 

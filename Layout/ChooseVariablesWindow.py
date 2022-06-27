@@ -5,10 +5,8 @@ from __future__ import annotations
 
 from typing import Iterable, List, Union
 
-# noinspection PyPep8Naming
 import PySimpleGUI as sg
 
-from Function import Parameter
 from Layout.Layout import ChooseChecksWindow, Row, WindowRunner
 from macros import getTexImage, recursiveMethod
 

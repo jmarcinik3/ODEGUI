@@ -1,6 +1,4 @@
-import time
 from functools import partial
-from multiprocessing import Process
 from typing import Callable, Dict, Iterable, List, Tuple, Union
 
 import numpy as np
@@ -8,7 +6,6 @@ from numpy import exp, ndarray
 from scipy.integrate import odeint
 from sympy import Expr, Symbol
 from sympy.core import function
-# noinspection PyUnresolvedReferences
 from sympy.utilities.lambdify import lambdify
 
 from Results import ResultsFileHandler
@@ -41,7 +38,6 @@ def ODEstep(ydot: function, y0: ndarray, t: List[float]) -> float:
     :param y0: initial value vector for variables
     :param t: list of initial time followed by final time
     """
-    # noinspection PyTypeChecker
     ynext: float = odeint(ydot, y0, t)[1]
     return ynext
 
@@ -57,7 +53,6 @@ def solveODE(ydot: function, y0: ndarray, t: ndarray) -> Tuple[ndarray, ndarray]
         First index corresponds to time step.
         Second index corresponds to simulated variable.
     """
-    # noinspection PyTypeChecker
     y: ndarray = odeint(ydot, y0, t, tfirst=True)
     return t, y
 
@@ -284,7 +279,7 @@ class RunGridSimulation(RunSimulation):
     def saveODEResults(self, results: Dict[str, ndarray]) -> None:
         """
         Save ODE results into file.
-        
+
         :param self: :class:`~Simulation.RunGridSimulation` to retrieve save function, including index, from
         :param results: results to save into file.
             See :meth:`~Simulation.formatResultsAsDictionary`.
@@ -408,15 +403,15 @@ class RunOptimizationSimulation(RunSimulation):
     def saveODEResults(self) -> None:
         """
         Save ODE results into file.
-        
-        :param self: :class:`~Simulation.RunOptimizationSimulation` to retrieve save functionfrom
+
+        :param self: :class:`~Simulation.RunOptimizationSimulation` to retrieve save function from
         :param results: results to save into file.
             See :meth:`~Simulation.formatResultsAsDictionary`.
         """
         sample_size = self.getSampleSize()
         iteration_step = self.getIterationStep()
         simulation_index = (sample_size, iteration_step)
-        
+
         saveResult = self.saveResult
         for variable_name, result in self.results.items():
             saveResult(

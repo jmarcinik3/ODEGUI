@@ -21,9 +21,9 @@ from sympy.utilities.lambdify import lambdify
 
 from CustomErrors import RecursiveTypeError
 from macros import formatQuantity, formatUnit, formatValue, recursiveMethod, unique
-from YML import config_file_extensions, loadConfig, saveConfig
+from YML import config_file_extensions, loadConfig, saveConfig, var2tex_filepath
 
-var2tex = loadConfig("var2tex.yml")
+var2tex = loadConfig(var2tex_filepath)
 
 
 class PaperQuantity:
@@ -872,7 +872,6 @@ class Model:
             functions = self.getFunctions(names=names)
             getExpression = partial(Function.getExpression, expanded=True)
 
-            # noinspection PyTypeChecker
             expressions: List[Expr] = list(map(getExpression, functions))
             variables = list(map(Symbol, names))
 
@@ -1675,7 +1674,7 @@ class Derivative:
         """
         Get variable that derivative is derivative of.
 
-        :param self: :class:`~Function.Derivative` to retreive variable from
+        :param self: :class:`~Function.Derivative` to retrieve variable from
         :param return_type: class type of output.
             Must be either sympy.Symbol or str.
         """
@@ -2155,7 +2154,10 @@ class SymbolicVariables:
     symbolic_variables = {}
 
     @classmethod
-    def addVariables(cls, names: Union[str, List[str]]) -> Union[Symbol, List[Symbol]]:
+    def addVariables(
+        cls,
+        names: Union[str, List[str]]
+    ) -> Union[Symbol, List[Symbol]]:
         variable_names = cls.variable_names
 
         def add(name: str) -> None:
@@ -2623,7 +2625,6 @@ def readParametersFromFiles(*args, **kwargs) -> Dict[str, Parameter]:
         Key is name of parameter.
         Value is parameter object for parameter.
     """
-    # noinspection PyTypeChecker
     return readQuantitiesFromFiles(*args, **kwargs, specie="Parameter")
 
 
@@ -2637,5 +2638,4 @@ def readFunctionsFromFiles(*args, **kwargs) -> Dict[str, Function]:
         Key is name of function.
         Value is function object for function.
     """
-    # noinspection PyTypeChecker
     return readQuantitiesFromFiles(*args, **kwargs, specie="Function")

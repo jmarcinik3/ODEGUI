@@ -94,7 +94,7 @@ def getIndicies(
     __Recursion Base__
         return single index: elements [element_class] or element_class [None]
 
-    :param elements: elements to retreive indicies of
+    :param elements: elements to retrieve indicies of
     :param element_list: collection to search for indicies in
     :param element_class: return only elements of this type.
         Acts as a filter.

@@ -55,7 +55,7 @@ class FunctionOnResult:
         """
         Get function, pre-substituting in times if required.
 
-        :param self: :class:`~Results.FunctionOnResult` to retreive function from
+        :param self: :class:`~Results.FunctionOnResult` to retrieve function from
         """
         return self.function
 
@@ -257,8 +257,8 @@ class Results:
         """
         Get index of free parameter within collection of free-parameter names.
 
-        :param self: :class:`~Results.Results` to retreive free-parameter names from
-        :param name: name of free parameter to retreive index of
+        :param self: :class:`~Results.Results` to retrieve free-parameter names from
+        :param name: name of free parameter to retrieve index of
         """
         results_file_handler = self.getResultsFileHandler()
         free_parameter_names = results_file_handler.getFreeParameterNames()
@@ -1204,8 +1204,8 @@ class ResultsFileHandler:
         """
         Get values for a free parameter.
 
-        :param self: :class:`~Results.Results` to retreive value from
-        :param names: name(s) of parameter to retreive values for
+        :param self: :class:`~Results.Results` to retrieve value from
+        :param names: name(s) of parameter to retrieve values for
         :param output_type: iterable to output as
             if :paramref:`~Results.Results.getFreeParameterValues.names` is iterable
         """

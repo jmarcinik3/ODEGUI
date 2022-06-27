@@ -74,8 +74,6 @@ def normalizeOverAxes(data: ndarray, axes: Tuple[int]) -> ndarray:
         transpose_axes = tuple(dimension_map_reverse)
         data_max_shaped = np.transpose(data_max_shaped, axes=transpose_axes)
 
-        print("norm_shapes:", data.shape, data_max.shape, data_max_shaped.shape)
-        print("norm_axes:", axes, other_axes, dimension_map, transpose_axes)
         data_normalized = np.divide(data, data_max_shaped)
     else:
         data_normalized = data
