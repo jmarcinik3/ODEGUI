@@ -1,37 +1,42 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Iterable, List, Union
+from typing import TYPE_CHECKING, Callable, Dict, Iterable, List, Tuple, Union
 
 import numpy as np
 import PySimpleGUI as sg
-from macros import StoredObject, getIndicies, recursiveMethod, removeAtIndicies
+from macros import getIndicies, recursiveMethod, removeAtIndicies
 
 from Layout.Layout import (CheckboxGroup, Frame, Layout, RadioGroup, Row, Tab,
                            TabGroup, getKeys, storeElement)
 
 if TYPE_CHECKING:
-    from Layout.SimulationWindow import SimulationWindow
+    from Layout.SimulationWindow import (SimulationWindow,
+                                         SimulationWindowRunner)
 
 cc_pre = "CANVAS CHOICE"
 ccs_pre = ' '.join((cc_pre, "SPECIE"))
 fps_pre = "FREE_PARAMETER SLIDER"
+qr_pre = "QUANTITY RESET"
 
 
 class AxisQuantity:
     def __init__(
         self,
-        axis_name: str,
         axis_quantity_frame: AxisQuantityFrame
     ) -> None:
-        assert isinstance(axis_name, str)
-        self.axis_name = axis_name
-
         assert isinstance(axis_quantity_frame, AxisQuantityFrame)
         self.axis_quantity_frame = axis_quantity_frame
+        axis_name = axis_quantity_frame.getName()
+        self.axis_name = axis_name
 
         self.reset()
 
     def reset(self) -> None:
+        """
+        Reset all attributes of class by looking at GUI elements (i.e. set all attributes to NoneType)
+
+        :param self: :class:`~Layout.AxisQuantity.AxisQuantity` to reset attributes in
+        """
         self.specie_names = None
         self.quantity_names = None
         self.envelope_name = None
@@ -42,6 +47,106 @@ class AxisQuantity:
         self.functional_names = None
         self.parameter_namess = None
         self.quantity_type = None
+
+    def updateAttributes(self) -> None:
+        """
+        Update all attributes of class by looking at GUI elements.
+
+        :param self: :class:`~Layout.AxisQuantity.AxisQuantity` to update attributes in
+        """
+        self.reset()
+        self.getSpecieNames()
+        self.getQuantityNames()
+        self.getEnvelopeName()
+        self.getFunctionalName()
+        self.getTransformName()
+        self.getComplexName()
+        try:
+            self.getNormalizeNames()
+        except AttributeError:
+            pass
+        try:
+            self.getFunctionalFunctionalNames()
+        except AttributeError:
+            pass
+        try:            
+            self.getFunctionalParameterNamess()
+        except AttributeError:
+            pass
+
+    def updatePlotChoices(self) -> None:
+        """
+        Update choices for quantities in combobox.
+
+        :param self: :class:`~Layout.AxisQuantity.AxisQuantity` to update choices in
+        """
+        getSpecies = PlotQuantities.getSpecies
+        timelike_species = getSpecies("timelike") + getSpecies("nonelike")
+        all_species = getSpecies()
+        nontimelike_species = [
+            specie
+            for specie in all_species
+            if specie not in timelike_species
+        ]
+
+        axis_quantity_frame = self.getAxisQuantityFrame()
+        window_runner: SimulationWindowRunner = axis_quantity_frame.getWindowRunner()
+
+        species = self.getSpecieNames()
+        axis_quantity_rows: List[AxisQuantityRow] = axis_quantity_frame.getAxisQuantityRows()
+        for index, axis_quantity_row in enumerate(axis_quantity_rows):
+            specie = species[index]
+            quantity_names_combobox = axis_quantity_row.getAxisQuantityElement()
+
+            new_choices = window_runner.getPlotChoices(species=specie) if specie != "None" else ['']
+            old_choices = vars(quantity_names_combobox)["Values"]
+
+            if new_choices != old_choices:
+                quantity_names_combobox_key = getKeys(quantity_names_combobox)
+
+                kwargs = {
+                    "values": new_choices,
+                    "disabled": specie == "None",
+                    "size": vars(quantity_names_combobox)["Size"]
+                }
+
+                old_chosen_quantity = window_runner.getValue(quantity_names_combobox_key)
+                change_quantity = old_chosen_quantity not in new_choices
+                if change_quantity:
+                    new_chosen_quantity = new_choices[0]
+                    kwargs["value"] = new_chosen_quantity
+                    quantity_names_combobox.update(**kwargs)
+                    window = window_runner.getWindow()
+                    window.write_event_value(quantity_names_combobox_key, new_chosen_quantity)
+                else:
+                    quantity_names_combobox.update(**kwargs)
+
+        exists_nontimelike = False
+        for nontimelike_specie in nontimelike_species:
+            if nontimelike_specie in species:
+                exists_nontimelike = True
+                break
+        envelope_disabled = transform_disabled = functional_disabled = complex_disabled = exists_nontimelike
+
+        envelope_radio_group = axis_quantity_frame.getAxisEnvelopeGroup()
+        if isinstance(envelope_radio_group, EnvelopeRadioGroup):
+            envelope_radios = envelope_radio_group.getRadios()
+            for envelope_radio in envelope_radios:
+                envelope_radio.update(disabled=envelope_disabled)
+
+        transform_combobox = axis_quantity_frame.getAxisTransformElement()
+        if isinstance(transform_combobox, sg.Combo):
+            transform_combobox.update(disabled=transform_disabled)
+
+        functional_combobox = axis_quantity_frame.getAxisFunctionalElement()
+        if isinstance(functional_combobox, sg.Combo):
+            functional_combobox.update(disabled=functional_disabled)
+
+        complex_radio_group = axis_quantity_frame.getAxisComplexGroup()
+        if isinstance(complex_radio_group, ComplexRadioGroup):
+            complex_radios = complex_radio_group.getRadios()
+            for complex_radio in complex_radios:
+                complex_radio.update(disabled=complex_disabled)
 
     def getAxisName(self) -> str:
         """
@@ -66,7 +171,7 @@ class AxisQuantity:
         """
         Get selected specie names for axis.
 
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retreive names from
+        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve names from
         :param include_none: set True to include "None" species. Set False otherwise.
         """
         specie_names = self.specie_names
@@ -154,7 +259,7 @@ class AxisQuantity:
         """
         Get selected quantity names for axis.
 
-        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retreive names from
+        :param self: :class:`~Layout.SimulationWindow.PlotQuantities` to retrieve names from
         :param include_none: set True to include "None" species. Set False otherwise.
         """
         quantity_names = self.quantity_names
@@ -492,18 +597,16 @@ class PlotQuantities:
 
     def __init__(
         self,
-        axis_name2frame: Dict[str, AxisQuantityFrame]
+        axis_quantity_frames: List[AxisQuantityFrame]
     ) -> None:
-        assert isinstance(axis_name2frame, dict)
+        assert isinstance(axis_quantity_frames, list)
+
         axis_name2quantity = {}
-        for axis_name, axis_quantity_frame in axis_name2frame.items():
-            assert isinstance(axis_name, str)
+        for axis_quantity_frame in axis_quantity_frames:
             assert isinstance(axis_quantity_frame, AxisQuantityFrame)
 
-            axis_quantity = AxisQuantity(
-                axis_name,
-                axis_quantity_frame
-            )
+            axis_name = axis_quantity_frame.getName()
+            axis_quantity = AxisQuantity(axis_quantity_frame)
             axis_name2quantity[axis_name] = axis_quantity
         self.axis_name2quantity = axis_name2quantity
 
@@ -533,10 +636,10 @@ class PlotQuantities:
         :param names: name(s) of axis(es) to retrieve quantities for.
             Defaults to retrieving all axis quantities.
         """
+        axis_quantities = self.axis_name2quantity
 
         def get(axis_name: str) -> AxisQuantity:
             """Base method for :meth:`~Simulation.SimulationWindow.PlotQuantities.getAxisQuantities`"""
-            axis_quantities = self.axis_name2quantity
             axis_quantity = axis_quantities[axis_name]
             return axis_quantity
 
@@ -695,6 +798,72 @@ class PlotQuantities:
         return exists_like
 
 
+class AxisQuantityFrameContainer:
+    def __init__(self, axis_quantity_frames: List[AxisQuantityFrame] = None):
+        """
+        Constructor for :class:`~Layout.AxisQuantity.AxisQuantityFrameContainer`.
+
+        :param axis_quantity_frames: collection of axis-quantity frames included in window.
+            Defaults to empty list.
+        """
+        if axis_quantity_frames is None:
+            self.axis_quantity_frames = []
+        else:
+            assert isinstance(axis_quantity_frames, list)
+            for axis_quantity_frame in axis_quantity_frames:
+                assert isinstance(axis_quantity_frame, AxisQuantityFrame)
+            self.axis_quantity_frames = axis_quantity_frames
+
+    def addAxisQuantityFrame(self, axis_quantity_frame: AxisQuantityFrame) -> AxisQuantityFrame:
+        """
+        Add axis-quantity frame to object.
+        Throws error if adding frame with duplicate name.
+
+        :param self: :class:`~Layout.AxisQuantity.AxisQuantityFrameContainer` to add frame into
+        :param axis_quantity_frame: frame to add into object
+        """
+        assert isinstance(self, AxisQuantityTabGroup)
+
+        axis_quantity_name = axis_quantity_frame.getName()
+        old_axis_quantity_frames: List[AxisQuantityFrame] = self.getAxisQuantityFrames()
+        for old_axis_quantity_frame in old_axis_quantity_frames:
+            old_axis_quantity_name = old_axis_quantity_frame.getName()
+            if axis_quantity_name == old_axis_quantity_name:
+                raise ValueError(f"AxisQuantityFrame {axis_quantity_name:s} already added")
+
+        self.axis_quantity_frames.append(axis_quantity_frame)
+
+    def getAxisQuantityFrames(
+        self,
+        names: Union[str, List[str]] = None,
+    ) -> Union[AxisQuantityFrame, List[AxisQuantityFrame]]:
+        """
+        Get axis-quantity frame(s) in object.
+
+        :param self: :class:`~Layout.AxisQuantity.AxisQuantityFrameContainer` to retrieve frame(s) from
+        :param names: name(s) of frame(s) to retreive
+        """
+        axis_quantity_frames: List[AxisQuantityFrame] = self.axis_quantity_frames
+        axis_quantity_names = []
+        name2frame = {}
+        for axis_quantity_frame in axis_quantity_frames:
+            axis_quantity_name = axis_quantity_frame.getName()
+            axis_quantity_names.append(axis_quantity_name)
+            name2frame[axis_quantity_name] = axis_quantity_frame
+
+        def get(name: str):
+            """Base method for :meth:`~Layout.AxisQuantity.AxisQuantityFrameContainer.getAxisQuantityFrames`"""
+            return name2frame[name]
+
+        return recursiveMethod(
+            args=names,
+            base_method=get,
+            valid_input_types=str,
+            output_type=list,
+            default_args=axis_quantity_names
+        )
+
+
 class AxisQuantityElement:
     def __init__(
         self,
@@ -708,6 +877,7 @@ class AxisQuantityElement:
         include_continuous: bool = True,
         include_discrete: bool = True,
         include_scalefactor: bool = True,
+        get_plot_choices: Callable[[], List[str]] = None,
         window: SimulationWindow = None
     ):
         """
@@ -734,9 +904,19 @@ class AxisQuantityElement:
             Set False otherwise.
         :param include_discrete: set True to allow user to choose scale factor to proportional quantities.
             Set False otherwise.
+        :param get_plot_choices: callable acting similar to dictionary indicating quantity choices to plot along axis.
+            Key (argument name "species" in callable) is specie of choice (e.g. "Variable", "Parameter").
+            Value is list of quantity names corresponding to specie.
+            Must be provided when window is not provided.
         """
-        if window is not None:
-            self.getPlotChoices = window.getPlotChoices
+
+        if get_plot_choices is not None:
+            assert callable(get_plot_choices)
+            self.getPlotChoices = get_plot_choices
+        else:
+            getPlotChoices = getattr(window, "getPlotChoices", None)
+            assert callable(getPlotChoices)
+            self.getPlotChoices = getPlotChoices
 
         self.quantity_count_per_axis = quantity_count_per_axis
         self.include_none = include_none
@@ -832,7 +1012,109 @@ class AxisQuantityElement:
         return self.include_discrete
 
 
-class AxisQuantityTabGroup(TabGroup, AxisQuantityElement):
+class AxisQuantityWindow(AxisQuantityFrameContainer):
+    """
+    :ivar axis_names: dictionary of axis names included in window.
+        Key is type of axis (e.g. "Cartesian", "Color", "Grid").
+        Value is tuple of corresponding axis names for type.
+    """
+
+    def __init__(
+        self,
+        axis_type2names: Dict[str, Tuple[str]],
+        axis_quantity_frames: List[AxisQuantityFrame] = None
+    ) -> None:
+        """
+        Constructor for :class:`~Layout.AxisQuantity.AxisQuantityWindow`.
+
+        :param axis_type2names: dictionary of axis names included in window.
+            Key is type of axis (e.g. "cartesian", "color", "grid").
+            Value is tuple of corresponding axis names for type.
+        :param axis_quantity_frames: see :class:`~Layout.AxisQuantity.AxisQuantityFrameContainer`
+        """
+        AxisQuantityFrameContainer.__init__(
+            self,
+            axis_quantity_frames=axis_quantity_frames
+        )
+
+        assert isinstance(axis_type2names, dict)
+        for axis_type, axis_type_names in axis_type2names.items():
+            assert isinstance(axis_type, str)
+            assert isinstance(axis_type_names, tuple)
+            for axis_specie_name in axis_type_names:
+                assert isinstance(axis_specie_name, str)
+        self.axis_type2names = axis_type2names
+
+        self.plot_quantities = PlotQuantities(axis_quantity_frames)
+
+    def getAxisNames(self, filter: str = None) -> List[str]:
+        """
+        Get names for axes.
+
+        :param self: :class:`~Layout.AxisQuantity.AxisQuantityWindow` to retrieve names from
+        :param filter: only include axis types that satisfy this filter (e.g. "cartesian", "grid", or "color")
+        :returns: List of axis names (e.g. ['x', 'y', 'c'])
+        """
+
+        if filter is None:
+            all_names = [
+                axis_name
+                for axis_names in self.axis_type2names.values()
+                for axis_name in axis_names
+            ]
+            return all_names
+        elif isinstance(filter, str):
+            filter = filter.lower()
+            return self.axis_type2names[filter]
+        else:
+            raise TypeError("filter must be str")
+
+
+class AxisQuantityWindowRunner:
+    def __init__(self) -> None:
+        pass
+
+    def getPlotQuantities(self) -> PlotQuantities:
+        """
+        Get object to determine plot quantities in window.
+
+        :param self: :class:`~Layout.AxisQuantity.AxisQuantityWindowRunner` to retrieve object from
+        """
+        return self.plot_quantities
+
+    def updatePlotChoices(
+        self,
+        names: Union[str, List[str]] = None,
+    ) -> None:
+        """
+        Update plot choices for desired axis(es).
+        This allows user to select new set of quantities to plot.
+
+        :param self: :class:`~Layout.AxisQuantity.AxisQuantityWindowRunner` to change plot choices in
+        :param names: name(s) of axis(es) to update choices for.
+            Updates all axes by default.
+        """
+        plot_quantities = self.getPlotQuantities()
+
+        def update(name: str) -> None:
+            """Base method for :meth:`~Layout.SimulationWindow.SimulationWindowRunner.updatePlotChoices`"""
+            axis_quantity = plot_quantities.getAxisQuantities(names=name)
+            axis_quantity.updatePlotChoices()
+
+        axis_names = self.getAxisNames()
+        return recursiveMethod(
+            args=names,
+            base_method=update,
+            valid_input_types=str,
+            default_args=axis_names
+        )
+
+
+class AxisQuantityTabGroup(
+    TabGroup,
+    AxisQuantityElement,
+    AxisQuantityFrameContainer
+):
     def __init__(
         self,
         name: str,
@@ -851,8 +1133,7 @@ class AxisQuantityTabGroup(TabGroup, AxisQuantityElement):
             window=window,
             **kwargs
         )
-
-        self.name2frame = {}
+        AxisQuantityFrameContainer.__init__(self)
 
         quantity_count_per_axis = self.getQuantityCountPerAxis()
         transform_names = self.getTransformNames()
@@ -890,9 +1171,11 @@ class AxisQuantityTabGroup(TabGroup, AxisQuantityElement):
             axis_include_none = axis_name not in ('x', 'y')
             axis_include_discrete = axis_name not in ('C', )
 
+            getPlotChoices = window.getPlotChoices
             axis_quantity_frame = AxisQuantityFrame(
                 axis_name,
-                window,
+                window=window,
+                get_plot_choices=getPlotChoices,
                 quantity_count_per_axis=axis_quantity_count,
                 include_none=axis_include_none,
                 include_continuous=axis_include_continuous,
@@ -904,7 +1187,7 @@ class AxisQuantityTabGroup(TabGroup, AxisQuantityElement):
                 functional_names=axis_functional_names,
                 complex_names=axis_complex_names
             )
-            self.name2frame[axis_name] = axis_quantity_frame
+            self.addAxisQuantityFrame(axis_quantity_frame)
 
             if axis_name in ('x', 'y', 'z', 'c'):
                 standard_tab_frames.append(axis_quantity_frame)
@@ -927,23 +1210,6 @@ class AxisQuantityTabGroup(TabGroup, AxisQuantityElement):
             nonstandard_tab
         ]
         TabGroup.__init__(self, tabs, name=name)
-
-    def getAxisQuantityFrames(
-        self,
-        names: Union[str, List[str]],
-    ) -> Union[AxisQuantityFrame, List[AxisQuantityFrame]]:
-        name2frame = self.name2frame
-
-        def get(name: str):
-            return name2frame[name]
-
-        return recursiveMethod(
-            args=names,
-            base_method=get,
-            valid_input_types=str,
-            output_type=dict,
-            default_args=list(name2frame.keys())
-        )
 
 
 class AxisQuantityTab(Tab):
@@ -1025,7 +1291,7 @@ class AxisQuantityFrame(Frame, AxisQuantityElement):
         AxisQuantityElement.__init__(
             self,
             window=window,
-            **kwargs,
+            **kwargs
         )
 
         parameter_names = self.getPlotChoices(species="Parameter")
@@ -1040,6 +1306,7 @@ class AxisQuantityFrame(Frame, AxisQuantityElement):
         window_obj = self.getWindowObject()
 
         quantity_count_per_axis = self.getQuantityCountPerAxis()
+        getPlotChoices = self.getPlotChoices
         self.axis_quantity_rows = []
         for index in range(quantity_count_per_axis):
             include_none_per_quantity = index != 0 or include_none
@@ -1047,17 +1314,65 @@ class AxisQuantityFrame(Frame, AxisQuantityElement):
                 axis_name,
                 window=window_obj,
                 index=index,
+                get_plot_choices=getPlotChoices,
                 include_none=include_none_per_quantity,
                 include_continuous=include_continuous,
                 include_discrete=include_discrete
             )
             self.axis_quantity_rows.append(axis_quantity_row)
 
+    def reset(self) -> None:
+        """
+        Reset properties for axis quantity to default.
+
+        :param self: :class:`~Layout.AxisQuantity.AxisQuantityFrame` to reset in
+        """
+        transform_names = self.getTransformNames()
+        default_transform_name = transform_names[0]
+        transform_element = self.getAxisTransformElement()
+        transform_element.update(default_transform_name)
+
+        functional_names = self.getFunctionalNames()
+        default_functional_name = functional_names[0]
+
+        functional_element = self.getAxisFunctionalElement()
+        functional_element.update(default_functional_name)
+
+        normalize_group = self.getAxisNormalizeGroup()
+        try:
+            normalize_group.reset()
+        except AttributeError:
+            pass
+
+        complex_group = self.getAxisComplexGroup()
+        try:
+            complex_group.reset()
+        except AttributeError:
+            pass
+
+        envelope_group = self.getAxisEnvelopeGroup()
+        try:
+            envelope_group.reset()
+        except AttributeError:
+            pass
+
+        default_scale_factor = "1e0"
+        scale_factor_element = self.getScaleFactorElement()
+        scale_factor_element.update(default_scale_factor)
+
+        axis_quantity_rows = self.getAxisQuantityRows()
+        for axis_quantity_row in axis_quantity_rows:
+            axis_quantity_row.reset()
+
+        parameter_functional_rows = self.getParameterFunctionalRows()
+        for parameter_functional_row in parameter_functional_rows:
+            parameter_functional_row.reset()
+
     def getParameterFunctionalCount(self) -> int:
         """
         Get max number of functionals to perform over parameters.
 
-        :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retreive number from
+        :param self: :class:`~Layout.SimulationWindow.AxisQuantityFrame` to retrieve number from
         """
         return self.parameter_functional_count
 
@@ -1235,10 +1550,12 @@ class AxisQuantityFrame(Frame, AxisQuantityElement):
             name = self.getName()
             window_obj = self.getWindowObject()
 
+            getPlotChoices = self.getPlotChoices
             functional_row = ParameterFunctionalRow(
                 name,
                 index,
                 window=window_obj,
+                get_plot_choices=getPlotChoices,
                 functional_names=functional_names
             )
             return functional_row
@@ -1268,6 +1585,14 @@ class AxisQuantityFrame(Frame, AxisQuantityElement):
             return parameter_functional_rows
         else:
             return None
+
+    @storeElement
+    def getResetButton(self) -> sg.Button:
+        axis_name = self.getName()
+        return sg.Button(
+            button_text="Reset",
+            key=f"-{qr_pre:s} {axis_name:s}_AXIS-",
+        )
 
     def getLayout(self) -> List[List[sg.Element]]:
         """
@@ -1351,11 +1676,15 @@ class AxisQuantityFrame(Frame, AxisQuantityElement):
         if len(row_elements) >= 1:
             rows.append(Row(elements=row_elements))
 
+        reset_button = self.getResetButton()
+        reset_row = Row(elements=reset_button)
+        rows.append(reset_row)
+
         layout = Layout(rows).getLayout()
         return layout
 
 
-class ParameterFunctionalRow(Row, AxisQuantityElement, StoredObject):
+class ParameterFunctionalRow(Row, AxisQuantityElement):
     def __init__(
         self,
         axis_name: str,
@@ -1379,7 +1708,6 @@ class ParameterFunctionalRow(Row, AxisQuantityElement, StoredObject):
             window=window,
             **kwargs
         )
-        StoredObject.__init__(self, name)
 
         self.axis_name = axis_name
 
@@ -1394,6 +1722,25 @@ class ParameterFunctionalRow(Row, AxisQuantityElement, StoredObject):
 
         if None not in elements:
             self.addElements(elements)
+
+    def reset(self) -> None:
+        """
+        Reset elements in parameter-functional row.
+
+        :param self: :class:`~Layout.AxisQuantity.ParameterFunctionalRow` to reset
+        """
+        window_obj = self.getWindowObject()
+        window = window_obj.getWindow()
+
+        functional_names = self.getFunctionalNames()
+        default_functional = functional_names[0]
+        functional_element = self.getParameterFunctionalElement()
+        functional_key = getKeys(functional_element)
+        functional_element.update(default_functional)
+        window.write_event_value(functional_key, default_functional)
+
+        parameter_group = self.getParameterFunctionalGroup()
+        parameter_group.reset()
 
     def getAxisName(self) -> str:
         """
@@ -1737,10 +2084,29 @@ class AxisQuantityRow(AxisQuantityElement, Row):
             include_none=include_none,
             **kwargs
         )
-        Row.__init__(self, name, window=window)
+        Row.__init__(
+            self,
+            name,
+            window=window
+        )
 
         self.axis_name = axis_name
         self.index = index
+
+        include_none = self.includeNone()
+        include_continuous = self.includeContinuous()
+        include_discrete = self.includeDiscrete()
+
+        axis_quantity_species = []
+        if include_none:
+            axis_quantity_species.append("None")
+        if include_continuous:
+            axis_quantity_species.extend(["Variable", "Function"])
+        if include_discrete:
+            parameter_choices = self.getPlotChoices(species="Parameter")
+            if len(parameter_choices) >= 1:
+                axis_quantity_species.append("Parameter")
+        self.axis_quantity_species = axis_quantity_species
 
         elements = [
             sg.Text("Species:"),
@@ -1749,6 +2115,37 @@ class AxisQuantityRow(AxisQuantityElement, Row):
             self.getAxisQuantityElement()
         ]
         self.addElements(elements)
+
+    def reset(self) -> None:
+        """
+        Reset elements in axis-quantity row.
+
+        :param self: :class:`~Layout.AxisQuantity.AxisQuantityRow` to reset
+        """
+        window_obj = self.getWindowObject()
+        window = window_obj.getWindow()
+        include_none = self.includeNone()
+
+        if include_none:
+            default_specie = "None"
+        else:
+            axis_quantity_species = self.getAxisQuantitySpecies()
+            default_specie = axis_quantity_species[0]
+
+        specie_element = self.getAxisQuantitySpeciesElement()
+        specie_key = getKeys(specie_element)
+        specie_element.update(default_specie)
+        window.write_event_value(specie_key, default_specie)
+
+        if default_specie == "None":
+            default_quantity = ''
+        else:
+            quantity_choices = self.getPlotChoices(species=default_specie)
+            default_quantity = quantity_choices[0]
+        quantity_element = self.getAxisQuantityElement()
+        quantity_key = getKeys(quantity_element)
+        quantity_element.update(default_quantity)
+        window.write_event_value(quantity_key, default_quantity)
 
     def getAxisName(self) -> str:
         """
@@ -1798,6 +2195,14 @@ class AxisQuantityRow(AxisQuantityElement, Row):
         elem = sg.InputCombo(**sg_kwargs)
         return elem
 
+    def getAxisQuantitySpecies(self) -> List[str]:
+        """
+        Get names of species for axis quantities.
+
+        :param self: :class:`~Layout.AxisQuantity.AxisQuantityRow` to retrieve names from
+        """
+        return self.axis_quantity_species
+
     @storeElement
     def getAxisQuantitySpeciesElement(self) -> sg.InputCombo:
         """
@@ -1807,22 +2212,12 @@ class AxisQuantityRow(AxisQuantityElement, Row):
         :param self: :class:`~Layout.SimulationWindow.AxisQuantityRow` to retrieve element from
         """
         name = self.getName()
-        include_none = self.includeNone()
-        include_continuous = self.includeContinuous()
-        include_discrete = self.includeDiscrete()
-
-        axis_quantity_species = []
-        if include_none:
-            axis_quantity_species.append("None")
-        if include_continuous:
-            axis_quantity_species.extend(["Variable", "Function"])
-        if include_discrete:
-            if len(self.getPlotChoices(species="Parameter")) >= 1:
-                axis_quantity_species.append("Parameter")
+        axis_quantity_species = self.getAxisQuantitySpecies()
+        default_specie = axis_quantity_species[0]
 
         return sg.InputCombo(
             values=axis_quantity_species,
-            default_value=axis_quantity_species[0],
+            default_value=default_specie,
             tooltip=f"Choose quantity species to display on {name:s}-axis of plot",
             enable_events=True,
             size=self.getDimensions(name="axis_quantity_species_combobox"),
