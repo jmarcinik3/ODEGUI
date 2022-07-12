@@ -1125,7 +1125,11 @@ class WindowRunner:
         """
         self.values = None
 
-    def getValue(self, key: str, combo_error: bool = True) -> Union[str, float]:
+    def getValue(
+        self, 
+        key: str, 
+        combo_error: bool = True
+    ) -> Union[str, float]:
         """
         Get value of element at most recent event.
 

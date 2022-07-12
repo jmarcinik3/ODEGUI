@@ -128,9 +128,10 @@ class ChooseParametersWindow(ChooseChecksWindow):
             file_basename = basename(filename)
             header_text += f" ({file_basename:s})"
 
-        super().__init__(
-            name,
-            runner,
+        ChooseChecksWindow.__init__(
+            self,
+            name=name,
+            runner=runner,
             get_rows=self.getParameterRows,
             header_text=header_text
         )
@@ -170,7 +171,7 @@ class ChooseParametersWindow(ChooseChecksWindow):
         return rows
 
 
-class ChooseParametersWindowRunner(WindowRunner):
+class ChooseParametersWindowRunner(WindowRunner, ChooseParametersWindow):
     """
     This class runs :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow`.
     This window allows the user to...
@@ -187,10 +188,13 @@ class ChooseParametersWindowRunner(WindowRunner):
             excluding runner
         :param kwargs: additional arguments for :class:`~Layout.ChooseParametersWindow.ChooseParametersWindow`
         """
-        window_obj = ChooseParametersWindow(*args, runner=self, **kwargs)
-        super().__init__(window_obj)
-
-        self.getParameters = window_obj.getParameters
+        WindowRunner.__init__(self)
+        ChooseParametersWindow.__init__(
+            self, 
+            *args, 
+            runner=self, 
+            **kwargs
+        )
 
     def getParameterNames(self) -> List[str]:
         """
