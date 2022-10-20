@@ -6,7 +6,7 @@ from __future__ import annotations
 import os
 from functools import partial
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Type, Union
+from typing import Any, Callable, Dict, Iterable, List, Type, Union
 
 import numpy as np
 import PySimpleGUI as sg
@@ -17,7 +17,7 @@ from pylatexenc.latexencode import unicode_to_latex
 from sympy import Expr, latex
 from sympy.printing.preview import preview
 
-from YML import loadConfig, readVar2Tex, saveConfig
+from Config import loadConfig, readVar2Tex, saveConfig
 
 
 class StoredObject:
@@ -226,6 +226,24 @@ def formatQuantity(quantity: Quantity) -> str:
     return formatted_quantity
 
 
+def generateQuantityFromMetadata(metadata: Dict[str, Union[str, float]]) -> Quantity:
+    """
+    :param metadata: dictionary of info to generate quantity object.
+        Required keys are "value", "unit".
+        Respective values must be float and str.
+    """
+    assert isinstance(metadata, dict)
+    assert len(metadata) == 2
+
+    value = metadata["value"]
+    assert isinstance(value, float)
+    unit = metadata["unit"]
+    assert isinstance(unit, str)
+
+    quantity = Quantity(value, unit)
+    return quantity
+
+
 def getTexImage(name: str, tex_folder: str = "tex", **kwargs) -> Union[sg.Image, sg.Text]:
     """
     Get tex image associated with variable name.
@@ -263,7 +281,13 @@ def tex2png(tex_text: str, filepath: str, overwrite: bool = False) -> None:
         preview(**preview_kwargs)
 
 
-def expression2png(name: str, expression: Expr, folder: str, filename: str, var2tex: str) -> str:
+def expression2png(
+    name: str,
+    expression: Expr,
+    folder: str,
+    filename: str,
+    var2tex: str
+) -> str:
     """
     Generate PNG image of tex for variable.
 
@@ -271,7 +295,7 @@ def expression2png(name: str, expression: Expr, folder: str, filename: str, var2
     :param expression: tex expression to generate image for
     :param folder: output folder for image
     :param filename: base filename for image
-    :param var2tex: name of YML with variable-to-tex dictionary.
+    :param var2tex: name of config file with variable-to-tex dictionary.
         Key is name of variable.
         Value is tex expression of variable.
     :returns: filepath of new image file
@@ -319,8 +343,8 @@ def expression2png(name: str, expression: Expr, folder: str, filename: str, var2
 
 
 def tex2pngFromFile(
-    output_folder: str, 
-    var2tex_filepath: str, 
+    output_folder: str,
+    var2tex_filepath: str,
     **kwargs
 ) -> None:
     """

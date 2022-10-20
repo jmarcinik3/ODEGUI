@@ -1,17 +1,28 @@
 from functools import partial
+import math
 from typing import Callable, Dict, Iterable, List, Tuple, Union
 
 import numpy as np
+import PySimpleGUI as sg
 from numpy import exp, ndarray
 from scipy.integrate import odeint
 from sympy import Expr, Symbol
 from sympy.core import function
 from sympy.utilities.lambdify import lambdify
 
-from Results import ResultsFileHandler
+from Layout.AxisQuantity import AxisQuantityMetadata
+from Results import (GridResultsFileHandler, OptimizationResults,
+                     OptimizationResultsFileHandler, ResultsFileHandler,
+                     postResultsOverTime, preResultsOverTime)
+from Transforms.CustomMath import normalizedRmsError
 
 
-def RK4step(ydot: function, y0: ndarray, t0: float, dt: float) -> ndarray:
+def RK4step(
+    ydot: function,
+    y0: ndarray,
+    t0: float,
+    dt: float
+) -> ndarray:
     """
     Perform one step of RK4 on ODE.
 
@@ -30,7 +41,11 @@ def RK4step(ydot: function, y0: ndarray, t0: float, dt: float) -> ndarray:
     return y0 + dy
 
 
-def ODEstep(ydot: function, y0: ndarray, t: List[float]) -> float:
+def ODEstep(
+    ydot: function,
+    y0: ndarray,
+    t: List[float]
+) -> float:
     """
     Get variable vector for ODE after performing one step.
 
@@ -42,7 +57,11 @@ def ODEstep(ydot: function, y0: ndarray, t: List[float]) -> float:
     return ynext
 
 
-def solveODE(ydot: function, y0: ndarray, t: ndarray) -> Tuple[ndarray, ndarray]:
+def solveODE(
+    ydot: function,
+    y0: ndarray,
+    t: ndarray
+) -> Tuple[ndarray, ndarray]:
     """
     Solve ODE IVP numerically
 
@@ -57,7 +76,11 @@ def solveODE(ydot: function, y0: ndarray, t: ndarray) -> Tuple[ndarray, ndarray]
     return t, y
 
 
-def formatResultsAsDictionary(t: ndarray, y: ndarray, names: List[str]) -> Dict[str, ndarray]:
+def formatResultsAsDictionary(
+    t: ndarray,
+    y: ndarray,
+    names: List[str]
+) -> Dict[str, ndarray]:
     """
     Reformat results array from simulation as dictionary.
 
@@ -231,13 +254,11 @@ class RunGridSimulation(RunSimulation):
         for parameter_index in index:
             assert isinstance(parameter_index, int)
 
-        assert isinstance(results_file_handler, ResultsFileHandler)
-        file_handler_type = results_file_handler.getSimulationType()
-        assert file_handler_type == "grid"
+        assert isinstance(results_file_handler, GridResultsFileHandler)
         self.saveResult = partial(
             results_file_handler.saveResult,
             index=index,
-            close_files=False
+            close_file=False
         )
 
     def getParameterName2Value(self) -> Dict[str, float]:
@@ -287,7 +308,7 @@ class RunGridSimulation(RunSimulation):
         saveResult = self.saveResult
         for variable_name, result in results.items():
             saveResult(
-                name=variable_name,
+                quantity_name=variable_name,
                 result=result
             )
 
@@ -311,10 +332,11 @@ class RunOptimizationSimulation(RunSimulation):
         general_derivative_vector: List[Expr],
         initial_value_vector: ndarray,
         times: ndarray,
-        results_file_handler: ResultsFileHandler,
-        parameter_names: Dict[str, float],
-        cost_function: Callable[[ndarray], float],
-        sample_size: int
+        fit_parameter_names: List[str],
+        free_parameter_names: List[str],
+        output_axis_quantity_metadata: AxisQuantityMetadata,
+        results_obj: OptimizationResults,
+        cost_function: Callable[[ndarray, ndarray], float] = normalizedRmsError
     ) -> None:
         """
         Constructor for :class:`~Simulation.RunOptimizationSimulation`.
@@ -324,12 +346,11 @@ class RunOptimizationSimulation(RunSimulation):
         :param general_derivative_vector: see :ref:`~Simulation.RunSimulation.general_derivative_vector`
         :param initial_value_vector: see :ref:`~Simulation.RunSimulation.initial_value_vector`
         :param times: see :ref:`~Simulation.RunSimulation.times`
+        :param fit_parameter_names: collection for names for parameters acting as independent parameter in fit data
+        :param free_parameter_names: collection of names for parameters to fit to ODE
+        :param cost_function: see :class:`~ParameterFit.MonteCarloMinimization.cost_function`
+        :param output_axis_quantity_metadata: metadata object indicating what functions to perform on ODE solution, to correspond to output data
         :param results_file_handler: object to handle saving results
-        :param parameter_names: collection of names for parameters to fit to ODE
-        :param cost_function: function to determine cost for fit of each set of parameters.
-            Takes as input array of parameter values.
-            Outputs float of cost.
-        :param sample_size: size of data sample that results are fit to
         """
         RunSimulation.__init__(
             self,
@@ -339,104 +360,190 @@ class RunOptimizationSimulation(RunSimulation):
             times=times
         )
 
-        assert isinstance(parameter_names, Iterable)
-        for parameter_name in parameter_names:
-            assert isinstance(parameter_name, str)
-        self.parameter_names = parameter_names
+        assert isinstance(fit_parameter_names, list)
+        for fit_parameter_name in fit_parameter_names:
+            assert isinstance(fit_parameter_name, str)
+        self.fit_parameter_names = fit_parameter_names
+        assert isinstance(free_parameter_names, list)
+        for free_parameter_name in free_parameter_names:
+            assert isinstance(free_parameter_name, str)
+        self.free_parameter_names = free_parameter_names
+        self.parameter_names = [*fit_parameter_names, *free_parameter_names]
 
-        assert isinstance(results_file_handler, ResultsFileHandler)
-        file_handler_type = results_file_handler.getSimulationType()
-        assert file_handler_type == "optimization"
-        self.saveResult = partial(
-            results_file_handler.saveResult,
-            close_files=False
-        )
+        assert isinstance(results_obj, OptimizationResults)
+        self.results_obj = results_obj
+
+        assert isinstance(output_axis_quantity_metadata, AxisQuantityMetadata)
+        self.output_axis_quantity_metadata = output_axis_quantity_metadata
 
         assert isinstance(cost_function, Callable)
         self.cost_function = cost_function
 
-        assert isinstance(sample_size, int)
-        self.sample_size = sample_size
-
         self.results = {}
         self.iteration_step = -1
 
+    def getResultsObject(self) -> OptimizationResults:
+        """
+        Get object to handle results for simulation.
+
+        :param self: :class:`~Simulation.RunOptimizationSimulation` to retrieve object from
+        """
+        return self.results_obj
+
+    def getResultsFileHandler(self) -> OptimizationResultsFileHandler:
+        """
+        Get object to handle saving/loading files.
+
+        :param self: :class:`~Simulation.RunOptimizationSimulation` to retrieve object from
+        """
+        results_obj = self.getResultsObject()
+        results_file_handler = results_obj.getResultsFileHandler()
+        return results_file_handler
+
+    def getFreeParameterNames(self) -> List[str]:
+        """
+        Get names of free parameters for simulation.
+        These parameters are fit during optimization.
+
+        :params self: :class:`~Simulation.RunOptimizationSimulation` to retrieve names from
+        """
+        return self.free_parameter_names
+
+    def getFitParameterNames(self) -> List[str]:
+        """
+        Get names of fit parameters for simulation.
+        These parameters are dependent variables for data.
+
+        :params self: :class:`~Simulation.RunOptimizationSimulation` to retrieve names from
+        """
+        return self.fit_parameter_names
+
     def getParameterNames(self) -> List[str]:
         """
-        Get name(s) of free parameters for simulation.
+        Get names of parameters for simulation.
+        Ordered with fit-parameters names first, followed by free-parameter names.
 
         :params self: :class:`~Simulation.RunOptimizationSimulation` to retrieve names from
         """
         return self.parameter_names
 
-    def getSampleSize(self) -> int:
-        """
-        Get sample size of data to fit to.
-
-        :param self: :class:`~Simulation.RunOptimizationSimulation` to retrieve size from
-        """
-        return self.sample_size
-
     def getIterationStep(self) -> int:
         """
-        Get most-recent iteration number for steps in minimization.
+        Get most-recent iteration number for steps in minimization, starting at zero.
+
+        :param self: :class:`~Simulation.RunOptimizationSimulation` to retrieve number from
         """
         return self.iteration_step
 
     def succeedIterationStep(self) -> None:
         """
         Add one to most-recent iteration number.
+
+        :param self: :class:`~Simulation.RunOptimizationSimulation` to succeed iteration in
         """
         self.iteration_step += 1
 
-    def getCostFunction(self) -> Callable[[ndarray], float]:
+    def resetIterationStep(self) -> None:
         """
-        Get function to calculate cost for set of parameters.
+        Reset iteration number to begin new set of fits.
+        Set to -1 so that first result had iteration step of 0.
+
+        :param self: :class:`~Simulation.RunOptimizationSimulation` to reset iteration in
+        """
+        self.iteration_step = -1
+        results_file_handler = self.getResultsFileHandler()
+        results_file_handler.closeResultsFiles()
+
+    def getOutputAxisQuantityMetadata(self) -> AxisQuantityMetadata:
+        """
+        Get object to retrieve metadata for simulated output vector.
+        """
+        return self.output_axis_quantity_metadata
+
+    def getCostFunction(self) -> Callable[[ndarray, ndarray], float]:
+        """
+        Get cost function to compare experimental data to simulated data.
+        Takes as input: output experimental data and output simulated data.
 
         :param self: :class:`~Simulation.RunOptimizationSimulation` to retrieve function from
-        :returns: callable cost function.
-            Takes as input array of parameter values.
-            Outputs cost as float.
         """
         return self.cost_function
 
-    def saveODEResults(self) -> None:
+    def getCost(
+        self,
+        data: ndarray,
+        simulated_data: ndarray
+    ) -> float:
+        """
+        Get cost of given data vs. given simulated array.
+        Then close all results files.
+
+        :param self: :class:`~Simulation.RunOptimizationSimulation` to retrieve cost form
+        :param data: data to compare simulated results to
+        :param simulated_data: results to compare to original/experimental data
+        :param
+        """
+        assert data.shape == simulated_data.shape
+
+        cost_function = self.getCostFunction()
+        cost = cost_function(data, simulated_data)
+
+        results_file_handler = self.getResultsFileHandler()
+        results_file_handler.closeResultsFiles()
+
+        return cost
+
+    def saveODEResults(
+        self,
+        results: Dict[str, ndarray],
+        parameter_values: ndarray,
+        sample_size: int
+    ) -> None:
         """
         Save ODE results into file.
 
         :param self: :class:`~Simulation.RunOptimizationSimulation` to retrieve save function from
         :param results: results to save into file.
             See :meth:`~Simulation.formatResultsAsDictionary`.
+        :param parameter_values: 1D array of parameter values, fit parameters followed by free parameters
+        :param sample_size: number of sample points in data that simulation is fit to
         """
-        sample_size = self.getSampleSize()
         iteration_step = self.getIterationStep()
-        simulation_index = (sample_size, iteration_step)
+        group_index = math.floor(iteration_step / sample_size)
+        sample_index = iteration_step % sample_size
+        parameter_index = (sample_size, group_index, sample_index)
+        results_file_handler = self.getResultsFileHandler()
 
-        saveResult = self.saveResult
-        for variable_name, result in self.results.items():
+        results_file_handler.saveParametersSet(
+            index=parameter_index,
+            parameter_values=parameter_values
+        )
+
+        saveResult = partial(
+            results_file_handler.saveResult,
+            close_file=False
+        )
+        for variable_name, result in results.items():
             saveResult(
-                index=simulation_index,
-                name=variable_name,
+                index=parameter_index,
+                quantity_name=variable_name,
                 result=result
             )
 
-    def getCost(self, parameter_values: ndarray) -> float:
-        results = self.solveODE(parameter_values)
-        self.succeedIterationStep()
-        self.saveODEResults(results)
-
-    def solveODE(self, parameter_values: ndarray) -> Dict[str, ndarray]:
+    def solveODE(
+        self,
+        parameter_values: ndarray,
+    ) -> Dict[str, ndarray]:
         """
         Get solution for each variable in ODE.
 
         :param self: :class:`~Simulation.RunOptimizationSimulation` to retrieve ODE information from
         :param parameter_values: values for substitute in for parameters in ODE
-        :returns: solution for ODE separated by variable.
+        :returns: solution for ODE organized by variable.
             See :meth:`~Simulation.formatResultsAsDictionary`.
         """
         general_derivative_vector = self.getGeneralDerivativeVector()
         variable_names = self.getVariableNames()
-
         parameter_names = self.getParameterNames()
         parameter_name2value = dict(zip(parameter_names, parameter_values))
         ydot = symbolicToCallableDerivative(
@@ -455,3 +562,108 @@ class RunOptimizationSimulation(RunSimulation):
         )
         results = formatResultsAsDictionary(*results, variable_names)
         return results
+
+    def solveAndSaveODE(
+        self,
+        parameter_values: ndarray,
+        sample_size: int
+    ) -> Dict[str, ndarray]:
+        """
+        Get solution for each variable in ODE, then save solution.
+
+        :param self: :class:`~Simulation.RunOptimizationSimulation` to retrieve ODE information from
+        :param parameter_values: values for substitute in for parameters in ODE
+        :param sample_size: see :meth:`~Simulation.RunOptimizationSimulation.sample_size`
+        :returns: solution for ODE organized by variable (or numpy nan if solution diverges).
+            See :meth:`~Simulation.formatResultsAsDictionary`.
+        """
+        self.succeedIterationStep()
+        try:
+            results = self.solveODE(parameter_values)
+            self.saveODEResults(
+                results,
+                sample_size=sample_size,
+                parameter_values=parameter_values
+            )
+            return results
+        except OverflowError:
+            parameter_names = self.getParameterNames()
+            parameter_name2value = dict(zip(parameter_names, parameter_values))
+            print('overflow:', parameter_name2value)
+            return np.nan
+
+    def getResultsFit(
+        self,
+        fit_parameter_values: ndarray,
+        free_parameter_values: ndarray
+    ) -> ndarray:
+        """
+        Get simulated output vector by solving ODE.
+
+        :param self: :class:`~Simulation.RunOptimizationSimulation` to retrieve fitting criteria from
+        :param fit_parameter_values: parameters that are independent variables for data
+        :param free_parameter_values: parameters to fit to given experimental data
+        """
+        def updateProgressMeter(current_value: int) -> sg.OneLineProgressMeter:
+            """
+            Update progress meter.
+
+            :param current_value: present number of simulation being calculated
+            """
+            iteration_count = self.getIterationStep()
+
+            return sg.OneLineProgressMeter(
+                title=f"{iteration_count:d} Iterations",
+                orientation="horizontal",
+                current_value=current_value,
+                max_value=sample_size,
+                keep_on_top=True
+            )
+
+        fit_parameter_dimension = fit_parameter_values.ndim
+        assert fit_parameter_dimension == 2
+        sample_size, fit_parameter_count = fit_parameter_values.shape
+
+        if fit_parameter_dimension == 2:
+            output_axis_quantity_metadata = self.getOutputAxisQuantityMetadata()
+            is_functional = output_axis_quantity_metadata.isFunctional()
+            assert is_functional
+
+            show_progress = sample_size >= 2
+            post_results = np.zeros(sample_size)
+            for sample_index in range(sample_size):
+                if show_progress and not updateProgressMeter(sample_index):
+                    break
+
+                fit_parameter_value = fit_parameter_values[sample_index]
+                parameter_values = np.concatenate((fit_parameter_value, free_parameter_values))
+
+                results = self.solveAndSaveODE(
+                    parameter_values,
+                    sample_size
+                )
+
+                quantity_names = output_axis_quantity_metadata.getAxisQuantityNames(include_none=False)
+                quantity_count = len(quantity_names)
+                assert quantity_count == 1
+                quantity_name = quantity_names[0]
+
+                if isinstance(results, dict):
+                    post_result = results[quantity_name]
+                    post_result = preResultsOverTime(
+                        post_result,
+                        axis_quantity_metadata=output_axis_quantity_metadata
+                    )
+                    post_result = postResultsOverTime(
+                        post_result,
+                        axis_quantity_metadata=output_axis_quantity_metadata
+                    )
+                    post_results[sample_index] = post_result
+                else:
+                    assert np.isnan(results)
+                    post_results[sample_index] = results
+
+            if show_progress:
+                updateProgressMeter(sample_size)
+
+        return post_results

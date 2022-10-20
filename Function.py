@@ -21,7 +21,7 @@ from sympy.utilities.lambdify import lambdify
 
 from CustomErrors import RecursiveTypeError
 from macros import formatQuantity, formatUnit, formatValue, recursiveMethod, unique
-from YML import config_file_extensions, loadConfig, saveConfig, var2tex_filepath
+from Config import config_file_extensions, loadConfig, saveConfig, var2tex_filepath
 
 var2tex = loadConfig(var2tex_filepath)
 
@@ -111,16 +111,27 @@ class Parameter(PaperQuantity):
     :ivar model: model that parameter is stored in
     """
 
-    def __init__(self, name: str, quantity: Quantity, **kwargs) -> None:
+    def __init__(
+        self,
+        name: str,
+        quantity: Quantity,
+        **kwargs
+    ) -> None:
         """
         Constructor for :class:`~Function.Parameter`.
 
         :param name: name of parameter
+        :param quantity: quantity object for parameter (contains value and unit)
         :param kwargs: additional arguments to pass into :class:`~Function.PaperQuantity`
         """
         assert isinstance(quantity, Quantity)
-        super().__init__(name, **kwargs)
         self.quantity = quantity
+
+        PaperQuantity.__init__(
+            self,
+            name,
+            **kwargs
+        )
 
     def getQuantity(self) -> Quantity:
         """
@@ -140,7 +151,7 @@ class Parameter(PaperQuantity):
         name = self.getName()
         symbol = self.getSymbol()
         model = self.getModel()
-        model_functions = model.getFunctions()
+        model_functions: List[Function] = model.getFunctions()
         functions = [
             function_obj
             for function_obj in model_functions
@@ -159,6 +170,50 @@ class Parameter(PaperQuantity):
         contents["value"] = quantity.magnitude
         contents["unit"] = str(quantity.units)
         return contents
+
+
+class FreeParameter(Parameter):
+    def __init__(
+        self,
+        *args,
+        default_value: float,
+        unit: str,
+        bounds: Tuple[Optional[float], Optional[float]],
+        **kwargs
+    ) -> None:
+        """
+        Constructor for :class:`~Function.FreeParameter`.
+
+        :param default_value: default/starting value for parameter
+        :param unit: default unit for parameter
+        :param bounds: tuple of (lower bound, upper bound) for parameter
+        :param args: required arguments to pass into :class:`~Function.Parameter`
+        :param kwargs: additional arguments to pass into :class:`~Function.Parameter`
+        """
+        assert isinstance(default_value, float)
+        assert isinstance(unit, str) or unit is None
+        quantity = Quantity(default_value, unit)
+
+        Parameter.__init__(
+            self,
+            *args,
+            quantity=quantity,
+            **kwargs,
+        )
+
+        assert isinstance(bounds, tuple)
+        assert len(bounds) == 2
+        for bound in bounds:
+            assert isinstance(bound, float) or bound is None
+        self.bounds = bounds
+
+    def getBounds(self) -> Tuple[Optional[float], Optional[float]]:
+        """
+        Get tuple of (lower bound, upper bound).
+
+        :param self: :class:`~Function.FreeParameter` to retrieve bounds from
+        """
+        return self.bounds
 
 
 class Variable(PaperQuantity):
@@ -449,7 +504,7 @@ class Model:
 
     def loadFunctionsFromFiles(self, filepaths: Union[str, List[str]]) -> None:
         """
-        Add functions to model by parsing through YML file.
+        Add functions to model by parsing through config file.
 
         :param self: :class:`~Function.Model` to add function(s) to
         :param filepaths: name(s) of config file(s) to retrieve function info from
@@ -462,7 +517,7 @@ class Model:
 
     def loadParametersFromFiles(self, filepaths: Union[str, List[str]]) -> None:
         """
-        Add parameters to model by parsing through YML file.
+        Add parameters to model by parsing through config file.
 
         :param self: :class:`~Function.Model` to add function(s) to
         :param filepaths: name(s) of config file(s) to retrieve parameter info from
@@ -475,7 +530,7 @@ class Model:
 
     def saveQuantitiesToFile(self, filepath: str, specie: str) -> TextIO:
         """
-        Save quantity object stored in model into YML file for future retrieval.
+        Save quantity object stored in model into config file for future retrieval.
 
         :param self: :class:`~Function.Model` to retrieve parameters from
         :param filepath: path of file to save parameters into
@@ -1006,20 +1061,18 @@ class Model:
             variable_substitutions.update(function_substitutions)
 
         parameter_substitutions = self.getParameterSubstitutions(skip_parameters=skip_parameters) if substitute_parameters else {}
-        temporal_derivatives = self.getDerivativesFromVariables(names)
+        temporal_derivatives: List[Union[Derivative, Function]] = self.getDerivativesFromVariables(names)
 
         derivative_vector = []
         for derivative in temporal_derivatives:
-            derivative: Union[Derivative, Function]
-            expression = derivative.getExpression(expanded=True)
-
             derivative_variables = derivative.getVariables(expanded=True)
             derivative_functions = derivative.getFunctions(expanded=True)
 
+            derivative_quantities = derivative_variables + derivative_functions
             variable_substitution = {
                 variable: substitution
                 for variable, substitution in variable_substitutions.items()
-                if variable in derivative_variables + derivative_functions
+                if variable in derivative_quantities
             }
             derivative_parameters = derivative.getParameters(expanded=True)
             parameter_substitution = {
@@ -1027,14 +1080,19 @@ class Model:
                 for parameter, value in parameter_substitutions.items()
                 if parameter in derivative_parameters
             }
-            expression = expression.subs({**variable_substitution, **parameter_substitution})
 
+            expression = derivative.getExpression(expanded=True)
+            expression = expression.subs({**variable_substitution, **parameter_substitution})
             derivative_vector.append(expression)
 
         Function.setUseMemory(use_memory)
 
         if lambdified:
-            derivative_vector = lambdify((Symbol('t'), tuple(names)), derivative_vector, modules=["math"])
+            derivative_vector = lambdify(
+                (Symbol('t'), tuple(names)),
+                derivative_vector,
+                modules=["math"]
+            )
         if substitute_equilibria:
             return derivative_vector, equilibrium_solutions
         else:
@@ -2558,10 +2616,10 @@ def generateVariable(
 
 def createModel(function_ymls: Union[str, List[str]], parameter_ymls: Union[str, List[str]]) -> Model:
     """
-    Create model from YML files.
+    Create model from config files.
 
-    :param function_ymls: name(s) of YML file(s) containing info for function
-    :param parameter_ymls: name(s) of YML file(s) containing info about parameter values/units
+    :param function_ymls: name(s) of config file(s) containing info for function
+    :param parameter_ymls: name(s) of config file(s) containing info about parameter values/units
     """
     model = Model()
     model.loadParametersFromFiles(parameter_ymls)

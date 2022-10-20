@@ -7,7 +7,7 @@ Dictionary value is the collection of keys containing that prefix.
 """
 from typing import List, Union
 
-from YML import readPrefixes
+from Config import readPrefixes
 
 
 class KeyList:

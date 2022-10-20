@@ -1,8 +1,8 @@
 from io import BytesIO
 from os import listdir
-from os.path import dirname, isfile, join
+from os.path import isfile, join
 from pathlib import Path
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Tuple, Union
 from zipfile import ZipFile
 
 import PySimpleGUI as sg
@@ -10,13 +10,16 @@ import dill
 import numpy as np
 from pint import Quantity
 
-from Function import Function, Model, Parameter, Variable, \
+from Function import FreeParameter, Function, Model, Parameter, Variable, \
     generateFunction, generateParameter, readFunctionsFromFiles, readParametersFromFiles, \
     generateVariablesFromFile as loadVariables
+from Layout.AxisQuantity import AxisQuantityMetadata, generateMetadataFromFile
+from Layout.GridSimulationWindow import GridSimulationWindowRunner
+from Layout.OptimizationSimulationWindow import OptimizationSimulationWindowRunner
 from Layout.SimulationWindow import SimulationWindowRunner
-from Results import Results
-from YML import loadConfig
-
+from Results import GridResults, OptimizationResults, OptimizationResultsFileHandler, Results
+from Config import loadConfig
+from macros import generateQuantityFromMetadata
 
 
 def loadFunctions(
@@ -74,7 +77,7 @@ def getResults_old(
     results_filepath: str = None,
     parameter_directory: str = None,
     equation_directory: str = None
-) -> Results:
+) -> GridResults:
     if results_filepath is None:
         file_types = (
             ("Compressed File", "*.zip"),
@@ -146,7 +149,7 @@ def getResults_old(
         parameters=parameter_objs
     )
 
-    results_obj = Results(
+    results_obj = GridResults(
         model,
         values,
         results
@@ -159,7 +162,7 @@ def getResults_old2(
     results_filepath: str = None,
     parameter_directory: str = None,
     equation_directory: str = None
-) -> Results:
+) -> GridResults:
     if results_filepath is None:
         file_types = (
             ("Compressed File", "*.zip"),
@@ -222,7 +225,7 @@ def getResults_old2(
         parameters=parameter_objs
     )
 
-    results_obj = Results(
+    results_obj = GridResults(
         model,
         values,
         results
@@ -235,7 +238,7 @@ def getResults(
     results_folderpath: str = None,
     parameter_directory: str = None,
     equation_directory: str = None
-) -> Results:
+) -> Tuple[Results, str]:
     if results_folderpath is None:
         results_folderpath = sg.PopupGetFolder(
             message="Enter Folder to Load",
@@ -260,52 +263,91 @@ def getResults(
             if isfile(join(equation_directory, filepath))
         ]
 
-    stem2path_param = {
-        Path(filepath).stem: filepath
-        for filepath in parameter_filepaths
-    }
+    metadata_filepath = join(results_folderpath, "metadata.yml")
+    metadata = loadConfig(metadata_filepath)
+    simulation_type = metadata["simulation_type"]
+
+    variable_objs_filepath = join(results_folderpath, "Variable.json")
+    variable_objs = loadVariables(variable_objs_filepath)
+
     stem2path_func = {
         Path(filepath).stem: filepath
         for filepath in equation_filepaths
     }
-    
-    free_parameters_filepath = join(results_folderpath, "FreeParameter.json")
-    free_parameters = loadConfig(free_parameters_filepath)
-    
-    variable_objs_filepath = join(results_folderpath, "Variable.json")
-    variable_objs = loadVariables(variable_objs_filepath)
-
     functions_objs_filepath = join(results_folderpath, "Function.json")
     function_objs = loadFunctions(functions_objs_filepath, stem2path_func)
-    
+
+    stem2path_param = {
+        Path(filepath).stem: filepath
+        for filepath in parameter_filepaths
+    }
     parameter_objs_filepath = join(results_folderpath, "Parameter.json")
     parameter_objs = loadParameters(parameter_objs_filepath, stem2path_param)
-
-    values = {}
-    for name, value in free_parameters.items():
-        values[name] = np.array(list(map(float, value["values"])))
 
     model = Model(
         variables=variable_objs,
         functions=function_objs,
         parameters=parameter_objs
     )
-    
-    results_obj = Results(
-        model,
-        folderpath = results_folderpath,
-        free_parameter_values = values
-    )
+
+    free_parameters_filepath = join(results_folderpath, "FreeParameter.json")
+    free_parameters_metadata = loadConfig(free_parameters_filepath)
+    if simulation_type == "grid":
+        free_parameter_name2values = {}
+        for name, value in free_parameters_metadata.items():
+            free_parameter_name2values[name] = np.array(list(map(float, value["values"])))
+
+        results_obj = GridResults(
+            model=model,
+            folderpath=results_folderpath,
+            free_parameter_name2values=free_parameter_name2values
+        )
+    elif simulation_type == "optimization":
+        free_parameter_name2quantity = {}
+        for free_parameter_name, free_parameter_metadata in free_parameters_metadata.items():
+            initial_guess = free_parameter_metadata["initial_guess"]
+            unit = free_parameter_metadata["unit"]
+            bounds = tuple(free_parameter_metadata["bounds"])
+
+            free_parameter_obj = FreeParameter(
+                name=free_parameter_name,
+                default_value=initial_guess,
+                unit=unit,
+                bounds=bounds
+            )
+            free_parameter_quantity = free_parameter_obj.getQuantity()
+            free_parameter_name2quantity[free_parameter_name] = free_parameter_quantity
+            model.addPaperQuantities(free_parameter_obj)
+
+        fitdata_filepath = join(results_folderpath, "FitData.npy")
+
+        fit_axis_quantity_filepath = join(results_folderpath, "FitAxisQuantity.json")
+        fit_axis_quantity_metadata = loadConfig(fit_axis_quantity_filepath)
+        fit_parameter_names = fit_axis_quantity_metadata["fit_parameter_names"]
+        fit_axis_quantity_metadata = generateMetadataFromFile(fit_axis_quantity_filepath)
+        
+        general_metadata_filepath = join(results_folderpath, "metadata.yml")
+        general_metadata = loadConfig(general_metadata_filepath)
+        sample_sizes = tuple(general_metadata["sample_sizes"])
+        
+        results_obj = OptimizationResults(
+            model,
+            folderpath=results_folderpath,
+            free_parameter_name2quantity=free_parameter_name2quantity,
+            fit_parameter_names=fit_parameter_names,
+            fitdata_filepath=fitdata_filepath,
+            fit_axis_quantity_metadata=fit_axis_quantity_metadata,
+            sample_sizes=sample_sizes
+        )
 
     return results_obj, results_folderpath
-
 
 
 def getSimulation(
     results_filepath: str = None,
     parameter_directory: str = None,
     equation_directory: str = None
-) -> SimulationWindowRunner:
+) -> Union[GridSimulationWindowRunner, OptimizationSimulationWindowRunner]:
     results_obj, results_filepath = getResults(
         results_folderpath=results_filepath,
         parameter_directory=parameter_directory,
@@ -316,26 +358,61 @@ def getSimulation(
     free_parameters_filepath = join(results_filepath, "FreeParameter.json")
     free_parameter_contents = loadConfig(free_parameters_filepath)
 
-    free_parameter_values = {}
-    for name, value in free_parameter_contents.items():
-        quantity = Quantity(0, value["unit"])
-        values = list(map(float, value["values"]))
-        minimum, maximum, stepcount = min(values), max(values), len(values)
-        free_parameter_values[name] = (minimum, maximum, stepcount, quantity)
+    if isinstance(results_obj, GridResults):
+        free_parameter_name2metadata = {}
+        for name, value in free_parameter_contents.items():
+            quantity = Quantity(0, value["unit"])
+            values = list(map(float, value["values"]))
+            minimum, maximum, stepcount = min(values), max(values), len(values)
+            free_parameter_name2metadata[name] = (minimum, maximum, stepcount, quantity)
+        free_parameter_names = list(free_parameter_name2metadata.keys())
+        
+        plot_parameter_names = free_parameter_names
+    elif isinstance(results_obj, OptimizationResults):
+        free_parameter_name2quantity = {}
+        for name, value in free_parameter_contents.items():
+            default_value = value["initial_guess"]
+            unit = value["unit"]
+            quantity = Quantity(default_value, unit)
+            free_parameter_name2quantity[name] = quantity
+        free_parameter_names = list(free_parameter_name2quantity.keys())
+        
+        fit_axis_quantity_filepath = join(results_filepath, "FitAxisQuantity.json")
+        fit_axis_quantity = generateMetadataFromFile(fit_axis_quantity_filepath)
+        fitdata_filepath = join(results_filepath, "FitData.npy")
+        
+        results_file_handler: OptimizationResultsFileHandler = results_obj.getResultsFileHandler()
+        fit_parameter_names = results_file_handler.getFitParameterNames()
+        sample_sizes = results_file_handler.getSampleSizes()
+        
+        plot_parameter_names = fit_parameter_names
 
     plot_choices = {
         "Variable": model.getVariables(return_type=str) + ['t'],
         "Function": model.getFunctionNames(),
-        "Parameter": list(free_parameter_values.keys())
+        "Parameter": plot_parameter_names
     }
-    
-    simulation_window = SimulationWindowRunner(
-        "Simulation from Previous Results",
-        results=results_obj,
-        free_parameter_values=free_parameter_values,
-        plot_choices=plot_choices,
-        include_simulation_tab=False
-    )
+
+    if isinstance(results_obj, GridResults):
+        simulation_window = GridSimulationWindowRunner(
+            "Simulation from Previous Results",
+            results_obj=results_obj,
+            plot_choices=plot_choices,
+            include_simulation_tab=False,
+            free_parameter_name2metadata=free_parameter_name2metadata
+        )
+    elif isinstance(results_obj, OptimizationResults):
+        simulation_window = OptimizationSimulationWindowRunner(
+            "Simulation from Previous Results",
+            results_obj=results_obj,
+            plot_choices=plot_choices,
+            include_simulation_tab=False,
+            free_parameter_name2quantity=free_parameter_name2quantity,
+            fit_parameter_names=fit_parameter_names,
+            fit_axis_quantity=fit_axis_quantity,
+            fitdata_filepath=fitdata_filepath,
+            sample_sizes=sample_sizes
+        )
 
     return simulation_window
 
@@ -354,10 +431,6 @@ def loadSimulation(
 
 
 if __name__ == "__main__":
-    """# button = sg.ColorChooserButton("Color")
-    # color_input = sg.Input(visible=False, enable_events=True, disabled=True, key='-IN-')
-    # window = sg.Window("Choose Button", [[color_input, button]])"""
-
     sg.ChangeLookAndFeel("DarkGrey13")
     sg.SetOptions(
         element_padding=(1, 1),
@@ -365,4 +438,4 @@ if __name__ == "__main__":
         suppress_raise_key_errors=False
     )
 
-    loadSimulation()
+    loadSimulation(r"D:\Marcinik\Recreation\Arnold Tongue\best_fit_new\fit5_4param\fit5_res")

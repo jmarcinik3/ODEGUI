@@ -10,7 +10,7 @@ import PySimpleGUI as sg
 
 from Layout.MainWindow import MainWindowRunner
 from macros import tex2pngFromFile
-from YML import specific_model_folderpath, var2tex_filepath
+from Config import specific_model_folderpath, var2tex_filepath
 
 def main():
     """

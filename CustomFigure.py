@@ -9,6 +9,7 @@ from matplotlib.collections import LineCollection
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from numpy import ndarray
+from scipy import interpolate
 
 from Transforms.CustomMath import normalizeArray
 
@@ -136,7 +137,7 @@ def getLimits(
 
 
 def plotOnAxes(
-    axes,
+    axes: Axes,
     x: ndarray,
     y: ndarray,
     z: ndarray = None,
@@ -300,11 +301,22 @@ def plotOnAxes(
             assert xshape == yshape
             axes.plot(x, y, **plot_kwargs)
         elif plot_type == "cnxny":
-            assert cshape == (xsize, ysize)
-            c_shaped = c.T
+            assert xsize >= 2 and ysize >= 2
+            if cshape == (xsize, ysize):
+                c_shaped = c.T
+                x_shaped = x
+                y_shaped = y
+            elif csize == xsize == ysize:
+                x_shaped = np.unique(x)
+                y_shaped = np.unique(y)
+                points = np.array((x, y)).T
+                X = np.array([*np.meshgrid(x_shaped, y_shaped)]).T
+                c_shaped = interpolate.griddata(points, c, X, method="linear").T
+            else:
+                raise AssertionError
 
             axes.contourf(
-                x, y, c_shaped,
+                x_shaped, y_shaped, c_shaped,
                 levels=segment_count,
                 cmap=colormap,
                 norm=norm,
@@ -322,7 +334,7 @@ def plotOnAxes(
         elif plot_type == "ncnxnyC":
             assert Cshape == (csize, xsize, ysize)
             C_shaped = np.transpose(C, axes=[0, 2, 1])
-            
+
             for c_index in range(csize):
                 axes.contour(
                     x,
@@ -737,13 +749,13 @@ def getFigure(
         except KeyError:
             autoscale_on = False
             axes_kwargs[f"autoscale{axis_name:s}_on"] = autoscale_on
-        
+
         try:
             axes_kwargs[lim_str]
         except KeyError:
             axes_kwargs[lim_str] = (None, None)
         given_limits = axes_kwargs[lim_str]
-        
+
         axes_kwargs[lim_str] = getLimits(
             results[axis_name],
             limits=given_limits,
@@ -835,8 +847,8 @@ def getFigure(
     )
     full_figure_axis.xaxis.set_ticks([])
     full_figure_axis.yaxis.set_ticks([])
-    
-    try:    
+
+    try:
         full_figure_axis.set_title(axes_kwargs["title"])
     except KeyError:
         pass
@@ -884,7 +896,7 @@ def getFigure(
 
     if 'c' in plot_type or 't' in plot_type:
         assert colormap is None or isinstance(colormap, str)
-        
+
         vmin, vmax = axes_kwargs["clim"]
         cnorm = colors.Normalize(vmin=vmin, vmax=vmax)
         cmap = cm.ScalarMappable(norm=cnorm, cmap=colormap)
@@ -897,7 +909,7 @@ def getFigure(
             cloc = axes_kwargs["cloc"]
         except KeyError:
             cloc = None
-        
+
         figure.colorbar(
             mappable=cmap,
             ax=axes.ravel().tolist(),

@@ -10,13 +10,13 @@ from Layout.Layout import Layout, Row, Window, WindowRunner
 
 class ChooseGraphLayoutWindow(Window):
     def __init__(
-        self, 
-        name: str, 
-        runner: ChooseGraphLayoutWindowRunner,
+        self,
+        name: str,
+        runner: ChooseGraphLayoutWindowRunner
     ) -> None:
         """
         Constructor for :class:`~Layout.ChooseGraphLayoutWindow.ChooseGraphLayoutWindow`.
-        
+
         :param name: name of window
         :param runner: window runner associated with window
         """
@@ -24,9 +24,9 @@ class ChooseGraphLayoutWindow(Window):
             "window": (None, None)  # dim
         }
         Window.__init__(
-            self, 
-            name, 
-            runner, 
+            self,
+            name,
+            runner,
             dimensions=dimensions
         )
         self.choice2layout = {
@@ -46,7 +46,7 @@ class ChooseGraphLayoutWindow(Window):
         return list(self.choice2layout.keys())
 
     def getLayoutCodes(
-        self, 
+        self,
         choices: Union[str, List[str]] = None
     ) -> Union[str, Dict[str, str]]:
         """
@@ -103,13 +103,13 @@ class ChooseGraphLayoutWindow(Window):
         radio_layout = Layout()
         for radio in radios:
             row = Row(
-                window=self, 
+                window=self,
                 elements=radio
             )
             radio_layout.addRows(rows=row)
-        
+
         footer_row = self.getFooterRow()
-        
+
         return radio_layout.getLayout() + footer_row.getLayout()
 
 
@@ -117,12 +117,12 @@ class ChooseGraphLayoutWindowRunner(WindowRunner, ChooseGraphLayoutWindow):
     def __init__(self, name: str) -> None:
         """
         Constructor for :class:`~Layout.ChooseGraphLayoutWindow.ChooseGraphLayoutWindowRunner`.
-        
+
         :param name: name of window
         """
         ChooseGraphLayoutWindow.__init__(
-            self, 
-            name=name, 
+            self,
+            name=name,
             runner=self,
         )
         WindowRunner.__init__(self)
@@ -147,7 +147,7 @@ class ChooseGraphLayoutWindowRunner(WindowRunner, ChooseGraphLayoutWindow):
                     return event, layout_code
                 else:
                     sg.PopupError("Select layout name or hit cancel button")
-        
+
         window.close()
         return event, None
 

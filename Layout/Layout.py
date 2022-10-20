@@ -8,7 +8,7 @@ from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import PySimpleGUI as sg
 from KeyList import KeyList
-from macros import recursiveMethod
+from macros import formatValue, recursiveMethod
 
 
 def generateCollapsableSection(layout: List[List[sg.Element]], **kwargs) -> sg.pin:
@@ -114,6 +114,28 @@ def getNameFromElementKey(key: str) -> Optional[str]:
     return name
 
 
+def calculateSliderResolution(
+    minimum: float,
+    maximum: float,
+    stepcount: int
+) -> float:
+    """
+    Calculate resolution from minimum, maximum, and step count.
+
+    :param minimum: minimum value for slider
+    :param maximum: maximum value for slider
+    :param stepcount: number of values from minimum to maximum, inclusive
+    """
+    distinct_values = stepcount - 1
+    if distinct_values == 0:
+        return 0
+    elif distinct_values >= 1:
+        range_values = maximum - minimum
+        return range_values / distinct_values
+    else:
+        raise ValueError("count must be int at least 1")
+
+
 class Element:
     """
     Wrapper for PySimpleGUI Element.
@@ -199,7 +221,9 @@ class Row:
         :param elements: initial elements to contain in row
         :param window: :class:`~Layout.Layout.Window` that contains row
         """
+        assert isinstance(name, str) or name is None
         self.name = name
+        assert isinstance(window, Window) or window is None
         self.window = window
 
         if isinstance(elements, sg.Element):
@@ -276,6 +300,135 @@ class Row:
         layout = self.getLayout()
         column = sg.Column(layout)
         return column
+
+
+class Slider(Row):
+    def __init__(
+        self,
+        minimum: float,
+        maximum: float,
+        stepcount: int,
+        window: Window,
+        **kwargs
+    ) -> None:
+        """
+        Constructor for :class:`~Layout.Layout.Slider`.
+
+        :param minimum: minimum value for slider
+        :param maximum: maximum value for slider
+        :param stepcount: number of distinct values for slider
+        :param window: window containing slider
+        :param kwargs: additional arguments to input into :class:`~Layout.Layout.Row`
+        """
+        Row.__init__(
+            self,
+            window=window,
+            **kwargs
+        )
+
+        assert isinstance(minimum, (int, float))
+        self.minimum = minimum
+        assert isinstance(maximum, (int, float))
+        self.maximum = maximum
+        assert isinstance(stepcount, int)
+        self.stepcount = stepcount
+
+        self.resolution = calculateSliderResolution(minimum, maximum, stepcount)
+
+    def getMinimum(self) -> float:
+        """
+        Get minimum value of parameter.
+
+        :param self: :class:`~Layout.Layout.Slider` to retrieve minimum value of
+        """
+        return self.minimum
+
+    def getMaximum(self) -> float:
+        """
+        Get maximum value of parameter.
+
+        :param self: :class:`~Layout.Layout.Slider` to retrieve maximum value of
+        """
+        return self.maximum
+
+    def getStepCount(self) -> int:
+        """
+        Get number of distinct parameter values.
+
+        :param self: :class:`~Layout.Layout.Slider` to retrieve number of values for
+        """
+        return self.stepcount
+
+    def getResolution(self) -> float:
+        """
+        Get resolution of parameter values.
+
+        :param self: :class:`~Layout.Layout.Slider` to retrieve resolution from
+        """
+        return self.resolution
+
+    def getSliderValue(self) -> float:
+        """
+        Get present value of parameter slider.
+        Uses present state of window.
+
+        :param self: :class:`~Layout.Layout.Slider` to retrieve value from
+        """
+        parameter_slider = self.getSlider()
+        slider_key = getKeys(parameter_slider)
+        window_runner = self.getWindowRunner()
+        slider_value = window_runner.getValue(slider_key)
+        return slider_value
+
+    def getMinimumLabel(self) -> sg.Text:
+        """
+        Get label to display minimum parameter value.
+
+        :param self: :class:`~Layout.GridSimulationWindow.ParameterSlider` to retrieve label for
+        """
+        minimum = self.getMinimum()
+        minimum_text = formatValue(minimum)
+
+        label_width = int(600 * 1 / 4 * 2 / 5 * 169 / 1350)
+        size = (label_width, None)
+
+        return sg.Text(
+            text=minimum_text,
+            size=size
+        )
+
+    def getMaximumLabel(self) -> sg.Text:
+        """
+        Get label to display maximum parameter value.
+
+        :param self: :class:`~Layout.GridSimulationWindow.ParameterSlider` to retrieve label for
+        """
+        maximum = self.getMaximum()
+        maximum_text = formatValue(maximum)
+
+        label_width = int(600 * 1 / 4 * 2 / 5 * 169 / 1350)
+        size = (label_width, None)
+
+        return sg.Text(
+            text=maximum_text,
+            size=size
+        )
+
+    def getStepCountLabel(self) -> sg.Text:
+        """
+        Get label to display number of distinct parameter values.
+
+        :param self: :class:`~Layout.GridSimulationWindow.ParameterSlider` to retrieve label for
+        """
+        stepcount = self.getStepCount()
+
+        label_width = int(600 * 1 / 4 * 1 / 5 * 169 / 1350)
+        size = (label_width, None)
+
+        return sg.Text(
+            text=stepcount,
+            size=size
+        )
 
 
 class ChooseFileRow(Row):
@@ -787,6 +940,16 @@ class RadioGroup(Row):
         assert isinstance(chosen_radio, sg.Radio)
         return chosen_radio
 
+    def getChosenRadioLabel(self) -> str:
+        """
+        Get label for chosen radio.
+
+        :param self: :class:`~Layout.Layout.RadioGroup` to retrieve label from
+        """
+        chosen_radio = self.getChosenRadio()
+        chosen_radio_label = vars(chosen_radio)["Text"]
+        return chosen_radio_label
+
 
 class CheckboxGroup(Row):
     def __init__(
@@ -1126,8 +1289,8 @@ class WindowRunner:
         self.values = None
 
     def getValue(
-        self, 
-        key: str, 
+        self,
+        key: str,
         combo_error: bool = True
     ) -> Union[str, float]:
         """

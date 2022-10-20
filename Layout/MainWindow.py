@@ -5,7 +5,6 @@ from os.path import dirname, exists, isfile, join
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
-# noinspection PyPep8Naming
 import PySimpleGUI as sg
 from CustomErrors import RecursiveTypeError
 from Function import (Derivative, Function, Independent, Model, Parameter,
@@ -13,16 +12,17 @@ from Function import (Derivative, Function, Independent, Model, Parameter,
                       readFunctionsFromFiles, readParametersFromFiles)
 # from colour import Color
 from igraph import plot
+from Layout.GridSimulationWindow import GridSimulationWindowRunner
+from Layout.OptimizationSimulationWindow import OptimizationSimulationWindowRunner
 from macros import (StoredObject, expression2png, formatQuantity, getTexImage,
                     recursiveMethod, unique)
 from numpy import ndarray
 from pint import Quantity
-from YML import (config_file_types, getDimensions, getStates, loadConfig,
-                 readLayout, readStates)
+from Config import (config_file_types, getDimensions, getStates, loadConfig,
+                    readLayout, readStates)
 
 from Layout.ChooseGraphLayoutWindow import ChooseGraphLayoutWindowRunner
 from Layout.ChooseParametersWindow import ChooseParametersWindowRunner
-from Layout.ChooseVariablesWindow import ChooseVariablesWindowRunner
 from Layout.Layout import (Element, Layout, Row, Tab, TabbedWindow, TabGroup,
                            TabRow, WindowRunner, generateCollapsableSection,
                            getKeys, getNameFromElementKey, storeElement)
@@ -61,7 +61,6 @@ class TimeEvolutionRow(TabRow, StoredObject):
         TabRow.__init__(self, name, tab)
         StoredObject.__init__(self, name)
 
-        # noinspection PyTypeChecker
         window_obj: MainWindow = self.getWindowObject()
         window_obj.addVariableNames(name)
 
@@ -376,7 +375,6 @@ class ParameterRow(TabRow, StoredObject):
         """
         TabRow.__init__(self, name, section.getTab())
         StoredObject.__init__(self, name)
-        # noinspection PyTypeChecker
         window_obj: MainWindow = self.getWindowObject()
         window_obj.addParameterNames(names=name)
 
@@ -475,7 +473,7 @@ class ParameterRow(TabRow, StoredObject):
         filestems = self.getStems()
         stem_count = len(filestems)
         parameter_name = self.getName()
-        
+
         return sg.Combo(
             values=filestems,
             default_value=filestems[-1],
@@ -507,7 +505,7 @@ class ParameterRow(TabRow, StoredObject):
         quantity = self.getQuantities()[-1]
         formatted_value = formatQuantity(quantity)
         parameter_name = self.getName()
-        
+
         return sg.Text(
             text=formatted_value,
             tooltip="Present value of parameter",
@@ -562,7 +560,12 @@ class ParameterSection(Element):
     :ivar parameters_rows: list of :class:`~Layout.MainWindow.ParameterRow`, one for each parameter in section
     """
 
-    def __init__(self, name: str, tab: ParameterTab, name2params: Dict[str, List[Parameter]]) -> None:
+    def __init__(
+        self,
+        name: str,
+        tab: ParameterTab,
+        name2params: Dict[str, List[Parameter]]
+    ) -> None:
         """
         Constructor for :class:`~Layout.MainWindow.ParameterSection`.
 
@@ -574,7 +577,11 @@ class ParameterSection(Element):
                 Key is filestems for files containing parameter.
                 Value is filepaths for files.
         """
-        super().__init__(tab.getWindowObject())
+        window_obj = tab.getWindowObject()
+        Element.__init__(
+            self,
+            window=window_obj
+        )
         self.name = name
         self.tab = tab
 
@@ -642,7 +649,7 @@ class ParameterSection(Element):
         header_row_obj = Row(elements=header_column)
 
         section_name = self.getName()
-        
+
         parameter_rows = self.getParameterRows()
         collapsible_layout_obj = Layout(rows=parameter_rows)
         collapsible_layout = collapsible_layout_obj.getLayout()
@@ -808,7 +815,6 @@ class FunctionRow(TabRow, StoredObject):
 
         self.functions = functions
 
-        # noinspection PyTypeChecker
         window_obj: MainWindow = self.getWindowObject()
         window_obj.addFunctionNames(name)
 
@@ -915,7 +921,7 @@ class FunctionRow(TabRow, StoredObject):
         name = self.getName()
         image_filepath = self.generatePngExpressions()[-1]
         image_folder = dirname(image_filepath)
-        
+
         function_name = self.getName()
 
         return getTexImage(
@@ -1419,7 +1425,7 @@ class MainWindow(TabbedWindow):
             button_text=text,
             key=f"-{text.upper():s}-"
         )
-        
+
     def getLayout(self) -> List[List[sg.Element]]:
         """
         Get layout for window.
@@ -1428,20 +1434,18 @@ class MainWindow(TabbedWindow):
         """
         menu = self.getMenu()
         parameter_grid_button = self.getGridSimulationButton()
-        fit_data_button = self.getOptimizeSimulationButton()
         generate_graph_button = self.getGenerateGraphButton()
-        
+
         prefix_layout = Layout(rows=Row(window=self, elements=menu))
-        
+
         suffix_elements = [
             parameter_grid_button,
-            fit_data_button,
             generate_graph_button
         ]
         suffix_layout = Layout(rows=Row(window=self, elements=suffix_elements))
-        
+
         tabgroup = TabGroup(self.getTabs())
-        
+
         layout = prefix_layout.getLayout() + tabgroup.getLayout() + suffix_layout.getLayout()
         return layout
 
@@ -1544,10 +1548,10 @@ class MainWindowRunner(WindowRunner, MainWindow):
             "parameters": self.stem2name2param
         }
         MainWindow.__init__(
-            self, 
-            name, 
-            self, 
-            blueprints, 
+            self,
+            name,
+            self,
+            blueprints,
             stem2name2obj,
         )
         WindowRunner.__init__(self)
@@ -1557,7 +1561,6 @@ class MainWindowRunner(WindowRunner, MainWindow):
 
         toolbar_menu_key = getKeys(self.getMenu())
         parameter_grid_key = getKeys(self.getGridSimulationButton())
-        fit_data_key = getKeys(self.getOptimizeSimulationButton())
         generate_graph_key = getKeys(self.getGenerateGraphButton())
         exit_keys = (sg.WIN_CLOSED, 'Exit')
 
@@ -1643,43 +1646,74 @@ class MainWindowRunner(WindowRunner, MainWindow):
                 self.openFunction2ArgumentGraph()
         window.close()
 
-    def getPlotChoices(self, model: Model = None) -> Dict[str, List[str]]:
+    def getPlotChoices(
+        self,
+        model: Model = None,
+        species: str = None
+    ) -> Union[List[str], Dict[str, List[str]]]:
         """
         Get names of variable/functions to analyze for plot.
 
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve choices from
         :param model: model to retrieve choices from.
             Default to model associated with window.
+        :param species: name of specie to retrieve choices of
         :returns: Dictionary of plot choices.
-            Key is species of plot choice (e.g. "Variable", "Function", "Parameter").
+            Key is specie of plot choice (e.g. "Variable", "Function", "Parameter").
             Value is list of names for plot choices.
         """
         if model is None:
             model = self.getModel()
-        variable_names = ['t'] + model.getVariables(return_type=str)
+        assert isinstance(model, Model)
 
-        function_names = []
-        for function_obj in model.getFunctions(filter_type=Independent):
-            function_name = function_obj.getName()
-            if not isinstance(function_obj, Derivative):
-                function_names.append(function_name)
-            else:
-                variable_obj = function_obj.getVariable()
-                time_evolution_type = variable_obj.getTimeEvolutionType()
-                if time_evolution_type in ["Temporal", "Constant"]:
+        if species is not None:
+            assert isinstance(species, str)
+
+        def getVariableNames() -> List[str]:
+            variable_names = ['t'] + model.getVariables(return_type=str)
+            return variable_names
+
+        def getFunctionNames() -> List[str]:
+            function_names = []
+            function_objs: list[Function] = model.getFunctions(filter_type=Independent)
+            for function_obj in function_objs:
+                function_name = function_obj.getName()
+                if not isinstance(function_obj, Derivative):
                     function_names.append(function_name)
+                else:
+                    variable_obj = function_obj.getVariable()
+                    time_evolution_type = variable_obj.getTimeEvolutionType()
+                    if time_evolution_type in ["Temporal", "Constant"]:
+                        function_names.append(function_name)
 
-        free_parameter_names = self.getParameterNames(parameter_types="Free")
+            return function_names
 
-        plot_choices = {
-            "Variable": variable_names,
-            "Function": function_names,
-            "Parameter": free_parameter_names
-        }
+        def getFreeParameterNames() -> List[str]:
+            free_parameter_names = self.getParameterNames(parameter_types="Free")
+            return free_parameter_names
+
+        if isinstance(species, str):
+            if species == "Variable":
+                plot_choices = getFreeParameterNames()
+            elif species == "Function":
+                plot_choices = getFunctionNames()
+            elif species == "Parameter":
+                plot_choices = getVariableNames()
+            else:
+                raise ValueError('species must be str in ("Variable", "Function", "Parameter")')
+        elif species is None:
+            plot_choices = {
+                "Variable": getVariableNames(),
+                "Function": getFunctionNames(),
+                "Parameter": getFreeParameterNames()
+            }
 
         return plot_choices
 
-    def getModel(self, variable_names: Union[str, List[str]] = None) -> Model:
+    def getModel(
+        self,
+        variable_names: Union[str, List[str]] = None
+    ) -> Model:
         """
         Get model for window.
         Uses present state of window.
@@ -1831,7 +1865,7 @@ class MainWindowRunner(WindowRunner, MainWindow):
 
         def get(name: str) -> Union[float, str]:
             """Base method for :meth:`~Layout.MainWindow.MainWindowRunner.getInitialConditions`."""
-            time_evolution_type_row = TimeEvolutionRow.getInstances(names=name)
+            time_evolution_type_row: TimeEvolutionRow = TimeEvolutionRow.getInstances(names=name)
 
             time_evolution_type = self.getValue(
                 getKeys(time_evolution_type_row.getTimeEvolutionTypeElement())
@@ -1845,11 +1879,13 @@ class MainWindowRunner(WindowRunner, MainWindow):
             if False:  # is_initial_equilibrium:
                 return "Equilibrium"
             else:
-                input_field_key = getKeys(time_evolution_type_row.getInitialConditionElement())
+                initial_condition_input = time_evolution_type_row.getInitialConditionElement()
+                input_field_key = getKeys(initial_condition_input)
                 try:
                     value = float(self.getValue(input_field_key))
                 except AttributeError:
-                    value = float(getStates("initial_condition", name))
+                    value = getStates("initial_condition", name)
+                    value = float(value)
                 return value
 
         return recursiveMethod(
@@ -1880,7 +1916,8 @@ class MainWindowRunner(WindowRunner, MainWindow):
             try:
                 return self.getValue(key)
             except AttributeError:
-                return getStates("time_evolution_types", name)
+                state = getStates("time_evolution_types", name)
+                return state
 
         return recursiveMethod(
             base_method=get,
@@ -1951,7 +1988,7 @@ class MainWindowRunner(WindowRunner, MainWindow):
 
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve objects from
         :param is_core: set True to retrieve only core variables.
-            Set False to retreive only non-core variables.
+            Set False to retrieve only non-core variables.
             Retrieves all variables by default.
         :param names: subset of variable name(s) to retrieve.
             Ignores :paramref:`~Layout.MainWindow.MainWindowRunner.getVariables.is_core`.
@@ -2269,7 +2306,10 @@ class MainWindowRunner(WindowRunner, MainWindow):
         is_custom = name in custom_parameter_names
         return is_custom
 
-    def getParameters(self, names: Union[str, Iterable[str]] = None) -> Union[Parameter, Iterable[Parameter]]:
+    def getParameters(
+        self,
+        names: Union[str, Iterable[str]] = None
+    ) -> Union[Parameter, Iterable[Parameter]]:
         """
         Get parameter object from filestem and name.
         Uses present state of window.
@@ -2667,7 +2707,7 @@ class MainWindowRunner(WindowRunner, MainWindow):
             elif not exists(filepath) or not isfile(filepath):
                 sg.PopupError(f"Initial conditions not found at {filepath:s}")
                 return None
-            
+
             contents = loadConfig(filepath)
 
         for variable_name, variable_content in contents.items():
@@ -2702,7 +2742,7 @@ class MainWindowRunner(WindowRunner, MainWindow):
                     file_types=file_types,
                     multiple_files=False
                 )
-            
+
             if filepath is None:
                 return False
             elif not exists(filepath) or not isfile(filepath):
@@ -2721,7 +2761,7 @@ class MainWindowRunner(WindowRunner, MainWindow):
         for window_variable_name in window_variable_names:
             updated = window_variable_name in updated_variable_names
             self.setIsCoreVariable(window_variable_name, updated)
-        
+
         return True
 
     def loadParametersFromFile(
@@ -2756,7 +2796,7 @@ class MainWindowRunner(WindowRunner, MainWindow):
                 )
                 if filepath is None:
                     return None
-            
+
             if filepath is None:
                 return None
             elif not exists(filepath) or not isfile(filepath):
@@ -2829,7 +2869,7 @@ class MainWindowRunner(WindowRunner, MainWindow):
                 )
                 if filepath is None:
                     return None
-            
+
             if filepath is None:
                 return None
             elif not exists(filepath) or not isfile(filepath):
@@ -2887,15 +2927,11 @@ class MainWindowRunner(WindowRunner, MainWindow):
         variable_objs_filepath = join(folderpath, "Variable.json")
         parameter_objs_filepath = join(folderpath, "Parameter.json")
         function_objs_filepath = join(folderpath, "Function.json")
-        
-        if not self.loadTimeEvolutionTypesFromFile(filepath=variable_objs_filepath):
-            return None
-        if self.loadInitialConditionsFromFile(filepath=variable_objs_filepath) is None:
-            return None
-        if self.loadParametersFromFile(filepath=parameter_objs_filepath) is None:
-            return None
-        if self.loadFunctionsFromFile(filepath=function_objs_filepath) is None:
-            return None
+
+        self.loadTimeEvolutionTypesFromFile(filepath=variable_objs_filepath)
+        self.loadInitialConditionsFromFile(filepath=variable_objs_filepath)
+        self.loadParametersFromFile(filepath=parameter_objs_filepath)
+        self.loadFunctionsFromFile(filepath=function_objs_filepath)
 
     def getFreeParameterValues(
         self,
@@ -2908,7 +2944,7 @@ class MainWindowRunner(WindowRunner, MainWindow):
 
         :param self: :class:`~Layout.MainWindow.MainWindowRunner` to retrieve free parameters from
         :param free_parameter_names: Names of parameters to set range of values for if grid-type simulation.
-            Names of parameters on axes of dataset if optimize-type simulation.
+            Names of parameters along axes of dataset if optimize-type simulation.
             Defaults to names of parameters set to "Free" in window.
         :param fit_parameter_names: names of parameters to fit to dataset.
             Defaults to names of parameters set to "Fit" in window.
@@ -2920,18 +2956,37 @@ class MainWindowRunner(WindowRunner, MainWindow):
 
         free_parameter_name2quantity = self.getParameterQuantities(names=free_parameter_names)
         fit_parameter_name2quantity = self.getParameterQuantities(names=fit_parameter_names)
+
+        plot_specie2quantities = self.getPlotChoices()
+
+        def getPlotChoices(species: str) -> List[str]:
+            quantity_names = plot_specie2quantities[species]
+            return quantity_names
+
         set_free_parameters_window = SetFreeParametersWindowRunner(
             name="Set Varying Parameters",
             free_parameter_name2quantity=free_parameter_name2quantity,
-            fit_parameter_name2quantity=fit_parameter_name2quantity
+            fit_parameter_name2quantity=fit_parameter_name2quantity,
+            get_plot_choices=getPlotChoices
         )
-        event, free_parameter_values = set_free_parameters_window.runWindow()
+        set_free_parameters_window.runWindow()
 
+        event = set_free_parameters_window.event
+        free_parameter_name2range = set_free_parameters_window.free_parameter_name2range
+        fit_parameter_names_ordered = set_free_parameters_window.fit_parameter_names_ordered
+        fit_output_axis_quantity = set_free_parameters_window.fit_output_axis_quantity
+        fitdata_output_filepath = set_free_parameters_window.fitdata_output_filepath
+
+        free_parameter_name2info = {}
         if event == "Submit":
-            free_parameter_values = {free_parameter_name: tuple(
-                [*free_parameter_values[free_parameter_name], free_parameter_name2quantity[free_parameter_name]]
-            ) for free_parameter_name in free_parameter_names}
-        return event, free_parameter_values
+            for free_parameter_name in free_parameter_names:
+                free_parameter_info = (
+                    *free_parameter_name2range[free_parameter_name],
+                    free_parameter_name2quantity[free_parameter_name]
+                )
+                free_parameter_name2info[free_parameter_name] = free_parameter_info
+
+        return event, free_parameter_name2info, fit_parameter_names_ordered, fit_output_axis_quantity, fitdata_output_filepath
 
     def openSimulationWindow(self) -> None:
         """
@@ -2947,33 +3002,67 @@ class MainWindowRunner(WindowRunner, MainWindow):
         model_parameter_names = model.getParameterNames()
 
         free_parameter_names = self.getParameterNames(parameter_types="Free")
+        free_parameter_count = len(free_parameter_names)
         fit_parameter_names = self.getParameterNames(parameter_types="Fit")
+        fit_parameter_count = len(fit_parameter_names)
         varying_parameter_names = free_parameter_names + fit_parameter_names
-        
+
         varying_parameters_not_in_model = tuple([
             varying_parameter_name
             for varying_parameter_name in varying_parameter_names
             if varying_parameter_name not in model_parameter_names
         ])
-        
+
         if len(varying_parameters_not_in_model) >= 1:
             sg.PopupError(
                 f"Fit/Free parameters {varying_parameters_not_in_model:} are not present in model.",
                 title="Unavailable Parameters"
             )
             return None
-
-        event, free_parameter_values = self.getFreeParameterValues(
-            free_parameter_names=free_parameter_names,
-            fit_parameter_names=fit_parameter_names
-        )
-        if event == "Submit":
-            simulation_window = SimulationWindowRunner(
-                name="Run Simulation for Model",
-                model=model,
-                free_parameter_values=free_parameter_values,
-                plot_choices=self.getPlotChoices(model=model)
+        if fit_parameter_count >= 1 and free_parameter_count == 0:
+            sg.PopupError(
+                f'Select at least one "Free" parameter when selecting at least one "Fit" parameter.',
+                title="Select Free Parameter"
             )
+            return None
+
+        event, free_parameter_name2metadata, fit_parameter_names_ordered, fit_axis_quantity, fitdata_filepath \
+            = self.getFreeParameterValues(
+                free_parameter_names=free_parameter_names,
+                fit_parameter_names=fit_parameter_names
+            )
+
+        if event == "Submit":
+            fit_parameter_count = len(fit_parameter_names)
+            if fit_parameter_count >= 1:
+                simulation_type = "optimization"
+            elif fit_parameter_count == 0:
+                simulation_type = "grid"
+
+            plot_choices = self.getPlotChoices(model=model)
+
+            if simulation_type == "optimization":
+                free_parameter_name2quantity = {}
+                for free_parameter_name, free_parameter_metadata in free_parameter_name2metadata.items():
+                    free_parameter_name2quantity[free_parameter_name] = free_parameter_metadata[3]
+
+                simulation_window = OptimizationSimulationWindowRunner(
+                    name="Run Simulation for Model",
+                    model=model,
+                    free_parameter_name2quantity=free_parameter_name2quantity,
+                    fit_parameter_names=fit_parameter_names_ordered,
+                    fit_axis_quantity=fit_axis_quantity,
+                    fitdata_filepath=fitdata_filepath,
+                    plot_choices=plot_choices
+                )
+            elif simulation_type == "grid":
+                simulation_window = GridSimulationWindowRunner(
+                    name="Run Simulation for Model",
+                    model=model,
+                    free_parameter_name2metadata=free_parameter_name2metadata,
+                    plot_choices=plot_choices
+                )
+
             simulation_window.runWindow()
 
     def openFunction2ArgumentGraph(self) -> None:

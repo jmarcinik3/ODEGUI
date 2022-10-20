@@ -227,15 +227,17 @@ def rootMeanSquare(data: ndarray) -> float:
     return rms
 
 
-def sumSquaresError(data: ndarray, data_compare: ndarray) -> ndarray:
+def normalizedRmsError(data: ndarray, data_compare: ndarray) -> float:
     """
-    Get residual sum of squares (RSS) between data and comparison.
+    Get RMS error between data and comparison, normalized by RMS of data.
 
     :param data: vector of points to compare to comparison data (e.g. fit data)
     :param data_compare: vector of points to compare to data
     """
-    rss = np.sum((data - data_compare) ** 2)
-    return rss
+    rms_data = np.sqrt(np.mean(data ** 2))
+    rms_error = np.sqrt(np.mean((data - data_compare) ** 2))
+    cost = rms_error / rms_data
+    return cost
 
 
 def standardDeviation(data: ndarray) -> float:

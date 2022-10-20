@@ -6,13 +6,12 @@ The simulation must be run once by hitting the button before the window function
 from __future__ import annotations
 
 import os
-import tkinter as tk
 import traceback
 from functools import partial
 from itertools import product
 from os.path import basename, join
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Tuple, Union
 from zipfile import ZipFile
 
 import dill
@@ -20,71 +19,39 @@ import imageio
 import matplotlib.pyplot as plt
 import numpy as np
 import PySimpleGUI as sg
+from Config import (config_file_types, getDimensions, getStates, loadConfig,
+                    saveConfig)
 from CustomFigure import getFigure
 from Function import Model
-from macros import (StoredObject, formatValue, getTexImage, recursiveMethod,
-                    unique)
+from macros import StoredObject, getTexImage, recursiveMethod, unique
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from numpy import ndarray
+from ParameterFit import MonteCarloMinimization
 from pint import Quantity, Unit
-from Results import GridResults
-from Simulation import RunGridSimulation
+from Results import (GridResults, OptimizationResults,
+                     OptimizationResultsFileHandler, Results)
+from Simulation import RunGridSimulation, RunOptimizationSimulation
 from sympy.core import function
-from YML import (config_file_types, getDimensions, getStates, loadConfig,
-                 saveConfig)
+from Transforms.CustomMath import normalizedRmsError
 
-from Layout.AxisQuantity import (AxisQuantity, AxisQuantityTabGroup,
-                                 ComplexRadioGroup, EnvelopeRadioGroup,
-                                 PlotQuantities, cc_pre, ccs_pre, fps_pre)
-from Layout.Layout import (Element, Layout, Row, Tab, TabbedWindow, TabGroup,
+from Layout.AxisQuantity import (AxisQuantity, AxisQuantityFrame,
+                                 AxisQuantityTabGroup, AxisQuantityWindow,
+                                 AxisQuantityWindowRunner, PlotQuantities,
+                                 axis_type2names, cc_pre, ccs_pre, fps_pre,
+                                 qr_pre)
+from Layout.CanvasWindow import CanvasWindow
+from Layout.Layout import (Layout, Row, Slider, Tab, TabbedWindow, TabGroup,
                            WindowRunner, getKeys, storeElement)
 
+if TYPE_CHECKING:
+    from Layout.GridSimulationWindow import GridSimulationWindowRunner
+    from Layout.OptimizationSimulationWindow import \
+        OptimizationSimulationWindowRunner
 
-def drawFigure(canvas: tk.Canvas, figure: Figure) -> FigureCanvasTkAgg:
-    """
-    Draw figure on canvas.
-
-    :param canvas: canvas to draw figure on
-    :param figure: figure containing data to draw on canvas
-    """
-    figure_canvas = FigureCanvasTkAgg(figure, canvas)
-    figure_canvas.get_tk_widget().pack(side='top', fill='both', expand=1)
-    figure_canvas.draw()
-    return figure_canvas
-
-
-def clearFigure(figure_canvas: FigureCanvasTkAgg) -> None:
-    """
-    Clear figure on figure-canvas aggregate.
-
-    :param figure_canvas: figure-canvas aggregate to clear canvas on
-    """
-    if isinstance(figure_canvas, FigureCanvasTkAgg):
-        figure_canvas.get_tk_widget().forget()
-    plt.close("all")
-
-
-def calculateResolution(
-    minimum: float,
-    maximum: float,
-    step_count: int
-) -> float:
-    """
-    Calculate resolution from minimum, maximum, and step count.
-
-    :param minimum: minimum value
-    :param maximum: maximum value
-    :param step_count: number of values from minimum to maximum, inclusive
-    """
-    distinct_values = step_count - 1
-    if distinct_values == 0:
-        return 0
-    elif distinct_values >= 1:
-        range_values = maximum - minimum
-        return range_values / distinct_values
-    else:
-        raise ValueError("count must be int at least 1")
+update_plot_key = "-UPDATE PLOT-"
+toolbar_menu_key = "-TOOLBAR MENU-"
+run_simulation_key = "-RUN SIMULATION-"
 
 
 def getUnitConversionFactor(
@@ -105,7 +72,7 @@ def getUnitConversionFactor(
     return conversion_factor.magnitude
 
 
-class ParameterSlider(Element):
+class ParameterSlider(Slider):
     """
     Slider to choose value for free parameter.
     This contains
@@ -113,10 +80,6 @@ class ParameterSlider(Element):
         One for number of distinct parameter values
         # . Slider. This allows the user to choose which parameter value to plot a simulation for.
 
-    :ivar name: name of parameter
-    :ivar minimum: minimum value of parameter
-    :ivar maximum: maximum value of parameter
-    :ivar stepcount: number of disticnt parameter values
     :ivar units: units of parameter
     """
 
@@ -124,125 +87,69 @@ class ParameterSlider(Element):
         self,
         name: str,
         window: SimulationWindow,
-        values: Tuple[float, float, int, Unit]
+        minimum: float,
+        maximum: float,
+        stepcount: int,
+        unit: Unit = None
     ) -> None:
         """
-        Constuctor for :class:`~Layout.SimulationWindow.ParameterSlider`.
+        Constuctor for :class:`~Layout.GridSimulationWindow.ParameterSlider`.
 
-        :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to initialize
+        :param self: :class:`~Layout.GridSimulationWindow.ParameterSlider` to initialize
         :param name: name of parameter
         :param window: window in which slider object will be displayed
-        :param values: tuple of info giving parameter values.
-            First value is minimum value of parameter.
-            Second value is maximum value of parameter.
-            Third value is number of distinct parameter values.
-            Fourth value is units of parameter.
+        :param minimum: see :paramref:`~Layout.Layout.Slider.__init__.minimum`
+        :param maximum: see :paramref:`~Layout.Layout.Slider.__init__.maximum`
+        :param stepcount: see :paramref:`~Layout.Layout.Slider.__init__.stepcount`
+        :param unit: object containing units for parameter (not implemented)
         """
-        Element.__init__(
+        assert isinstance(window, SimulationWindow)
+
+        Slider.__init__(
             self,
-            window,
-            name=name
+            window=window,
+            name=name,
+            minimum=minimum,
+            maximum=maximum,
+            stepcount=stepcount
         )
 
-        self.minimum = values[0]
-        self.maximum = values[1]
-        self.stepcount = values[2]
-        self.units = values[3]
+        assert isinstance(unit, Unit)
+        self.unit = unit
 
-    def getName(self) -> str:
-        """
-        Get name of parameter.
+        name_label = self.getNameLabel()
+        minimum_label = self.getMinimumLabel()
+        maximum_label = self.getMaximumLabel()
+        stepcount_label = self.getStepCountLabel()
+        slider = self.getSlider()
 
-        :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve name of
-        """
-        return self.name
-
-    def getMinimum(self) -> float:
-        """
-        Get minimum value of parameter.
-
-        :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve minimum value of
-        """
-        return self.minimum
-
-    def getMaximum(self) -> float:
-        """
-        Get maximum value of parameter.
-
-        :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve maximum value of
-        """
-        return self.maximum
-
-    def getStepCount(self) -> int:
-        """
-        Get number of distinct parameter values.
-
-        :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve number of values for
-        """
-        return self.stepcount
-
-    def getResolution(self) -> float:
-        """
-        Get resolution of parameter values.
-
-        :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve resolution from
-        """
-        minimum = self.getMinimum()
-        maximum = self.getMaximum()
-        stepcount = self.getStepCount()
-        resolution = calculateResolution(minimum, maximum, stepcount)
-        return resolution
+        elements = [
+            name_label,
+            minimum_label,
+            slider,
+            maximum_label,
+            stepcount_label
+        ]
+        self.addElements(elements)
 
     def getNameLabel(self) -> Union[sg.Image, sg.Text]:
         """
         Get label to display parameter name.
 
-        :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve label for
+        :param self: :class:`~Layout.GridSimulationWindow.ParameterSlider` to retrieve label for
         """
+        parameter_name = self.getName()
         return getTexImage(
-            name=self.getName(),
+            name=parameter_name,
             size=self.getDimensions(name="parameter_slider_name_label")
-        )
-
-    def getMinimumLabel(self) -> sg.Text:
-        """
-        Get label to display minimum parameter value.
-
-        :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve label for
-        """
-        return sg.Text(
-            text=formatValue(self.getMinimum()),
-            size=self.getDimensions(name="parameter_slider_minimum_label")
-        )
-
-    def getMaximumLabel(self) -> sg.Text:
-        """
-        Get label to display maximum parameter value.
-
-        :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve label for
-        """
-        return sg.Text(
-            text=formatValue(self.getMaximum()),
-            size=self.getDimensions(name="parameter_slider_maximum_label")
-        )
-
-    def getStepCountLabel(self) -> sg.Text:
-        """
-        Get label to display number of distinct parameter values.
-
-        :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve label for
-        """
-        return sg.Text(
-            text=self.getStepCount(),
-            size=self.getDimensions(name="parameter_slider_stepcount_label")
         )
 
     @storeElement
     def getSlider(self) -> sg.Slider:
         """
-        Get slider to take user for value of parameter.
+        Get slider to take user input for value of parameter.
 
-        :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve slider from
+        :param self: :class:`~Layout.GridSimulationWindow.ParameterSlider` to retrieve slider from
         """
         minimum = self.getMinimum()
         maximum = self.getMaximum()
@@ -260,25 +167,6 @@ class ParameterSlider(Element):
             pad=(0, 0),
             key=f"-{fps_pre:s} {name:s}-"
         )
-
-    def getLayout(self) -> List[List[sg.Element]]:
-        """
-        Get layout for slider object.
-
-        :param self: :class:`~Layout.SimulationWindow.ParameterSlider` to retrieve slider object from
-        """
-        name_label = self.getNameLabel()
-        minimum_label = self.getMinimumLabel()
-        maximum_label = self.getMaximumLabel()
-        stepcount_label = self.getStepCountLabel()
-        slider = self.getSlider()
-
-        row = Row(
-            window=self.getWindowObject(),
-            elements=[name_label, minimum_label, slider, maximum_label, stepcount_label]
-        )
-        layout = Layout(rows=row)
-        return layout.getLayout()
 
 
 class SimulationTab(Tab):
@@ -351,11 +239,11 @@ class SimulationTab(Tab):
 
         :param self: :class:`~Layout.SimulationWindow.SimulationTab` to retrieve element from
         """
-        text = "Run Simulation"
+        button_text = "Run Simulation"
 
         return sg.Submit(
-            button_text=text,
-            key=f"-{text.upper():s}-"
+            button_text=button_text,
+            key=run_simulation_key
         )
 
     def getLayout(self) -> List[List[sg.Element]]:
@@ -1092,7 +980,7 @@ class AnalysisTab(Tab, StoredObject):
         return layout.getLayout()
 
 
-class SimulationWindow(TabbedWindow):
+class SimulationWindow(TabbedWindow, CanvasWindow, AxisQuantityWindow):
     """
     This class contains the layout for the simulation window.
         # . Simulation tab. This tab allows the user to run the simulation and display desired results.
@@ -1107,8 +995,9 @@ class SimulationWindow(TabbedWindow):
         self,
         name: str,
         runner: SimulationWindowRunner,
-        free_parameter_values: Dict[str, Tuple[float, float, int, Quantity]],
         plot_choices: Dict[str, List[str]],
+        free_parameter_names: List[str],
+        fit_parameter_names: List[str] = None,
         transform_config_filepath: str = "transforms/transforms.json",
         envelope_config_filepath: str = "transforms/envelopes.json",
         functional_config_filepath: str = "transforms/functionals.json",
@@ -1120,15 +1009,13 @@ class SimulationWindow(TabbedWindow):
 
         :param name: title of window
         :param runner: :class:`~Layout.SimulationWindow.SimulationWindowRunner` that window is stored in
-        :param free_parameter_values: dictionary of free-parameter values.
-            Key is name of free parameter.
-            Value is tuple of (minimum, maximum, stepcount, Quantity) for free parameter.
-            Leave as empty dictionary if there exist zero free parameters.
         :param plot_choices: collection of quantities that may be plotted along each axis.
         :param transform_config_filepath: filepath for file containing info about transforms
         :param envelope_config_filepath: filepath for file containing info about envelope transformations
         :param functional_config_filepath: filepath for file containing info about functionals
         """
+        CanvasWindow.__init__(self)
+
         dimensions = {
             "window": getDimensions(
                 ["simulation_window", "window"]
@@ -1292,19 +1179,39 @@ class SimulationWindow(TabbedWindow):
         complex_config = loadConfig(complex_config_filepath)
         complex_names = list(complex_config.keys())
 
-        self.free_parameter_values = free_parameter_values
+        assert isinstance(free_parameter_names, list)
+        for free_parameter_name in free_parameter_names:
+            assert isinstance(free_parameter_name, str)
+        self.free_parameter_names = free_parameter_names
+
+        if fit_parameter_names is None:
+            self.fit_parameter_names = []
+        else:
+            assert isinstance(fit_parameter_names, list)
+            for fit_parameter_name in fit_parameter_names:
+                assert isinstance(fit_parameter_name, str)
+            self.fit_parameter_names = fit_parameter_names
 
         plotting_tabgroup_name = "Plotting"
         plotting_tabgroup = AxisQuantityTabGroup(
             plotting_tabgroup_name,
-            self,
+            window=self,
             transform_names=transform_names,
             envelope_names=envelope_names,
             functional_names=functional_names,
             complex_names=complex_names
         )
 
-        self.getAxisQuantityFrames = plotting_tabgroup.getAxisQuantityFrames
+        axis_names = []
+        for axis_type_names in axis_type2names.values():
+            axis_names.extend(axis_type_names)
+        axis_quantity_frames: List[AxisQuantity] = plotting_tabgroup.getAxisQuantityFrames(names=axis_names)
+
+        AxisQuantityWindow.__init__(
+            self,
+            axis_quantity_frames=axis_quantity_frames,
+            axis_type2names=axis_type2names
+        )
 
         assert isinstance(include_simulation_tab, bool)
         self.include_simulation_tab = include_simulation_tab
@@ -1340,41 +1247,39 @@ class SimulationWindow(TabbedWindow):
         :param self: :class:`~Layout.SimulationWindow.SimulationWindow` to retrieve names from
         :param indicies: location to retrieve parameter name from in collection of names
         """
-
-        free_parameter_names = list(self.free_parameter_values.keys())
+        free_parameter_names = self.free_parameter_names
 
         def get(index: int) -> str:
             """Base method for :meth:`~Layout.SimulationWindow.SimulationWindow.getFreeParameterNames`"""
             return free_parameter_names[index]
 
+        free_parameter_count = len(free_parameter_names)
         return recursiveMethod(
             args=indicies,
             base_method=get,
             valid_input_types=int,
             output_type=list,
-            default_args=range(len(free_parameter_names))
+            default_args=range(free_parameter_count)
         )
 
-    def getFreeParameterName2Value(
-        self,
-        name: str = None
-    ) -> Union[Dict[str, Tuple[float, float, int, Quantity]], Tuple[float, float, int, Quantity]]:
+    def getFreeParameterIndex(self, name: str) -> int:
         """
-        Get stored values for free parameter(s).
-        The user may change the values of these parameters during simulation.
+        Get index of free parameter in collection of free-parameter names.
+
+        :param self: :class:`~Layout.SimulationWindow.SimulationWindow` to retrieve free parameter names from
+        :param name: name of free parameter to retrieve index of
+        """
+        free_parameter_names = self.getFreeParameterNames()
+        index = free_parameter_names.index(name)
+        return index
+
+    def getFitParameterNames(self) -> List[str]:
+        """
+        Get names of parameters corresponding to fit-data.
 
         :param self: :class:`~Layout.SimulationWindow.SimulationWindow` to retrieve names from
-        :param name: name of parameter to retrieve values of
-        :returns: Tuple of (minimum, maximum, stepcount) if name is str.
-            Dict of equivalent tuples if name is None; all parameter tuples are returned.
         """
-        if isinstance(name, str):
-            free_parameter_values = self.getFreeParameterName2Value()
-            return free_parameter_values[name]
-        elif name is None:
-            return self.free_parameter_values
-        else:
-            raise TypeError("name must be str")
+        return self.fit_parameter_names
 
     def getPlotChoices(
         self,
@@ -1393,12 +1298,22 @@ class SimulationWindow(TabbedWindow):
             plot_choices = []
             extend_choices = plot_choices.extend
             for specie in species:
-                extend_choices(self.getPlotChoices(species=specie))
+                specie_choices = self.getPlotChoices(species=specie)
+                extend_choices(specie_choices)
             return unique(plot_choices)
         elif species is None:
             return self.plot_choices
         else:
             raise TypeError("species must by str or list")
+
+    def getFigureCanvas(self) -> FigureCanvasTkAgg:
+        """
+        Get figure-canvas in present state.
+
+        :param self: :class:`~Layout.SimulationWindow.SimulationWindow` to retrieve figure-canvas from
+        :returns: Figure-canvas object if figure has been drawn on canvas previously. None otherwise.
+        """
+        return self.figure_canvas
 
     @storeElement
     def getMenu(self) -> sg.Menu:
@@ -1431,65 +1346,8 @@ class SimulationWindow(TabbedWindow):
 
         return sg.Menu(
             menu_definition=menu_definition,
-            key="-TOOLBAR MENU-"
+            key=toolbar_menu_key
         )
-
-    @storeElement
-    def getCanvas(self) -> sg.Canvas:
-        """
-        Get canvas where figures will be plotted.
-
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindow` to retrieve canvas from
-        """
-        return sg.Canvas(
-            key="-CANVAS-"
-        )
-
-    def getParameterSliders(
-        self,
-        names: Union[str, List[str]] = None
-    ) -> Union[ParameterSlider, List[ParameterSlider]]:
-        """
-        Get all parameter slider objects for window.
-
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindow` to retrieve sliders from
-        :param names: name(s) of free parameter(s) associated with parameter slider(s).
-            Defaults to names of all free parameters.
-        """
-        parameter_name2value = self.getFreeParameterName2Value()
-        free_parameter_names = list(parameter_name2value.keys())
-
-        try:
-            def get(name: str):
-                return self.parameter_name2slider[name]
-
-            return recursiveMethod(
-                args=names,
-                base_method=get,
-                valid_input_types=str,
-                output_type=list,
-                default_args=free_parameter_names
-            )
-        except AttributeError:
-            self.parameter_name2slider = {}
-            for free_parameter_name in free_parameter_names:
-                free_parameter_value = parameter_name2value[free_parameter_name]
-
-                default_unit = free_parameter_value[3].units
-                unit_conversion_factor = getUnitConversionFactor(default_unit)
-                minimum_value = float(free_parameter_value[0]) * unit_conversion_factor
-                maximum_value = float(free_parameter_value[1]) * unit_conversion_factor
-                value_stepcount = int(free_parameter_value[2])
-
-                parameter_slider = ParameterSlider(
-                    name=free_parameter_name,
-                    window=self,
-                    values=(minimum_value, maximum_value, value_stepcount, default_unit)
-                )
-
-                self.parameter_name2slider[free_parameter_name] = parameter_slider
-
-            return self.getParameterSliders(names=names)
 
     @storeElement
     def getUpdatePlotButton(self) -> sg.Button:
@@ -1498,12 +1356,12 @@ class SimulationWindow(TabbedWindow):
 
         :param self: :class:`~Layout.SimulationWindow.AestheticsTab` to retrieve element from
         """
-        text = "Update Plot"
+        button_text = "Update Plot"
 
         return sg.Button(
-            button_text=text,
+            button_text=button_text,
             tooltip="Click to update plot with new axis settings.",
-            key=f"{text.upper():s}"
+            key=update_plot_key
         )
 
     def includeSimulationTab(self) -> bool:
@@ -1516,12 +1374,18 @@ class SimulationWindow(TabbedWindow):
         """
         return self.include_simulation_tab
 
-    def getLayout(self) -> List[List[sg.Element]]:
+    def getBaseLayout(
+        self,
+        parameter_selection_layout_obj: Layout,
+    ) -> List[List[sg.Element]]:
         """
-        Get layout for simulation window.
+        Get base of layout for simulation window.
 
         :param self: :class:`~Layout.SimulationWindow.SimulationWindow` to retrieve layout from
+        :param parameter_selection_layout_obj: layout containing elements for user to select index for set of parameters
         """
+        assert isinstance(parameter_selection_layout_obj, Layout)
+
         menu = self.getMenu()
         canvas = self.getCanvas()
         exit_button = sg.Exit()
@@ -1531,27 +1395,27 @@ class SimulationWindow(TabbedWindow):
         tabgroup_obj = TabGroup(tabs)
         tabgroup = tabgroup_obj.getTabGroup()
 
-        parameter_sliders = self.getParameterSliders()
-        parameter_slider_rows = [
-            Row(window=self, elements=parameter_slider.getElement())
-            for parameter_slider in parameter_sliders
-        ]
+        prefix_layout_obj = Layout(rows=Row(window=self, elements=menu))
 
-        prefix_layout = Layout(rows=Row(window=self, elements=menu))
+        left_layout_obj = Layout()
+        left_layout_obj.addRows(Row(window=self, elements=tabgroup))
+        left_layout_obj.addRows(Row(window=self, elements=[update_plot_button, exit_button]))
 
-        left_layout = Layout()
-        left_layout.addRows(Row(window=self, elements=tabgroup))
-        left_layout.addRows(Row(window=self, elements=[update_plot_button, exit_button]))
+        right_layout_obj = Layout()
+        right_layout_obj.addRows(Row(window=self, elements=canvas))
+        parameter_selection_rows = parameter_selection_layout_obj.getRows()
+        right_layout_obj.addRows(parameter_selection_rows)
 
-        right_layout = Layout()
-        right_layout.addRows(Row(window=self, elements=canvas))
-        right_layout.addRows(parameter_slider_rows)
-
-        layout = prefix_layout.getLayout() + [[sg.Column(left_layout.getLayout()), sg.Column(right_layout.getLayout())]]
+        core_layout = [[sg.Column(left_layout_obj.getLayout()), sg.Column(right_layout_obj.getLayout())]]
+        layout = prefix_layout_obj.getLayout() + core_layout
         return layout
 
 
-class SimulationWindowRunner(WindowRunner, SimulationWindow):
+class SimulationWindowRunner(
+    WindowRunner,
+    AxisQuantityWindowRunner,
+    SimulationWindow
+):
     """
     This class runs the simulation and displays results.
     This window allows the user to...
@@ -1574,10 +1438,9 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
 
     def __init__(
         self,
-        name: str,
         model: Model = None,
-        results_obj: GridResults = None,
-        **kwargs
+        results_obj: Results = None,
+        axis_quantity_frames: Union[AxisQuantityFrame, List[AxisQuantityFrame]] = None
     ) -> None:
         """
         Constructor for :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
@@ -1587,109 +1450,77 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
             Only called and required
             if :paramref:`~Layout.SimulationWindow.SimulationWindowRunner.__init__.results` is None.
         :param results_obj: preloaded results to start simulation with
-        :param **kwargs: additional arguments to pass into :class:`~Layout.SimulationWindow.SimulationWindow`
+        :param kwargs: additional arguments to pass into :class:`~Layout.SimulationWindow.SimulationWindow`
         """
-        SimulationWindow.__init__(
-            self,
-            name,
-            self,
-            **kwargs
-        )
         WindowRunner.__init__(self)
+        AxisQuantityWindowRunner.__init__(
+            self,
+            axis_quantity_frames=axis_quantity_frames
+        )
 
-        self.axis_names = {
-            "contour": ('C', ),
-            "grid": ('X', 'Y'),
-            "color": ('c'),
-            "cartesian": ('x', 'y', 'z')
-        }
+        window = self.getWindow()
+        update_plot_button = self.getUpdatePlotButton()
+        update_plot_key = getKeys(update_plot_button)
+        window.bind("<F5>", update_plot_key)
+        window.bind("<Escape>", "Exit")
+
         self.timelike_species = ["Variable", "Function"]
         self.parameterlike_species = ["Parameter"]
         self.values = None
-        self.figure_canvas = None
         self.general_derivative_vector = None
 
-        axis_names = self.getAxisNames()
-        axis_quantity_name2frame = {
-            axis_name: self.getAxisQuantityFrames(names=axis_name)
-            for axis_name in axis_names
-        }
-        self.plot_quantities = PlotQuantities(axis_quantity_name2frame)
-
         if results_obj is not None:
+            assert isinstance(results_obj, Results)
             self.model = results_obj.getModel()
-            results_obj = results_obj
             self.results_obj = results_obj
         else:
+            assert isinstance(model, Model)
             self.model = model
             self.results_obj = None
 
-    def runWindow(self) -> None:
+    def runSimulationWindow(self, event: str) -> None:
         """
         Run simulation window.
         This function links each possible event to an action.
         When an event is triggered, its corresponding action is executed.
 
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to run
+        :param event: key of object from which event was triggered
         """
-        window = self.getWindow()
+        include_simulation = self.includeSimulationTab()
+        menu_value = self.getValue(toolbar_menu_key)
 
-        is_simulation = self.includeSimulationTab()
-        if is_simulation:
-            simulation_tab_obj: SimulationTab = self.getSimulationTab()
-            run_simulation_key = getKeys(simulation_tab_obj.getRunButton())
-
-        toolbar_menu_key = getKeys(self.getMenu())
-        update_plot_key = getKeys(self.getUpdatePlotButton())
-
-        window.bind("<F5>", update_plot_key)
-        window.bind("<Escape>", "Exit")
-
-        while True:
-            event, self.values = window.read()
-            print('event:', event)
-
-            if event == sg.WIN_CLOSED or event == "Exit":
-                break
-            menu_value = self.getValue(toolbar_menu_key)
-
-            if menu_value is not None:
-                if menu_value == "Parameters::Save":
-                    self.saveModelParameters()
-                elif menu_value == "Functions::Save":
-                    self.saveModelFunctions()
-                elif menu_value == "Results::Save":
-                    results_obj = self.getResultsObject()
-                    if isinstance(results_obj, GridResults):
-                        results_obj.saveResultsMetadata()
-                elif menu_value == "Variables::Save":
-                    self.saveModelVariables()
-                elif menu_value == "Static::Save Figure":
-                    self.saveFigure()
-                elif "Save Animated Figure" in menu_value:
-                    free_parameter_name = menu_value.split('::')[0]
-                    self.saveFigure(free_parameter_name)
-            elif fps_pre in event:
-                self.updatePlot()
-            elif cc_pre in event:
-                if ccs_pre in event:
-                    axis_name = event.split(' ')[-1].replace("_AXIS", '').replace('-', '')[0]
-                    self.updatePlotChoices(axis_name)
-                else:
-                    pass  # window.write_event_value(update_plot_key, None)
-            elif event == update_plot_key:
-                self.updatePlot()
-            elif is_simulation and event == run_simulation_key:
-                self.runSimulations()
-        window.close()
-
-    def getPlotQuantities(self) -> PlotQuantities:
-        """
-        Get object to determine plot quantities in window.
-
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retreive object from
-        """
-        return self.plot_quantities
+        if menu_value is not None:
+            if event == "Parameters::Save":
+                self.saveModelParameters()
+            elif event == "Functions::Save":
+                self.saveModelFunctions()
+            elif event == "Results::Save":
+                results_obj = self.getResultsObject()
+                if isinstance(results_obj, GridResults):
+                    results_obj.saveResultsMetadata()
+            elif event == "Variables::Save":
+                self.saveModelVariables()
+            elif event == "Static::Save Figure":
+                self.saveFigure()
+            elif "Save Animated Figure" in event:
+                free_parameter_name = event.split('::')[0]
+                self.saveFigure(free_parameter_name)
+        elif fps_pre in event:
+            self.updatePlot()
+        elif cc_pre in event:
+            if ccs_pre in event:
+                axis_name = event.split(' ')[-1].replace("_AXIS", '').replace('-', '')[0]
+                self.updatePlotChoices(axis_name)
+            else:
+                pass  # window.write_event_value(update_plot_key, None)
+        elif qr_pre in event:
+            axis_name = event.split(' ')[-1].replace("_AXIS", '').replace('-', '')[0]
+            self.resetPlotQuantity(axis_name)
+        elif event == update_plot_key:
+            self.updatePlot()
+        elif include_simulation and event == run_simulation_key:
+            self.runSimulations()
 
     def getModel(self) -> Model:
         """
@@ -1714,9 +1545,13 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
                 return_type=str
             )
 
+            fit_parameter_names = self.getFitParameterNames()
+            free_parameter_names = self.getFreeParameterNames()
+            varying_parameter_names = [*fit_parameter_names, *free_parameter_names]
+
             self.general_derivative_vector, equilibrium_substitutions = model.getDerivativeVector(
                 names=temporal_variable_names,
-                skip_parameters=self.getFreeParameterNames()
+                skip_parameters=varying_parameter_names
             )
             results_obj = self.getResultsObject()
             results_obj.setEquilibriumExpressions(equilibrium_expressions=equilibrium_substitutions)
@@ -1741,124 +1576,6 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
         :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to clear from
         """
         self.results_obj = None
-
-    def getResultsObject(self) -> GridResults:
-        """
-        Get stored :class:`~Results.Results`.
-
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve object from
-        """
-        results_obj = self.results_obj
-
-        if not isinstance(results_obj, GridResults):
-            save_folderpath = sg.PopupGetFolder(
-                message="Enter Folder to Save Into",
-                title="Run Simulation"
-            )
-            if save_folderpath is not None:
-                stepcount = self.getStepCount()
-                free_parameter_names = self.getFreeParameterNames()
-                free_parameter_values = {
-                    free_parameter_name: self.getFreeParameterValues(free_parameter_name)
-                    for free_parameter_name in free_parameter_names
-                }
-
-                model = self.getModel()
-
-                results_obj = GridResults(
-                    model,
-                    free_parameter_values,
-                    folderpath=save_folderpath,
-                    stepcount=stepcount
-                )
-
-            if isinstance(results_obj, GridResults):
-                self.results_obj = results_obj
-
-        return results_obj
-
-    def getAxisNames(self, filter: str = None) -> List[str]:
-        """
-        Get names for axes.
-
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve names from
-        :param filter: only include axis types that satisfy this filter.
-            Must be "cartesian", "grid", or "color".
-        :returns: List of axis names (e.g. ['x', 'y', 'c'])
-        """
-
-        if filter is None:
-            all_names = [
-                axis_name
-                for axis_names in self.axis_names.values()
-                for axis_name in axis_names
-            ]
-            return all_names
-        elif isinstance(filter, str):
-            filter = filter.lower()
-            return self.axis_names[filter]
-        else:
-            raise TypeError("filter must be str")
-
-    def getFreeParameterIndex(self, name: str) -> int:
-        """
-        Get index of free parameter in collection of free-parameter names.
-
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve free parameter names from
-        :param name: name of free parameter to retrieve index of
-        """
-        free_parameter_names = self.getFreeParameterNames()
-        index = free_parameter_names.index(name)
-        return index
-
-    def getFreeParameterValues(self, name: str) -> ndarray:
-        """
-        Get possible values for free-parameter slider.
-        This corresponds to the values the parameter is simulated at.
-        Uses present state of :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
-
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve values from
-        :param name: name of parameter to retrieve values
-        """
-        slider_min = self.getSliderMinimum(name)
-        slider_max = self.getSliderMaximum(name)
-        slider_resolution = self.getSliderResolution(name)
-        step_count = round((slider_max - slider_min) / slider_resolution + 1)
-        return np.linspace(slider_min, slider_max, step_count)
-
-    def getClosestSliderIndex(
-        self,
-        names: Union[str, List[str]] = None
-    ) -> Union[int, Tuple[int, ...]]:
-        """
-        Get location/index of slider closest to value of free parameter.
-        Location is discretized from zero to the number of free-parameter values.
-        Uses present state of :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
-
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve slider from.
-        :param names: name(s) of parameter(s) associated with slider.
-            Defaults to names of all free parameters.
-        :returns: Slider index for free parameter if names is str.
-            Tuple of slider indicies for all given free parameters if names is list or tuple.
-        """
-
-        def get(name: str) -> int:
-            """Base method for :meth:`~Layout.SimulationWindow.SimulationWindowRunner.getClosestSliderIndex`"""
-            slider_value = self.getSliderValue(name)
-            free_parameter_values = self.getFreeParameterValues(name)
-            closest_index = min(
-                range(len(free_parameter_values)),
-                key=lambda i: abs(free_parameter_values[i] - slider_value)
-            )
-            return closest_index
-
-        return recursiveMethod(
-            args=names,
-            base_method=get,
-            valid_input_types=str,
-            output_type=tuple,
-            default_args=self.getFreeParameterNames()
-        )
 
     def getFrequencyMethod(self) -> str:
         """
@@ -1918,55 +1635,6 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
         final_time = float(eval(self.getValue(final_time_key)))
         return initial_time, final_time, timestep_count
 
-    def getSliderValue(self, name: str) -> float:
-        """
-        Get present value of parameter slider.
-        Uses present state of :class:`~Layout.SimulationWindow.SimulationWindowRunner`.
-
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve slider from
-        :param name: name of parameter associated with slider
-        """
-        parameter_slider_obj = self.getParameterSliders(names=name)
-        parameter_slider = parameter_slider_obj.getSlider()
-        slider_key = getKeys(parameter_slider)
-        slider_value = self.getValue(slider_key)
-        return slider_value
-
-    def getSliderMinimum(self, name: str) -> float:
-        """
-        Get minimum value of parameter slider.
-        Uses present state of window.
-
-        :param name: name of parameter associated with slider
-        """
-        parameter_slider_obj = self.getParameterSliders(names=name)
-        parameter_slider = parameter_slider_obj.getSlider()
-        slider_minimum = vars(parameter_slider)["Range"][0]
-        return slider_minimum
-
-    def getSliderMaximum(self, name: str) -> float:
-        """
-        Get maximum value of parameter slider.
-        Uses present state of window.
-
-        :param name: name of parameter associated with slider
-        """
-        parameter_slider_obj = self.getParameterSliders(names=name)
-        parameter_slider = parameter_slider_obj.getSlider()
-        slider_max = vars(parameter_slider)["Range"][1]
-        return slider_max
-
-    def getSliderResolution(self, name: str) -> float:
-        """
-        Get resolution of parameter slider.
-
-        :param name: name of parameter associated with slider
-        """
-        parameter_slider_obj = self.getParameterSliders(names=name)
-        parameter_slider = parameter_slider_obj.getSlider()
-        slider_resolution = vars(parameter_slider)["Resolution"]
-        return slider_resolution
-
     @staticmethod
     def updateProgressMeter(current_value: int, max_value: int, title: str) -> sg.OneLineProgressMeter:
         """
@@ -1998,14 +1666,14 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
         """
         self.clearResultsObject()
         results_obj = self.getResultsObject()
-        if not isinstance(results_obj, GridResults):
+        if not isinstance(results_obj, Results):
             return None
 
         results_file_handler = results_obj.getResultsFileHandler()
-        results_file_handler.deleteResultsFiles()
+        if isinstance(results_obj, GridResults):
+            results_file_handler.deleteResultsFiles()
         results_obj.saveResultsMetadata()
 
-        free_parameter_names = self.getFreeParameterNames()
         model = self.getModel()
         variable_names = model.getVariables(
             time_evolution_types="Temporal",
@@ -2018,68 +1686,136 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
         )
         general_derivative_vector = self.getGeneralDerivativeVector()
 
-        parameter_count = len(free_parameter_names)
-        if parameter_count == 0:
-            run_simulation = RunGridSimulation(
-                index=(),
-                parameter_name2value={},
-                variable_names=variable_names,
-                general_derivative_vector=general_derivative_vector,
-                initial_value_vector=initial_value_vector,
-                times=times,
-                results_file_handler=results_file_handler
-            )
-            run_simulation.runSimulation()
-        elif parameter_count >= 1:
-            parameter_name2values = {
-                free_parameter_name: self.getFreeParameterValues(free_parameter_name)
-                for free_parameter_name in free_parameter_names
-            }
-            parameter_indicies = [
-                range(len(parameter_values))
-                for parameter_values in parameter_name2values.values()
-            ]
-            free_parameter_index_combos = tuple(product(*parameter_indicies))
+        free_parameter_names = self.getFreeParameterNames()
+        free_parameter_count = len(free_parameter_names)
 
-            if show_progress:
-                total_combo_count = len(free_parameter_index_combos)
-
-                updateProgressMeter = partial(
-                    self.updateProgressMeter,
-                    title="Running Simulation",
-                    max_value=total_combo_count
-                )
-
-            def getParameterValues(parameter_index):
-                parameter_name2value = {}
-                for free_parameter_index in range(parameter_count):
-                    free_parameter_name = free_parameter_names[free_parameter_index]
-                    free_parameter_value = parameter_name2values[free_parameter_name][parameter_index[free_parameter_index]]
-                    parameter_name2value[free_parameter_name] = free_parameter_value
-
-                return parameter_name2value
-
-            for simulation_number, parameter_index in enumerate(free_parameter_index_combos):
-                if show_progress and not updateProgressMeter(simulation_number):
-                    break
-
-                parameter_name2value = getParameterValues(parameter_index)
-
+        if isinstance(results_obj, GridResults):
+            if free_parameter_count == 0:
                 run_simulation = RunGridSimulation(
-                    index=parameter_index,
+                    index=(),
+                    parameter_name2value={},
                     variable_names=variable_names,
                     general_derivative_vector=general_derivative_vector,
-                    parameter_name2value=parameter_name2value,
                     initial_value_vector=initial_value_vector,
                     times=times,
                     results_file_handler=results_file_handler
                 )
                 run_simulation.runSimulation()
+            elif free_parameter_count >= 1:
+                parameter_name2values = {
+                    free_parameter_name: self.getFreeParameterValues(free_parameter_name)
+                    for free_parameter_name in free_parameter_names
+                }
+                parameter_indicies = [
+                    range(len(parameter_values))
+                    for parameter_values in parameter_name2values.values()
+                ]
+                free_parameter_index_combos = tuple(product(*parameter_indicies))
 
-            if show_progress:
-                updateProgressMeter(total_combo_count)
+                if show_progress:
+                    total_combo_count = len(free_parameter_index_combos)
+                    updateProgressMeter = partial(
+                        self.updateProgressMeter,
+                        title="Running Simulation",
+                        max_value=total_combo_count
+                    )
 
-        results_file_handler.closeResultsFiles()
+                def getParameterName2Value(parameter_index):
+                    parameter_name2value = {}
+                    for free_parameter_index in range(free_parameter_count):
+                        free_parameter_name = free_parameter_names[free_parameter_index]
+                        free_parameter_value = parameter_name2values[free_parameter_name][parameter_index[free_parameter_index]]
+                        parameter_name2value[free_parameter_name] = free_parameter_value
+
+                    return parameter_name2value
+
+                for simulation_number, parameter_index in enumerate(free_parameter_index_combos):
+                    if show_progress and not updateProgressMeter(simulation_number):
+                        break
+
+                    parameter_name2value = getParameterName2Value(parameter_index)
+
+                    run_simulation = RunGridSimulation(
+                        index=parameter_index,
+                        variable_names=variable_names,
+                        general_derivative_vector=general_derivative_vector,
+                        parameter_name2value=parameter_name2value,
+                        initial_value_vector=initial_value_vector,
+                        times=times,
+                        results_file_handler=results_file_handler
+                    )
+                    run_simulation.runSimulation()
+
+                if show_progress:
+                    updateProgressMeter(total_combo_count)
+                results_file_handler.closeResultsFiles()
+        elif isinstance(results_obj, OptimizationResults):
+            fit_parameter_names = self.getFitParameterNames()
+            output_axis_quantity = self.getFitAxisQuantity()
+
+            run_simulation = RunOptimizationSimulation(
+                variable_names=variable_names,
+                general_derivative_vector=general_derivative_vector,
+                initial_value_vector=initial_value_vector,
+                times=times,
+                fit_parameter_names=fit_parameter_names,
+                free_parameter_names=free_parameter_names,
+                output_axis_quantity_metadata=output_axis_quantity,
+                results_obj=results_obj,
+                cost_function=normalizedRmsError
+            )
+            simulation_fitting_function = run_simulation.getResultsFit
+            simulation_cost_function = run_simulation.getCost
+            simulation_reset_iteration = run_simulation.resetIterationStep
+
+            fitdata_output_filepath = self.getFitdataFilepath()
+            with open(fitdata_output_filepath, 'rb') as fit_data_file:
+                fit_data: ndarray = np.load(fit_data_file)
+            data_input_vector = np.moveaxis(fit_data[:-1], 0, -1)
+            data_output_vector = fit_data[-1]
+
+            results_file_handler: OptimizationResultsFileHandler = results_file_handler
+            parameter_name2quantity = results_file_handler.getFreeParameterName2Quantity()
+
+            default_parameter_values = []
+            for free_parameter_name in free_parameter_names:
+                parameter_quantity = parameter_name2quantity[free_parameter_name]
+                parameter_magnitude = parameter_quantity.magnitude
+                parameter_unit = parameter_quantity.units
+                unit_conversion = getUnitConversionFactor(parameter_unit)
+                parameter_magnitude_si = parameter_magnitude * unit_conversion
+                default_parameter_values.append(parameter_magnitude_si)
+            default_parameter_values = np.array(default_parameter_values)
+
+            default_parameter_boundstep = 5**np.sign(default_parameter_values)
+            lower_bounds = default_parameter_values / default_parameter_boundstep
+            upper_bounds = default_parameter_values * default_parameter_boundstep
+            bounds = list(zip(lower_bounds, upper_bounds))
+
+            sample_size_count = 3
+            tnc_options = {
+                "finite_diff_rel_step": 1e-3,
+                "disp": True,
+                "maxiter": 1000
+            }
+
+            monte_carlo_minimization = MonteCarloMinimization(
+                fitting_function=simulation_fitting_function,
+                initial_guess=default_parameter_values,
+                input_vector=data_input_vector,
+                output_vector=data_output_vector,
+                cost_function=simulation_cost_function,
+                sample_sizes=sample_size_count,
+                tolerance=1e-3,
+                jacobian_method="3-point",
+                minimization_method="TNC",
+                bounds=bounds,
+                options=tnc_options,
+                post_iteration_function=simulation_reset_iteration
+            )
+            fit = monte_carlo_minimization.runMonteCarloIterations()
+            print("fit:", fit)
+
         self.updatePlot()
 
     def getPlotAesthetics(self) -> Dict[str, Optional[Union[str, float]]]:
@@ -2208,7 +1944,11 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
         }
         return aesthetics_kwargs
 
-    def getFigure(self, data: Dict[str, ndarray] = None, **kwargs) -> Figure:
+    def getFigure(
+        self,
+        data: Dict[str, ndarray] = None,
+        **kwargs
+    ) -> Figure:
         """
         Get matplotlib figure for results.
 
@@ -2220,42 +1960,18 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
             if any element in :paramref:`~Layout.SimulationWindow.SimulationWindowRunner.getFigure.data` is not ndarray.
             Figure with given data plotted if both are ndarray.
         """
-        if data is None or any(not isinstance(x, ndarray) for x in data.values()):
+        is_no_data = data is None
+        is_missing_data = is_no_data or any(not isinstance(datum, ndarray) for datum in data.values())
+
+        if is_missing_data:
             figure_canvas = self.getFigureCanvas()
             figure_canvas_attributes = vars(figure_canvas)
             figure = figure_canvas_attributes["figure"]
             return figure
         else:
             aesthetics = self.getPlotAesthetics()
-            return getFigure(data, **kwargs, **aesthetics)
-
-    def getFigureCanvas(self) -> FigureCanvasTkAgg:
-        """
-        Get figure-canvas in present state.
-
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to retrieve figure-canvas from
-        :returns: Figure-canvas object if figure has been drawn on canvas previously. None otherwise.
-        """
-        return self.figure_canvas
-
-    def updateFigureCanvas(self, figure: Figure) -> Optional[FigureCanvasTkAgg]:
-        """
-        Update figure-canvas aggregate in simulation window.
-        This plots the most up-to-date data and aesthetics on the plot.
-
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to update figure-canvas in
-        :param figure: new figure (containing most up-to-date info) to plot
-        :returns: New figure-canvas stored in window runner.
-        """
-        figure_canvas = self.getFigureCanvas()
-        if isinstance(figure_canvas, FigureCanvasTkAgg):
-            clearFigure(figure_canvas)
-
-        canvas = self.getCanvas()
-        self.figure_canvas = drawFigure(canvas.TKCanvas, figure)
-        self.getWindow().Refresh()
-
-        return self.figure_canvas
+            figure = getFigure(data, **kwargs, **aesthetics)
+            return figure
 
     def getFunctionalKwargs(self, functional_specie: str) -> Dict[str, Union[str, int]]:
         """
@@ -2311,7 +2027,7 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
         self,
         index: Union[tuple, Tuple[int]] = None,
         plot_quantities: PlotQuantities = None,
-        transform_name: str = None,
+        event: str = None,
         **figure_kwargs
     ) -> Optional[Figure]:
         """
@@ -2324,22 +2040,21 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
         :param figure_kwargs: additional arguments to pass into :meth:`~SimulationWindow.SimulationWindow.getFigure`
         :returns: New matplotlib Figure displayed on canvas. None if figure has not been displayed yet.
         """
+        self: Union[GridSimulationWindowRunner, OptimizationSimulationWindowRunner]
         if index is None:
-            index = self.getClosestSliderIndex()
+            index = self.getParameterIndex()
         if plot_quantities is None:
             plot_quantities = self.getPlotQuantities()
 
-        axis_names = self.getAxisNames()
-        cartesian_axis_names = self.getAxisNames("cartesian")
-        grid_axis_names = self.getAxisNames("grid")
-        valid_axis_names = plot_quantities.getValidAxisNames()
+        plot_quantities.generateMetadata()
+        valid_axis_names = plot_quantities.generateValidAxisNames()
 
         results_obj = self.getResultsObject()
-        if not isinstance(results_obj, GridResults):
+        if not isinstance(results_obj, Results):
             return None
         results_file_handler = results_obj.getResultsFileHandler()
 
-        parameter_names = plot_quantities.getParameterNames()
+        parameter_names = plot_quantities.generateParameterNames()
         parameterlike_count = len(parameter_names)
         exists_parameterlike = parameterlike_count >= 1
 
@@ -2356,7 +2071,7 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
                 )
             else:
                 getResults = results_obj.getResultsOverTime
-
+            
             getResults = partial(
                 getResults,
                 inequality_filters=inequality_filters,
@@ -2365,21 +2080,13 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
 
             for valid_axis_name in valid_axis_names:
                 axis_quantity = plot_quantities.getAxisQuantities(names=valid_axis_name)
-                quantity_names = axis_quantity.getQuantityNames(include_none=False)
-
+                quantity_names = axis_quantity.generateQuantityNames(include_none=False)
                 axis_is_parameterlike = axis_quantity.isParameterLike()
                 axis_is_functionallike = axis_quantity.isFunctionalLike()
                 axis_is_timelike = axis_quantity.isTimeLike()
 
-                if axis_is_parameterlike:
-                    assert len(quantity_names) == 1
-                    quantity_name = quantity_names[0]
-                    quantity_results = results_file_handler.getFreeParameterValues(names=quantity_name)
-                elif axis_is_timelike or axis_is_functionallike:
-                    envelope_name = axis_quantity.getEnvelopeName()
-                    transform_name = axis_quantity.getTransformName()
+                if axis_is_timelike or axis_is_functionallike:
                     is_transformed = axis_quantity.isTransformed()
-                    complex_name = axis_quantity.getComplexName()
 
                     if not is_transformed or len(quantity_names) == 1:
                         quantity_names = quantity_names[0]
@@ -2387,272 +2094,83 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
                     getAxisResults = partial(
                         getResults,
                         quantity_names=quantity_names,
-                        envelope_name=envelope_name,
-                        transform_name=transform_name,
-                        complex_name=complex_name
+                        axis_quantity_metadata=axis_quantity
                     )
 
-                    parameter_functional_names = axis_quantity.getFunctionalFunctionalNames(include_none=False)
-                    if len(parameter_functional_names) >= 1:
-                        functional_parameter_namess = axis_quantity.getFunctionalParameterNamess(include_none=False)
-                        getAxisResults = partial(
-                            getAxisResults,
-                            parameter_functional_names=parameter_functional_names,
-                            functional_parameter_namess=functional_parameter_namess
-                        )
-
                     if axis_is_functionallike:
-                        functional_name = axis_quantity.getFunctionalName()
+                        functional_name = axis_quantity.generateFunctionalName()
                         functional_kwargs = self.getFunctionalKwargs(functional_name)
                         getAxisResults = partial(
                             getAxisResults,
-                            functional_name=functional_name,
                             functional_kwargs=functional_kwargs
                         )
 
                     if exists_parameterlike:
-                        normalize_parameter_names = axis_quantity.getNormalizeNames()
-                        parameter_results, quantity_results = getAxisResults(
-                            normalize_names=normalize_parameter_names
-                        )
+                        parameters_results, quantity_results = getAxisResults()
                         quantity_results = quantity_results[0]
                     else:
                         quantity_results = getAxisResults()
 
-                results[valid_axis_name] = quantity_results
+                    results[valid_axis_name] = quantity_results
+                
+            for valid_axis_name in valid_axis_names:
+                axis_quantity = plot_quantities.getAxisQuantities(names=valid_axis_name)
+                quantity_names = axis_quantity.generateQuantityNames(include_none=False)
+                axis_is_parameterlike = axis_quantity.isParameterLike()
+                
+                if axis_is_parameterlike:
+                    parameter_name = quantity_names[0]
+                    results[valid_axis_name] = parameters_results[parameter_name]
+
+
+
         except (UnboundLocalError, KeyError, IndexError, AttributeError, ValueError, AssertionError):
             print('data:', traceback.print_exc())
         except TypeError:
             print('calculation cancelled', traceback.print_exc())
 
-        is_timelike = {}
-        is_functionallike = {}
-        is_parameterlike = {}
-        is_nonelike = {}
-        for axis_name in axis_names:
-            axis_quantity = plot_quantities.getAxisQuantities(names=axis_name)
-            is_parameterlike[axis_name] = axis_quantity.isParameterLike()
-            is_functionallike[axis_name] = axis_quantity.isFunctionalLike()
-            is_timelike[axis_name] = axis_quantity.isTimeLike()
-            is_nonelike[axis_name] = axis_quantity.isNoneLike()
-
-        timelike_count = sum(is_timelike.values())
-        exists_timelike = timelike_count >= 1
-        multiple_timelikes = timelike_count >= 2
-        exists_exactly_one_timelike = exists_timelike and not multiple_timelikes
-
-        functionallike_count = sum(is_functionallike.values())
-        exists_functionallike = functionallike_count >= 1
-
-        timelike_and_functionallike = exists_timelike and exists_functionallike
-        timelike_nor_functionallike = not exists_timelike and not exists_functionallike
-        functionallike_and_not_parameterlike = exists_functionallike and not exists_parameterlike
-
-        x_is_nonelike = is_nonelike['x']
-        y_is_nonelike = is_nonelike['y']
-        x_or_y_is_nonelike = x_is_nonelike or y_is_nonelike
-
-        if x_or_y_is_nonelike:
-            plot_type = ''
-        elif exists_exactly_one_timelike:
-            plot_type = ''
-        elif timelike_and_functionallike:
-            plot_type = ''
-        elif timelike_nor_functionallike:
-            plot_type = ''
-        elif functionallike_and_not_parameterlike:
-            plot_type = ''
-        else:
-            multiple_functionals = functionallike_count >= 2
-
-            exists_cartesian_parameterlike = False
-            cartesian_axis_quantities: List[AxisQuantity] = plot_quantities.getAxisQuantities(names=cartesian_axis_names)
-            for cartesian_axis_quantity in cartesian_axis_quantities:
-                cartesian_axis_is_parameterlike = cartesian_axis_quantity.isParameterLike()
-                if cartesian_axis_is_parameterlike:
-                    exists_cartesian_parameterlike = True
-                    break
-
-            grid_parameterlike_count = 0
-            grid_axis_quantities: List[AxisQuantity] = plot_quantities.getAxisQuantities(names=grid_axis_names)
-            for grid_axis_quantity in grid_axis_quantities:
-                grid_axis_is_parameterlike = grid_axis_quantity.isParameterLike()
-                if grid_axis_is_parameterlike:
-                    grid_parameterlike_count += 1
-
-            exists_grid_parameterlike = grid_parameterlike_count >= 1
-
-            nongrid_parameterlike_count = parameterlike_count - grid_parameterlike_count
-            multiple_nongrid_parameterlikes = nongrid_parameterlike_count >= 2
-
-            if is_parameterlike['c']:
-                if exists_timelike:
-                    plot_type = 'nc'
-                elif exists_functionallike:
-                    if multiple_nongrid_parameterlikes:
-                        plot_type = 'nc'
-                    elif exists_parameterlike:
-                        plot_type = 'nt'
-            elif is_functionallike['c']:
-                assert exists_cartesian_parameterlike
-                if multiple_functionals:
-                    if multiple_nongrid_parameterlikes:
-                        plot_type = 't'
-                    else:
-                        plot_type = 'nt'
-                elif exists_functionallike:
-                    plot_type = 'c'
-            elif is_timelike['c']:
-                plot_type = 'nt'
-            elif is_nonelike['c']:
-                plot_type = ''
-
-            for cartesian_axis_name in cartesian_axis_names:
-                if is_parameterlike[cartesian_axis_name]:
-                    if exists_functionallike:
-                        if multiple_nongrid_parameterlikes:
-                            plot_type += f"n{cartesian_axis_name:s}"
-                        elif exists_parameterlike:
-                            plot_type += cartesian_axis_name
-                    elif exists_timelike:
-                        plot_type += f"n{cartesian_axis_name:s}"
-                elif is_functionallike[cartesian_axis_name]:
-                    if is_parameterlike['c']:
-                        plot_type += cartesian_axis_name
-                    elif multiple_nongrid_parameterlikes:
-                        plot_type += cartesian_axis_name
-                    else:
-                        assert exists_parameterlike
-                        if multiple_functionals:
-                            plot_type += cartesian_axis_name
-                        else:
-                            plot_type += f"n{cartesian_axis_name:s}"
-                elif is_timelike[cartesian_axis_name]:
-                    plot_type += cartesian_axis_name
-                elif is_nonelike[cartesian_axis_name]:
-                    pass
-
-            if is_functionallike['C']:
-                plot_type += 'C'
-
-            if exists_grid_parameterlike:
-                plot_type += '_'
-                for grid_axis_name in grid_axis_names:
-                    if is_parameterlike[grid_axis_name]:
-                        plot_type += grid_axis_name
-                    elif is_nonelike[grid_axis_name]:
-                        pass
+        plot_type = plot_quantities.getPlotType()
 
         with open("results_temp.pkl", 'wb') as file:
             dill.dump(results, file)
         with open("plot_type_temp.pkl", 'wb') as file:
             dill.dump(plot_type, file)
 
-        plot_quantities.reset()
+        plot_quantities.resetMetadata()
         results_file_handler.closeResultsFiles()
 
         try:
             print(plot_type, {key: value.shape for key, value in results.items()})
             if plot_type != '':
-                figure = self.getFigure(results, plot_type=plot_type, **figure_kwargs)
+                figure = self.getFigure(
+                    results,
+                    plot_type=plot_type,
+                    **figure_kwargs
+                )
                 self.updateFigureCanvas(figure)
             return figure
         except UnboundLocalError:
-            print('todo plots:', vars(plot_quantities), traceback.print_exc())
+            print('todo plots:', plot_quantities.axis_name2quantity, traceback.print_exc())
         except RuntimeError:
-            clearFigure(self.getFigureCanvas())
+            self.clearFigure(self.getFigureCanvas())
             print('LaTeX failed', traceback.print_exc())
         except (KeyError, AttributeError, AssertionError):
             print('figure:', traceback.print_exc())
 
-    def updatePlotChoices(
+    def resetPlotQuantity(
         self,
-        names: Union[str, List[str]] = None,
+        axis_name: str
     ) -> None:
         """
-        Update plot choices for desired axis(es).
-        This allows user to select new set of quantities to plot.
+        Reset quantity properties for frame of given axis to default.
 
-        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to change plot choices in
-        :param names: name(s) of axis(es) to update choices for.
-            Updates all axes by default.
+        :param self: :class:`~Layout.SimulationWindow.SimulationWindowRunner` to reset in
+        :param axis_name: name of axis to reset
         """
-        getSpecies = PlotQuantities.getSpecies
-        timelike_species = getSpecies("timelike") + getSpecies("nonelike")
-        all_species = getSpecies()
-        nontimelike_species = [
-            specie
-            for specie in all_species
-            if specie not in timelike_species
-        ]
-
-        def update(name: str) -> None:
-            """Base method for :meth:`~Layout.SimulationWindow.SimulationWindowRunner.updatePlotChoices`"""
-            plot_quantities = self.getPlotQuantities()
-            axis_quantity = plot_quantities.getAxisQuantities(names=name)
-            axis_quantity_frame = axis_quantity.getAxisQuantityFrame()
-
-            species = axis_quantity.getSpecieNames()
-            axis_quantity_rows = axis_quantity_frame.getAxisQuantityRows()
-            for index, axis_quantity_row in enumerate(axis_quantity_rows):
-                specie = species[index]
-                quantity_names_combobox = axis_quantity_row.getAxisQuantityElement()
-
-                new_choices = self.getPlotChoices(species=specie) if specie != "None" else ['']
-                old_choices = vars(quantity_names_combobox)["Values"]
-
-                if new_choices != old_choices:
-                    quantity_names_combobox_key = getKeys(quantity_names_combobox)
-
-                    kwargs = {
-                        "values": new_choices,
-                        "disabled": specie == "None",
-                        "size": vars(quantity_names_combobox)["Size"]
-                    }
-
-                    old_chosen_quantity = self.getValue(quantity_names_combobox_key)
-                    change_quantity = old_chosen_quantity not in new_choices
-                    if change_quantity:
-                        new_chosen_quantity = new_choices[0]
-                        kwargs["value"] = new_chosen_quantity
-                        quantity_names_combobox.update(**kwargs)
-                        self.getWindow().write_event_value(quantity_names_combobox_key, new_chosen_quantity)
-                    else:
-                        quantity_names_combobox.update(**kwargs)
-
-            exists_nontimelike = False
-            for nontimelike_specie in nontimelike_species:
-                if nontimelike_specie in species:
-                    exists_nontimelike = True
-                    break
-            envelope_disabled = transform_disabled = functional_disabled = complex_disabled = exists_nontimelike
-
-            envelope_radio_group = axis_quantity_frame.getAxisEnvelopeGroup()
-            if isinstance(envelope_radio_group, EnvelopeRadioGroup):
-                envelope_radios = envelope_radio_group.getRadios()
-                for envelope_radio in envelope_radios:
-                    envelope_radio.update(disabled=envelope_disabled)
-
-            transform_combobox = axis_quantity_frame.getAxisTransformElement()
-            if isinstance(transform_combobox, sg.Combo):
-                transform_combobox.update(disabled=transform_disabled)
-
-            functional_combobox = axis_quantity_frame.getAxisFunctionalElement()
-            if isinstance(functional_combobox, sg.Combo):
-                functional_combobox.update(disabled=functional_disabled)
-
-            complex_radio_group = axis_quantity_frame.getAxisComplexGroup()
-            if isinstance(complex_radio_group, ComplexRadioGroup):
-                complex_radios = complex_radio_group.getRadios()
-                for complex_radio in complex_radios:
-                    complex_radio.update(disabled=complex_disabled)
-
-        return recursiveMethod(
-            args=names,
-            base_method=update,
-            valid_input_types=str,
-            default_args=self.getAxisNames()
-        )
+        plot_quantities = self.getPlotQuantities()
+        axis_quantity = plot_quantities.getAxisQuantities(names=axis_name)
+        axis_quantity_frame = axis_quantity.getAxisQuantityFrame()
+        axis_quantity_frame.reset()
 
     def saveModelParameters(self) -> None:
         """
@@ -2786,7 +2304,7 @@ class SimulationWindowRunner(WindowRunner, SimulationWindow):
                 yaml_filepath = join(save_directory, "values.yml")
 
                 parameter_index = self.getFreeParameterIndex(parameter_name)
-                default_index = list(self.getClosestSliderIndex())
+                default_index = list(self.getParameterIndex())
                 parameter_values = self.getFreeParameterValues(parameter_name)
 
                 inset_parameters = {
