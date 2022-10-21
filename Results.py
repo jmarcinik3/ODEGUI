@@ -1249,7 +1249,7 @@ class GridResults(Results):
         results_file_handler.closeResultsFiles()
 
         parameter_name2basevalues = dict(zip(parameter_names, per_parameter_base_values))
-        return per_name2basevalues, results
+        return parameter_name2basevalues, results
 
     def saveResultsMetadata(self) -> None:
         """
