@@ -265,7 +265,10 @@ def getResults(
 
     metadata_filepath = join(results_folderpath, "metadata.yml")
     metadata = loadConfig(metadata_filepath)
-    simulation_type = metadata["simulation_type"]
+    try:
+        simulation_type = metadata["simulation_type"]
+    except TypeError:
+        simulation_type = "grid"
 
     variable_objs_filepath = join(results_folderpath, "Variable.json")
     variable_objs = loadVariables(variable_objs_filepath)
@@ -438,4 +441,4 @@ if __name__ == "__main__":
         suppress_raise_key_errors=False
     )
 
-    loadSimulation(r"D:\Marcinik\Recreation\Arnold Tongue\best_fit_new\fit5_4param\fit5_res")
+    loadSimulation(r"D:\Marcinik\Recreation\Arnold Tongue\best_fit\fit6_5param\res6_7s_7000")
