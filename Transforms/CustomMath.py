@@ -345,7 +345,6 @@ def instantaneousFrequency(
 ) -> ndarray:
     instantaneous_phase = instantaneousPhase(data)
     instantaneous_frequency = np.diff(instantaneous_phase) / (2 * np.pi * (times[1:] - times[:-1]))
-
     return instantaneous_frequency
 
 

@@ -344,7 +344,6 @@ def plotOnAxes(
                     colors=(c_colors[c_index], ),
                     **plot_kwargs
                 )
-
         elif plot_type in ["ntxy", "cnxy", "cxny"]:
             assert cshape == xshape == yshape
 
